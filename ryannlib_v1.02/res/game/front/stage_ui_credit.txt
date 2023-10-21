@@ -1,0 +1,1 @@
+stage_ui.png is from ryannlib, a LuaSTG THlib assets replacement package. See data_assets/ryannlibcredits.txt for the credits.
