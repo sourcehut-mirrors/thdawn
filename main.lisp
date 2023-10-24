@@ -1,15 +1,3 @@
-;; These arrange for the dependency trees of these libraries to be loaded into the process from disk.
-;; In a "real project" and when we need to do a release for real, this would be declared in an ASDF system, and not manually done here.
-(require :cl-raylib)
-(require :swank)
-(require :cl-coroutine)
-(require :cffi)
-
-;; Declares current namespace and brings all `use`d bindings into
-;; (unqualified) scope within it
-(defpackage :thdawn
-  (:use :cl :raylib :cl-coroutine))
-
 ;; All symbols declared from now on are in the thdawn namespace
 (in-package :thdawn)
 
@@ -30,16 +18,16 @@
   (make-array NUM-BULLETS :element-type 'keyword :initial-element :white)
   "bullet colors")
 (defvar bullet-xs
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0)
+  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
   "bullet x positions")
 (defvar bullet-ys
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0)
+  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
   "bullet y positions")
 (defvar bullet-xvs
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0)
+  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
   "bullet x velocities")
 (defvar bullet-yvs
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0)
+  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
   "bullet y velocities")
 (defvar bullet-control
   (make-array NUM-BULLETS :element-type '(or null function) :initial-element NIL)
@@ -139,5 +127,3 @@ For use in interactive development."
 		(incf frames))
 	  (unload-audio)
 	  (unload-texture hud-texture))))
-
-(main)
