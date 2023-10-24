@@ -3,6 +3,7 @@
 (require :cl-raylib)
 (require :swank)
 (require :cl-coroutine)
+(require :cffi)
 
 ;; Declares current namespace and brings all `use`d bindings into
 ;; (unqualified) scope within it
@@ -74,38 +75,69 @@
 
 ;; Stage sequencing
 
-(defcoroutine test-coro (param)
-  (yield)
-  ;; do some bullet spawning logic
-  (yield))
+;; player
+(defvar player-x 0)
+(defvar player-y 0)
+
+;; [31-416] x bounds of playfield in the hud texture
+;; [15-463] y bounds of playfield in the hud texture
+;; idea is to have logical game stuff stored where 0 0 is the top left of the hud texture, and we just offset everything by +31, +15 to render.
+
+(defun handle-input ()
+  ;; todo: make this less awful (diagonal normalization, clamping at boundaries, proper velocity, etc.)
+  (when (is-key-down :key-left)
+	(incf player-x -3))
+  (when (is-key-down :key-right)
+	(incf player-x 3))
+  (when (is-key-down :key-up)
+	(incf player-y -3))
+  (when (is-key-down :key-down)
+	(incf player-y 3)))
+
+(defun render-all (hud-texture)
+  (clear-background bgcolor)
+  (draw-circle (+ player-x 31) (+ player-y 15) 8.0 :raywhite)
+  (draw-texture hud-texture 0 0 :raywhite)
+  (draw-fps 10 10))
+
+(defvar ojamajo-carnival nil)
+(defun load-audio ()
+  (init-audio-device)
+  (setf ojamajo-carnival (load-music-stream "bgm/ojamajo_carnival.wav")))
+(defun unload-audio ()
+  (stop-music-stream ojamajo-carnival)
+  (unload-music-stream ojamajo-carnival))
+
+(defvar frames 0 "Number of frames the current stage has been running")
+
+(defun reset-to (frame)
+  "Kills all enemies, resets frame counter and music to specific frame.
+For use in interactive development."
+  (setf frames frame)
+  ;; todo not wrapped yet (seek-music-stream ojamajo-carnival (/ frame 60.0))
+  )
 
 (defun main ()
   ;; Starts a REPL, connect with slime-connect in emacs
   (swank:create-server)
-  (let ((coro-test (make-coroutine 'test-coro)))
-	(funcall coro-test "param")
-	(funcall coro-test "param")
-	(funcall coro-test "param"))
   (with-window
 	  (640 480 "thdawn")
 	(set-target-fps 60)
 	(set-exit-key 0)
-	(init-audio-device)
-	;; these are in local variables because putting them at file scope causes segfaults
+	(load-audio)
+	;; this is in a local variable because using file scope causes segfaults
 	;; in load-texture. Idk why.
-	(let ((ojamajo-carnival (load-music-stream "bgm/ojamajo_carnival.wav"))
-		  (hud-texture (load-texture "ryannlib_v1.02/data_assets/THlib/UI/ui_bg.png")))
+	(let ((hud-texture (load-texture "ryannlib_v1.02/data_assets/THlib/UI/ui_bg.png")))
 	  (play-music-stream ojamajo-carnival)
 	  (loop
 		(when (window-should-close)
 		  (return))
 		(update-music-stream ojamajo-carnival)
+		(handle-input)
 		(with-drawing
-			(clear-background bgcolor)
-		  (draw-texture hud-texture 0 0 :raywhite)
-		  (draw-fps 10 10)))
-	  (stop-music-stream ojamajo-carnival)
-	  (unload-music-stream ojamajo-carnival)
+		  (render-all hud-texture))
+		(incf frames))
+	  (unload-audio)
 	  (unload-texture hud-texture))))
 
 (main)
