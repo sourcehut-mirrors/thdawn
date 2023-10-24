@@ -81,12 +81,12 @@
 (defvar hud-texture NIL)
 
 (defun load-resources ()
-  ;(setf ojamajo-carnival (load-music-stream "bgm/ojamajo_carnival.wav"))
+  (setf ojamajo-carnival (load-music-stream "bgm/ojamajo_carnival.wav"))
   ;(setf hud-texture (load-texture "ryannlib_v1.02/data_assets/THlib/UI/ui_bg.png"))
   )
 
 (defun unload-resources ()
-  ;(unload-music-stream ojamajo-carnival)
+  (unload-music-stream ojamajo-carnival)
   ;(unload-texture hud-texture)
   )
 
@@ -102,15 +102,17 @@
 	(funcall coro-test "param")
 	(funcall coro-test "param")
 	(funcall coro-test "param"))
-  (load-resources)
   (with-window
 	  (640 480 "thdawn")
 	(set-target-fps 60)
 	(set-exit-key 0)
-	;(play-music-stream ojamajo-carnival)
+	(init-audio-device)
+	(set-master-volume 1.0)
+	(load-resources)
+	(play-music-stream ojamajo-carnival)
 	(loop
-	  (if (window-should-close)
-		  (return))
+	  (when (window-should-close)
+		(return))
 	  (with-drawing
 		  (clear-background bgcolor)
 		;(draw-texture hud-texture 0 0 :raywhite)
