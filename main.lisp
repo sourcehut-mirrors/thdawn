@@ -99,11 +99,11 @@
 (defvar frames 0 "Number of frames the current stage has been running")
 
 (defun reset-to (frame)
-  "Kills all enemies, resets frame counter and music to specific frame.
+  "Resets frame counter and music playback to specific frame.
 For use in interactive development."
+  ;; todo also kill all enemies and bullets?
   (setf frames frame)
-  ;; todo not wrapped yet (seek-music-stream ojamajo-carnival (/ frame 60.0))
-  )
+  (seek-music-stream ojamajo-carnival (/ frame 60.0)))
 
 (defun main ()
   ;; Starts a REPL, connect with slime-connect in emacs
