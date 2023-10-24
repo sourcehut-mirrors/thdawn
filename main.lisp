@@ -74,22 +74,6 @@
 
 ;; Stage sequencing
 
-;; sfx and music
-
-;; resources
-(defvar ojamajo-carnival NIL)
-(defvar hud-texture NIL)
-
-(defun load-resources ()
-  (setf ojamajo-carnival (load-music-stream "bgm/ojamajo_carnival.wav"))
-  ;(setf hud-texture (load-texture "ryannlib_v1.02/data_assets/THlib/UI/ui_bg.png"))
-  )
-
-(defun unload-resources ()
-  (unload-music-stream ojamajo-carnival)
-  ;(unload-texture hud-texture)
-  )
-
 (defcoroutine test-coro (param)
   (yield)
   ;; do some bullet spawning logic
@@ -107,15 +91,21 @@
 	(set-target-fps 60)
 	(set-exit-key 0)
 	(init-audio-device)
-	(set-master-volume 1.0)
-	(load-resources)
-	(play-music-stream ojamajo-carnival)
-	(loop
-	  (when (window-should-close)
-		(return))
-	  (with-drawing
-		  (clear-background bgcolor)
-		;(draw-texture hud-texture 0 0 :raywhite)
-		(draw-fps 10 10)))))
+	;; these are in local variables because putting them at file scope causes segfaults
+	;; in load-texture. Idk why.
+	(let ((ojamajo-carnival (load-music-stream "bgm/ojamajo_carnival.wav"))
+		  (hud-texture (load-texture "ryannlib_v1.02/data_assets/THlib/UI/ui_bg.png")))
+	  (play-music-stream ojamajo-carnival)
+	  (loop
+		(when (window-should-close)
+		  (return))
+		(update-music-stream ojamajo-carnival)
+		(with-drawing
+			(clear-background bgcolor)
+		  (draw-texture hud-texture 0 0 :raywhite)
+		  (draw-fps 10 10)))
+	  (stop-music-stream ojamajo-carnival)
+	  (unload-music-stream ojamajo-carnival)
+	  (unload-texture hud-texture))))
 
 (main)
