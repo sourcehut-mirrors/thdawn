@@ -14,8 +14,11 @@ All these steps are one time
 1. Install a common lisp implementation
 2. Install quicklisp into it https://www.quicklisp.org/beta/
 3. Clone this repo into `~/common-lisp`
-4. In a lisp repl, evaluate: `(ql:quickload "thdawn")`, which will fetch all recursive
-   dependencies
+4. Clone the raylib bindings into `~/common-lisp`: `git clone
+   https://github.com/williewillus/cl-raylib`. This library isn't available on the
+   quicklisp package repo yet.
+4. In a lisp repl, evaluate: `(ql:quickload "thdawn")`, which will fetch all other recursive
+   dependencies from the internet.
 
 ## Run Interactively with a REPL
 1. Install SLIME in emacs https://slime.common-lisp.dev/
