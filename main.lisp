@@ -114,7 +114,7 @@
   (loop for id from 0
     for type across bullet-types
     do (when (not (eq :none type))
-         (draw-texture-rec (txbundle-bullet2 textures) (make-rectangle :x 96 :y 0 :width 16 :height 16) (make-vector2 :x (aref bullet-xs id) :y (aref bullet-ys id)) :raywhite))))
+         (draw-texture-rec (txbundle-bullet2 textures) (make-rectangle :x 96 :y 0 :width 16 :height 16) (vec (aref bullet-xs id) (aref bullet-ys id)) :raywhite))))
 
 (defconstant NUM-ENM 256)
 
