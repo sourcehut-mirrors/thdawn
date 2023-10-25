@@ -1,6 +1,8 @@
 ;; All symbols declared from now on are in the thdawn namespace
 (in-package :thdawn)
 
+(defvar frames 0 "Number of frames the current stage has been running")
+
 ;; Try changing me, then updating the game live in the REPL!
 (defparameter bgcolor :black)
 
@@ -29,11 +31,14 @@
 (defvar bullet-yvs
   (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
   "bullet y velocities")
+(defvar bullet-facing
+  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
+  "bullet facing (degrees). For rendering only. Use velocity for movement.")
 (defvar bullet-control
-  (make-array NUM-BULLETS :element-type '(or null function) :initial-element NIL)
+  (make-array NUM-BULLETS :element-type '(or null function) :initial-element nil)
   "Control function guiding this bullet's movement, called every frame.")
 (defvar bullet-extras
-  (let ((result (make-array NUM-BULLETS)))
+  (let ((result (make-array NUM-BULLETS :element-type '(or null hash-table) :initial-element nil)))
 	(dotimes (i NUM-BULLETS)
 	  (setf (aref result i) (make-hash-table :size 4)))
 	result)
@@ -57,6 +62,54 @@
 
 ;; TODO: Others common control functions we might want (acceleration, deceleration, etc.)
 
+(defun spawn-bullet (type x y xv yv facing control-function)
+  ;; todo: if linear scan for a free slot becomes a concern, can consider implementing a next-fit style pointer, or using a bit-vector
+  (let ((id (position :none bullet-types)))
+	(unless id
+	  (error "No more open bullet slots! Either bullets are not being killed properly or the pattern is too complex"))
+	(setf (aref bullet-types id) type)
+	(setf (aref bullet-xs id) x)
+	(setf (aref bullet-ys id) y)
+	(setf (aref bullet-xvs id) xv)
+	(setf (aref bullet-yvs id) yv)
+	(setf (aref bullet-facing id) facing)
+	(setf (aref bullet-control id) control-function)
+	id))
+
+(defun delete-bullet (id)
+  (when (eq :none (aref bullet-types id))
+	(error "deleting inactive bullet slot"))
+  ;; no need to clean others as they'll be lazily filled by the next spawn call
+  (setf (aref bullet-types id) :none)
+  (setf (aref bullet-control id) nil)
+  (clrhash (aref bullet-extras id)))
+
+;; [31-416] x bounds of playfield in the hud texture
+;; [15-463] y bounds of playfield in the hud texture
+;; idea is to have logical game stuff stored where 0 0 is the top left of the hud texture, and we just offset everything by +31, +15 to render.
+(defconstant playfield-max-x (- 416 31))
+(defconstant playfield-max-y (- 463 15))
+
+(defun despawn-out-of-bound-bullet (id)
+  (let ((type (aref bullet-types id))
+		(x (aref bullet-xs id))
+		(y (aref bullet-ys id)))
+	;; tolerate this, we could be calling this after a bullet's control function kills
+	;; itself
+	(when (and (not (eq :none type))
+			   (or (> x playfield-max-x) ;; todo: fuzz factor
+				   (< x -5) ;;  todo: less hardcoding
+				   (< y -5)
+				   (> y playfield-max-y)))
+	  (delete-bullet id))))
+
+(defun tick-bullets ()
+  (loop for id from 0
+		for type across bullet-types
+		do (when (not (eq :none type))
+			 (funcall (aref bullet-control id) id)
+			 (despawn-out-of-bound-bullet id))))
+
 (defconstant NUM-ENM 256)
 
 ;; Boss management
@@ -66,10 +119,6 @@
 ;; player
 (defvar player-x 0)
 (defvar player-y 0)
-
-;; [31-416] x bounds of playfield in the hud texture
-;; [15-463] y bounds of playfield in the hud texture
-;; idea is to have logical game stuff stored where 0 0 is the top left of the hud texture, and we just offset everything by +31, +15 to render.
 
 (defun handle-input ()
   ;; todo: make this less awful (diagonal normalization, clamping at boundaries, proper velocity, etc.)
@@ -96,8 +145,6 @@
   (stop-music-stream ojamajo-carnival)
   (unload-music-stream ojamajo-carnival))
 
-(defvar frames 0 "Number of frames the current stage has been running")
-
 (defun reset-to (frame)
   "Resets frame counter and music playback to specific frame.
 For use in interactive development."
@@ -115,7 +162,9 @@ For use in interactive development."
 	(load-audio)
 	;; this is in a local variable because using file scope causes segfaults
 	;; in load-texture. Idk why.
-	(let ((hud-texture (load-texture "ryannlib_v1.02/data_assets/THlib/UI/ui_bg.png")))
+	(let ((hud-texture (load-texture "ryannlib_v1.02/data_assets/THlib/UI/ui_bg.png"))
+		  (bullet2-texture
+			(load-texture "ryannlib_v1.02/data_assets/THlib/bullet/bullet2.png")))
 	  (play-music-stream ojamajo-carnival)
 	  (loop
 		(when (window-should-close)
