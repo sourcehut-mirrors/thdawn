@@ -110,6 +110,12 @@
 			 (funcall (aref bullet-control id) id)
 			 (despawn-out-of-bound-bullet id))))
 
+(defun draw-bullets (textures)
+  (loop for id from 0
+    for type across bullet-types
+    do (when (not (eq :none type))
+         (draw-texture-rec (txbundle-bullet2 textures) (make-rectangle :x 96 :y 0 :width 16 :height 16) (make-vector2 :x (aref bullet-xs id) :y (aref bullet-ys id)) :raywhite))))
+
 (defconstant NUM-ENM 256)
 
 ;; Boss management
@@ -150,6 +156,7 @@
   (clear-background bgcolor)
   (draw-circle (+ player-x 31) (+ player-y 15) 8.0 :raywhite)
   (draw-texture (txbundle-hud textures) 0 0 :raywhite)
+  (draw-bullets textures)
   (draw-fps 10 10))
 
 (defvar ojamajo-carnival nil)
