@@ -131,10 +131,22 @@
   (when (is-key-down :key-down)
 	(incf player-y 3)))
 
-(defun render-all (hud-texture)
+(defstruct txbundle
+  "Bundle of loaded texture objects, because using globals causes segfaults somehow"
+  hud
+  bullet2)
+(defun load-textures ()
+  (make-txbundle
+   :hud (load-texture "ryannlib_v1.02/data_assets/THlib/UI/ui_bg.png")
+   :bullet2 (load-texture "ryannlib_v1.02/data_assets/THlib/bullet/bullet2.png")))
+(defun unload-textures (textures)
+  (unload-texture (txbundle-hud textures))
+  (unload-texture (txbundle-bullet2 textures)))
+
+(defun render-all (textures)
   (clear-background bgcolor)
   (draw-circle (+ player-x 31) (+ player-y 15) 8.0 :raywhite)
-  (draw-texture hud-texture 0 0 :raywhite)
+  (draw-texture (txbundle-hud textures) 0 0 :raywhite)
   (draw-fps 10 10))
 
 (defvar ojamajo-carnival nil)
@@ -160,11 +172,7 @@ For use in interactive development."
 	(set-target-fps 60)
 	(set-exit-key 0)
 	(load-audio)
-	;; this is in a local variable because using file scope causes segfaults
-	;; in load-texture. Idk why.
-	(let ((hud-texture (load-texture "ryannlib_v1.02/data_assets/THlib/UI/ui_bg.png"))
-		  (bullet2-texture
-			(load-texture "ryannlib_v1.02/data_assets/THlib/bullet/bullet2.png")))
+	(let ((textures (load-textures)))
 	  (play-music-stream ojamajo-carnival)
 	  (loop
 		(when (window-should-close)
@@ -172,7 +180,8 @@ For use in interactive development."
 		(update-music-stream ojamajo-carnival)
 		(handle-input)
 		(with-drawing
-		  (render-all hud-texture))
+		  (render-all textures))
 		(incf frames))
 	  (unload-audio)
-	  (unload-texture hud-texture))))
+	  (unload-textures textures)
+	  )))
