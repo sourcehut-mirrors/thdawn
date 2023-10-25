@@ -129,7 +129,10 @@
   (when (is-key-down :key-up)
 	(incf player-y -3))
   (when (is-key-down :key-down)
-	(incf player-y 3)))
+	(incf player-y 3))
+  (when (is-key-down :key-space)
+  (spawn-bullet 0 player-x (+ player-y 10) 0 5 0 :bullet-control-linear))
+  )
 
 (defstruct txbundle
   "Bundle of loaded texture objects, because using globals causes segfaults somehow"
@@ -160,7 +163,16 @@
 (defun reset-to (frame)
   "Resets frame counter and music playback to specific frame.
 For use in interactive development."
-  ;; todo also kill all enemies and bullets?
+  ;; todo also kill all enemies
+
+  (fill bullet-types :none)
+  (fill bullet-colors :white)
+  (fill bullet-xs 0.0)
+  (fill bullet-ys 0.0)
+  (fill bullet-xvs 0.0)
+  (fill bullet-yvs 0.0)
+  (fill bullet-control nil)
+  (fill bullet-facing 0.0)
   (setf frames frame)
   (seek-music-stream ojamajo-carnival (/ frame 60.0)))
 
