@@ -133,7 +133,60 @@
 		   :raywhite))
 		 (:none t))))
 
+;; Non-boss enemies. Uses SOA/separate dense typed arrays for performance
+;; NB: Why no velocity? Because most enemies are going to be moving in different, custom
+;; ways, so a single velocity system applied to all the enemies at the same time doesn't
+;; make sense.
 (defconstant NUM-ENM 256)
+(defvar enm-types
+  (make-array NUM-ENM :element-type 'keyword :initial-element :none)
+  "enemy types, :none means this slot is empty and represents no enemy")
+(defvar enm-xs
+  (make-array NUM-ENM :element-type 'float :initial-element 0.0)
+  "enemy x positions")
+(defvar enm-ys
+  (make-array NUM-ENM :element-type 'float :initial-element 0.0)
+  "enemy y positions")
+(defvar enm-health
+  (make-array NUM-ENM :element-type 'float :initial-element 0.0)
+  "enemy health values")
+(defvar enm-control
+  (make-array NUM-ENM :element-type '(or null function) :initial-element nil)
+  "Control function guiding this enemy, called every frame.")
+(defvar enm-extras
+  (let ((result (make-array NUM-ENM :element-type '(or null hash-table) :initial-element nil)))
+	(dotimes (i NUM-ENM)
+	  (setf (aref result i) (make-hash-table :size 4)))
+	result)
+  "Auxiliary hashtable of any data the enemy need to store. If something's very commonly used across many enemies, it should get its own array.")
+
+(defun spawn-enemy (type x y health control-function)
+  ;; todo: if linear scan for a free slot becomes a concern, can consider implementing a next-fit style pointer, or using a bit-vector
+  (let ((id (position :none enm-types)))
+	(unless id
+	  (error "No more open enemy slots!"))
+	(setf (aref enm-types id) type)
+	(setf (aref enm-xs id) x)
+	(setf (aref enm-ys id) y)
+	(setf (aref enm-health id) health)
+	(setf (aref enm-control id) control-function)
+	id))
+
+(defun delete-enemy (id)
+  (when (eq :none (aref enm-types id))
+	(error "deleting inactive enemy slot"))
+  ;; no need to clean others as they'll be lazily filled by the next spawn call
+  (setf (aref enm-types id) :none)
+  (setf (aref enm-control id) nil)
+  (clrhash (aref enm-extras id)))
+
+(defun tick-enemies ()
+  (loop for id from 0
+		for type across enm-types
+		do (when (not (eq :none type))
+			 (funcall (aref enm-control id) id)
+			 (when (<= (aref enm-health id) 0)
+			   (delete-enemy id)))))
 
 ;; Boss management
 
@@ -150,13 +203,13 @@
   ;; todo: make this less awful (diagonal normalization, proper velocity, etc.)
   ;; level triggered stuff
   (when (is-key-down :key-left)
-	  (incf player-xv -1))
-	(when (is-key-down :key-right)
-	  (incf player-xv 1))
-	(when (is-key-down :key-up)
-	  (incf player-yv -1))
-	(when (is-key-down :key-down)
-	  (incf player-yv 1))
+	(incf player-xv -1))
+  (when (is-key-down :key-right)
+	(incf player-xv 1))
+  (when (is-key-down :key-up)
+	(incf player-yv -1))
+  (when (is-key-down :key-down)
+	(incf player-yv 1))
 
   ;; edge triggered stuff
   (loop for k = (get-key-pressed) then (get-key-pressed)
@@ -170,21 +223,19 @@
 			  ))))
 
 (defun handle-player-movement ()
-  (when (not (and (eq player-xv 0.0) (eq player-yv 0.0)))
+  (when (not (and (zerop player-xv) (zerop player-yv)))
     (let* ((delta-time (get-frame-time))
            (velocity (* player-speed delta-time))
            (normalized-direction (vunit (vec player-xv player-yv)))
            (acceleration (v* normalized-direction velocity))
            (new-x (+ player-x (vx acceleration)))
            (new-y (+ player-y (vy acceleration))))
+	  ;; todo: refine this so that you can bottomdrag instead of not moving at all
       (when (not (or (> new-x playfield-max-x) (> new-y playfield-max-y) (< new-y -5) (< new-x -5)))
         (setf player-x new-x)
-        (setf player-y new-y))
-      ())
+        (setf player-y new-y)))
     (setf player-xv 0.0)
-    (setf player-yv 0.0)
-    )
-  )
+    (setf player-yv 0.0)))
 
 (defstruct txbundle
   "Bundle of loaded texture objects, because using globals causes segfaults somehow"
@@ -286,7 +337,7 @@ For use in interactive development."
 		  (return))
 		(update-music-stream ojamajo-carnival)
 		(handle-input)
-    (handle-player-movement)
+		(handle-player-movement)
 		(tick-bullets)
 		(with-drawing
 		  (render-all textures))
