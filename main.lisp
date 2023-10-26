@@ -142,6 +142,7 @@
 
 (defun handle-input ()
   ;; todo: make this less awful (diagonal normalization, clamping at boundaries, proper velocity, etc.)
+  ;; level triggered stuff
   (when (is-key-down :key-left)
 	(incf player-x -3))
   (when (is-key-down :key-right)
@@ -150,11 +151,15 @@
 	(incf player-y -3))
   (when (is-key-down :key-down)
 	(incf player-y 3))
-  (when (is-key-down :key-space)
-	(spawn-bullet :pellet-white
-				  player-x
-				  (+ player-y 10) 0 5 0 'bullet-control-linear))
-  )
+
+  ;; edge triggered stuff
+  (loop for k = (get-key-pressed) then (get-key-pressed)
+		while (not (eq :key-null k))
+		do (case k
+			 (:key-space
+			  (spawn-bullet :pellet-white
+							player-x
+							(+ player-y 10) 0 -5 0 'bullet-control-linear)))))
 
 (defstruct txbundle
   "Bundle of loaded texture objects, because using globals causes segfaults somehow"
@@ -174,7 +179,10 @@
 			   (+ player-y playfield-render-offset-y) 8.0 :raywhite)
   (draw-texture (txbundle-hud textures) 0 0 :raywhite)
   (draw-bullets textures)
-  (draw-fps 10 10))
+  (draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count :none bullet-types)))
+			 550 425
+			 18 :raywhite)
+  (draw-fps 550 450))
 
 (defvar ojamajo-carnival nil)
 (defun load-audio ()
@@ -215,6 +223,7 @@ For use in interactive development."
 		  (return))
 		(update-music-stream ojamajo-carnival)
 		(handle-input)
+		(tick-bullets)
 		(with-drawing
 		  (render-all textures))
 		(incf frames))
