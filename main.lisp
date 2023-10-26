@@ -87,6 +87,8 @@
 ;; [31-416] x bounds of playfield in the hud texture
 ;; [15-463] y bounds of playfield in the hud texture
 ;; idea is to have logical game stuff stored where 0 0 is the top left of the hud texture, and we just offset everything by +31, +15 to render.
+(defconstant playfield-render-offset-x 31)
+(defconstant playfield-render-offset-y 15)
 (defconstant playfield-max-x (- 416 31))
 (defconstant playfield-max-y (- 463 15))
 
@@ -111,10 +113,22 @@
 			 (despawn-out-of-bound-bullet id))))
 
 (defun draw-bullets (textures)
-  (loop for id from 0
-    for type across bullet-types
-    do (when (not (eq :none type))
-         (draw-texture-rec (txbundle-bullet2 textures) (make-rectangle :x 96 :y 0 :width 16 :height 16) (vec (aref bullet-xs id) (aref bullet-ys id)) :raywhite))))
+  (loop
+	for id from 0
+	for type across bullet-types
+	for x across bullet-xs
+	for y across bullet-ys
+	for render-x = (+ x playfield-render-offset-x)
+	for render-y = (+ y playfield-render-offset-y)
+	do (case type
+		 (:pellet-white
+		  (draw-texture-rec
+		   (txbundle-bullet2 textures)
+		   (make-rectangle :x 176 :y 224 :width 16 :height 16)
+		   (vec (- render-x 8)
+				(- render-y 8)) ;; center texture onto the position
+			:raywhite))
+		 (:none t))))
 
 (defconstant NUM-ENM 256)
 
@@ -137,7 +151,9 @@
   (when (is-key-down :key-down)
 	(incf player-y 3))
   (when (is-key-down :key-space)
-  (spawn-bullet 0 player-x (+ player-y 10) 0 5 0 :bullet-control-linear))
+	(spawn-bullet :pellet-white
+				  player-x
+				  (+ player-y 10) 0 5 0 'bullet-control-linear))
   )
 
 (defstruct txbundle
@@ -154,7 +170,8 @@
 
 (defun render-all (textures)
   (clear-background bgcolor)
-  (draw-circle (+ player-x 31) (+ player-y 15) 8.0 :raywhite)
+  (draw-circle (+ player-x playfield-render-offset-x)
+			   (+ player-y playfield-render-offset-y) 8.0 :raywhite)
   (draw-texture (txbundle-hud textures) 0 0 :raywhite)
   (draw-bullets textures)
   (draw-fps 10 10))
