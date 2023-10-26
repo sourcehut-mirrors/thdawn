@@ -152,7 +152,7 @@
   "enemy health values")
 (defvar enm-control
   (make-array NUM-ENM :element-type '(or null function) :initial-element nil)
-  "Control function guiding this enemy, called every frame.")
+  "Control function guiding this enemy, called every frame. Can be a coroutine, but the coroutine must never exit, only yield. To exit, delete the enemy.")
 (defvar enm-extras
   (let ((result (make-array NUM-ENM :element-type '(or null hash-table) :initial-element nil)))
 	(dotimes (i NUM-ENM)
@@ -200,7 +200,6 @@
 (defvar player-yv 0.0)
 
 (defun handle-input ()
-  ;; todo: make this less awful (diagonal normalization, proper velocity, etc.)
   ;; level triggered stuff
   (when (is-key-down :key-left)
 	(incf player-xv -1))
@@ -225,7 +224,7 @@
 (defun handle-player-movement ()
   (when (not (and (zerop player-xv) (zerop player-yv)))
     (let* ((delta-time (get-frame-time))
-           (velocity (* player-speed delta-time))
+           (velocity (* player-speed delta-time (if (is-key-down :key-left-shift) 0.5 1)))
            (normalized-direction (vunit (vec player-xv player-yv)))
            (acceleration (v* normalized-direction velocity))
            (new-x (+ player-x (vx acceleration)))
