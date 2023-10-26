@@ -140,8 +140,8 @@
 ;; Stage sequencing
 
 ;; player
-(defvar player-x 0)
-(defvar player-y 0)
+(defvar player-x (round (/ (- playfield-max-x playfield-min-x) 2)))
+(defvar player-y (- playfield-max-y 10))
 
 (defun handle-input ()
   ;; todo: make this less awful (diagonal normalization, clamping at boundaries, proper velocity, etc.)
