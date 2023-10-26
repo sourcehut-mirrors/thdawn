@@ -130,7 +130,7 @@
 		   (make-rectangle :x 176 :y 224 :width 16 :height 16)
 		   (vec (- render-x 8)
 				(- render-y 8)) ;; center texture onto the position
-			:raywhite))
+		   :raywhite))
 		 (:none t))))
 
 (defconstant NUM-ENM 256)
@@ -166,7 +166,9 @@
 			 (:key-space
 			  (spawn-bullet :pellet-white
 							player-x
-							(+ player-y 10) 0 -5 0 'bullet-control-linear)))))
+							(+ player-y 10) 0 -5 0 'bullet-control-linear)
+			  (play-sound (sebundle-shoot0 sounds))
+			  ))))
 
 (defstruct txbundle
   "Bundle of loaded texture objects, because using globals causes segfaults somehow"
@@ -179,6 +181,43 @@
 (defun unload-textures (textures)
   (unload-texture (txbundle-hud textures))
   (unload-texture (txbundle-bullet2 textures)))
+
+(defstruct sebundle
+  "Bundle of loaded sound effects"
+  spellcapture spelldeclare
+  longcharge shortcharge
+  enmdie bossdie
+  shoot0 shoot1 shoot2
+  extend graze bell
+  oldvwoopfast oldvwoopslow
+  pause menuselect
+  timeout timeoutwarn)
+(defvar sounds nil)
+(defun load-sfx ()
+  (flet ((lsfx (file) (load-sound (concatenate 'string "assets/sfx/" file))))
+	(setf sounds
+		  (make-sebundle
+		   :spellcapture (lsfx "se_cardget.wav")
+		   :spelldeclare (lsfx "se_cat00.wav")
+		   :longcharge (lsfx "se_ch00.wav")
+		   :shortcharge (lsfx "se_ch02.wav")
+		   :enmdie (lsfx "se_enep00.wav")
+		   :bossdie (lsfx "se_enep01.wav")
+		   :shoot0 (lsfx "se_tan00.wav")
+		   :shoot1 (lsfx "se_tan01.wav")
+		   :shoot2 (lsfx "se_tan02.wav")
+		   :extend (lsfx "se_extend.wav")
+		   :graze (lsfx "se_graze.wav")
+		   :bell (lsfx "se_kira00.wav")
+		   :oldvwoopfast (lsfx "se_power1.wav")
+		   :oldvwoopslow (lsfx "se_power2.wav")
+		   :pause (lsfx "se_pause.wav")
+		   :menuselect (lsfx "se_select00.wav")
+		   :timeout (lsfx "se_timeout.wav")
+		   :timeoutwarn (lsfx "se_timeout2.wav")))))
+(defun unload-sfx ()
+  ;; meh, todo.
+  )
 
 (defun render-all (textures)
   (clear-background bgcolor)
@@ -223,6 +262,7 @@ For use in interactive development."
 	(set-target-fps 60)
 	(set-exit-key 0)
 	(load-audio)
+	(load-sfx)
 	(let ((textures (load-textures)))
 	  (play-music-stream ojamajo-carnival)
 	  (loop
@@ -236,4 +276,4 @@ For use in interactive development."
 		(incf frames))
 	  (unload-audio)
 	  (unload-textures textures)
-	  )))
+	  (unload-sfx))))
