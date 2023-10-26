@@ -89,8 +89,11 @@
 ;; idea is to have logical game stuff stored where 0 0 is the top left of the hud texture, and we just offset everything by +31, +15 to render.
 (defconstant playfield-render-offset-x 31)
 (defconstant playfield-render-offset-y 15)
-(defconstant playfield-max-x (- 416 31))
-(defconstant playfield-max-y (- 463 15))
+(defconstant playfield-min-x 0)
+(defconstant playfield-min-y 0)
+(defconstant playfield-max-x 385)
+(defconstant playfield-max-y 448)
+(defconstant oob-bullet-despawn-fuzz 10)
 
 (defun despawn-out-of-bound-bullet (id)
   (let ((type (aref bullet-types id))
@@ -99,10 +102,10 @@
 	;; tolerate this, we could be calling this after a bullet's control function kills
 	;; itself
 	(when (and (not (eq :none type))
-			   (or (> x playfield-max-x) ;; todo: fuzz factor
-				   (< x -5) ;;  todo: less hardcoding
-				   (< y -5)
-				   (> y playfield-max-y)))
+			   (or (> x (+ playfield-max-x oob-bullet-despawn-fuzz))
+				   (< x (- playfield-min-x oob-bullet-despawn-fuzz))
+				   (< y (- playfield-min-y oob-bullet-despawn-fuzz))
+				   (> y (+ playfield-max-y oob-bullet-despawn-fuzz))))
 	  (delete-bullet id))))
 
 (defun tick-bullets ()
@@ -177,8 +180,8 @@
   (clear-background bgcolor)
   (draw-circle (+ player-x playfield-render-offset-x)
 			   (+ player-y playfield-render-offset-y) 8.0 :raywhite)
-  (draw-texture (txbundle-hud textures) 0 0 :raywhite)
   (draw-bullets textures)
+  (draw-texture (txbundle-hud textures) 0 0 :raywhite)
   (draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count :none bullet-types)))
 			 550 425
 			 18 :raywhite)
