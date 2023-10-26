@@ -142,22 +142,21 @@
 ;; player
 (defvar player-x (/ (- playfield-max-x playfield-min-x) 2))
 (defvar player-y (- playfield-max-y 10))
+(defvar player-speed 200)
+(defvar player-xv 0.0)
+(defvar player-yv 0.0)
 
 (defun handle-input ()
   ;; todo: make this less awful (diagonal normalization, proper velocity, etc.)
   ;; level triggered stuff
-  (let ((dist-from-left (- player-x playfield-min-x))
-		(dist-from-right (- playfield-max-x player-x))
-		(dist-from-bot (- playfield-max-y player-y))
-		(dist-from-top (- player-y playfield-min-y)))
-	(when (is-key-down :key-left)
-	  (incf player-x (- (min 3 dist-from-left))))
+  (when (is-key-down :key-left)
+	  (incf player-xv -1))
 	(when (is-key-down :key-right)
-	  (incf player-x (min 3 dist-from-right)))
+	  (incf player-xv 1))
 	(when (is-key-down :key-up)
-	  (incf player-y (- (min 3 dist-from-top))))
+	  (incf player-yv -1))
 	(when (is-key-down :key-down)
-	  (incf player-y (min 3 dist-from-bot))))
+	  (incf player-yv 1))
 
   ;; edge triggered stuff
   (loop for k = (get-key-pressed) then (get-key-pressed)
@@ -169,6 +168,23 @@
 							(+ player-y 10) 0 -5 0 'bullet-control-linear)
 			  (play-sound (sebundle-shoot0 sounds))
 			  ))))
+
+(defun handle-player-movement ()
+  (when (not (and (eq player-xv 0.0) (eq player-yv 0.0)))
+    (let* ((delta-time (get-frame-time))
+           (acceleration (* player-speed delta-time))
+           (new-vx (* player-xv acceleration))
+           (new-vy (* player-yv acceleration))
+           (new-x (+ player-x (truncate new-vx)))
+           (new-y (+ player-y (truncate new-vy))))
+      (when (not (or (> new-x playfield-max-x) (> new-y playfield-max-y) (< new-y -5) (< new-x -5)))
+        (setf player-x new-x)
+        (setf player-y new-y))
+      delta-time)
+    (setf player-xv 0.0)
+    (setf player-yv 0.0)
+    )
+  )
 
 (defstruct txbundle
   "Bundle of loaded texture objects, because using globals causes segfaults somehow"
@@ -270,6 +286,7 @@ For use in interactive development."
 		  (return))
 		(update-music-stream ojamajo-carnival)
 		(handle-input)
+    (handle-player-movement)
 		(tick-bullets)
 		(with-drawing
 		  (render-all textures))
