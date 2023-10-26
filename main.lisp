@@ -140,7 +140,7 @@
 ;; Stage sequencing
 
 ;; player
-(defvar player-x (round (/ (- playfield-max-x playfield-min-x) 2)))
+(defvar player-x (/ (- playfield-max-x playfield-min-x) 2))
 (defvar player-y (- playfield-max-y 10))
 
 (defun handle-input ()
@@ -182,8 +182,8 @@
 
 (defun render-all (textures)
   (clear-background bgcolor)
-  (draw-circle (+ player-x playfield-render-offset-x)
-			   (+ player-y playfield-render-offset-y) 8.0 :raywhite)
+  (draw-circle (round (+ player-x playfield-render-offset-x))
+			   (round (+ player-y playfield-render-offset-y)) 8.0 :raywhite)
   (draw-bullets textures)
   (draw-texture (txbundle-hud textures) 0 0 :raywhite)
   (draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count :none bullet-types)))
