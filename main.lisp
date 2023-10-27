@@ -147,6 +147,11 @@
 (defvar enm-ys
   (make-array NUM-ENM :element-type 'float :initial-element 0.0)
   "enemy y positions")
+(defvar enm-facing
+  (make-array NUM-ENM :element-type 'keyword :initial-element :forward)
+  ;; todo doesn't capture how "turned" the enemy is. for now we'll
+  ;; use the most turned sprite
+  "which way the enemy's sprite should face, left, right, or forward. not applicable to all enemies.")
 (defvar enm-health
   (make-array NUM-ENM :element-type 'float :initial-element 0.0)
   "enemy health values")
@@ -186,6 +191,7 @@
 		do (when (not (eq :none type))
 			 (funcall (aref enm-control id) id)
 			 (when (<= (aref enm-health id) 0)
+			   ;; todo sfx
 			   (delete-enemy id)))))
 
 (defun force-clear-bullet-and-enemy ()
@@ -193,6 +199,38 @@
   (fill enm-control nil)
   (fill bullet-types :none)
   (fill bullet-control nil))
+
+(defun draw-enemies (textures)
+  (loop
+	for id from 0
+	for type across enm-types
+	for x across enm-xs
+	for y across enm-ys
+	for render-x = (+ x playfield-render-offset-x)
+	for render-y = (+ y playfield-render-offset-y)
+	do (case type
+		 (:red-fairy
+		  (draw-texture-rec
+		   (txbundle-enemy1 textures)
+		   (make-rectangle :x 0 :y 384 :width 32 :height 32)
+		   (vec (- render-x 16) (- render-y 16))
+		   :raywhite))
+		 (:none t))))
+
+;; 
+
+(defcoroutine stationary-shoot-at-player (id)
+  (loop
+	(when (zerop (mod frames 120))
+	  (let* ((pos (vec (aref enm-xs id) (aref enm-ys id)))
+			 (player-pos (vec player-x player-y))
+			 (dir (nvscale (nvunit (v- player-pos pos)) 3.0)))
+		(spawn-bullet :pellet-white
+					  (vx pos) (vy pos)
+					  (vx dir) (vy dir)
+					  0 'bullet-control-linear)
+		(play-sound (sebundle-shoot0 sounds))))
+	(yield)))
 
 ;; Boss management
 
@@ -223,6 +261,9 @@
 			 (:key-z t) ;; todo shooting
 			 (:key-x t) ;; todo (maybe) bombing
 			 (:key-space
+			  (spawn-enemy :red-fairy
+						   player-x
+						   (- player-y 10) 50 (make-coroutine 'stationary-shoot-at-player))
 			  (spawn-bullet :pellet-white
 							player-x
 							(+ player-y 10) 0 -5 0 'bullet-control-linear)
@@ -321,6 +362,7 @@
 	   (vec 0.0 0.0)
 	   (make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
 	  (rlgl:pop-matrix)))
+  (draw-enemies textures)
   (draw-bullets textures)
   (draw-texture (txbundle-hud textures) 0 0 :raywhite)
   (draw-text (format nil "ENM: ~d" (- NUM-ENM (count :none enm-types)))
@@ -364,6 +406,7 @@ For use in interactive development."
 		(handle-input)
 		(handle-player-movement)
 		(tick-bullets)
+		(tick-enemies)
 		(with-drawing
 		  (render-all textures))
 		(incf frames))
