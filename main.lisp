@@ -188,6 +188,12 @@
 			 (when (<= (aref enm-health id) 0)
 			   (delete-enemy id)))))
 
+(defun force-clear-bullet-and-enemy ()
+  (fill enm-types :none)
+  (fill enm-control nil)
+  (fill bullet-types :none)
+  (fill bullet-control nil))
+
 ;; Boss management
 
 ;; Stage sequencing
@@ -214,12 +220,14 @@
   (loop for k = (get-key-pressed) then (get-key-pressed)
 		while (not (eq :key-null k))
 		do (case k
+			 (:key-z t) ;; todo shooting
+			 (:key-x t) ;; todo (maybe) bombing
 			 (:key-space
 			  (spawn-bullet :pellet-white
 							player-x
 							(+ player-y 10) 0 -5 0 'bullet-control-linear)
-			  (play-sound (sebundle-shoot0 sounds))
-			  ))))
+			  (play-sound (sebundle-shoot0 sounds)))
+			 (:key-y (force-clear-bullet-and-enemy)))))
 
 (defun handle-player-movement ()
   (when (not (and (zerop player-xv) (zerop player-yv)))
@@ -334,10 +342,7 @@
 (defun reset-to (frame)
   "Resets frame counter and music playback to specific frame.
 For use in interactive development."
-  (fill enm-types :none)
-  (fill enm-control nil)
-  (fill bullet-types :none)
-  (fill bullet-control nil)
+  (force-clear-bullet-and-enemy)
   (setf frames frame)
   (seek-music-stream ojamajo-carnival (/ frame 60.0)))
 
