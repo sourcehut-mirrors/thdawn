@@ -193,8 +193,8 @@
 ;; Stage sequencing
 
 ;; player
-(defvar player-x (/ (- playfield-max-x playfield-min-x) 2))
-(defvar player-y (- playfield-max-y 10))
+(defvar player-x (/ (- playfield-max-x playfield-min-x) 2.0))
+(defvar player-y (- playfield-max-y 10.0))
 (defvar player-speed 200)
 (defvar player-xv 0.0)
 (defvar player-yv 0.0)
@@ -291,12 +291,33 @@
   ;; meh, todo.
   )
 
+(defvar focus-sigil-strength 0.0)
 (defun render-all (textures)
   (clear-background bgcolor)
-  (draw-circle (round (+ player-x playfield-render-offset-x))
-			   (round (+ player-y playfield-render-offset-y)) 8.0 :raywhite)
+  (let* ((render-player-x (+ player-x playfield-render-offset-x))
+		 (render-player-y (+ player-y playfield-render-offset-y)))
+	(draw-circle (round render-player-x) (round render-player-y) 2.0 :raywhite)
+	(if (is-key-down :key-left-shift)
+		(when (< focus-sigil-strength 1.0)
+		  (incf focus-sigil-strength 0.1))
+		(when (> focus-sigil-strength 0.0)
+		  (decf focus-sigil-strength 0.1)))
+	(when (> focus-sigil-strength 0.0)
+	  (rlgl:push-matrix)
+	  (rlgl:translate-f render-player-x render-player-y 0.0) ;; move to where we are
+	  (rlgl:rotate-f (mod frames 360.0) 0.0 0.0 1.0) ;; spin
+	  (rlgl:translate-f -32.0 -32.0 0.0) ;; center the texture center onto 0,0
+	  (draw-texture-rec
+	   (txbundle-misc textures)
+	   (make-rectangle :x 128 :y 0 :width 64 :height 64)
+	   (vec 0.0 0.0)
+	   (make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
+	  (rlgl:pop-matrix)))
   (draw-bullets textures)
   (draw-texture (txbundle-hud textures) 0 0 :raywhite)
+  (draw-text (format nil "ENM: ~d" (- NUM-ENM (count :none enm-types)))
+			 550 400
+			 18 :raywhite)
   (draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count :none bullet-types)))
 			 550 425
 			 18 :raywhite)
