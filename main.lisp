@@ -238,15 +238,21 @@
 
 (defstruct txbundle
   "Bundle of loaded texture objects, because using globals causes segfaults somehow"
+  enemy1
   hud
+  misc
   bullet2)
 (defun load-textures ()
   (make-txbundle
+   :enemy1 (load-texture "assets/img/enemy1.png")
    :hud (load-texture "assets/img/ui_bg.png")
+   :misc (load-texture "assets/img/misc.png")
    :bullet2 (load-texture "assets/img/bullet2.png")))
 (defun unload-textures (textures)
   (unload-texture (txbundle-hud textures))
-  (unload-texture (txbundle-bullet2 textures)))
+  (unload-texture (txbundle-bullet2 textures))
+  (unload-texture (txbundle-enemy1 textures))
+  (unload-texture (txbundle-misc textures)))
 
 (defstruct sebundle
   "Bundle of loaded sound effects"
@@ -307,16 +313,10 @@
 (defun reset-to (frame)
   "Resets frame counter and music playback to specific frame.
 For use in interactive development."
-  ;; todo also kill all enemies
-
+  (fill enm-types :none)
+  (fill enm-control nil)
   (fill bullet-types :none)
-  (fill bullet-colors :white)
-  (fill bullet-xs 0.0)
-  (fill bullet-ys 0.0)
-  (fill bullet-xvs 0.0)
-  (fill bullet-yvs 0.0)
   (fill bullet-control nil)
-  (fill bullet-facing 0.0)
   (setf frames frame)
   (seek-music-stream ojamajo-carnival (/ frame 60.0)))
 
