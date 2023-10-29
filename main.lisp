@@ -221,7 +221,7 @@
 
 (defcoroutine stationary-shoot-at-player (id)
   (loop
-	(when (zerop (mod frames 120))
+	(when (zerop (mod frames 25))
 	  (let* ((pos (vec (aref enm-xs id) (aref enm-ys id)))
 			 (player-pos (vec player-x player-y))
 			 (dir (nvscale (nvunit (v- player-pos pos)) 3.0)))
@@ -233,6 +233,9 @@
 	(yield)))
 
 ;; Boss management
+(defvar current-boss-name nil)
+(defvar current-spell-name nil)
+(defvar current-boss-timer-frames 0.0) ;; will be converted to seconds for display
 
 ;; Stage sequencing
 
@@ -285,19 +288,52 @@
     (setf player-xv 0.0)
     (setf player-yv 0.0)))
 
+(defvar focus-sigil-strength 0.0)
+(defun draw-player (textures)
+  (let* ((render-player-x (+ player-x playfield-render-offset-x))
+		 (render-player-y (+ player-y playfield-render-offset-y)))
+	;; player sprite (todo: directional moving sprites)
+	(let ((x-texture-index (truncate (mod (/ frames 9) 8))))
+	  (draw-texture-rec
+	   (txbundle-reimu textures)
+	   (make-rectangle :x (* 32 x-texture-index) :y 0 :width 32 :height 48)
+	   (vec (- render-player-x 16) (- render-player-y 25))
+	   :raywhite))
+	
+	;; focus sigil
+	(if (is-key-down :key-left-shift)
+		(when (< focus-sigil-strength 1.0)
+		  (incf focus-sigil-strength 0.1))
+		(when (> focus-sigil-strength 0.0)
+		  (decf focus-sigil-strength 0.1)))
+	(when (> focus-sigil-strength 0.0)
+	  (rlgl:push-matrix)
+	  (rlgl:translate-f render-player-x render-player-y 0.0) ;; move to where we are
+	  (rlgl:rotate-f (mod frames 360.0) 0.0 0.0 1.0) ;; spin
+	  (rlgl:translate-f -32.0 -32.0 0.0) ;; center the texture center onto 0,0
+	  (draw-texture-rec
+	   (txbundle-misc textures)
+	   (make-rectangle :x 128 :y 0 :width 64 :height 64)
+	   (vec 0.0 0.0)
+	   (make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
+	  (rlgl:pop-matrix))))
+
 (defstruct txbundle
   "Bundle of loaded texture objects, because using globals causes segfaults somehow"
+  reimu
   enemy1
   hud
   misc
   bullet2)
 (defun load-textures ()
   (make-txbundle
+   :reimu (load-texture "assets/img/reimu.png")
    :enemy1 (load-texture "assets/img/enemy1.png")
    :hud (load-texture "assets/img/ui_bg.png")
    :misc (load-texture "assets/img/misc.png")
    :bullet2 (load-texture "assets/img/bullet2.png")))
 (defun unload-textures (textures)
+  (unload-texture (txbundle-reimu textures))
   (unload-texture (txbundle-hud textures))
   (unload-texture (txbundle-bullet2 textures))
   (unload-texture (txbundle-enemy1 textures))
@@ -340,30 +376,13 @@
   ;; meh, todo.
   )
 
-(defvar focus-sigil-strength 0.0)
 (defun render-all (textures)
   (clear-background bgcolor)
-  (let* ((render-player-x (+ player-x playfield-render-offset-x))
-		 (render-player-y (+ player-y playfield-render-offset-y)))
-	(draw-circle (round render-player-x) (round render-player-y) 2.0 :raywhite)
-	(if (is-key-down :key-left-shift)
-		(when (< focus-sigil-strength 1.0)
-		  (incf focus-sigil-strength 0.1))
-		(when (> focus-sigil-strength 0.0)
-		  (decf focus-sigil-strength 0.1)))
-	(when (> focus-sigil-strength 0.0)
-	  (rlgl:push-matrix)
-	  (rlgl:translate-f render-player-x render-player-y 0.0) ;; move to where we are
-	  (rlgl:rotate-f (mod frames 360.0) 0.0 0.0 1.0) ;; spin
-	  (rlgl:translate-f -32.0 -32.0 0.0) ;; center the texture center onto 0,0
-	  (draw-texture-rec
-	   (txbundle-misc textures)
-	   (make-rectangle :x 128 :y 0 :width 64 :height 64)
-	   (vec 0.0 0.0)
-	   (make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
-	  (rlgl:pop-matrix)))
+  (draw-player textures)
+
   (draw-enemies textures)
   (draw-bullets textures)
+  
   (draw-texture (txbundle-hud textures) 0 0 :raywhite)
   (draw-text (format nil "ENM: ~d" (- NUM-ENM (count :none enm-types)))
 			 550 400
