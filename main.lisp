@@ -220,7 +220,7 @@
 					  (vx pos) (vy pos)
 					  (vx dir) (vy dir)
 					  0 'bullet-control-linear)
-		(play-sound (sebundle-shoot0 sounds))))
+		(raylib:play-sound (sebundle-shoot0 sounds))))
 	(yield)))
 
 ;; Boss management
@@ -239,17 +239,17 @@
 
 (defun handle-input ()
   ;; level triggered stuff
-  (when (is-key-down :key-left)
+  (when (raylib:is-key-down :key-left)
 	(incf player-xv -1))
-  (when (is-key-down :key-right)
+  (when (raylib:is-key-down :key-right)
 	(incf player-xv 1))
-  (when (is-key-down :key-up)
+  (when (raylib:is-key-down :key-up)
 	(incf player-yv -1))
-  (when (is-key-down :key-down)
+  (when (raylib:is-key-down :key-down)
 	(incf player-yv 1))
 
   ;; edge triggered stuff
-  (loop for k = (get-key-pressed) then (get-key-pressed)
+  (loop for k = (raylib:get-key-pressed) then (raylib:get-key-pressed)
 		while (not (eq :key-null k))
 		do (case k
 			 (:key-z t) ;; todo shooting
@@ -261,13 +261,13 @@
 			  (spawn-bullet :pellet-white
 							player-x
 							(+ player-y 10) 0 -5 0 'bullet-control-linear)
-			  (play-sound (sebundle-shoot0 sounds)))
+			  (raylib:play-sound (sebundle-shoot0 sounds)))
 			 (:key-y (force-clear-bullet-and-enemy)))))
 
 (defun handle-player-movement ()
   (when (not (and (zerop player-xv) (zerop player-yv)))
-    (let* ((delta-time (get-frame-time))
-           (velocity (* player-speed delta-time (if (is-key-down :key-left-shift) 0.5 1)))
+    (let* ((delta-time (raylib:get-frame-time))
+           (velocity (* player-speed delta-time (if (raylib:is-key-down :key-left-shift) 0.5 1)))
            (normalized-direction (vunit (vec player-xv player-yv)))
            (acceleration (v* normalized-direction velocity))
            (new-x (+ player-x (vx acceleration)))
@@ -285,14 +285,14 @@
 		 (render-player-y (+ player-y playfield-render-offset-y)))
 	;; player sprite (todo: directional moving sprites)
 	(let ((x-texture-index (truncate (mod (/ frames 9) 8))))
-	  (draw-texture-rec
+	  (raylib:draw-texture-rec
 	   (txbundle-reimu textures)
-	   (make-rectangle :x (* 32 x-texture-index) :y 0 :width 32 :height 48)
+	   (raylib:make-rectangle :x (* 32 x-texture-index) :y 0 :width 32 :height 48)
 	   (vec (- render-player-x 16) (- render-player-y 25))
 	   :raywhite))
 	
 	;; focus sigil
-	(if (is-key-down :key-left-shift)
+	(if (raylib:is-key-down :key-left-shift)
 		(when (< focus-sigil-strength 1.0)
 		  (incf focus-sigil-strength 0.1))
 		(when (> focus-sigil-strength 0.0)
@@ -303,7 +303,7 @@
 	  (rlgl:rotate-f (mod frames 360.0) 0.0 0.0 1.0) ;; spin
 	  (draw-sprite textures :focus-sigil
 				   0.0 0.0 ;; manually translated to final position above
-				   (make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
+				   (raylib:make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
 	  (rlgl:pop-matrix))))
 
 (defstruct sebundle
@@ -318,7 +318,7 @@
   timeout timeoutwarn)
 (defvar sounds nil)
 (defun load-sfx ()
-  (flet ((lsfx (file) (load-sound (concatenate 'string "assets/sfx/" file))))
+  (flet ((lsfx (file) (raylib:load-sound (concatenate 'string "assets/sfx/" file))))
 	(setf sounds
 		  (make-sebundle
 		   :spellcapture (lsfx "se_cardget.wav")
@@ -344,56 +344,56 @@
   )
 
 (defun render-all (textures)
-  (clear-background bgcolor)
+  (raylib:clear-background bgcolor)
   (draw-player textures)
 
   (draw-enemies textures)
   (draw-bullets textures)
   
-  (draw-texture (txbundle-hud textures) 0 0 :raywhite)
-  (draw-text (format nil "ENM: ~d" (- NUM-ENM (count :none enm-types)))
-			 550 400
-			 18 :raywhite)
-  (draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count :none bullet-types)))
-			 550 425
-			 18 :raywhite)
-  (draw-fps 550 450))
+  (raylib:draw-texture (txbundle-hud textures) 0 0 :raywhite)
+  (raylib:draw-text (format nil "ENM: ~d" (- NUM-ENM (count :none enm-types)))
+					550 400
+					18 :raywhite)
+  (raylib:draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count :none bullet-types)))
+					550 425
+					18 :raywhite)
+  (raylib:draw-fps 550 450))
 
 (defvar ojamajo-carnival nil)
 (defun load-audio ()
-  (init-audio-device)
-  (setf ojamajo-carnival (load-music-stream "assets/bgm/ojamajo_carnival.wav")))
+  (raylib:init-audio-device)
+  (setf ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav")))
 (defun unload-audio ()
-  (stop-music-stream ojamajo-carnival)
-  (unload-music-stream ojamajo-carnival))
+  (raylib:stop-music-stream ojamajo-carnival)
+  (raylib:unload-music-stream ojamajo-carnival))
 
 (defun reset-to (frame)
   "Resets frame counter and music playback to specific frame.
 For use in interactive development."
   (force-clear-bullet-and-enemy)
   (setf frames frame)
-  (seek-music-stream ojamajo-carnival (/ frame 60.0)))
+  (raylib:seek-music-stream ojamajo-carnival (/ frame 60.0)))
 
 (defun main ()
   ;; Starts a REPL, connect with slime-connect in emacs
   (swank:create-server)
-  (with-window
+  (raylib:with-window
 	  (640 480 "thdawn")
-	(set-target-fps 60)
-	(set-exit-key 0)
+	(raylib:set-target-fps 60)
+	(raylib:set-exit-key 0)
 	(load-audio)
 	(load-sfx)
 	(let ((textures (load-textures)))
-	  (play-music-stream ojamajo-carnival)
+	  (raylib:play-music-stream ojamajo-carnival)
 	  (loop
-		(when (window-should-close)
+		(when (raylib:window-should-close)
 		  (return))
-		(update-music-stream ojamajo-carnival)
+		(raylib:update-music-stream ojamajo-carnival)
 		(handle-input)
 		(handle-player-movement)
 		(tick-bullets)
 		(tick-enemies)
-		(with-drawing
+		(raylib:with-drawing
 		  (render-all textures))
 		(incf frames))
 	  (unload-audio)
