@@ -125,12 +125,7 @@
 	for render-y = (+ y playfield-render-offset-y)
 	do (case type
 		 (:pellet-white
-		  (draw-texture-rec
-		   (txbundle-bullet2 textures)
-		   (make-rectangle :x 176 :y 224 :width 16 :height 16)
-		   (vec (- render-x 8)
-				(- render-y 8)) ;; center texture onto the position
-		   :raywhite))
+		  (draw-sprite textures :pellet-white render-x render-y :raywhite))
 		 (:none t))))
 
 ;; Non-boss enemies. Uses SOA/separate dense typed arrays for performance
@@ -210,11 +205,7 @@
 	for render-y = (+ y playfield-render-offset-y)
 	do (case type
 		 (:red-fairy
-		  (draw-texture-rec
-		   (txbundle-enemy1 textures)
-		   (make-rectangle :x 0 :y 384 :width 32 :height 32)
-		   (vec (- render-x 16) (- render-y 16))
-		   :raywhite))
+		  (draw-sprite textures :red-fairy render-x render-y :raywhite))
 		 (:none t))))
 
 ;; 
@@ -310,34 +301,10 @@
 	  (rlgl:push-matrix)
 	  (rlgl:translate-f render-player-x render-player-y 0.0) ;; move to where we are
 	  (rlgl:rotate-f (mod frames 360.0) 0.0 0.0 1.0) ;; spin
-	  (rlgl:translate-f -32.0 -32.0 0.0) ;; center the texture center onto 0,0
-	  (draw-texture-rec
-	   (txbundle-misc textures)
-	   (make-rectangle :x 128 :y 0 :width 64 :height 64)
-	   (vec 0.0 0.0)
-	   (make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
+	  (draw-sprite textures :focus-sigil
+				   0.0 0.0 ;; manually translated to final position above
+				   (make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
 	  (rlgl:pop-matrix))))
-
-(defstruct txbundle
-  "Bundle of loaded texture objects, because using globals causes segfaults somehow"
-  reimu
-  enemy1
-  hud
-  misc
-  bullet2)
-(defun load-textures ()
-  (make-txbundle
-   :reimu (load-texture "assets/img/reimu.png")
-   :enemy1 (load-texture "assets/img/enemy1.png")
-   :hud (load-texture "assets/img/ui_bg.png")
-   :misc (load-texture "assets/img/misc.png")
-   :bullet2 (load-texture "assets/img/bullet2.png")))
-(defun unload-textures (textures)
-  (unload-texture (txbundle-reimu textures))
-  (unload-texture (txbundle-hud textures))
-  (unload-texture (txbundle-bullet2 textures))
-  (unload-texture (txbundle-enemy1 textures))
-  (unload-texture (txbundle-misc textures)))
 
 (defstruct sebundle
   "Bundle of loaded sound effects"
