@@ -86,12 +86,14 @@
 
 ;; [31-416] x bounds of playfield in the hud texture
 ;; [15-463] y bounds of playfield in the hud texture
-;; idea is to have logical game stuff stored where 0 0 is the top left of the hud texture, and we just offset everything by +31, +15 to render.
-(defconstant playfield-render-offset-x 31)
+;; idea is to have logical game x in [-192, 192] (192 is (416-31)/2, roughly), and y in [0, 448] 
+;; logical game 0, 0 is at gl (31+(416-31)/2), 15
+;; offset logical coords by 223, 15 to get to GL coords for render render
+(defconstant playfield-render-offset-x 223)
 (defconstant playfield-render-offset-y 15)
-(defconstant playfield-min-x 0)
+(defconstant playfield-min-x -192)
 (defconstant playfield-min-y 0)
-(defconstant playfield-max-x 385)
+(defconstant playfield-max-x 192)
 (defconstant playfield-max-y 448)
 (defconstant oob-bullet-despawn-fuzz 10)
 
@@ -231,7 +233,7 @@
 ;; Stage sequencing
 
 ;; player
-(defvar player-x (/ (- playfield-max-x playfield-min-x) 2.0))
+(defvar player-x 0)
 (defvar player-y (- playfield-max-y 10.0))
 (defvar player-speed 200)
 (defvar player-xv 0.0)
@@ -273,7 +275,7 @@
            (new-x (+ player-x (vx acceleration)))
            (new-y (+ player-y (vy acceleration))))
 	  ;; todo: refine this so that you can bottomdrag instead of not moving at all
-      (when (not (or (> new-x playfield-max-x) (> new-y playfield-max-y) (< new-y -5) (< new-x -5)))
+      (when (not (or (> new-x playfield-max-x) (> new-y playfield-max-y) (< new-y playfield-min-y) (< new-x playfield-min-x)))
         (setf player-x new-x)
         (setf player-y new-y)))
     (setf player-xv 0.0)
