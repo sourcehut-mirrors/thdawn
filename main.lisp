@@ -25,15 +25,12 @@
 (defvar bullet-ys
   (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
   "bullet y positions")
-(defvar bullet-xvs
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
-  "bullet x velocities")
-(defvar bullet-yvs
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
-  "bullet y velocities")
 (defvar bullet-facing
   (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
-  "bullet facing (degrees). For rendering only. Use velocity for movement.")
+  "bullet facing (radians)")
+(defvar bullet-speed
+  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
+  "bullet speed")
 (defvar bullet-control
   (make-array NUM-BULLETS :element-type '(or null function) :initial-element nil)
   "Control function guiding this bullet's movement, called every frame.")
@@ -46,23 +43,15 @@
 
 ;; Common bullet control functions
 (defun bullet-control-linear (id)
-  "A simple control function that advances the bullet's position according to its (fixed) velocity"
-  (incf (aref bullet-xs id) (aref bullet-xvs id))
-  (incf (aref bullet-ys id) (aref bullet-yvs id)))
-
-(defun bullet-control-accelerate (id)
-  "Simple control function that advances the bullet's position according to its velocity, and applies an acceleration factor to its velocity
-   Requires keys :xa and :ya to be present in the extra data hashtable, or else no acceleration is applied."
-  ;; todo: acceleration common enough to be its own array instead of in extradata?
-  (incf (aref bullet-xs id) (aref bullet-xvs id))
-  (incf (aref bullet-ys id) (aref bullet-yvs id))
-  (let ((data (aref bullet-extras id)))
-	(incf (aref bullet-xvs id) (get :xa data 0))
-	(incf (aref bullet-yvs id) (get :ya data 0))))
+  "A simple control function that advances the bullet's position according to its (fixed) facing and speed"
+  (let ((facing (aref bullet-facing id))
+		(speed (aref bullet-speed id)))
+	(incf (aref bullet-xs id) (* speed (cos facing)))
+	(incf (aref bullet-ys id) (* speed (sin facing)))))
 
 ;; TODO: Others common control functions we might want (acceleration, deceleration, etc.)
 
-(defun spawn-bullet (type x y xv yv facing control-function)
+(defun spawn-bullet (type x y facing speed control-function)
   ;; todo: if linear scan for a free slot becomes a concern, can consider implementing a next-fit style pointer, or using a bit-vector
   (let ((id (position :none bullet-types)))
 	(unless id
@@ -70,16 +59,15 @@
 	(setf (aref bullet-types id) type)
 	(setf (aref bullet-xs id) x)
 	(setf (aref bullet-ys id) y)
-	(setf (aref bullet-xvs id) xv)
-	(setf (aref bullet-yvs id) yv)
 	(setf (aref bullet-facing id) facing)
+	(setf (aref bullet-speed id) facing)
 	(setf (aref bullet-control id) control-function)
 	id))
 
 (defun delete-bullet (id)
   (when (eq :none (aref bullet-types id))
 	(error "deleting inactive bullet slot"))
-  ;; no need to clean others as they'll be lazily filled by the next spawn call
+  ;; no need to clean others as they'll be reset by the next spawn call
   (setf (aref bullet-types id) :none)
   (setf (aref bullet-control id) nil)
   (clrhash (aref bullet-extras id)))
@@ -217,11 +205,13 @@
 	(when (zerop (mod frames 25))
 	  (let* ((pos (vec (aref enm-xs id) (aref enm-ys id)))
 			 (player-pos (vec player-x player-y))
-			 (dir (nvscale (nvunit (v- player-pos pos)) 3.0)))
+			 (diff (v- player-pos pos))
+			 (facing (atan (vy diff) (vx diff)))
+			 (_ (print (format nil "~F ~F" facing (* 180 (/ 1 pi) facing)))))
 		(spawn-bullet :pellet-white
 					  (vx pos) (vy pos)
-					  (vx dir) (vy dir)
-					  0 'bullet-control-linear)
+					  facing 1.0
+					  'bullet-control-linear)
 		(raylib:play-sound (sebundle-shoot0 sounds))))
 	(yield)))
 
@@ -260,9 +250,6 @@
 			  (spawn-enemy :red-fairy
 						   player-x
 						   (- player-y 10) 50 (make-coroutine 'stationary-shoot-at-player))
-			  (spawn-bullet :pellet-white
-							player-x
-							(+ player-y 10) 0 -5 0 'bullet-control-linear)
 			  (raylib:play-sound (sebundle-shoot0 sounds)))
 			 (:key-y (force-clear-bullet-and-enemy)))))
 
