@@ -60,7 +60,7 @@
 	(setf (aref bullet-xs id) x)
 	(setf (aref bullet-ys id) y)
 	(setf (aref bullet-facing id) facing)
-	(setf (aref bullet-speed id) facing)
+	(setf (aref bullet-speed id) speed)
 	(setf (aref bullet-control id) control-function)
 	id))
 
@@ -179,6 +179,19 @@
 			   ;; todo sfx
 			   (delete-enemy id)))))
 
+(defun process-collisions ()
+  (loop for id from 0
+		for type across bullet-types
+		do (when (not (eq :none type))
+			 (when (raylib:check-collision-circles
+					(vec player-x player-y) graze-radius
+					(vec (aref bullet-xs id) (aref bullet-ys id)) 1.0) ;; todo hitbox size per bullet type
+			   (raylib:play-sound (sebundle-graze sounds))) ;; todo make this sound better?
+			 (when (raylib:check-collision-circles
+					(vec player-x player-y) hitbox-radius
+					(vec (aref bullet-xs id) (aref bullet-ys id)) 1.0) ;; todo hitbox size per bullet type
+			   (raylib:play-sound (sebundle-playerdie sounds))))))
+
 (defun force-clear-bullet-and-enemy ()
   (fill enm-types :none)
   (fill enm-control nil)
@@ -206,8 +219,7 @@
 	  (let* ((pos (vec (aref enm-xs id) (aref enm-ys id)))
 			 (player-pos (vec player-x player-y))
 			 (diff (v- player-pos pos))
-			 (facing (atan (vy diff) (vx diff)))
-			 (_ (print (format nil "~F ~F" facing (* 180 (/ 1 pi) facing)))))
+			 (facing (atan (vy diff) (vx diff))))
 		(spawn-bullet :pellet-white
 					  (vx pos) (vy pos)
 					  facing 1.0
@@ -223,6 +235,8 @@
 ;; Stage sequencing
 
 ;; player
+(defvar graze-radius 10.0)
+(defvar hit-radius 3.0)
 (defvar player-x 0)
 (defvar player-y (- playfield-max-y 10.0))
 (defvar player-speed 200)
@@ -299,7 +313,7 @@
   "Bundle of loaded sound effects"
   spellcapture spelldeclare
   longcharge shortcharge
-  enmdie bossdie
+  enmdie bossdie playerdie
   shoot0 shoot1 shoot2
   extend graze bell
   oldvwoopfast oldvwoopslow
@@ -316,6 +330,7 @@
 		   :shortcharge (lsfx "se_ch02.wav")
 		   :enmdie (lsfx "se_enep00.wav")
 		   :bossdie (lsfx "se_enep01.wav")
+		   :playerdie (lsfx "se_pldead00.wav")
 		   :shoot0 (lsfx "se_tan00.wav")
 		   :shoot1 (lsfx "se_tan01.wav")
 		   :shoot2 (lsfx "se_tan02.wav")
@@ -382,6 +397,7 @@ For use in interactive development."
 		(handle-player-movement)
 		(tick-bullets)
 		(tick-enemies)
+		(process-collisions)
 		(raylib:with-drawing
 		  (render-all textures))
 		(incf frames))
