@@ -290,7 +290,7 @@
 	  (raylib:draw-texture-rec
 	   (txbundle-reimu textures)
 	   (raylib:make-rectangle :x (* 32 x-texture-index) :y 0 :width 32 :height 48)
-	   (vec (- render-player-x 16) (- render-player-y 25))
+	   (vec (- render-player-x 16) (- render-player-y 24))
 	   :raywhite))
 	
 	;; focus sigil
@@ -386,11 +386,11 @@ For use in interactive development."
 	(load-audio)
 	(load-sfx)
 	(let ((textures (load-textures)))
-	  (raylib:play-music-stream ojamajo-carnival)
+	  ;(raylib:play-music-stream ojamajo-carnival)
 	  (loop
 		(when (raylib:window-should-close)
 		  (return))
-		(raylib:update-music-stream ojamajo-carnival)
+		;(raylib:update-music-stream ojamajo-carnival)
 		(handle-input)
 		(handle-player-movement)
 		(tick-bullets)
