@@ -31,6 +31,9 @@
 (defvar bullet-speed
   (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
   "bullet speed")
+(defvar bullet-grazed
+  (make-array NUM-BULLETS :element-type 'boolean :initial-element nil)
+  "whether the bullet was grazed already")
 (defvar bullet-control
   (make-array NUM-BULLETS :element-type '(or null function) :initial-element nil)
   "Control function guiding this bullet's movement, called every frame.")
@@ -62,6 +65,7 @@
 	(setf (aref bullet-facing id) facing)
 	(setf (aref bullet-speed id) speed)
 	(setf (aref bullet-control id) control-function)
+	(setf (aref bullet-grazed id) nil)
 	id))
 
 (defun delete-bullet (id)
@@ -183,12 +187,16 @@
   (loop for id from 0
 		for type across bullet-types
 		do (when (not (eq :none type))
-			 (when (raylib:check-collision-circles
-					(vec player-x player-y) graze-radius
-					(vec (aref bullet-xs id) (aref bullet-ys id)) 1.0) ;; todo hitbox size per bullet type
+			 (when (and (not (aref bullet-grazed id))
+						(raylib:check-collision-circles
+						 (vec player-x player-y) graze-radius
+						 (vec (aref bullet-xs id) (aref bullet-ys id)) 1.0))
+			   ;; todo grazebox size per bullet type, or simply collect all bullets within the grazebox to do
+			   ;; a graze on instead of doing collision check (i.e. only a distance check)
+			   (setf (aref bullet-grazed id) t)
 			   (raylib:play-sound (sebundle-graze sounds))) ;; todo make this sound better?
 			 (when (raylib:check-collision-circles
-					(vec player-x player-y) hitbox-radius
+					(vec player-x player-y) hit-radius
 					(vec (aref bullet-xs id) (aref bullet-ys id)) 1.0) ;; todo hitbox size per bullet type
 			   (raylib:play-sound (sebundle-playerdie sounds))))))
 
@@ -215,14 +223,14 @@
 
 (defcoroutine stationary-shoot-at-player (id)
   (loop
-	(when (zerop (mod frames 25))
+	(when (zerop (mod frames 50))
 	  (let* ((pos (vec (aref enm-xs id) (aref enm-ys id)))
 			 (player-pos (vec player-x player-y))
 			 (diff (v- player-pos pos))
 			 (facing (atan (vy diff) (vx diff))))
 		(spawn-bullet :pellet-white
 					  (vx pos) (vy pos)
-					  facing 1.0
+					  facing 3.0
 					  'bullet-control-linear)
 		(raylib:play-sound (sebundle-shoot0 sounds))))
 	(yield)))
@@ -235,7 +243,7 @@
 ;; Stage sequencing
 
 ;; player
-(defvar graze-radius 10.0)
+(defvar graze-radius 20.0)
 (defvar hit-radius 3.0)
 (defvar player-x 0)
 (defvar player-y (- playfield-max-y 10.0))
