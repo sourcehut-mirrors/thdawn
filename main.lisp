@@ -2,14 +2,11 @@
 (in-package :thdawn)
 
 (defvar frames 0 "Number of frames the current stage has been running")
+(defvar show-hitboxes nil)
+(defvar graze 0)
 
 ;; Try changing me, then updating the game live in the REPL!
 (defparameter bgcolor :black)
-
-;; To ease in live reloading while I still don't understand how multi file projects work,
-;; everything's still gonna just be in one file (lol). Good enough for a game jam game.
-;; Eventually we should move these out to other files and figure out how to load them
-;; probably from each other.
 
 ;; Bullet system. Uses SOA/separate dense typed arrays for performance
 (defconstant NUM-BULLETS 512)
@@ -109,6 +106,11 @@
 			 (funcall (aref bullet-control id) id)
 			 (despawn-out-of-bound-bullet id))))
 
+(defun bullet-hit-radius (type)
+  (case type
+	(:pellet-white 2.0)
+	(t 0.0)))
+
 (defun draw-bullets (textures)
   (loop
 	for id from 0
@@ -117,10 +119,13 @@
 	for y across bullet-ys
 	for render-x = (+ x playfield-render-offset-x)
 	for render-y = (+ y playfield-render-offset-y)
-	do (case type
+	do
+	   (case type
 		 (:pellet-white
 		  (draw-sprite textures :pellet-white render-x render-y :raywhite))
-		 (:none t))))
+		 (:none t))
+	   (when show-hitboxes
+		 (raylib:draw-circle-v (vec render-x render-y) (bullet-hit-radius type) :red))))
 
 ;; Non-boss enemies. Uses SOA/separate dense typed arrays for performance
 ;; NB: Why no velocity? Because most enemies are going to be moving in different, custom
@@ -190,9 +195,8 @@
 			 (when (and (not (aref bullet-grazed id))
 						(raylib:check-collision-circles
 						 (vec player-x player-y) graze-radius
-						 (vec (aref bullet-xs id) (aref bullet-ys id)) 1.0))
-			   ;; todo grazebox size per bullet type, or simply collect all bullets within the grazebox to do
-			   ;; a graze on instead of doing collision check (i.e. only a distance check)
+						 (vec (aref bullet-xs id) (aref bullet-ys id)) (bullet-hit-radius type)))
+			   (incf graze)
 			   (setf (aref bullet-grazed id) t)
 			   (raylib:play-sound (sebundle-graze sounds))) ;; todo make this sound better?
 			 (when (raylib:check-collision-circles
@@ -201,6 +205,7 @@
 			   (raylib:play-sound (sebundle-playerdie sounds))))))
 
 (defun force-clear-bullet-and-enemy ()
+  (setf graze 0)
   (fill enm-types :none)
   (fill enm-control nil)
   (fill bullet-types :none)
@@ -243,7 +248,7 @@
 ;; Stage sequencing
 
 ;; player
-(defvar graze-radius 20.0)
+(defvar graze-radius 22.0)
 (defvar hit-radius 3.0)
 (defvar player-x 0)
 (defvar player-y (- playfield-max-y 10.0))
@@ -268,11 +273,11 @@
 		do (case k
 			 (:key-z t) ;; todo shooting
 			 (:key-x t) ;; todo (maybe) bombing
+			 (:key-f3 (setf show-hitboxes (not show-hitboxes)))
 			 (:key-space
 			  (spawn-enemy :red-fairy
 						   player-x
-						   (- player-y 10) 50 (make-coroutine 'stationary-shoot-at-player))
-			  (raylib:play-sound (sebundle-shoot0 sounds)))
+						   (- player-y 10) 50 (make-coroutine 'stationary-shoot-at-player)))
 			 (:key-y (force-clear-bullet-and-enemy)))))
 
 (defun handle-player-movement ()
@@ -315,7 +320,11 @@
 	  (draw-sprite textures :focus-sigil
 				   0.0 0.0 ;; manually translated to final position above
 				   (raylib:make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
-	  (rlgl:pop-matrix))))
+	  (rlgl:pop-matrix))
+
+	(when show-hitboxes
+	  (raylib:draw-circle-v (vec render-player-x render-player-y) graze-radius :green)
+	  (raylib:draw-circle-v (vec render-player-x render-player-y) hit-radius :red))))
 
 (defstruct sebundle
   "Bundle of loaded sound effects"
@@ -363,13 +372,16 @@
   (draw-bullets textures)
   
   (raylib:draw-texture (txbundle-hud textures) 0 0 :raywhite)
+  (raylib:draw-text (format nil "GRAZE: ~d" graze)
+					500 375
+					18 :raywhite)
   (raylib:draw-text (format nil "ENM: ~d" (- NUM-ENM (count :none enm-types)))
-					550 400
+					500 400
 					18 :raywhite)
   (raylib:draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count :none bullet-types)))
-					550 425
+					500 425
 					18 :raywhite)
-  (raylib:draw-fps 550 450))
+  (raylib:draw-fps 500 450))
 
 (defvar ojamajo-carnival nil)
 (defun load-audio ()
@@ -387,8 +399,6 @@ For use in interactive development."
   (raylib:seek-music-stream ojamajo-carnival (/ frame 60.0)))
 
 (defun main ()
-  ;; Starts a REPL, connect with slime-connect in emacs
-  (swank:create-server)
   (raylib:with-window
 	  (640 480 "thdawn")
 	(raylib:set-target-fps 60)
