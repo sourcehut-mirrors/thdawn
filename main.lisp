@@ -67,7 +67,7 @@
 	id))
 
 (defun delete-bullet (id)
-  (when (eq :none (aref bullet-types id))
+  (when (eq :none (aref bullet-types id)) 
 	(error "deleting inactive bullet slot"))
   ;; no need to clean others as they'll be reset by the next spawn call
   (setf (aref bullet-types id) :none)
@@ -257,7 +257,7 @@
 (defvar player-xv 0.0)
 (defvar player-yv 0.0)
 
-(defun handle-input (sounds)
+(defun handle-input ()
   ;; level triggered stuff
   (unless paused
 	(when (raylib:is-key-down :key-left)
@@ -336,44 +336,6 @@
 	  (raylib:draw-circle-v (vec render-player-x render-player-y) graze-radius :green)
 	  (raylib:draw-circle-v (vec render-player-x render-player-y) hit-radius :red))))
 
-(defstruct sebundle
-  "Bundle of loaded sound effects"
-  spellcapture spelldeclare
-  longcharge shortcharge
-  enmdie bossdie playerdie
-  shoot0 shoot1 shoot2
-  extend graze bell
-  oldvwoopfast oldvwoopslow
-  pause menuselect
-  timeout timeoutwarn)
-(defvar sounds nil)
-(defun load-sfx ()
-  (flet ((lsfx (file) (raylib:load-sound (concatenate 'string "assets/sfx/" file))))
-	(setf sounds
-		  (make-sebundle
-		   :spellcapture (lsfx "se_cardget.wav")
-		   :spelldeclare (lsfx "se_cat00.wav")
-		   :longcharge (lsfx "se_ch00.wav")
-		   :shortcharge (lsfx "se_ch02.wav")
-		   :enmdie (lsfx "se_enep00.wav")
-		   :bossdie (lsfx "se_enep01.wav")
-		   :playerdie (lsfx "se_pldead00.wav")
-		   :shoot0 (lsfx "se_tan00.wav")
-		   :shoot1 (lsfx "se_tan01.wav")
-		   :shoot2 (lsfx "se_tan02.wav")
-		   :extend (lsfx "se_extend.wav")
-		   :graze (lsfx "se_graze.wav")
-		   :bell (lsfx "se_kira00.wav")
-		   :oldvwoopfast (lsfx "se_power1.wav")
-		   :oldvwoopslow (lsfx "se_power2.wav")
-		   :pause (lsfx "se_pause.wav")
-		   :menuselect (lsfx "se_select00.wav")
-		   :timeout (lsfx "se_timeout.wav")
-		   :timeoutwarn (lsfx "se_timeout2.wav")))))
-(defun unload-sfx ()
-  ;; meh, todo.
-  )
-
 (defun render-all (textures)
   (raylib:clear-background bgcolor)
   (draw-player textures)
@@ -423,7 +385,7 @@ For use in interactive development."
 	  (loop
 		(when (raylib:window-should-close)
 		  (return))
-		(handle-input sounds)
+		(handle-input)
 		(raylib:update-music-stream ojamajo-carnival)
 		(unless paused
 		  (handle-player-movement)

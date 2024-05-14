@@ -3,4 +3,5 @@
   :serial t
   :components ((:file "package")
 			   (:file "textures")
+			   (:file "sounds")
 			   (:file "main")))
