@@ -1,10 +1,41 @@
 ;; All symbols declared from now on are in the thdawn namespace
 (in-package :thdawn)
 
+;; [31-416] x bounds of playfield in the hud texture
+;; [15-463] y bounds of playfield in the hud texture
+;; idea is to have logical game x in [-192, 192] (192 is (416-31)/2, roughly), and y in [0, 448] 
+;; logical game 0, 0 is at gl (31+(416-31)/2), 15
+;; offset logical coords by 223, 15 to get to GL coords for render render
+(defconstant playfield-render-offset-x 223)
+(defconstant playfield-render-offset-y 15)
+(defconstant playfield-min-x -192)
+(defconstant playfield-min-y 0)
+(defconstant playfield-max-x 192)
+(defconstant playfield-max-y 448)
+(defconstant oob-bullet-despawn-fuzz 10)
+
 (defvar frames 0 "Number of frames the current stage has been running")
 (defvar show-hitboxes nil)
 (defvar graze 0)
 (defvar paused nil)
+(defvar current-boss-name nil)
+(defvar current-spell-name nil)
+(defvar current-boss-timer-frames 0.0) ;; will be converted to seconds for display
+(defvar graze-radius 22.0)
+(defvar hit-radius 3.0)
+(defvar player-x 0)
+(defvar player-y (- playfield-max-y 10.0))
+(defvar player-speed 200)
+(defvar player-xv 0.0)
+(defvar player-yv 0.0)
+
+(defvar ojamajo-carnival nil)
+(defun load-audio ()
+  (raylib:init-audio-device)
+  (setf ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav")))
+(defun unload-audio ()
+  (raylib:stop-music-stream ojamajo-carnival)
+  (raylib:unload-music-stream ojamajo-carnival))
 
 ;; Try changing me, then updating the game live in the REPL!
 (defparameter bgcolor :black)
@@ -73,19 +104,6 @@
   (setf (aref bullet-types id) :none)
   (setf (aref bullet-control id) nil)
   (clrhash (aref bullet-extras id)))
-
-;; [31-416] x bounds of playfield in the hud texture
-;; [15-463] y bounds of playfield in the hud texture
-;; idea is to have logical game x in [-192, 192] (192 is (416-31)/2, roughly), and y in [0, 448] 
-;; logical game 0, 0 is at gl (31+(416-31)/2), 15
-;; offset logical coords by 223, 15 to get to GL coords for render render
-(defconstant playfield-render-offset-x 223)
-(defconstant playfield-render-offset-y 15)
-(defconstant playfield-min-x -192)
-(defconstant playfield-min-y 0)
-(defconstant playfield-max-x 192)
-(defconstant playfield-max-y 448)
-(defconstant oob-bullet-despawn-fuzz 10)
 
 (defun despawn-out-of-bound-bullet (id)
   (let ((type (aref bullet-types id))
@@ -241,22 +259,6 @@
 		(raylib:play-sound (sebundle-shoot0 sounds))))
 	(yield)))
 
-;; Boss management
-(defvar current-boss-name nil)
-(defvar current-spell-name nil)
-(defvar current-boss-timer-frames 0.0) ;; will be converted to seconds for display
-
-;; Stage sequencing
-
-;; player
-(defvar graze-radius 22.0)
-(defvar hit-radius 3.0)
-(defvar player-x 0)
-(defvar player-y (- playfield-max-y 10.0))
-(defvar player-speed 200)
-(defvar player-xv 0.0)
-(defvar player-yv 0.0)
-
 (defun handle-input ()
   ;; level triggered stuff
   (unless paused
@@ -357,14 +359,6 @@
 					500 425
 					18 :raywhite)
   (raylib:draw-fps 500 450))
-
-(defvar ojamajo-carnival nil)
-(defun load-audio ()
-  (raylib:init-audio-device)
-  (setf ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav")))
-(defun unload-audio ()
-  (raylib:stop-music-stream ojamajo-carnival)
-  (raylib:unload-music-stream ojamajo-carnival))
 
 (defun reset-to (frame)
   "Resets frame counter and music playback to specific frame.
