@@ -21,8 +21,8 @@
 (defvar current-boss-name nil)
 (defvar current-spell-name nil)
 (defvar current-boss-timer-frames 0.0) ;; will be converted to seconds for display
-(defvar graze-radius 22.0)
-(defvar hit-radius 3.0)
+(defparameter graze-radius 22.0)
+(defparameter hit-radius 3.0)
 (defvar player-x 0)
 (defvar player-y (- playfield-max-y 10.0))
 (defvar player-speed 200)
