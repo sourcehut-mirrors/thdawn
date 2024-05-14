@@ -4,6 +4,7 @@
 (defvar frames 0 "Number of frames the current stage has been running")
 (defvar show-hitboxes nil)
 (defvar graze 0)
+(defvar paused nil)
 
 ;; Try changing me, then updating the game live in the REPL!
 (defparameter bgcolor :black)
@@ -256,16 +257,17 @@
 (defvar player-xv 0.0)
 (defvar player-yv 0.0)
 
-(defun handle-input ()
+(defun handle-input (sounds)
   ;; level triggered stuff
-  (when (raylib:is-key-down :key-left)
-	(incf player-xv -1))
-  (when (raylib:is-key-down :key-right)
-	(incf player-xv 1))
-  (when (raylib:is-key-down :key-up)
-	(incf player-yv -1))
-  (when (raylib:is-key-down :key-down)
-	(incf player-yv 1))
+  (unless paused
+	(when (raylib:is-key-down :key-left)
+	  (incf player-xv -1))
+	(when (raylib:is-key-down :key-right)
+	  (incf player-xv 1))
+	(when (raylib:is-key-down :key-up)
+	  (incf player-yv -1))
+	(when (raylib:is-key-down :key-down)
+	  (incf player-yv 1)))
 
   ;; edge triggered stuff
   (loop for k = (raylib:get-key-pressed) then (raylib:get-key-pressed)
@@ -274,6 +276,14 @@
 			 (:key-z t) ;; todo shooting
 			 (:key-x t) ;; todo (maybe) bombing
 			 (:key-f3 (setf show-hitboxes (not show-hitboxes)))
+			 (:key-escape
+			  (setf paused (not paused))
+			  (if paused
+				  (progn
+					(raylib:play-sound (sebundle-pause sounds))
+					(raylib:pause-music-stream ojamajo-carnival))
+				  (progn
+					(raylib:resume-music-stream ojamajo-carnival))))
 			 (:key-space
 			  (spawn-enemy :red-fairy
 						   player-x
@@ -370,6 +380,9 @@
 
   (draw-enemies textures)
   (draw-bullets textures)
+
+  (when paused
+	(raylib:draw-text "PAUSED" 175 150 28 :purple))
   
   (raylib:draw-texture (txbundle-hud textures) 0 0 :raywhite)
   (raylib:draw-text (format nil "GRAZE: ~d" graze)
@@ -406,19 +419,20 @@ For use in interactive development."
 	(load-audio)
 	(load-sfx)
 	(let ((textures (load-textures)))
-	  ;(raylib:play-music-stream ojamajo-carnival)
+	  (raylib:play-music-stream ojamajo-carnival)
 	  (loop
 		(when (raylib:window-should-close)
 		  (return))
-		;(raylib:update-music-stream ojamajo-carnival)
-		(handle-input)
-		(handle-player-movement)
-		(tick-bullets)
-		(tick-enemies)
-		(process-collisions)
+		(handle-input sounds)
+		(raylib:update-music-stream ojamajo-carnival)
+		(unless paused
+		  (handle-player-movement)
+		  (tick-bullets)
+		  (tick-enemies)
+		  (process-collisions))
 		(raylib:with-drawing
 		  (render-all textures))
-		(incf frames))
+		(unless paused (incf frames)))
 	  (unload-audio)
 	  (unload-textures textures)
 	  (unload-sfx))))
