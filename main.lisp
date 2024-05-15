@@ -245,19 +245,34 @@
 
 ;; 
 
+(defun shoot-at-player (srcpos)
+  (let* ((player-pos (vec player-x player-y))
+		 (diff (v- player-pos srcpos))
+		 (facing (atan (vy diff) (vx diff))))
+	(spawn-bullet :pellet-white
+				  (vx srcpos) (vy srcpos)
+				  facing 3.0
+				  'bullet-control-linear)
+	(raylib:play-sound (sebundle-shoot0 sounds))))
+
 (defcoroutine stationary-shoot-at-player (id)
   (loop
 	(when (zerop (mod frames 50))
-	  (let* ((pos (vec (aref enm-xs id) (aref enm-ys id)))
-			 (player-pos (vec player-x player-y))
-			 (diff (v- player-pos pos))
-			 (facing (atan (vy diff) (vx diff))))
-		(spawn-bullet :pellet-white
-					  (vx pos) (vy pos)
-					  facing 3.0
-					  'bullet-control-linear)
-		(raylib:play-sound (sebundle-shoot0 sounds))))
+	  (shoot-at-player (vec (aref enm-xs id) (aref enm-ys id))))
 	(yield)))
+
+(defcoroutine wiggle-shoot-at-player (id)
+  (let ((dir -1)
+		(dir-frames 0))
+	(loop
+	  (incf (aref enm-xs id) dir)
+	  (when (zerop (mod frames 50))
+		(shoot-at-player (vec (aref enm-xs id) (aref enm-ys id))))
+	  (incf dir-frames)
+	  (when (= dir-frames 180)
+		(setf dir (* -1 dir))
+		(setf dir-frames 0))
+	  (yield))))
 
 (defun handle-input ()
   ;; level triggered stuff
@@ -289,7 +304,7 @@
 			 (:key-space
 			  (spawn-enemy :red-fairy
 						   player-x
-						   (- player-y 10) 50 (make-coroutine 'stationary-shoot-at-player)))
+						   (- player-y 10) 50 (make-coroutine 'wiggle-shoot-at-player)))
 			 (:key-y (force-clear-bullet-and-enemy)))))
 
 (defun handle-player-movement ()
