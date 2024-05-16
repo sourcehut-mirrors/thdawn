@@ -40,90 +40,64 @@
 ;; Try changing me, then updating the game live in the REPL!
 (defparameter bgcolor :black)
 
-;; Bullet system. Uses SOA/separate dense typed arrays for performance
+;; Bullet system
 (defconstant NUM-BULLETS 512)
-(defvar bullet-types
-  (make-array NUM-BULLETS :element-type 'keyword :initial-element :none)
-  "bullet types, :none means this slot is empty and represents no bullet")
-(defvar bullet-colors
-  (make-array NUM-BULLETS :element-type 'keyword :initial-element :white)
-  "bullet colors")
-(defvar bullet-xs
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
-  "bullet x positions")
-(defvar bullet-ys
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
-  "bullet y positions")
-(defvar bullet-facing
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
-  "bullet facing (radians)")
-(defvar bullet-speed
-  (make-array NUM-BULLETS :element-type 'float :initial-element 0.0)
-  "bullet speed")
-(defvar bullet-grazed
-  (make-array NUM-BULLETS :element-type 'boolean :initial-element nil)
-  "whether the bullet was grazed already")
-(defvar bullet-control
-  (make-array NUM-BULLETS :element-type '(or null function) :initial-element nil)
-  "Control function guiding this bullet's movement, called every frame.")
-(defvar bullet-extras
-  (let ((result (make-array NUM-BULLETS :element-type '(or null hash-table) :initial-element nil)))
-	(dotimes (i NUM-BULLETS)
-	  (setf (aref result i) (make-hash-table :size 4)))
-	result)
-  "Auxiliary hashtable of data any bullets need to store. If something's very commonly used across many bullets, it should get its own array.")
+(defstruct bullet
+  (type :none :type keyword)
+  (color :white :type keyword)
+  (x 0.0 :type float)
+  (y 0.0 :type float)
+  (facing 0.0 :type float) ;; radians
+  (speed 0.0 :type float)
+  (grazed nil :type boolean)
+  (control (lambda (_bullet))) ;; todo: figure out why :type function blows up here
+  ;; consider removing or not allocating by default
+  (extras (make-hash-table :size 4) :type hash-table))
+
+(defvar live-bullets
+  (make-array NUM-BULLETS :element-type '(or null bullet) :initial-element nil))
 
 ;; Common bullet control functions
-(defun bullet-control-linear (id)
+(defun bullet-control-linear (bullet)
   "A simple control function that advances the bullet's position according to its (fixed) facing and speed"
-  (let ((facing (aref bullet-facing id))
-		(speed (aref bullet-speed id)))
-	(incf (aref bullet-xs id) (* speed (cos facing)))
-	(incf (aref bullet-ys id) (* speed (sin facing)))))
+  (let ((facing (bullet-facing bullet))
+		(speed (bullet-speed bullet)))
+	(incf (bullet-x bullet) (* speed (cos facing)))
+	(incf (bullet-y bullet) (* speed (sin facing)))))
 
 ;; TODO: Others common control functions we might want (acceleration, deceleration, etc.)
 
 (defun spawn-bullet (type x y facing speed control-function)
-  ;; todo: if linear scan for a free slot becomes a concern, can consider implementing a next-fit style pointer, or using a bit-vector
-  (let ((id (position :none bullet-types)))
-	(unless id
+  (let ((idx (position nil live-bullets)))
+	(unless idx
 	  (error "No more open bullet slots! Either bullets are not being killed properly or the pattern is too complex"))
-	(setf (aref bullet-types id) type)
-	(setf (aref bullet-xs id) x)
-	(setf (aref bullet-ys id) y)
-	(setf (aref bullet-facing id) facing)
-	(setf (aref bullet-speed id) speed)
-	(setf (aref bullet-control id) control-function)
-	(setf (aref bullet-grazed id) nil)
-	id))
+	(setf (aref live-bullets idx)
+		  (make-bullet :type type
+					   :x x :y y
+					   :facing facing
+					   :speed speed
+					   :control control-function))))
 
-(defun delete-bullet (id)
-  (when (eq :none (aref bullet-types id)) 
-	(error "deleting inactive bullet slot"))
-  ;; no need to clean others as they'll be reset by the next spawn call
-  (setf (aref bullet-types id) :none)
-  (setf (aref bullet-control id) nil)
-  (clrhash (aref bullet-extras id)))
+(defun delete-bullet (bullet)
+  (let ((idx (position bullet live-bullets)))
+	(when idx
+	  ;; tolerate killing already-removed/dead bullets
+	  (setf (aref live-bullets idx) nil))))
 
-(defun despawn-out-of-bound-bullet (id)
-  (let ((type (aref bullet-types id))
-		(x (aref bullet-xs id))
-		(y (aref bullet-ys id)))
-	;; tolerate this, we could be calling this after a bullet's control function kills
-	;; itself
-	(when (and (not (eq :none type))
-			   (or (> x (+ playfield-max-x oob-bullet-despawn-fuzz))
-				   (< x (- playfield-min-x oob-bullet-despawn-fuzz))
-				   (< y (- playfield-min-y oob-bullet-despawn-fuzz))
-				   (> y (+ playfield-max-y oob-bullet-despawn-fuzz))))
-	  (delete-bullet id))))
+(defun despawn-out-of-bound-bullet (bullet)
+  (let ((x (bullet-x bullet))
+		(y (bullet-y bullet)))
+	(when (or (> x (+ playfield-max-x oob-bullet-despawn-fuzz))
+			  (< x (- playfield-min-x oob-bullet-despawn-fuzz))
+			  (< y (- playfield-min-y oob-bullet-despawn-fuzz))
+			  (> y (+ playfield-max-y oob-bullet-despawn-fuzz)))
+	  (delete-bullet bullet))))
 
 (defun tick-bullets ()
-  (loop for id from 0
-		for type across bullet-types
-		do (when (not (eq :none type))
-			 (funcall (aref bullet-control id) id)
-			 (despawn-out-of-bound-bullet id))))
+  (loop for bullet across live-bullets
+		when bullet
+		do (funcall (bullet-control bullet) bullet)
+		   (despawn-out-of-bound-bullet bullet)))
 
 (defun bullet-hit-radius (type)
   (case type
@@ -132,19 +106,18 @@
 
 (defun draw-bullets (textures)
   (loop
-	for id from 0
-	for type across bullet-types
-	for x across bullet-xs
-	for y across bullet-ys
-	for render-x = (+ x playfield-render-offset-x)
-	for render-y = (+ y playfield-render-offset-y)
-	do
-	   (case type
-		 (:pellet-white
-		  (draw-sprite textures :pellet-white render-x render-y :raywhite))
-		 (:none t))
-	   (when show-hitboxes
-		 (raylib:draw-circle-v (vec render-x render-y) (bullet-hit-radius type) :red))))
+	for bullet across live-bullets
+	when bullet
+	  do
+		 (let ((render-x (+ (bullet-x bullet) playfield-render-offset-x))
+			   (render-y (+ (bullet-y bullet) playfield-render-offset-y))
+			   (type (bullet-type bullet)))
+			   (case type
+				 (:pellet-white
+				  (draw-sprite textures :pellet-white render-x render-y :raywhite))
+				 (:none t))
+			   (when show-hitboxes
+				 (raylib:draw-circle-v (vec render-x render-y) (bullet-hit-radius type) :red)))))
 
 ;; Non-boss enemies. Uses SOA/separate dense typed arrays for performance
 ;; NB: Why no velocity? Because most enemies are going to be moving in different, custom
@@ -208,27 +181,25 @@
 			   (delete-enemy id)))))
 
 (defun process-collisions ()
-  (loop for id from 0
-		for type across bullet-types
-		do (when (not (eq :none type))
-			 (when (and (not (aref bullet-grazed id))
+  (loop for bullet across live-bullets
+		if bullet
+		  do (when (and (not (bullet-grazed bullet))
 						(raylib:check-collision-circles
 						 (vec player-x player-y) graze-radius
-						 (vec (aref bullet-xs id) (aref bullet-ys id)) (bullet-hit-radius type)))
+						 (vec (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet))))
 			   (incf graze)
-			   (setf (aref bullet-grazed id) t)
+			   (setf (bullet-grazed bullet) t)
 			   (raylib:play-sound (sebundle-graze sounds))) ;; todo make this sound better?
 			 (when (raylib:check-collision-circles
 					(vec player-x player-y) hit-radius
-					(vec (aref bullet-xs id) (aref bullet-ys id)) 1.0) ;; todo hitbox size per bullet type
-			   (raylib:play-sound (sebundle-playerdie sounds))))))
+					(vec (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet))) ;; todo hitbox size per bullet type
+			   (raylib:play-sound (sebundle-playerdie sounds)))))
 
 (defun force-clear-bullet-and-enemy ()
   (setf graze 0)
   (fill enm-types :none)
   (fill enm-control nil)
-  (fill bullet-types :none)
-  (fill bullet-control nil))
+  (fill live-bullets nil))
 
 (defun draw-enemies (textures)
   (loop
@@ -370,7 +341,7 @@
   (raylib:draw-text (format nil "ENM: ~d" (- NUM-ENM (count :none enm-types)))
 					500 400
 					18 :raywhite)
-  (raylib:draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count :none bullet-types)))
+  (raylib:draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count nil live-bullets)))
 					500 425
 					18 :raywhite)
   (raylib:draw-fps 500 450))
