@@ -124,61 +124,39 @@
 ;; ways, so a single velocity system applied to all the enemies at the same time doesn't
 ;; make sense.
 (defconstant NUM-ENM 256)
-(defvar enm-types
-  (make-array NUM-ENM :element-type 'keyword :initial-element :none)
-  "enemy types, :none means this slot is empty and represents no enemy")
-(defvar enm-xs
-  (make-array NUM-ENM :element-type 'float :initial-element 0.0)
-  "enemy x positions")
-(defvar enm-ys
-  (make-array NUM-ENM :element-type 'float :initial-element 0.0)
-  "enemy y positions")
-(defvar enm-facing
-  (make-array NUM-ENM :element-type 'keyword :initial-element :forward)
-  ;; todo doesn't capture how "turned" the enemy is. for now we'll
-  ;; use the most turned sprite
-  "which way the enemy's sprite should face, left, right, or forward. not applicable to all enemies.")
-(defvar enm-health
-  (make-array NUM-ENM :element-type 'float :initial-element 0.0)
-  "enemy health values")
-(defvar enm-control
-  (make-array NUM-ENM :element-type '(or null function) :initial-element nil)
-  "Control function guiding this enemy, called every frame. Can be a coroutine, but the coroutine must never exit, only yield. To exit, delete the enemy.")
-(defvar enm-extras
-  (let ((result (make-array NUM-ENM :element-type '(or null hash-table) :initial-element nil)))
-	(dotimes (i NUM-ENM)
-	  (setf (aref result i) (make-hash-table :size 4)))
-	result)
-  "Auxiliary hashtable of any data the enemy need to store. If something's very commonly used across many enemies, it should get its own array.")
+(defstruct enm
+  (type :none :type keyword)
+  (x 0.0 :type float)
+  (y 0.0 :type float)
+  (health 0.0 :type real)
+  (control (lambda (_))) ;; todo type specifier
+  ;; todo consider removing or downsizing
+  (extras (make-hash-table :size 4) :type hash-table))
+(defvar live-enm
+  (make-array NUM-ENM :element-type '(or null enemy) :initial-element nil))
 
 (defun spawn-enemy (type x y health control-function)
-  ;; todo: if linear scan for a free slot becomes a concern, can consider implementing a next-fit style pointer, or using a bit-vector
-  (let ((id (position :none enm-types)))
-	(unless id
+  (let ((idx (position nil live-enm)))
+	(unless idx
 	  (error "No more open enemy slots!"))
-	(setf (aref enm-types id) type)
-	(setf (aref enm-xs id) x)
-	(setf (aref enm-ys id) y)
-	(setf (aref enm-health id) health)
-	(setf (aref enm-control id) control-function)
-	id))
+	(setf (aref live-enm idx)
+		  (make-enm :type type
+					:x x :y y
+					:health health
+					:control control-function))))
 
-(defun delete-enemy (id)
-  (when (eq :none (aref enm-types id))
-	(error "deleting inactive enemy slot"))
-  ;; no need to clean others as they'll be lazily filled by the next spawn call
-  (setf (aref enm-types id) :none)
-  (setf (aref enm-control id) nil)
-  (clrhash (aref enm-extras id)))
+(defun delete-enemy (enm)
+  (let ((idx (position enm live-enm)))
+	(when idx
+	  (setf (aref live-enm idx) nil))))
 
 (defun tick-enemies ()
-  (loop for id from 0
-		for type across enm-types
-		do (when (not (eq :none type))
-			 (funcall (aref enm-control id) id)
-			 (when (<= (aref enm-health id) 0)
+  (loop for enm across live-enm
+		when enm
+		  do (funcall (enm-control enm) enm)
+			 (when (<= (enm-health enm) 0)
 			   ;; todo sfx
-			   (delete-enemy id)))))
+			   (delete-enemy enm))))
 
 (defun process-collisions ()
   (loop for bullet across live-bullets
@@ -197,22 +175,19 @@
 
 (defun force-clear-bullet-and-enemy ()
   (setf graze 0)
-  (fill enm-types :none)
-  (fill enm-control nil)
+  (fill live-enm nil)
   (fill live-bullets nil))
 
 (defun draw-enemies (textures)
   (loop
-	for id from 0
-	for type across enm-types
-	for x across enm-xs
-	for y across enm-ys
-	for render-x = (+ x playfield-render-offset-x)
-	for render-y = (+ y playfield-render-offset-y)
-	do (case type
-		 (:red-fairy
-		  (draw-sprite textures :red-fairy render-x render-y :raywhite))
-		 (:none t))))
+	for enm across live-enm
+	when enm
+	do (let ((render-x (+ (enm-x enm) playfield-render-offset-x))
+			 (render-y (+ (enm-y enm) playfield-render-offset-y)))
+		 (case (enm-type enm)
+		   (:red-fairy
+			(draw-sprite textures :red-fairy render-x render-y :raywhite))
+		   (:none t)))))
 
 ;; 
 
@@ -226,19 +201,19 @@
 				  'bullet-control-linear)
 	(raylib:play-sound (sebundle-shoot0 sounds))))
 
-(defcoroutine stationary-shoot-at-player (id)
+(defcoroutine stationary-shoot-at-player (enm)
   (loop
 	(when (zerop (mod frames 50))
-	  (shoot-at-player (vec (aref enm-xs id) (aref enm-ys id))))
+	  (shoot-at-player (vec (enm-x enm) (enm-y enm))))
 	(yield)))
 
-(defcoroutine wiggle-shoot-at-player (id)
+(defcoroutine wiggle-shoot-at-player (enm)
   (let ((dir -1)
 		(dir-frames 0))
 	(loop
-	  (incf (aref enm-xs id) dir)
+	  (incf (enm-x enm) dir)
 	  (when (zerop (mod frames 50))
-		(shoot-at-player (vec (aref enm-xs id) (aref enm-ys id))))
+		(shoot-at-player (vec (enm-x enm) (enm-y enm))))
 	  (incf dir-frames)
 	  (when (= dir-frames 180)
 		(setf dir (* -1 dir))
@@ -338,7 +313,7 @@
   (raylib:draw-text (format nil "GRAZE: ~d" graze)
 					500 375
 					18 :raywhite)
-  (raylib:draw-text (format nil "ENM: ~d" (- NUM-ENM (count :none enm-types)))
+  (raylib:draw-text (format nil "ENM: ~d" (- NUM-ENM (count nil live-enm)))
 					500 400
 					18 :raywhite)
   (raylib:draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count nil live-bullets)))
