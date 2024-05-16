@@ -119,10 +119,6 @@
 			   (when show-hitboxes
 				 (raylib:draw-circle-v (vec render-x render-y) (bullet-hit-radius type) :red)))))
 
-;; Non-boss enemies. Uses SOA/separate dense typed arrays for performance
-;; NB: Why no velocity? Because most enemies are going to be moving in different, custom
-;; ways, so a single velocity system applied to all the enemies at the same time doesn't
-;; make sense.
 (defconstant NUM-ENM 256)
 (defstruct enm
   (type :none :type keyword)
