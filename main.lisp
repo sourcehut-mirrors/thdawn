@@ -29,6 +29,9 @@
 (defvar player-xv 0.0)
 (defvar player-yv 0.0)
 
+(defun clamp (v lower upper)
+  (max (min v upper) lower))
+
 (defvar ojamajo-carnival nil)
 (defun load-audio ()
   (raylib:init-audio-device)
@@ -96,8 +99,8 @@
 (defun tick-bullets ()
   (loop for bullet across live-bullets
 		when bullet
-		do (funcall (bullet-control bullet) bullet)
-		   (despawn-out-of-bound-bullet bullet)))
+		  do (funcall (bullet-control bullet) bullet)
+			 (despawn-out-of-bound-bullet bullet)))
 
 (defun bullet-hit-radius (type)
   (case type
@@ -112,12 +115,12 @@
 		 (let ((render-x (+ (bullet-x bullet) playfield-render-offset-x))
 			   (render-y (+ (bullet-y bullet) playfield-render-offset-y))
 			   (type (bullet-type bullet)))
-			   (case type
-				 (:pellet-white
-				  (draw-sprite textures :pellet-white render-x render-y :raywhite))
-				 (:none t))
-			   (when show-hitboxes
-				 (raylib:draw-circle-v (vec render-x render-y) (bullet-hit-radius type) :red)))))
+		   (case type
+			 (:pellet-white
+			  (draw-sprite textures :pellet-white render-x render-y :raywhite))
+			 (:none t))
+		   (when show-hitboxes
+			 (raylib:draw-circle-v (vec render-x render-y) (bullet-hit-radius type) :red)))))
 
 (defconstant NUM-ENM 256)
 (defstruct enm
@@ -125,21 +128,21 @@
   (x 0.0 :type float)
   (y 0.0 :type float)
   (health 0.0 :type real)
-  (control (lambda (_))) ;; todo type specifier
+  (action-list nil)
   ;; todo consider removing or downsizing
   (extras (make-hash-table :size 4) :type hash-table))
 (defvar live-enm
   (make-array NUM-ENM :element-type '(or null enemy) :initial-element nil))
 
-(defun spawn-enemy (type x y health control-function)
+(defun spawn-enemy (type x y health make-action-list)
   (let ((idx (position nil live-enm)))
 	(unless idx
 	  (error "No more open enemy slots!"))
-	(setf (aref live-enm idx)
-		  (make-enm :type type
-					:x x :y y
-					:health health
-					:control control-function))))
+	(let ((enm (setf (aref live-enm idx)
+					 (make-enm :type type
+							   :x x :y y
+							   :health health))))
+	  (setf (enm-action-list enm) (funcall make-action-list enm)))))
 
 (defun delete-enemy (enm)
   (let ((idx (position enm live-enm)))
@@ -149,7 +152,7 @@
 (defun tick-enemies ()
   (loop for enm across live-enm
 		when enm
-		  do (funcall (enm-control enm) enm)
+		  do (al:update (enm-action-list enm) 1)
 			 (when (<= (enm-health enm) 0)
 			   ;; todo sfx
 			   (delete-enemy enm))))
@@ -178,12 +181,12 @@
   (loop
 	for enm across live-enm
 	when enm
-	do (let ((render-x (+ (enm-x enm) playfield-render-offset-x))
-			 (render-y (+ (enm-y enm) playfield-render-offset-y)))
-		 (case (enm-type enm)
-		   (:red-fairy
-			(draw-sprite textures :red-fairy render-x render-y :raywhite))
-		   (:none t)))))
+	  do (let ((render-x (+ (enm-x enm) playfield-render-offset-x))
+			   (render-y (+ (enm-y enm) playfield-render-offset-y)))
+		   (case (enm-type enm)
+			 (:red-fairy
+			  (draw-sprite textures :red-fairy render-x render-y :raywhite))
+			 (:none t)))))
 
 ;; 
 
@@ -203,18 +206,65 @@
 	  (shoot-at-player (vec (enm-x enm) (enm-y enm))))
 	(yield)))
 
-(defcoroutine wiggle-shoot-at-player (enm)
-  (let ((dir -1)
-		(dir-frames 0))
-	(loop
-	  (incf (enm-x enm) dir)
-	  (when (zerop (mod frames 50))
-		(shoot-at-player (vec (enm-x enm) (enm-y enm))))
-	  (incf dir-frames)
-	  (when (= dir-frames 180)
-		(setf dir (* -1 dir))
-		(setf dir-frames 0))
-	  (yield))))
+(defclass ease2d (al:basic)
+  ((from-x :initarg :from-x)
+   (from-y :initarg :from-y)
+   (to-x :initarg :to-x)
+   (to-y :initarg :to-y)
+   (easer :initarg :easer))
+  (:documentation
+   "Update lambda receives the action and eased x/y values"))
+
+(defmethod al:update ((action ease2d) dt)
+  (let* ((progress (/ (+ (al:elapsed-time action) dt) (al:duration action)))
+		 (eased (funcall (slot-value action 'easer) (clamp progress 0.0 1.0)))
+		 (from-x (slot-value action 'from-x))
+		 (from-y (slot-value action 'from-y))
+		 (x (+ from-x
+			   (* eased (- (slot-value action 'to-x) from-x))))
+		 (y (+ from-y
+			   (* eased (- (slot-value action 'to-y) from-y)))))
+	(funcall (al::update-fun action) action x y)))
+
+;; todo implement clone-into
+
+(defconstant +movement-lane+ 1)
+(defconstant +shooting-lane+ 2)
+
+(defun pick-next-position (enm)
+  (let* ((x (enm-x enm))
+		 (y (enm-y enm))
+		 (angle (random (* 2 pi))) ;; XXX(replays): rng access
+		 (magnitude 50.0)
+		 (dx (* magnitude (cos angle)))
+		 (dy (* magnitude (sin angle)))
+		 (nx (clamp (+ x dx) playfield-min-x playfield-max-x))
+		 (ny (clamp (+ y dy) playfield-min-y playfield-max-y)))
+	(values nx ny)))
+
+(defun timed-move (enm)
+  (make-instance
+   'al:basic ;; todo: consider making a "oneshot" action type without the unnecessary overhead of basic
+   :blocking t
+   :duration 0
+   :lanes +movement-lane+
+   :update
+   (lambda (self dt)
+	 (multiple-value-bind (nx ny) (pick-next-position enm)
+	   (al:push-back (make-instance
+					  'ease2d
+					  :from-x (enm-x enm) :from-y (enm-y enm)
+					  :to-x nx :to-y ny
+					  :lanes +movement-lane+
+					  :easer 'ease-out-cubic :duration 90
+					  :blocking t
+					  :update (lambda (self nx ny)
+								(setf (enm-x enm) nx)
+								(setf (enm-y enm) ny)))
+					 (al:action-list self))
+	   (al:push-back (make-instance 'al:delay :duration 60 :lanes +movement-lane+)
+					 (al:action-list self))
+	   (al:push-back (timed-move enm) (al:action-list self))))))
 
 (defun handle-input ()
   ;; level triggered stuff
@@ -244,9 +294,23 @@
 				  (progn
 					(raylib:resume-music-stream ojamajo-carnival))))
 			 (:key-space
-			  (spawn-enemy :red-fairy
-						   player-x
-						   (- player-y 10) 50 (make-coroutine 'wiggle-shoot-at-player)))
+			  (spawn-enemy
+			   :red-fairy
+			   player-x
+			   (- player-y 10) 50
+			   (lambda (enm)
+				 (make-instance
+				  'al:action-list
+				  :actions (list 
+							(timed-move enm)
+							(make-instance
+							 'al:basic
+							 :duration most-positive-fixnum
+							 :lanes +shooting-lane+
+							 :update (lambda (self dt)
+									   (when (zerop (mod (al:elapsed-time self) 50))
+										 (shoot-at-player
+										  (vec2 (enm-x enm) (enm-y enm)))))))))))
 			 (:key-y (force-clear-bullet-and-enemy)))))
 
 (defun handle-player-movement ()
