@@ -6,13 +6,13 @@
 ;; idea is to have logical game x in [-192, 192] (192 is (416-31)/2, roughly), and y in [0, 448] 
 ;; logical game 0, 0 is at gl (31+(416-31)/2), 15
 ;; offset logical coords by 223, 15 to get to GL coords for render render
-(defconstant playfield-render-offset-x 223)
-(defconstant playfield-render-offset-y 15)
-(defconstant playfield-min-x -192)
-(defconstant playfield-min-y 0)
-(defconstant playfield-max-x 192)
-(defconstant playfield-max-y 448)
-(defconstant oob-bullet-despawn-fuzz 10)
+(defconstant +playfield-render-offset-x+ 223)
+(defconstant +playfield-render-offset-y+ 15)
+(defconstant +playfield-min-x+ -192)
+(defconstant +playfield-min-y+ 0)
+(defconstant +playfield-max-x+ 192)
+(defconstant +playfield-max-y+ 448)
+(defconstant +oob-bullet-despawn-fuzz+ 10)
 
 (defvar frames 0 "Number of frames the current stage has been running")
 (defvar show-hitboxes nil)
@@ -24,7 +24,7 @@
 (defparameter graze-radius 22.0)
 (defparameter hit-radius 3.0)
 (defvar player-x 0)
-(defvar player-y (- playfield-max-y 10.0))
+(defvar player-y (- +playfield-max-y+ 10.0))
 (defvar player-speed 200)
 (defvar player-xv 0.0)
 (defvar player-yv 0.0)
@@ -90,10 +90,10 @@
 (defun despawn-out-of-bound-bullet (bullet)
   (let ((x (bullet-x bullet))
 		(y (bullet-y bullet)))
-	(when (or (> x (+ playfield-max-x oob-bullet-despawn-fuzz))
-			  (< x (- playfield-min-x oob-bullet-despawn-fuzz))
-			  (< y (- playfield-min-y oob-bullet-despawn-fuzz))
-			  (> y (+ playfield-max-y oob-bullet-despawn-fuzz)))
+	(when (or (> x (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+))
+			  (< x (- +playfield-min-x+ +oob-bullet-despawn-fuzz+))
+			  (< y (- +playfield-min-y+ +oob-bullet-despawn-fuzz+))
+			  (> y (+ +playfield-max-y+ +oob-bullet-despawn-fuzz+)))
 	  (delete-bullet bullet))))
 
 (defun tick-bullets ()
@@ -112,8 +112,8 @@
 	for bullet across live-bullets
 	when bullet
 	  do
-		 (let ((render-x (+ (bullet-x bullet) playfield-render-offset-x))
-			   (render-y (+ (bullet-y bullet) playfield-render-offset-y))
+		 (let ((render-x (+ (bullet-x bullet) +playfield-render-offset-x+))
+			   (render-y (+ (bullet-y bullet) +playfield-render-offset-y+))
 			   (type (bullet-type bullet)))
 		   (case type
 			 (:pellet-white
@@ -181,8 +181,8 @@
   (loop
 	for enm across live-enm
 	when enm
-	  do (let ((render-x (+ (enm-x enm) playfield-render-offset-x))
-			   (render-y (+ (enm-y enm) playfield-render-offset-y)))
+	  do (let ((render-x (+ (enm-x enm) +playfield-render-offset-x+))
+			   (render-y (+ (enm-y enm) +playfield-render-offset-y+)))
 		   (case (enm-type enm)
 			 (:red-fairy
 			  (draw-sprite textures :red-fairy render-x render-y :raywhite))
@@ -230,8 +230,8 @@
 		 (magnitude 50.0)
 		 (dx (* magnitude (cos angle)))
 		 (dy (* magnitude (sin angle)))
-		 (nx (clamp (+ x dx) playfield-min-x playfield-max-x))
-		 (ny (clamp (+ y dy) playfield-min-y playfield-max-y)))
+		 (nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+))
+		 (ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)))
 	(values nx ny)))
 
 (defun timed-move (enm)
@@ -272,7 +272,7 @@
 	   (:mainshot
 		(decf (miscent-y e) 8.0)
 		;; todo damage dealing
-		(< (miscent-y e) playfield-min-y))
+		(< (miscent-y e) +playfield-min-y+))
 	   (t t)))
    live-misc-ents))
 
@@ -281,8 +281,8 @@
 	(case (miscent-type e)
 	  ;; todo proper texture
 	  (:mainshot (draw-sprite textures :pellet-white
-							  (+ playfield-render-offset-x (miscent-x e))
-							  (+ playfield-render-offset-y (miscent-y e))
+							  (+ +playfield-render-offset-x+ (miscent-x e))
+							  (+ +playfield-render-offset-y+ (miscent-y e))
 							  :white)))))
 
 (defun handle-input ()
@@ -346,7 +346,7 @@
            (new-x (+ player-x (vx2 acceleration)))
            (new-y (+ player-y (vy2 acceleration))))
 	  ;; todo: refine this so that you can bottomdrag instead of not moving at all
-      (when (not (or (> new-x playfield-max-x) (> new-y playfield-max-y) (< new-y playfield-min-y) (< new-x playfield-min-x)))
+      (when (not (or (> new-x +playfield-max-x+) (> new-y +playfield-max-y+) (< new-y +playfield-min-y+) (< new-x +playfield-min-x+)))
         (setf player-x new-x)
         (setf player-y new-y)))
     (setf player-xv 0.0)
@@ -354,8 +354,8 @@
 
 (defvar focus-sigil-strength 0.0)
 (defun draw-player (textures)
-  (let* ((render-player-x (+ player-x playfield-render-offset-x))
-		 (render-player-y (+ player-y playfield-render-offset-y)))
+  (let* ((render-player-x (+ player-x +playfield-render-offset-x+))
+		 (render-player-y (+ player-y +playfield-render-offset-y+)))
 	;; player sprite (todo: directional moving sprites)
 	(let ((x-texture-index (truncate (mod (/ frames 9) 8))))
 	  (raylib:draw-texture-rec
