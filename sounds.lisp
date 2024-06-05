@@ -4,7 +4,7 @@
   "Bundle of loaded sound effects"
   spellcapture spelldeclare
   longcharge shortcharge
-  enmdie bossdie playerdie
+  enmdie bossdie playerdie playershoot
   shoot0 shoot1 shoot2
   extend graze bell
   oldvwoopfast oldvwoopslow
@@ -22,6 +22,7 @@
 		   :enmdie (lsfx "se_enep00.wav")
 		   :bossdie (lsfx "se_enep01.wav")
 		   :playerdie (lsfx "se_pldead00.wav")
+		   :playershoot (lsfx "se_plst00.wav")
 		   :shoot0 (lsfx "se_tan00.wav")
 		   :shoot1 (lsfx "se_tan01.wav")
 		   :shoot2 (lsfx "se_tan02.wav")

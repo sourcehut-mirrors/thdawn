@@ -270,7 +270,7 @@
    (lambda (e)
 	 (case (miscent-type e)
 	   (:mainshot
-		(decf (miscent-y e) 8.0)
+		(decf (miscent-y e) 10.0)
 		;; todo damage dealing
 		(< (miscent-y e) +playfield-min-y+))
 	   (t t)))
@@ -303,7 +303,7 @@
 	  (let ((y (- player-y 20)))
 		(push (make-miscent :type :mainshot :x (- player-x 10) :y y) live-misc-ents)
 		(push (make-miscent :type :mainshot :x (+ player-x 10) :y y) live-misc-ents)
-		)))
+		(raylib:play-sound (sebundle-playershoot sounds)))))
 
   ;; edge triggered stuff
   (loop for k = (raylib:get-key-pressed) then (raylib:get-key-pressed)
