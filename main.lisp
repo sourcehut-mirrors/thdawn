@@ -169,7 +169,7 @@
 			   (raylib:play-sound (sebundle-graze sounds))) ;; todo make this sound better?
 			 (when (raylib:check-collision-circles
 					(vec player-x player-y) hit-radius
-					(vec (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet))) ;; todo hitbox size per bullet type
+					(vec (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet)))
 			   (raylib:play-sound (sebundle-playerdie sounds)))))
 
 (defun force-clear-bullet-and-enemy ()
@@ -188,8 +188,6 @@
 			  (draw-sprite textures :red-fairy render-x render-y :raywhite))
 			 (:none t)))))
 
-;; 
-
 (defun shoot-at-player (srcpos)
   (let* ((player-pos (vec player-x player-y))
 		 (diff (v- player-pos srcpos))
@@ -199,12 +197,6 @@
 				  facing 3.0
 				  'bullet-control-linear)
 	(raylib:play-sound (sebundle-shoot0 sounds))))
-
-(defcoroutine stationary-shoot-at-player (enm)
-  (loop
-	(when (zerop (mod frames 50))
-	  (shoot-at-player (vec (enm-x enm) (enm-y enm))))
-	(yield)))
 
 (defclass ease2d (al:basic)
   ((from-x :initarg :from-x)
@@ -266,6 +258,33 @@
 					 (al:action-list self))
 	   (al:push-back (timed-move enm) (al:action-list self))))))
 
+(defstruct miscent
+  (type :point :type keyword) ;; :point :bomb :life :bombfrag :lifefrag :mainshot
+  (x 0.0 :type float)
+  (y 0.0 :type float))
+
+(defvar live-misc-ents nil)
+
+(defun tick-misc-ents ()
+  (delete-if
+   (lambda (e)
+	 (case (miscent-type e)
+	   (:mainshot
+		(decf (miscent-y e) 8.0)
+		;; todo damage dealing
+		(< (miscent-y e) playfield-min-y))
+	   (t t)))
+   live-misc-ents))
+
+(defun draw-misc-ents (textures)
+  (loop for e in live-misc-ents do
+	(case (miscent-type e)
+	  ;; todo proper texture
+	  (:mainshot (draw-sprite textures :pellet-white
+							  (+ playfield-render-offset-x (miscent-x e))
+							  (+ playfield-render-offset-y (miscent-y e))
+							  :white)))))
+
 (defun handle-input ()
   ;; level triggered stuff
   (unless paused
@@ -276,13 +295,18 @@
 	(when (raylib:is-key-down :key-up)
 	  (incf player-yv -1))
 	(when (raylib:is-key-down :key-down)
-	  (incf player-yv 1)))
+	  (incf player-yv 1))
+	(when (and (raylib:is-key-down :key-z)
+			   (zerop (mod frames 5))) ;; todo separate counter
+	  (let ((y (- player-y 20)))
+		(push (make-miscent :type :mainshot :x (- player-x 10) :y y) live-misc-ents)
+		(push (make-miscent :type :mainshot :x (+ player-x 10) :y y) live-misc-ents)
+		)))
 
   ;; edge triggered stuff
   (loop for k = (raylib:get-key-pressed) then (raylib:get-key-pressed)
 		while (not (eq :key-null k))
 		do (case k
-			 (:key-z t) ;; todo shooting
 			 (:key-x t) ;; todo (maybe) bombing
 			 (:key-f3 (setf show-hitboxes (not show-hitboxes)))
 			 (:key-escape
@@ -364,6 +388,7 @@
   (draw-player textures)
 
   (draw-enemies textures)
+  (draw-misc-ents textures)
   (draw-bullets textures)
 
   (when paused
@@ -406,6 +431,7 @@ For use in interactive development."
 		  (handle-player-movement)
 		  (tick-bullets)
 		  (tick-enemies)
+		  (tick-misc-ents)
 		  (process-collisions))
 		(raylib:with-drawing
 		  (render-all textures))
