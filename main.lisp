@@ -120,7 +120,7 @@
 			  (draw-sprite textures :pellet-white render-x render-y :raywhite))
 			 (:none t))
 		   (when show-hitboxes
-			 (raylib:draw-circle-v (vec render-x render-y) (bullet-hit-radius type) :red)))))
+			 (raylib:draw-circle-v (vec2 render-x render-y) (bullet-hit-radius type) :red)))))
 
 (defconstant NUM-ENM 256)
 (defstruct enm
@@ -162,14 +162,14 @@
 		if bullet
 		  do (when (and (not (bullet-grazed bullet))
 						(raylib:check-collision-circles
-						 (vec player-x player-y) graze-radius
-						 (vec (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet))))
+						 (vec2 player-x player-y) graze-radius
+						 (vec2 (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet))))
 			   (incf graze)
 			   (setf (bullet-grazed bullet) t)
 			   (raylib:play-sound (sebundle-graze sounds))) ;; todo make this sound better?
 			 (when (raylib:check-collision-circles
-					(vec player-x player-y) hit-radius
-					(vec (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet)))
+					(vec2 player-x player-y) hit-radius
+					(vec2 (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet)))
 			   (raylib:play-sound (sebundle-playerdie sounds)))))
 
 (defun force-clear-bullet-and-enemy ()
@@ -189,11 +189,11 @@
 			 (:none t)))))
 
 (defun shoot-at-player (srcpos)
-  (let* ((player-pos (vec player-x player-y))
+  (let* ((player-pos (vec2 player-x player-y))
 		 (diff (v- player-pos srcpos))
-		 (facing (atan (vy diff) (vx diff))))
+		 (facing (atan (vy2 diff) (vx2 diff))))
 	(spawn-bullet :pellet-white
-				  (vx srcpos) (vy srcpos)
+				  (vx2 srcpos) (vy2 srcpos)
 				  facing 3.0
 				  'bullet-control-linear)
 	(raylib:play-sound (sebundle-shoot0 sounds))))
@@ -341,10 +341,10 @@
   (when (not (and (zerop player-xv) (zerop player-yv)))
     (let* ((delta-time (raylib:get-frame-time))
            (velocity (* player-speed delta-time (if (raylib:is-key-down :key-left-shift) 0.5 1)))
-           (normalized-direction (vunit (vec player-xv player-yv)))
+           (normalized-direction (vunit (vec2 player-xv player-yv)))
            (acceleration (v* normalized-direction velocity))
-           (new-x (+ player-x (vx acceleration)))
-           (new-y (+ player-y (vy acceleration))))
+           (new-x (+ player-x (vx2 acceleration)))
+           (new-y (+ player-y (vy2 acceleration))))
 	  ;; todo: refine this so that you can bottomdrag instead of not moving at all
       (when (not (or (> new-x playfield-max-x) (> new-y playfield-max-y) (< new-y playfield-min-y) (< new-x playfield-min-x)))
         (setf player-x new-x)
@@ -361,7 +361,7 @@
 	  (raylib:draw-texture-rec
 	   (txbundle-reimu textures)
 	   (raylib:make-rectangle :x (* 32 x-texture-index) :y 0 :width 32 :height 48)
-	   (vec (- render-player-x 16) (- render-player-y 24))
+	   (vec2 (- render-player-x 16) (- render-player-y 24))
 	   :raywhite))
 	
 	;; focus sigil
@@ -380,8 +380,8 @@
 	  (rlgl:pop-matrix))
 
 	(when show-hitboxes
-	  (raylib:draw-circle-v (vec render-player-x render-player-y) graze-radius :green)
-	  (raylib:draw-circle-v (vec render-player-x render-player-y) hit-radius :red))))
+	  (raylib:draw-circle-v (vec2 render-player-x render-player-y) graze-radius :green)
+	  (raylib:draw-circle-v (vec2 render-player-x render-player-y) hit-radius :red))))
 
 (defun render-all (textures)
   (raylib:clear-background bgcolor)
