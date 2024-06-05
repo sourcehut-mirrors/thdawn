@@ -279,11 +279,13 @@
 (defun draw-misc-ents (textures)
   (loop for e in live-misc-ents do
 	(case (miscent-type e)
-	  ;; todo proper texture
-	  (:mainshot (draw-sprite textures :pellet-white
-							  (+ +playfield-render-offset-x+ (miscent-x e))
-							  (+ +playfield-render-offset-y+ (miscent-y e))
-							  :white)))))
+	  (:mainshot
+	   (draw-sprite-with-rotation
+		textures :mainshot -90.0
+		(+ +playfield-render-offset-x+ (miscent-x e))
+		(+ +playfield-render-offset-y+ (miscent-y e))
+		:white)
+	   ))))
 
 (defun handle-input ()
   ;; level triggered stuff

@@ -37,21 +37,27 @@
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 224 :width 16 :height 16)
-		   :center-shift (vec -8 -8)))
+		   :center-shift (vec2 -8 -8)))
 
 	;; enemies
 	(setf (gethash :red-fairy ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-enemy1
 		   :bounds (raylib:make-rectangle :x 0 :y 384 :width 32 :height 32)
-		   :center-shift (vec -16.0 -16.0)))
+		   :center-shift (vec2 -16.0 -16.0)))
 
 	;; misc
 	(setf (gethash :focus-sigil ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-misc
 		   :bounds (raylib:make-rectangle :x 128 :y 0 :width 64 :height 64)
-		   :center-shift (vec -32.0 -32.0)))
+		   :center-shift (vec2 -32.0 -32.0)))
+
+	(setf (gethash :mainshot ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-reimu
+		   :bounds (raylib:make-rectangle :x 192 :y 160 :width 64 :height 16)
+		   :center-shift (vec2 54.0 8.0)))
 	ret))
 
 (defun draw-sprite (textures sprite-id x y color)
@@ -61,3 +67,17 @@
 	 (sprite-descriptor-bounds data)
 	 (nv+ (vec x y) (sprite-descriptor-center-shift data))
 	 color)))
+
+(defun draw-sprite-with-rotation (textures sprite-id rotation x y color)
+  (let* ((data (gethash sprite-id sprite-data))
+		 (center-shift (sprite-descriptor-center-shift data)))
+	(rlgl:push-matrix)
+	(rlgl:translate-f x y 0.0)
+	(rlgl:rotate-f rotation 0.0 0.0 1.0)
+	(rlgl:translate-f (- (vx2 center-shift)) (- (vy2 center-shift)) 0.0)
+	(raylib:draw-texture-rec
+	 (funcall (sprite-descriptor-tx-accessor data) textures)
+	 (sprite-descriptor-bounds data)
+	 (vec2 0.0 0.0)
+	 color)
+	(rlgl:pop-matrix)))
