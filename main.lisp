@@ -154,7 +154,7 @@
 		when enm
 		  do (al:update (enm-action-list enm) 1)
 			 (when (<= (enm-health enm) 0)
-			   ;; todo sfx
+			   (raylib:play-sound (sebundle-enmdie sounds))
 			   (delete-enemy enm))))
 
 (defun process-collisions ()
@@ -177,6 +177,15 @@
   (fill live-enm nil)
   (fill live-bullets nil))
 
+(defun enm-hurtbox (enm)
+  (case (enm-type enm)
+	(:red-fairy (raylib:make-rectangle
+				 ;; XXX why do we have to do this?? double-floats are creeping in
+				 ;; which the ffi doesn't like. perhaps due to trig functions?
+				 :x (coerce (- (enm-x enm) 16) 'single-float)
+				 :y (coerce (- (enm-y enm) 16) 'single-float)
+				 :width 32 :height 32))))
+
 (defun draw-enemies (textures)
   (loop
 	for enm across live-enm
@@ -186,7 +195,13 @@
 		   (case (enm-type enm)
 			 (:red-fairy
 			  (draw-sprite textures :red-fairy render-x render-y :raywhite))
-			 (:none t)))))
+			 (:none t)))
+		 (when show-hitboxes
+		   (let ((hurtbox (enm-hurtbox enm)))
+			 (when hurtbox
+			   (incf (raylib:rectangle-x hurtbox) +playfield-render-offset-x+)
+			   (incf (raylib:rectangle-y hurtbox) +playfield-render-offset-y+)
+			   (raylib:draw-rectangle-rec hurtbox :red))))))
 
 (defun shoot-at-player (srcpos)
   (let* ((player-pos (vec2 player-x player-y))
@@ -263,29 +278,55 @@
   (x 0.0 :type float)
   (y 0.0 :type float))
 
-(defvar live-misc-ents nil)
+(defvar live-misc-ents
+  (make-array 512 :element-type '(or null miscent) :initial-element nil))
+
+(defun spawn-misc-ent (ent)
+  (let ((idx (position nil live-misc-ents)))
+	(unless idx
+	  (error "No more open misc entity slots!"))
+	(setf (aref live-misc-ents idx) ent)))
+
+(defun delete-misc-ent (ent)
+  (let ((idx (position ent live-misc-ents)))
+	(when idx
+	  ;; tolerate killing already-removed/dead
+	  (setf (aref live-misc-ents idx) nil))))
 
 (defun tick-misc-ents ()
-  (delete-if
-   (lambda (e)
-	 (case (miscent-type e)
-	   (:mainshot
-		(decf (miscent-y e) 10.0)
-		;; todo damage dealing
-		(< (miscent-y e) +playfield-min-y+))
-	   (t t)))
-   live-misc-ents))
+  (loop for ent across live-misc-ents
+		when ent
+		  do 
+			 (case (miscent-type ent)
+			   (:mainshot
+				(decf (miscent-y ent) 10.0)
+				(let ((hitbox (raylib:make-rectangle
+							   :x (- (miscent-x ent) 6) :y (- (miscent-y ent) 10)
+							   :width 12 :height 16)))
+				  (loop for enm across live-enm when enm
+						do (when (raylib:check-collision-recs hitbox (enm-hurtbox enm))
+							 (delete-misc-ent ent)
+							 (decf (enm-health enm) 50)
+							 (return))))
+				;; todo damage dealing
+				(when (< (miscent-y ent) +playfield-min-y+)
+				  (delete-misc-ent ent)))
+			   (t t))))
 
 (defun draw-misc-ents (textures)
-  (loop for e in live-misc-ents do
-	(case (miscent-type e)
-	  (:mainshot
-	   (draw-sprite-with-rotation
-		textures :mainshot -90.0
-		(+ +playfield-render-offset-x+ (miscent-x e))
-		(+ +playfield-render-offset-y+ (miscent-y e))
-		:white)
-	   ))))
+  (loop for ent across live-misc-ents when ent
+		do (case (miscent-type ent)
+			 (:mainshot
+			  (let ((render-x (+ +playfield-render-offset-x+ (miscent-x ent)))
+					(render-y (+ +playfield-render-offset-y+ (miscent-y ent))))
+				(draw-sprite-with-rotation
+				 textures :mainshot -90.0
+				 render-x render-y :white)
+				(when show-hitboxes
+				  (let ((hitbox (raylib:make-rectangle
+								 :x (- render-x 6) :y (- render-y 10)
+								 :width 12 :height 16)))
+					(raylib:draw-rectangle-rec hitbox :red))))))))
 
 (defun handle-input ()
   ;; level triggered stuff
@@ -301,8 +342,8 @@
 	(when (and (raylib:is-key-down :key-z)
 			   (zerop (mod frames 5))) ;; todo separate counter
 	  (let ((y (- player-y 20)))
-		(push (make-miscent :type :mainshot :x (- player-x 10) :y y) live-misc-ents)
-		(push (make-miscent :type :mainshot :x (+ player-x 10) :y y) live-misc-ents)
+		(spawn-misc-ent (make-miscent :type :mainshot :x (- player-x 10) :y y))
+		(spawn-misc-ent (make-miscent :type :mainshot :x (+ player-x 10) :y y))
 		(raylib:play-sound (sebundle-playershoot sounds)))))
 
   ;; edge triggered stuff
@@ -323,7 +364,7 @@
 			  (spawn-enemy
 			   :red-fairy
 			   player-x
-			   (- player-y 10) 50
+			   (- player-y 10) 200
 			   (lambda (enm)
 				 (make-instance
 				  'al:action-list
@@ -397,6 +438,9 @@
 	(raylib:draw-text "PAUSED" 175 150 28 :purple))
   
   (raylib:draw-texture (txbundle-hud textures) 0 0 :raywhite)
+  (raylib:draw-text (format nil "MISC: ~d" (- 512 (count nil live-misc-ents)))
+					500 350
+					18 :raywhite)
   (raylib:draw-text (format nil "GRAZE: ~d" graze)
 					500 375
 					18 :raywhite)
