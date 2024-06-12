@@ -6,18 +6,30 @@
   enemy1
   hud
   misc
-  bullet2)
+  bullet1 bullet2 bullet3 bullet4 bullet5 bullet6)
 (defun load-textures ()
-  (make-txbundle
-   :reimu (raylib:load-texture "assets/img/reimu.png")
-   :enemy1 (raylib:load-texture "assets/img/enemy1.png")
-   :hud (raylib:load-texture "assets/img/ui_bg.png")
-   :misc (raylib:load-texture "assets/img/misc.png")
-   :bullet2 (raylib:load-texture "assets/img/bullet2.png")))
+  (flet ((ltex (file) (raylib:load-texture
+					   (concatenate 'string "assets/img/" file))))
+	(make-txbundle
+	 :reimu (ltex "reimu.png")
+	 :enemy1 (ltex "enemy1.png")
+	 :hud (ltex "ui_bg.png")
+	 :misc (ltex "misc.png")
+	 :bullet1 (ltex "bullet1.png")
+	 :bullet2 (ltex "bullet2.png")
+	 :bullet3 (ltex "bullet3.png")
+	 :bullet4 (ltex "bullet4.png")
+	 :bullet5 (ltex "bullet5.png")
+	 :bullet6 (ltex "bullet6.png"))))
 (defun unload-textures (textures)
   (raylib:unload-texture (txbundle-reimu textures))
   (raylib:unload-texture (txbundle-hud textures))
+  (raylib:unload-texture (txbundle-bullet1 textures))
   (raylib:unload-texture (txbundle-bullet2 textures))
+  (raylib:unload-texture (txbundle-bullet3 textures))
+  (raylib:unload-texture (txbundle-bullet4 textures))
+  (raylib:unload-texture (txbundle-bullet5 textures))
+  (raylib:unload-texture (txbundle-bullet6 textures))
   (raylib:unload-texture (txbundle-enemy1 textures))
   (raylib:unload-texture (txbundle-misc textures)))
 
