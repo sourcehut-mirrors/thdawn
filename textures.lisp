@@ -42,14 +42,55 @@
   ;; unless the sprite's semantic "center" is not its geometric center
   center-shift)
 
-(defvar sprite-data
-  (let ((ret (make-hash-table)))
+(defparameter sprite-data
+  (let ((ret (make-hash-table))
+		(pellet-shift (vec2 -8 -8)))
 	;; bullets
+	(setf (gethash :pellet-red ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 176 :y 0 :width 16 :height 16)
+		   :center-shift pellet-shift))
+	(setf (gethash :pellet-magenta ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 176 :y 32 :width 16 :height 16)
+		   :center-shift pellet-shift))
+	(setf (gethash :pellet-blue ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 176 :y 80 :width 16 :height 16)
+		   :center-shift pellet-shift))
+	(setf (gethash :pellet-cyan ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 176 :y 96 :width 16 :height 16)
+		   :center-shift pellet-shift))
+	(setf (gethash :pellet-green ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 176 :y 112 :width 16 :height 16)
+		   :center-shift pellet-shift))
+	(setf (gethash :pellet-yellow ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 176 :y 160 :width 16 :height 16)
+		   :center-shift pellet-shift))
+	(setf (gethash :pellet-orange ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 176 :y 192 :width 16 :height 16)
+		   :center-shift pellet-shift))
+	(setf (gethash :pellet-gray ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 176 :y 208 :width 16 :height 16)
+		   :center-shift pellet-shift))
 	(setf (gethash :pellet-white ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 224 :width 16 :height 16)
-		   :center-shift (vec2 -8 -8)))
+		   :center-shift pellet-shift))
 
 	;; enemies
 	(setf (gethash :red-fairy ret)

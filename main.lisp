@@ -102,9 +102,15 @@
 		  do (funcall (bullet-control bullet) bullet)
 			 (despawn-out-of-bound-bullet bullet)))
 
-(defun bullet-hit-radius (type)
+(defun bullet-family (type)
   (case type
-	(:pellet-white 2.0)
+	((:pellet-white :pellet-gray :pellet-orange :pellet-yellow
+	  :pellet-green :pellet-cyan :pellet-blue :pellet-magenta :pellet-red)
+	 :pellet)))
+
+(defun bullet-hit-radius (type)
+  (case (bullet-family type)
+	((:pellet) 2.0)
 	(t 0.0)))
 
 (defun draw-bullets (textures)
@@ -115,9 +121,9 @@
 		 (let ((render-x (+ (bullet-x bullet) +playfield-render-offset-x+))
 			   (render-y (+ (bullet-y bullet) +playfield-render-offset-y+))
 			   (type (bullet-type bullet)))
-		   (case type
-			 (:pellet-white
-			  (draw-sprite textures :pellet-white render-x render-y :raywhite))
+		   (case (bullet-family type)
+			 ((:pellet)
+			  (draw-sprite textures type render-x render-y :raywhite))
 			 (:none t))
 		   (when show-hitboxes
 			 (raylib:draw-circle-v (vec2 render-x render-y) (bullet-hit-radius type) :red)))))
@@ -207,7 +213,7 @@
   (let* ((player-pos (vec2 player-x player-y))
 		 (diff (v- player-pos srcpos))
 		 (facing (atan (vy2 diff) (vx2 diff))))
-	(spawn-bullet :pellet-white
+	(spawn-bullet :pellet-cyan
 				  (vx2 srcpos) (vy2 srcpos)
 				  facing 3.0
 				  'bullet-control-linear)
