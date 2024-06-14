@@ -44,53 +44,98 @@
 
 (defparameter sprite-data
   (let ((ret (make-hash-table))
-		(pellet-shift (vec2 -8 -8)))
+		(shift8 (vec2 -8 -8)))
 	;; bullets
 	(setf (gethash :pellet-red ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 0 :width 16 :height 16)
-		   :center-shift pellet-shift))
+		   :center-shift shift8))
 	(setf (gethash :pellet-magenta ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 32 :width 16 :height 16)
-		   :center-shift pellet-shift))
+		   :center-shift shift8))
 	(setf (gethash :pellet-blue ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 80 :width 16 :height 16)
-		   :center-shift pellet-shift))
+		   :center-shift shift8))
 	(setf (gethash :pellet-cyan ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 96 :width 16 :height 16)
-		   :center-shift pellet-shift))
+		   :center-shift shift8))
 	(setf (gethash :pellet-green ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 112 :width 16 :height 16)
-		   :center-shift pellet-shift))
+		   :center-shift shift8))
 	(setf (gethash :pellet-yellow ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 160 :width 16 :height 16)
-		   :center-shift pellet-shift))
+		   :center-shift shift8))
 	(setf (gethash :pellet-orange ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 192 :width 16 :height 16)
-		   :center-shift pellet-shift))
+		   :center-shift shift8))
 	(setf (gethash :pellet-gray ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 208 :width 16 :height 16)
-		   :center-shift pellet-shift))
+		   :center-shift shift8))
 	(setf (gethash :pellet-white ret)
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 176 :y 224 :width 16 :height 16)
-		   :center-shift pellet-shift))
+		   :center-shift shift8))
+	(setf (gethash :small-star-red ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 96 :y 0 :width 16 :height 16)
+		   :center-shift shift8))
+	(setf (gethash :small-star-magenta ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 96 :y 32 :width 16 :height 16)
+		   :center-shift shift8))
+	(setf (gethash :small-star-blue ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 96 :y 64 :width 16 :height 16)
+		   :center-shift shift8))
+	(setf (gethash :small-star-cyan ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 96 :y 96 :width 16 :height 16)
+		   :center-shift shift8))
+	(setf (gethash :small-star-green ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 96 :y 128 :width 16 :height 16)
+		   :center-shift shift8))
+	(setf (gethash :small-star-yellow ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 96 :y 160 :width 16 :height 16)
+		   :center-shift shift8))
+	(setf (gethash :small-star-orange ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 96 :y 192 :width 16 :height 16)
+		   :center-shift shift8))
+	(setf (gethash :small-star-white ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 96 :y 224 :width 16 :height 16)
+		   :center-shift shift8))
+	(setf (gethash :small-star-black ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 96 :y 240 :width 16 :height 16)
+		   :center-shift shift8))
 
 	;; enemies
 	(setf (gethash :red-fairy ret)
@@ -110,7 +155,7 @@
 		  (make-sprite-descriptor
 		   :tx-accessor #'txbundle-reimu
 		   :bounds (raylib:make-rectangle :x 192 :y 160 :width 64 :height 16)
-		   :center-shift (vec2 54.0 8.0)))
+		   :center-shift (vec2 -54.0 -8.0)))
 	ret))
 
 (defun draw-sprite (textures sprite-id x y color)
@@ -121,16 +166,17 @@
 	 (nv+ (vec x y) (sprite-descriptor-center-shift data))
 	 color)))
 
-(defun draw-sprite-with-rotation (textures sprite-id rotation x y color)
-  (let* ((data (gethash sprite-id sprite-data))
-		 (center-shift (sprite-descriptor-center-shift data)))
-	(rlgl:push-matrix)
-	(rlgl:translate-f x y 0.0)
-	(rlgl:rotate-f rotation 0.0 0.0 1.0)
-	(rlgl:translate-f (- (vx2 center-shift)) (- (vy2 center-shift)) 0.0)
-	(raylib:draw-texture-rec
-	 (funcall (sprite-descriptor-tx-accessor data) textures)
-	 (sprite-descriptor-bounds data)
-	 (vec2 0.0 0.0)
-	 color)
-	(rlgl:pop-matrix)))
+(let ((zero (vec2 0.0 0.0)))
+  (defun draw-sprite-with-rotation (textures sprite-id rotation x y color)
+	(let* ((data (gethash sprite-id sprite-data))
+		   (center-shift (sprite-descriptor-center-shift data)))
+	  (rlgl:push-matrix)
+	  (rlgl:translate-f x y 0.0)
+	  (rlgl:rotate-f rotation 0.0 0.0 1.0)
+	  (rlgl:translate-f (+ (vx2 center-shift)) (+ (vy2 center-shift)) 0.0)
+	  (raylib:draw-texture-rec
+	   (funcall (sprite-descriptor-tx-accessor data) textures)
+	   (sprite-descriptor-bounds data)
+	   zero
+	   color)
+	  (rlgl:pop-matrix))))

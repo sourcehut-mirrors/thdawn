@@ -106,11 +106,16 @@
   (case type
 	((:pellet-white :pellet-gray :pellet-orange :pellet-yellow
 	  :pellet-green :pellet-cyan :pellet-blue :pellet-magenta :pellet-red)
-	 :pellet)))
+	 :pellet)
+	((:small-star-red :small-star-magenta :small-star-blue :small-star-cyan
+	  :small-star-green :small-star-yellow :small-star-orange
+	  :small-star-white :small-star-black)
+	 :small-star)))
 
 (defun bullet-hit-radius (type)
   (case (bullet-family type)
 	((:pellet) 2.0)
+	((:small-star) 3.7)
 	(t 0.0)))
 
 (defun draw-bullets (textures)
@@ -124,6 +129,9 @@
 		   (case (bullet-family type)
 			 ((:pellet)
 			  (draw-sprite textures type render-x render-y :raywhite))
+			 ((:small-star)
+			  (draw-sprite-with-rotation textures type (mod (* frames 5.0) 360.0)
+										 render-x render-y :raywhite))
 			 (:none t))
 		   (when show-hitboxes
 			 (raylib:draw-circle-v (vec2 render-x render-y) (bullet-hit-radius type) :red)))))
@@ -213,7 +221,7 @@
   (let* ((player-pos (vec2 player-x player-y))
 		 (diff (v- player-pos srcpos))
 		 (facing (atan (vy2 diff) (vx2 diff))))
-	(spawn-bullet :pellet-cyan
+	(spawn-bullet :small-star-white
 				  (vx2 srcpos) (vy2 srcpos)
 				  facing 3.0
 				  'bullet-control-linear)
