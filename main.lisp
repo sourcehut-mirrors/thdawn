@@ -160,7 +160,7 @@
   ;; todo consider removing or downsizing
   (extras (make-hash-table :size 4) :type hash-table))
 (defvar live-enm
-  (make-array NUM-ENM :element-type '(or null enemy) :initial-element nil))
+  (make-array NUM-ENM :element-type '(or null enm) :initial-element nil))
 
 (defun spawn-enemy (type x y health make-action-list)
   (let ((idx (position nil live-enm)))
