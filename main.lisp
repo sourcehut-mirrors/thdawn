@@ -15,6 +15,7 @@
 (defconstant +oob-bullet-despawn-fuzz+ 10)
 
 (defvar frames 0 "Number of frames the current stage has been running")
+(defvar iframes 0 "Remaining frames of invincibility")
 (defvar show-hitboxes nil)
 (defvar graze 0)
 (defvar paused nil)
@@ -28,6 +29,9 @@
 (defvar player-speed 200)
 (defvar player-xv 0.0)
 (defvar player-yv 0.0)
+
+(defun player-invincible-p ()
+  (plusp iframes))
 
 (defun clamp (v lower upper)
   (max (min v upper) lower))
@@ -191,10 +195,13 @@
 			   (incf graze)
 			   (setf (bullet-grazed bullet) t)
 			   (raylib:play-sound (sebundle-graze sounds))) ;; todo make this sound better?
-			 (when (raylib:check-collision-circles
-					(vec2 player-x player-y) hit-radius
-					(vec2 (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet)))
-			   (raylib:play-sound (sebundle-playerdie sounds)))))
+			 (when (and
+					(not (player-invincible-p))
+					(raylib:check-collision-circles
+					 (vec2 player-x player-y) hit-radius
+					 (vec2 (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet))))
+			   (raylib:play-sound (sebundle-playerdie sounds))
+			   (setf iframes 180))))
 
 (defun force-clear-bullet-and-enemy ()
   (setf graze 0)
@@ -424,12 +431,17 @@
   (let* ((render-player-x (+ player-x +playfield-render-offset-x+))
 		 (render-player-y (+ player-y +playfield-render-offset-y+)))
 	;; player sprite (todo: directional moving sprites)
-	(let ((x-texture-index (truncate (mod (/ frames 9) 8))))
+	(let ((x-texture-index (truncate (mod (/ frames 9) 8)))
+		  (iframe-blink
+			(if (and (player-invincible-p)
+					 (< (mod frames 4) 2))
+				(raylib:make-rgba 64 64 255 255)
+				:raywhite)))
 	  (raylib:draw-texture-rec
 	   (txbundle-reimu textures)
 	   (raylib:make-rectangle :x (* 32 x-texture-index) :y 0 :width 32 :height 48)
 	   (vec2 (- render-player-x 16) (- render-player-y 24))
-	   :raywhite))
+	   iframe-blink))
 	
 	;; focus sigil
 	(if (raylib:is-key-down :key-left-shift)
@@ -498,6 +510,8 @@ For use in interactive development."
 		(handle-input)
 		(raylib:update-music-stream ojamajo-carnival)
 		(unless paused
+		  (when (plusp iframes)
+			(decf iframes))
 		  (handle-player-movement)
 		  (tick-bullets)
 		  (tick-enemies)
