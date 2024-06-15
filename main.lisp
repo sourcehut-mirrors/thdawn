@@ -38,7 +38,8 @@
   (setf ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav")))
 (defun unload-audio ()
   (raylib:stop-music-stream ojamajo-carnival)
-  (raylib:unload-music-stream ojamajo-carnival))
+  (raylib:unload-music-stream ojamajo-carnival)
+  (setf ojamajo-carnival nil))
 
 ;; Try changing me, then updating the game live in the REPL!
 (defparameter bgcolor :black)
@@ -112,6 +113,11 @@
 	  :small-star-white :small-star-black)
 	 :small-star)))
 
+;; sbcl overeagerly optimizes the function type of this function
+;; to be (or (single-float 2.0) (single-float 3.7) ...), which causes
+;; problems for callers when live reloading to add a new value.
+;; Explicitly declare a broader type definition to suppress that.
+(declaim (ftype (function (keyword) single-float) bullet-hit-radius))
 (defun bullet-hit-radius (type)
   (case (bullet-family type)
 	((:pellet) 2.0)

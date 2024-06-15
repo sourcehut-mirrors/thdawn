@@ -36,5 +36,5 @@
 		   :timeout (lsfx "se_timeout.wav")
 		   :timeoutwarn (lsfx "se_timeout2.wav")))))
 (defun unload-sfx ()
-  ;; meh, todo.
-  )
+  ;; meh, todo on unloading all the individual sounds
+  (setf sounds nil))
