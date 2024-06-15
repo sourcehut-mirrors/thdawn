@@ -44,7 +44,8 @@
 
 (defparameter sprite-data
   (let ((ret (make-hash-table))
-		(shift8 (vec2 -8 -8)))
+		(shift8 (vec2 -8 -8))
+		(shift16 (vec2 -16 -16)))
 	;; bullets
 	(setf (gethash :pellet-red ret)
 		  (make-sprite-descriptor
@@ -136,6 +137,46 @@
 		   :tx-accessor #'txbundle-bullet2
 		   :bounds (raylib:make-rectangle :x 96 :y 240 :width 16 :height 16)
 		   :center-shift shift8))
+	(setf (gethash :big-star-red ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 224 :y 0 :width 32 :height 32)
+		   :center-shift shift16))
+	(setf (gethash :big-star-magenta ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 224 :y 32 :width 32 :height 32)
+		   :center-shift shift16))
+	(setf (gethash :big-star-blue ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 224 :y 64 :width 32 :height 32)
+		   :center-shift shift16))
+	(setf (gethash :big-star-cyan ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 224 :y 96 :width 32 :height 32)
+		   :center-shift shift16))
+	(setf (gethash :big-star-green ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 224 :y 128 :width 32 :height 32)
+		   :center-shift shift16))
+	(setf (gethash :big-star-yellow ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 224 :y 160 :width 32 :height 32)
+		   :center-shift shift16))
+	(setf (gethash :big-star-orange ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 224 :y 192 :width 32 :height 32)
+		   :center-shift shift16))
+	(setf (gethash :big-star-white ret)
+		  (make-sprite-descriptor
+		   :tx-accessor #'txbundle-bullet2
+		   :bounds (raylib:make-rectangle :x 224 :y 224 :width 32 :height 32)
+		   :center-shift shift16))
 
 	;; enemies
 	(setf (gethash :red-fairy ret)

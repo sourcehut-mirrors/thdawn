@@ -111,7 +111,10 @@
 	((:small-star-red :small-star-magenta :small-star-blue :small-star-cyan
 	  :small-star-green :small-star-yellow :small-star-orange
 	  :small-star-white :small-star-black)
-	 :small-star)))
+	 :small-star)
+	((:big-star-red :big-star-magenta :big-star-blue :big-star-cyan
+	  :big-star-green :big-star-yellow :big-star-orange :big-star-white)
+	 :big-star)))
 
 ;; sbcl overeagerly optimizes the function type of this function
 ;; to be (or (single-float 2.0) (single-float 3.7) ...), which causes
@@ -122,6 +125,7 @@
   (case (bullet-family type)
 	((:pellet) 2.0)
 	((:small-star) 3.7)
+	((:big-star) 5.5)
 	(t 0.0)))
 
 (defun draw-bullets (textures)
@@ -135,7 +139,7 @@
 		   (case (bullet-family type)
 			 ((:pellet)
 			  (draw-sprite textures type render-x render-y :raywhite))
-			 ((:small-star)
+			 ((:small-star :big-star)
 			  (draw-sprite-with-rotation textures type (mod (* frames 5.0) 360.0)
 										 render-x render-y :raywhite))
 			 (:none t))
@@ -227,7 +231,7 @@
   (let* ((player-pos (vec2 player-x player-y))
 		 (diff (v- player-pos srcpos))
 		 (facing (atan (vy2 diff) (vx2 diff))))
-	(spawn-bullet :small-star-white
+	(spawn-bullet :big-star-white
 				  (vx2 srcpos) (vy2 srcpos)
 				  facing 3.0
 				  'bullet-control-linear)
