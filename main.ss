@@ -1,525 +1,668 @@
-;; All symbols declared from now on are in the thdawn namespace
-(in-package :thdawn)
+(import (add-prefix (raylib) raylib:)
+		(coro) (geom))
+(define key-space 32)
+(define key-escape 256)
+(define key-f3 292)
+(define key-left-shift 340)
+(define key-right 262)
+(define key-left 263)
+(define key-down 264)
+(define key-up 265)
+(define key-z 90)
+(define pi 3.141592)
+
+(define (ease-out-cubic x)
+  (- 1 (expt (- 1 x) 3.0)))
+
+(define-record-type sebundle
+  (fields
+   spellcapture spelldeclare
+   longcharge shortcharge
+   enmdie bossdie
+   playerdie playershoot
+   shoot0 shoot1 shoot2
+   extend graze bell
+   oldvwoopfast oldvwoopslow
+   pause menuselect
+   timeout timeoutwarn))
+(define sounds #f)
+(define (load-sfx)
+  (define (lsfx file) (raylib:load-sound (string-append "assets/sfx/" file)))
+  (set! sounds
+		(make-sebundle
+		 (lsfx "se_cardget.wav") (lsfx "se_cat00.wav")
+		 (lsfx "se_ch00.wav") (lsfx "se_ch02.wav")
+		 (lsfx "se_enep00.wav") (lsfx "se_enep01.wav")
+		 (lsfx "se_pldead00.wav") (lsfx "se_plst00.wav")
+		 (lsfx "se_tan00.wav") (lsfx "se_tan01.wav") (lsfx "se_tan02.wav")
+		 (lsfx "se_extend.wav") (lsfx "se_graze.wav") (lsfx "se_kira00.wav")
+		 (lsfx "se_power1.wav") (lsfx "se_power2.wav")
+		 (lsfx "se_pause.wav") (lsfx "se_select00.wav")
+		 (lsfx "se_timeout.wav") (lsfx "se_timeout2.wav"))))
+(define (unload-sfx)
+  ;; meh, todo on unloading all the individual sounds
+  (set! sounds #f))
+
+(define-record-type txbundle
+  (fields
+   reimu
+   enemy1
+   hud
+   misc
+   bullet1 bullet2 bullet3 bullet4 bullet5 bullet6))
+(define (load-textures)
+  (define (ltex file)
+	(raylib:load-texture (string-append "assets/img/" file)))  
+  (make-txbundle
+   (ltex "reimu.png")
+   (ltex "enemy1.png")
+   (ltex "ui_bg.png")
+   (ltex "misc.png")
+   (ltex "bullet1.png")
+   (ltex "bullet2.png")
+   (ltex "bullet3.png")
+   (ltex "bullet4.png")
+   (ltex "bullet5.png")
+   (ltex "bullet6.png")))
+(define (unload-textures textures)
+  (raylib:unload-texture (txbundle-reimu textures))
+  (raylib:unload-texture (txbundle-hud textures))
+  (raylib:unload-texture (txbundle-bullet1 textures))
+  (raylib:unload-texture (txbundle-bullet2 textures))
+  (raylib:unload-texture (txbundle-bullet3 textures))
+  (raylib:unload-texture (txbundle-bullet4 textures))
+  (raylib:unload-texture (txbundle-bullet5 textures))
+  (raylib:unload-texture (txbundle-bullet6 textures))
+  (raylib:unload-texture (txbundle-enemy1 textures))
+  (raylib:unload-texture (txbundle-misc textures)))
+
+(define-record-type sprite-descriptor
+  (fields
+   tx-accessor
+   bounds
+   center-shift))
+
+(define (make-sprite-data)
+  (let ([ret (make-eq-hashtable)]
+		[shift8 (vec2 -8.0 -8.0)]
+		[shift16 (vec2 -16.0 -16.0)])
+	(define (make type accessor x y width height shift)
+	  (hashtable-set!
+	   ret type
+	   (make-sprite-descriptor accessor
+							   (make-rectangle
+								(inexact x) (inexact y)
+								(inexact width) (inexact height))
+							   shift)))
+	;; bullets
+	(make 'pellet-red txbundle-bullet2 176 0 16 16 shift8)
+	(make 'pellet-magenta txbundle-bullet2 176 32 16 16 shift8)
+	(make 'pellet-blue txbundle-bullet2 176 80 16 16 shift8)
+	(make 'pellet-cyan txbundle-bullet2 176 96 16 16 shift8)
+	(make 'pellet-green txbundle-bullet2 176 112 16 16 shift8)
+	(make 'pellet-yellow txbundle-bullet2 176 160 16 16 shift8)
+	(make 'pellet-orange txbundle-bullet2 176 192 16 16 shift8)
+	(make 'pellet-gray txbundle-bullet2 176 208 16 16 shift8)
+	(make 'pellet-white txbundle-bullet2 176 224 16 16 shift8)
+	(make 'small-star-red txbundle-bullet2 96 0 16 16 shift8)
+	(make 'small-star-magenta txbundle-bullet2 96 32 16 16 shift8)
+	(make 'small-star-blue txbundle-bullet2 96 64 16 16 shift8)
+	(make 'small-star-cyan txbundle-bullet2 96 96 16 16 shift8)
+	(make 'small-star-green txbundle-bullet2 96 128 16 16 shift8)
+	(make 'small-star-yellow txbundle-bullet2 96 160 16 16 shift8)
+	(make 'small-star-orange txbundle-bullet2 96 192 16 16 shift8)
+	(make 'small-star-white txbundle-bullet2 96 224 16 16 shift8)
+	(make 'small-star-black txbundle-bullet2 96 240 16 16 shift8)
+	(make 'big-star-red txbundle-bullet2 224 0 32 32 shift16)
+	(make 'big-star-magenta txbundle-bullet2 224 32 32 32 shift16)
+	(make 'big-star-blue txbundle-bullet2 224 64 32 32 shift16)
+	(make 'big-star-cyan txbundle-bullet2 224 96 32 32 shift16)
+	(make 'big-star-green txbundle-bullet2 224 128 32 32 shift16)
+	(make 'big-star-yellow txbundle-bullet2 224 160 32 32 shift16)
+	(make 'big-star-orange txbundle-bullet2 224 192 32 32 shift16)
+	(make 'big-star-white txbundle-bullet2 224 224 32 32 shift16)
+
+	;; enemies
+	(make 'red-fairy txbundle-enemy1 0 384 32 32 shift16)
+
+	;; misc
+	(make 'focus-sigil txbundle-misc 128 0 64 64 (vec2 -32.0 -32.0))
+	(make 'mainshot txbundle-reimu 192 160 64 16 (vec2 -54.0 -8.0))
+	ret))
+
+(define sprite-data (make-sprite-data))
+
+(define (draw-sprite textures sprite-id x y color)
+  (let ([data (hashtable-ref sprite-data sprite-id #f)])
+	(raylib:draw-texture-rec
+	 ((sprite-descriptor-tx-accessor data) textures)
+	 (sprite-descriptor-bounds data)
+	 (v2+ (vec2 x y) (sprite-descriptor-center-shift data))
+	 color)))
+
+(define (draw-sprite-with-rotation textures sprite-id rotation x y color)
+  (let* ([data (hashtable-ref sprite-data sprite-id #f)]
+		 [center-shift (sprite-descriptor-center-shift data)])
+	(raylib:push-matrix)
+	(raylib:translatef x y 0.0)
+	(raylib:rotatef rotation 0.0 0.0 1.0)
+	(raylib:translatef (+ (v2x center-shift)) (+ (v2y center-shift)) 0.0)
+	(raylib:draw-texture-rec
+	 ((sprite-descriptor-tx-accessor data) textures)
+	 (sprite-descriptor-bounds data)
+	 v2zero
+	 color)
+	(raylib:pop-matrix)))
+
+(define (constantly x)
+  (lambda _args x))
+
+(define (vector-for-each-truthy f v)
+  (vector-for-each
+   (lambda (e) (when e (f e)))
+   v))
+
+(define (vector-for-each-indexed f v)
+  (define len (vector-length v))
+  (let loop ([i 0])
+	(when (< i len)
+	  (f i (vector-ref v i)))))
+
+(define (packcolor r g b a)
+  (bitwise-ior (bitwise-arithmetic-shift-left r 24)
+			   (bitwise-arithmetic-shift-left g 16)
+			   (bitwise-arithmetic-shift-left b 8)
+			   a))
+(define red (packcolor 230 41 55 255))
 
 ;; [31-416] x bounds of playfield in the hud texture
 ;; [15-463] y bounds of playfield in the hud texture
 ;; idea is to have logical game x in [-192, 192] (192 is (416-31)/2, roughly), and y in [0, 448] 
 ;; logical game 0, 0 is at gl (31+(416-31)/2), 15
 ;; offset logical coords by 223, 15 to get to GL coords for render render
-(defconstant +playfield-render-offset-x+ 223)
-(defconstant +playfield-render-offset-y+ 15)
-(defconstant +playfield-min-x+ -192)
-(defconstant +playfield-min-y+ 0)
-(defconstant +playfield-max-x+ 192)
-(defconstant +playfield-max-y+ 448)
-(defconstant +oob-bullet-despawn-fuzz+ 10)
+(define +playfield-render-offset-x+ 223)
+(define +playfield-render-offset-y+ 15)
+(define +playfield-min-x+ -192)
+(define +playfield-min-y+ 0)
+(define +playfield-max-x+ 192)
+(define +playfield-max-y+ 448)
+(define +oob-bullet-despawn-fuzz+ 10)
 
-(defvar frames 0 "Number of frames the current stage has been running")
-(defvar iframes 0 "Remaining frames of invincibility")
-(defvar show-hitboxes nil)
-(defvar graze 0)
-(defvar paused nil)
-(defvar current-boss-name nil)
-(defvar current-spell-name nil)
-(defvar current-boss-timer-frames 0.0) ;; will be converted to seconds for display
-(defparameter graze-radius 22.0)
-(defparameter hit-radius 3.0)
-(defvar player-x 0)
-(defvar player-y (- +playfield-max-y+ 10.0))
-(defvar player-speed 200)
-(defvar player-xv 0.0)
-(defvar player-yv 0.0)
+(define frames 0) ;; Number of frames the current stage has been running
+(define iframes 0) ;; Remaining frames of invincibility
+(define show-hitboxes #f)
+(define graze 0)
+(define paused #f)
+(define current-boss-name #f)
+(define current-spell-name #f)
+(define current-boss-timer-frames 0.0) ;; will be converted to seconds for display
+(define graze-radius 22.0)
+(define hit-radius 3.0)
+(define player-x 0.0)
+(define player-y (- +playfield-max-y+ 10.0))
+(define player-speed 200)
+(define player-xv 0.0)
+(define player-yv 0.0)
 
-(defun player-invincible-p ()
-  (plusp iframes))
+(define (player-invincible?)
+  (positive? iframes))
 
-(defun clamp (v lower upper)
+(define (clamp v lower upper)
   (max (min v upper) lower))
 
-(defvar ojamajo-carnival nil)
-(defun load-audio ()
+(define ojamajo-carnival #f)
+(define (load-audio)
   (raylib:init-audio-device)
-  (setf ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav")))
-(defun unload-audio ()
-  (raylib:stop-music-stream ojamajo-carnival)
-  (raylib:unload-music-stream ojamajo-carnival)
-  (setf ojamajo-carnival nil))
+  (set! ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav")))
+(define (unload-audio)
+  (raylib:unload-music-stream ojamajo-carnival))
 
-;; Try changing me, then updating the game live in the REPL!
-(defparameter bgcolor :black)
+(define-record-type bullet
+  (fields
+   type
+   color
+   (mutable x)
+   (mutable y)
+   (mutable facing) ;; radians
+   (mutable speed)
+   (mutable grazed)
+   (mutable lifespan)
+   ;; extra hashtable for scratch pad. not set by default, allocate manually if needed
+   (mutable extras)))
 
-;; Bullet system
-(defconstant NUM-BULLETS 512)
-(defstruct bullet
-  (type :none :type keyword)
-  (color :white :type keyword)
-  (x 0.0 :type float)
-  (y 0.0 :type float)
-  (facing 0.0 :type float) ;; radians
-  (speed 0.0 :type float)
-  (grazed nil :type boolean)
-  (control (lambda (_bullet))) ;; todo: figure out why :type function blows up here
-  ;; consider removing or not allocating by default
-  (extras (make-hash-table :size 4) :type hash-table))
+(define live-bullets (make-vector 4096 #f))
 
-(defvar live-bullets
-  (make-array NUM-BULLETS :element-type '(or null bullet) :initial-element nil))
+(define (vector-index elem v)
+  (let ([len (vector-length v)])
+	(let loop ([i 0])
+	  (if (>= i len)
+		  #f
+		  (let ([elemi (vector-ref v i)])
+			(if (eq? elem elemi)
+				i
+				(loop (add1 i))))))))
 
-;; Common bullet control functions
-(defun bullet-control-linear (bullet)
-  "A simple control function that advances the bullet's position according to its (fixed) facing and speed"
-  (let ((facing (bullet-facing bullet))
-		(speed (bullet-speed bullet)))
-	(incf (bullet-x bullet) (* speed (cos facing)))
-	(incf (bullet-y bullet) (* speed (sin facing)))))
+(define (vector-popcnt v)
+  (let ([len (vector-length v)])
+	(let loop ([i 0]
+			   [n 0])
+	  (if (>= i len)
+		  n
+		  (let ([elemi (vector-ref v i)])
+			(if elemi
+				(loop (add1 i) (add1 n))
+				(loop (add1 i) n)))))))
 
-;; TODO: Others common control functions we might want (acceleration, deceleration, etc.)
-
-(defun spawn-bullet (type x y facing speed control-function)
-  (let ((idx (position nil live-bullets)))
+(define (spawn-bullet type x y facing speed control-function)
+  (let ([idx (vector-index #f live-bullets)])
 	(unless idx
-	  (error "No more open bullet slots! Either bullets are not being killed properly or the pattern is too complex"))
-	(setf (aref live-bullets idx)
-		  (make-bullet :type type
-					   :x x :y y
-					   :facing facing
-					   :speed speed
-					   :control control-function))))
+	  (error 'spawn-bullet "No more open bullet slots"))
+	(let ([blt (make-bullet type 'white x y facing speed #f 0 #f)])
+	  (vector-set! live-bullets idx blt)
+	  (spawn-task "bullet"
+				  (lambda () (control-function blt))
+				  (lambda () (eq? blt (vector-ref live-bullets idx)))))))
 
-(defun delete-bullet (bullet)
-  (let ((idx (position bullet live-bullets)))
+(define (delete-bullet bullet)
+  (let ([idx (vector-index bullet live-bullets)])
 	(when idx
-	  ;; tolerate killing already-removed/dead bullets
-	  (setf (aref live-bullets idx) nil))))
+	  (vector-set! live-bullets idx #f))))
 
-(defun despawn-out-of-bound-bullet (bullet)
-  (let ((x (bullet-x bullet))
-		(y (bullet-y bullet)))
+(define (despawn-out-of-bound-bullet bullet)
+  (let ([x (bullet-x bullet)]
+		[y (bullet-y bullet)])
 	(when (or (> x (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+))
 			  (< x (- +playfield-min-x+ +oob-bullet-despawn-fuzz+))
 			  (< y (- +playfield-min-y+ +oob-bullet-despawn-fuzz+))
 			  (> y (+ +playfield-max-y+ +oob-bullet-despawn-fuzz+)))
 	  (delete-bullet bullet))))
 
-(defun tick-bullets ()
-  (loop for bullet across live-bullets
-		when bullet
-		  do (funcall (bullet-control bullet) bullet)
-			 (despawn-out-of-bound-bullet bullet)))
-
-(defun bullet-family (type)
+(define (bullet-family type)
   (case type
-	((:pellet-white :pellet-gray :pellet-orange :pellet-yellow
-	  :pellet-green :pellet-cyan :pellet-blue :pellet-magenta :pellet-red)
-	 :pellet)
-	((:small-star-red :small-star-magenta :small-star-blue :small-star-cyan
-	  :small-star-green :small-star-yellow :small-star-orange
-	  :small-star-white :small-star-black)
-	 :small-star)
-	((:big-star-red :big-star-magenta :big-star-blue :big-star-cyan
-	  :big-star-green :big-star-yellow :big-star-orange :big-star-white)
-	 :big-star)))
+	((pellet-white pellet-gray pellet-orange pellet-yellow
+	  pellet-green pellet-cyan pellet-blue pellet-magenta pellet-red)
+	 'pellet)
+	((small-star-red small-star-magenta small-star-blue small-star-cyan
+	  small-star-green small-star-yellow small-star-orange
+	  small-star-white small-star-black)
+	 'small-star)
+	((big-star-red big-star-magenta big-star-blue big-star-cyan
+	  big-star-green big-star-yellow big-star-orange big-star-white)
+	 'big-star)))
 
-;; sbcl overeagerly optimizes the function type of this function
-;; to be (or (single-float 2.0) (single-float 3.7) ...), which causes
-;; problems for callers when live reloading to add a new value.
-;; Explicitly declare a broader type definition to suppress that.
-(declaim (ftype (function (keyword) single-float) bullet-hit-radius))
-(defun bullet-hit-radius (type)
+(define (bullet-hit-radius type)
   (case (bullet-family type)
-	((:pellet) 2.0)
-	((:small-star) 3.7)
-	((:big-star) 5.5)
-	(t 0.0)))
+	((pellet) 2.0)
+	((small-star) 3.7)
+	((big-star) 5.5)
+	(else 0.0)))
 
-(defun draw-bullets (textures)
-  (loop
-	for bullet across live-bullets
-	when bullet
-	  do
-		 (let ((render-x (+ (bullet-x bullet) +playfield-render-offset-x+))
-			   (render-y (+ (bullet-y bullet) +playfield-render-offset-y+))
-			   (type (bullet-type bullet)))
-		   (case (bullet-family type)
-			 ((:pellet)
-			  (draw-sprite textures type render-x render-y :raywhite))
-			 ((:small-star :big-star)
-			  (draw-sprite-with-rotation textures type (mod (* frames 5.0) 360.0)
-										 render-x render-y :raywhite))
-			 (:none t))
-		   (when show-hitboxes
-			 (raylib:draw-circle-v (vec2 render-x render-y) (bullet-hit-radius type) :red)))))
+(define (draw-bullets textures)
+  (define (each bullet)
+	(let ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
+		  [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
+		  [type (bullet-type bullet)])
+	  (case (bullet-family type)
+		((pellet)
+		 (draw-sprite textures type render-x render-y #xffffffff))
+		((small-star big-star)
+		 (draw-sprite-with-rotation textures type (mod (* frames 5.0) 360.0)
+									render-x render-y #xffffffff)))
+	  (when show-hitboxes
+		(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
+							  red))))
+  (vector-for-each-truthy each live-bullets))
 
-(defconstant NUM-ENM 256)
-(defstruct enm
-  (type :none :type keyword)
-  (x 0.0 :type float)
-  (y 0.0 :type float)
-  (health 0.0 :type real)
-  (action-list nil)
-  ;; todo consider removing or downsizing
-  (extras (make-hash-table :size 4) :type hash-table))
-(defvar live-enm
-  (make-array NUM-ENM :element-type '(or null enm) :initial-element nil))
+(define-record-type enm
+  (fields
+   type
+   (mutable x)
+   (mutable y)
+   (mutable health)
+   ;; extra hashtable for scratch pad. not set by default, allocate manually if needed
+   (mutable extras)))
+(define live-enm (make-vector 256 #f))
 
-(defun spawn-enemy (type x y health make-action-list)
-  (let ((idx (position nil live-enm)))
+(define (spawn-enemy type x y health control-function)
+  (let ((idx (vector-index #f live-enm)))
 	(unless idx
-	  (error "No more open enemy slots!"))
-	(let ((enm (setf (aref live-enm idx)
-					 (make-enm :type type
-							   :x x :y y
-							   :health health))))
-	  (setf (enm-action-list enm) (funcall make-action-list enm)))))
+	  (error 'spawn-enemy "No more open enemy slots!"))
+	(let ([enemy (make-enm type x y health #f)]) ;; todo allow extras to be passed in
+	  (vector-set! live-enm idx enemy)
+	  (spawn-task
+	   (symbol->string type)
+	   (lambda () (control-function enemy))
+	   (lambda () (eq? enemy (vector-ref live-enm idx)))))))
 
-(defun delete-enemy (enm)
-  (let ((idx (position enm live-enm)))
+(define (delete-enemy enm)
+  (let ([idx (vector-index enm live-enm)])
 	(when idx
-	  (setf (aref live-enm idx) nil))))
+	  (vector-set! live-enm idx #f))))
 
-(defun tick-enemies ()
-  (loop for enm across live-enm
-		when enm
-		  do (al:update (enm-action-list enm) 1)
-			 (when (<= (enm-health enm) 0)
-			   (raylib:play-sound (sebundle-enmdie sounds))
-			   (delete-enemy enm))))
+(define (prune-dead-enemies)
+  (let loop ([idx 0])
+	(when (< idx (vector-length live-enm))
+	  (let ([enemy (vector-ref live-enm idx)])
+		(when (and enemy (<= (enm-health enemy) 0))
+		  (raylib:play-sound (sebundle-enmdie sounds))
+		  (vector-set! live-enm idx #f)))
+	  (loop (add1 idx)))))
 
-(defun process-collisions ()
-  (loop for bullet across live-bullets
-		if bullet
-		  do (when (and (not (bullet-grazed bullet))
-						(raylib:check-collision-circles
-						 (vec2 player-x player-y) graze-radius
-						 (vec2 (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet))))
-			   (incf graze)
-			   (setf (bullet-grazed bullet) t)
-			   (raylib:play-sound (sebundle-graze sounds))) ;; todo make this sound better?
-			 (when (and
-					(not (player-invincible-p))
-					(raylib:check-collision-circles
-					 (vec2 player-x player-y) hit-radius
-					 (vec2 (bullet-x bullet) (bullet-y bullet)) (bullet-hit-radius (bullet-type bullet))))
-			   (raylib:play-sound (sebundle-playerdie sounds))
-			   (setf iframes 180))))
+(define (process-collisions)
+  (define (each bullet)
+	(when (and (not (bullet-grazed bullet))
+			   (check-collision-circles
+				player-x player-y graze-radius
+				(bullet-x bullet) (bullet-y bullet)
+				(bullet-hit-radius (bullet-type bullet))))
+	  (set! graze (add1 graze))
+	  (bullet-grazed-set! bullet #t)
+	  (raylib:play-sound (sebundle-graze sounds)))
 
-(defun force-clear-bullet-and-enemy ()
-  (setf graze 0)
-  (fill live-enm nil)
-  (fill live-bullets nil))
+	(when (and (not (player-invincible?))
+			   (check-collision-circles
+				player-x player-y hit-radius
+				(bullet-x bullet) (bullet-y bullet)
+				(bullet-hit-radius (bullet-type bullet))))
+	  (raylib:play-sound (sebundle-playerdie sounds))
+	  (set! iframes 180)))
+  (vector-for-each-truthy each live-bullets))
 
-(defun enm-hurtbox (enm)
-  (case (enm-type enm)
-	(:red-fairy (raylib:make-rectangle
-				 ;; XXX why do we have to do this?? double-floats are creeping in
-				 ;; which the ffi doesn't like. perhaps due to trig functions?
-				 :x (coerce (- (enm-x enm) 16) 'single-float)
-				 :y (coerce (- (enm-y enm) 16) 'single-float)
-				 :width 32 :height 32))))
 
-(defun draw-enemies (textures)
-  (loop
-	for enm across live-enm
-	when enm
-	  do (let ((render-x (+ (enm-x enm) +playfield-render-offset-x+))
-			   (render-y (+ (enm-y enm) +playfield-render-offset-y+)))
-		   (case (enm-type enm)
-			 (:red-fairy
-			  (draw-sprite textures :red-fairy render-x render-y :raywhite))
-			 (:none t)))
-		 (when show-hitboxes
-		   (let ((hurtbox (enm-hurtbox enm)))
-			 (when hurtbox
-			   (incf (raylib:rectangle-x hurtbox) +playfield-render-offset-x+)
-			   (incf (raylib:rectangle-y hurtbox) +playfield-render-offset-y+)
-			   (raylib:draw-rectangle-rec hurtbox :red))))))
+(define (enm-hurtbox enm)
+  (case (and enm (enm-type enm))
+	((red-fairy)
+	 (values (- (enm-x enm) 16)
+			 (- (enm-y enm) 16)
+			 32 32))))
 
-(defun shoot-at-player (srcpos)
-  (let* ((player-pos (vec2 player-x player-y))
-		 (diff (v- player-pos srcpos))
-		 (facing (atan (vy2 diff) (vx2 diff))))
-	(spawn-bullet :big-star-white
-				  (vx2 srcpos) (vy2 srcpos)
-				  facing 3.0
-				  'bullet-control-linear)
-	(raylib:play-sound (sebundle-shoot0 sounds))))
+(define (draw-enemies textures)
+  (define (each enm)
+	(let ((render-x (+ (enm-x enm) +playfield-render-offset-x+))
+		  (render-y (+ (enm-y enm) +playfield-render-offset-y+)))
+	  (case (enm-type enm)
+		((red-fairy)
+		 (draw-sprite textures 'red-fairy render-x render-y -1))))
+	(when show-hitboxes
+	  (let-values ([(x y w h) (enm-hurtbox enm)])
+		(raylib:draw-rectangle-rec
+		 (+ x +playfield-render-offset-x+)
+		 (+ y +playfield-render-offset-y+) w h red))))
+  (vector-for-each-truthy each live-enm))
 
-(defclass ease2d (al:basic)
-  ((from-x :initarg :from-x)
-   (from-y :initarg :from-y)
-   (to-x :initarg :to-x)
-   (to-y :initarg :to-y)
-   (easer :initarg :easer))
-  (:documentation
-   "Update lambda receives the action and eased x/y values"))
+;; Remaining todo:
+;; get practice writing some basic patterns:
+;; - perfect freeze?
+;; - TD tojiko midspell zigzags
+;; - outward-multiplying ring (each bullet splits into 3, then each of those splits, into 3, etc.)
 
-(defmethod al:update ((action ease2d) dt)
-  (let* ((progress (/ (+ (al:elapsed-time action) dt) (al:duration action)))
-		 (eased (funcall (slot-value action 'easer) (clamp progress 0.0 1.0)))
-		 (from-x (slot-value action 'from-x))
-		 (from-y (slot-value action 'from-y))
-		 (x (+ from-x
-			   (* eased (- (slot-value action 'to-x) from-x))))
-		 (y (+ from-y
-			   (* eased (- (slot-value action 'to-y) from-y)))))
-	(funcall (al::update-fun action) action x y)))
+(define (perfect-freeze-bullet blt)
+  (do ([i 0 (add1 i)])
+	  ((= i 240))
+	(linear-step blt)
+	(yield))
+  (bullet-speed-set! blt 0)
+  (wait 300)
+  (let loop ()
+	(linear-step blt)
+	(bullet-speed-set! blt (+ (bullet-speed blt) 5))
+	(yield)
+	(loop)))
 
-;; todo implement clone-into
+(define (linear-step-forever blt)
+  (let loop ()
+	(linear-step blt)
+	(yield)
+	(loop)))
 
-(defconstant +movement-lane+ 1)
-(defconstant +shooting-lane+ 2)
+(define (linear-step blt)
+  (let ([facing (bullet-facing blt)]
+		[speed (bullet-speed blt)])
+	(bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
+	(bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing))))))
 
-(defun pick-next-position (enm)
-  (let* ((x (enm-x enm))
-		 (y (enm-y enm))
-		 (angle (random (* 2 pi))) ;; XXX(replays): rng access
-		 (magnitude 50.0)
-		 (dx (* magnitude (cos angle)))
-		 (dy (* magnitude (sin angle)))
-		 (nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+))
-		 (ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)))
-	(values nx ny)))
+(define-record-type miscent
+  (fields type (mutable x) (mutable y)))
 
-(defun timed-move (enm)
-  (make-instance
-   'al:basic ;; todo: consider making a "oneshot" action type without the unnecessary overhead of basic
-   :blocking t
-   :duration 0
-   :lanes +movement-lane+
-   :update
-   (lambda (self dt)
-	 (multiple-value-bind (nx ny) (pick-next-position enm)
-	   (al:push-back (make-instance
-					  'ease2d
-					  :from-x (enm-x enm) :from-y (enm-y enm)
-					  :to-x nx :to-y ny
-					  :lanes +movement-lane+
-					  :easer 'ease-out-cubic :duration 90
-					  :blocking t
-					  :update (lambda (self nx ny)
-								(setf (enm-x enm) nx)
-								(setf (enm-y enm) ny)))
-					 (al:action-list self))
-	   (al:push-back (make-instance 'al:delay :duration 60 :lanes +movement-lane+)
-					 (al:action-list self))
-	   (al:push-back (timed-move enm) (al:action-list self))))))
+(define live-misc-ents
+  (make-vector 512 #f))
 
-(defstruct miscent
-  (type :point :type keyword) ;; :point :bomb :life :bombfrag :lifefrag :mainshot
-  (x 0.0 :type float)
-  (y 0.0 :type float))
-
-(defvar live-misc-ents
-  (make-array 512 :element-type '(or null miscent) :initial-element nil))
-
-(defun spawn-misc-ent (ent)
-  (let ((idx (position nil live-misc-ents)))
+(define (spawn-misc-ent ent)
+  (let ((idx (vector-index #f live-misc-ents)))
 	(unless idx
-	  (error "No more open misc entity slots!"))
-	(setf (aref live-misc-ents idx) ent)))
+	  (error 'spawn-misc-ent "No more open misc entity slots!"))
+	(vector-set! live-misc-ents idx ent)))
 
-(defun delete-misc-ent (ent)
-  (let ((idx (position ent live-misc-ents)))
+(define (delete-misc-ent ent)
+  (let ((idx (vector-index ent live-misc-ents)))
 	(when idx
 	  ;; tolerate killing already-removed/dead
-	  (setf (aref live-misc-ents idx) nil))))
+	  (vector-set! live-misc-ents idx #f))))
 
-(defun tick-misc-ents ()
-  (loop for ent across live-misc-ents
-		when ent
-		  do 
-			 (case (miscent-type ent)
-			   (:mainshot
-				(decf (miscent-y ent) 10.0)
-				(let ((hitbox (raylib:make-rectangle
-							   :x (- (miscent-x ent) 6) :y (- (miscent-y ent) 10)
-							   :width 12 :height 16)))
-				  (loop for enm across live-enm when enm
-						do (when (raylib:check-collision-recs hitbox (enm-hurtbox enm))
-							 (delete-misc-ent ent)
-							 (decf (enm-health enm) 50)
-							 (return))))
-				;; todo damage dealing
-				(when (< (miscent-y ent) +playfield-min-y+)
-				  (delete-misc-ent ent)))
-			   (t t))))
+(define (tick-misc-ents)
+  (define (each ent)
+	(case (miscent-type ent)
+	  ((mainshot)
+	   (miscent-y-set! ent (- (miscent-y ent) 10.0))
+	   (call/1cc
+		(lambda (return)
+		  (let ((hitbox (make-rectangle
+						 (- (miscent-x ent) 6) (- (miscent-y ent) 10)
+						 12 16)))
+			(vector-for-each-truthy
+			 (lambda (enm)
+			   (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
+				 (when (check-collision-recs
+						ehx ehy ehw ehh
+						(- (miscent-x ent) 6)
+						(- (miscent-y ent) 6)
+						12 16)
+				   (delete-misc-ent ent)
+				   (enm-health-set! enm (- (enm-health enm) 50))
+				   (return))))
+			 live-enm))
+		  (when (< (miscent-y ent) +playfield-min-y+)
+			(delete-misc-ent ent)))))))
+  (vector-for-each-truthy each live-misc-ents))
 
-(defun draw-misc-ents (textures)
-  (loop for ent across live-misc-ents when ent
-		do (case (miscent-type ent)
-			 (:mainshot
-			  (let ((render-x (+ +playfield-render-offset-x+ (miscent-x ent)))
-					(render-y (+ +playfield-render-offset-y+ (miscent-y ent))))
-				(draw-sprite-with-rotation
-				 textures :mainshot -90.0
-				 render-x render-y :white)
-				(when show-hitboxes
-				  (let ((hitbox (raylib:make-rectangle
-								 :x (- render-x 6) :y (- render-y 10)
-								 :width 12 :height 16)))
-					(raylib:draw-rectangle-rec hitbox :red))))))))
+(define (draw-misc-ents textures)
+  (define (each ent)
+	(case (miscent-type ent)
+	  ((mainshot)
+	   (let ((render-x (+ +playfield-render-offset-x+ (miscent-x ent)))
+			 (render-y (+ +playfield-render-offset-y+ (miscent-y ent))))
+		 (draw-sprite-with-rotation
+		  textures 'mainshot -90.0
+		  render-x render-y -1)
+		 (when show-hitboxes
+		   (raylib:draw-rectangle-rec
+			(- render-x 6) (- render-y 10) 12 16
+			red))))))
+  (vector-for-each-truthy each live-misc-ents))
 
-(defun handle-input ()
+(define (ease-cubic-to x y duration enm)
+  (define x0 (enm-x enm))
+  (define y0 (enm-y enm))
+  (do ([i 0 (add1 i)])
+	  ((> i duration))
+	(let* ([progress (/ i duration)]
+		   [eased (ease-out-cubic (clamp progress 0.0 1.0))]
+		   [x (+ x0 (* eased (- x x0)))]
+		   [y (+ y0 (* eased (- y y0)))])
+	  (enm-x-set! enm x)
+	  (enm-y-set! enm y))
+	(yield)))
+
+(define (test-fairy-control enm)
+  (define (pick-next-position)
+	(let* ((x (enm-x enm))
+		   (y (enm-y enm))
+		   (angle (random (* 2 pi))) ;; XXX(replays): rng access
+		   (magnitude 50.0)
+		   (dx (* magnitude (cos angle)))
+		   (dy (* magnitude (sin angle)))
+		   (nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+))
+		   (ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)))
+	  (values nx ny)))
+  (let loop ()
+	(define-values (x y) (pick-next-position))
+	(ease-cubic-to x y 90 enm)
+	(loop))
+  )
+
+(define (handle-input)
   ;; level triggered stuff
   (unless paused
-	(when (raylib:is-key-down :key-left)
-	  (incf player-xv -1))
-	(when (raylib:is-key-down :key-right)
-	  (incf player-xv 1))
-	(when (raylib:is-key-down :key-up)
-	  (incf player-yv -1))
-	(when (raylib:is-key-down :key-down)
-	  (incf player-yv 1))
-	(when (and (raylib:is-key-down :key-z)
-			   (zerop (mod frames 5))) ;; todo separate counter
+	(when (raylib:is-key-down key-left)
+	  (set! player-xv (sub1 player-xv)))
+	(when (raylib:is-key-down key-right)
+	  (set! player-xv (add1 player-xv)))
+	(when (raylib:is-key-down key-up)
+	  (set! player-yv (sub1 player-yv)))
+	(when (raylib:is-key-down key-down)
+	  (set! player-yv (add1 player-yv)))
+	(when (and (raylib:is-key-down key-z)
+			   (zero? (mod frames 5))) ;; todo separate counter
 	  (let ((y (- player-y 20)))
-		(spawn-misc-ent (make-miscent :type :mainshot :x (- player-x 10) :y y))
-		(spawn-misc-ent (make-miscent :type :mainshot :x (+ player-x 10) :y y))
+		(spawn-misc-ent (make-miscent 'mainshot (- player-x 10) y))
+		(spawn-misc-ent (make-miscent 'mainshot (+ player-x 10) y))
 		(raylib:play-sound (sebundle-playershoot sounds)))))
-
   ;; edge triggered stuff
-  (loop for k = (raylib:get-key-pressed) then (raylib:get-key-pressed)
-		while (not (eq :key-null k))
-		do (case k
-			 (:key-x t) ;; todo (maybe) bombing
-			 (:key-f3 (setf show-hitboxes (not show-hitboxes)))
-			 (:key-escape
-			  (setf paused (not paused))
-			  (if paused
-				  (progn
-					(raylib:play-sound (sebundle-pause sounds))
-					(raylib:pause-music-stream ojamajo-carnival))
-				  (progn
-					(raylib:resume-music-stream ojamajo-carnival))))
-			 (:key-space
-			  (spawn-enemy
-			   :red-fairy
-			   player-x
-			   (- player-y 10) 200
-			   (lambda (enm)
-				 (make-instance
-				  'al:action-list
-				  :actions (list 
-							(timed-move enm)
-							(make-instance
-							 'al:basic
-							 :duration most-positive-fixnum
-							 :lanes +shooting-lane+
-							 :update (lambda (self dt)
-									   (when (zerop (mod (al:elapsed-time self) 50))
-										 (shoot-at-player
-										  (vec2 (enm-x enm) (enm-y enm)))))))))))
-			 (:key-y (force-clear-bullet-and-enemy)))))
+  (let loop ([k (raylib:get-key-pressed)])
+	(cond
+	 [(= k key-f3)
+	  (set! show-hitboxes (not show-hitboxes))]
+	 [(= k key-escape)
+	  (set! paused (not paused))
+	  (if paused
+		  (let ()
+			(raylib:play-sound (sebundle-pause sounds))
+			(raylib:pause-music-stream ojamajo-carnival))
+		  (raylib:resume-music-stream ojamajo-carnival))]
+	 [(= k key-space)
+	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
+	  ;; (spawn-task
+	  ;;  "spawner"
+	  ;;  (lambda ()
+	  ;; 	 (do ((i 0 (add1 i)))
+	  ;; 		 ((= i 300))
+	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
+	  ;; 		 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
+	  ;; 	   (yield)))
+	  ;;  (constantly #t))
+	  ])
+	(unless (zero? k)
+	  (loop (raylib:get-key-pressed)))))
 
-(defun handle-player-movement ()
-  (when (not (and (zerop player-xv) (zerop player-yv)))
+(define (handle-player-movement)
+  (when (not (and (zero? player-xv) (zero? player-yv)))
     (let* ((delta-time (raylib:get-frame-time))
-           (velocity (* player-speed delta-time (if (raylib:is-key-down :key-left-shift) 0.5 1)))
-           (normalized-direction (vunit (vec2 player-xv player-yv)))
-           (acceleration (v* normalized-direction velocity))
-           (new-x (+ player-x (vx2 acceleration)))
-           (new-y (+ player-y (vy2 acceleration))))
+           (velocity (* player-speed delta-time (if (raylib:is-key-down key-left-shift) 0.5 1)))
+           (normalized-direction (v2unit (vec2 player-xv player-yv)))
+           (acceleration (v2* normalized-direction velocity))
+           (new-x (+ player-x (v2x acceleration)))
+           (new-y (+ player-y (v2y acceleration))))
 	  ;; todo: refine this so that you can bottomdrag instead of not moving at all
       (when (not (or (> new-x +playfield-max-x+) (> new-y +playfield-max-y+) (< new-y +playfield-min-y+) (< new-x +playfield-min-x+)))
-        (setf player-x new-x)
-        (setf player-y new-y)))
-    (setf player-xv 0.0)
-    (setf player-yv 0.0)))
+        (set! player-x new-x)
+        (set! player-y new-y)))
+    (set! player-xv 0.0)
+    (set! player-yv 0.0)))
 
-(defvar focus-sigil-strength 0.0)
-(defun draw-player (textures)
-  (let* ((render-player-x (+ player-x +playfield-render-offset-x+))
-		 (render-player-y (+ player-y +playfield-render-offset-y+)))
+(define focus-sigil-strength 0.0)
+(define (draw-player textures)
+  (let* ([render-player-x (+ player-x +playfield-render-offset-x+)]
+		 [render-player-y (+ player-y +playfield-render-offset-y+)])
 	;; player sprite (todo: directional moving sprites)
 	(let ((x-texture-index (truncate (mod (/ frames 9) 8)))
 		  (iframe-blink
-			(if (and (player-invincible-p)
-					 (< (mod frames 4) 2))
-				(raylib:make-rgba 64 64 255 255)
-				:raywhite)))
+		   (if (and (player-invincible?)
+					(< (mod frames 4) 2))
+			   (packcolor 64 64 255 255)
+			   #xffffffff)))
 	  (raylib:draw-texture-rec
 	   (txbundle-reimu textures)
-	   (raylib:make-rectangle :x (* 32 x-texture-index) :y 0 :width 32 :height 48)
-	   (vec2 (- render-player-x 16) (- render-player-y 24))
+	   (make-rectangle (* 32.0 x-texture-index) 0.0 32.0 48.0)
+	   (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
 	   iframe-blink))
 	
 	;; focus sigil
-	(if (raylib:is-key-down :key-left-shift)
+	(if (raylib:is-key-down key-left-shift)
 		(when (< focus-sigil-strength 1.0)
-		  (incf focus-sigil-strength 0.1))
+		  (set! focus-sigil-strength (min (+ focus-sigil-strength 0.1) 1.0)))
 		(when (> focus-sigil-strength 0.0)
-		  (decf focus-sigil-strength 0.1)))
+		  (set! focus-sigil-strength (max (- focus-sigil-strength 0.1) 0.0))))
 	(when (> focus-sigil-strength 0.0)
-	  (rlgl:push-matrix)
-	  (rlgl:translate-f render-player-x render-player-y 0.0) ;; move to where we are
-	  (rlgl:rotate-f (mod frames 360.0) 0.0 0.0 1.0) ;; spin
-	  (draw-sprite textures :focus-sigil
+	  (raylib:push-matrix)
+	  (raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
+	  (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
+	  (draw-sprite textures 'focus-sigil
 				   0.0 0.0 ;; manually translated to final position above
-				   (raylib:make-rgba 255 255 255 (round (* 255 focus-sigil-strength))))
-	  (rlgl:pop-matrix))
+				   (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))
+	  (raylib:pop-matrix))
 
 	(when show-hitboxes
-	  (raylib:draw-circle-v (vec2 render-player-x render-player-y) graze-radius :green)
-	  (raylib:draw-circle-v (vec2 render-player-x render-player-y) hit-radius :red))))
+	  (raylib:draw-circle-v render-player-x render-player-y graze-radius
+							(packcolor 0 228 48 255))
+	  (raylib:draw-circle-v render-player-x render-player-y hit-radius
+						    red))))
 
-(defun render-all (textures)
-  (raylib:clear-background bgcolor)
+(define (render-all textures)
+  (raylib:clear-background 0)
   (draw-player textures)
-
   (draw-enemies textures)
   (draw-misc-ents textures)
   (draw-bullets textures)
 
   (when paused
-	(raylib:draw-text "PAUSED" 175 150 28 :purple))
-  
-  (raylib:draw-texture (txbundle-hud textures) 0 0 :raywhite)
-  (raylib:draw-text (format nil "MISC: ~d" (- 512 (count nil live-misc-ents)))
+	(raylib:draw-text "PAUSED" 175 150 28 (packcolor 200 122 255 255)))
+
+  (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
+  (raylib:draw-text (format "MISC: ~d" (vector-popcnt live-misc-ents))
 					500 350
-					18 :raywhite)
-  (raylib:draw-text (format nil "GRAZE: ~d" graze)
+					18 -1)
+  (raylib:draw-text (format "GRAZE: ~d" graze)
 					500 375
-					18 :raywhite)
-  (raylib:draw-text (format nil "ENM: ~d" (- NUM-ENM (count nil live-enm)))
+					18 -1)
+  (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
 					500 400
-					18 :raywhite)
-  (raylib:draw-text (format nil "BLT: ~d" (- NUM-BULLETS (count nil live-bullets)))
+					18 -1)
+  (raylib:draw-text (format "BLT: ~d" (vector-popcnt live-bullets))
 					500 425
-					18 :raywhite)
+					18 -1)
   (raylib:draw-fps 500 450))
 
-(defun reset-to (frame)
-  "Resets frame counter and music playback to specific frame.
-For use in interactive development."
-  (force-clear-bullet-and-enemy)
-  (setf frames frame)
-  (raylib:seek-music-stream ojamajo-carnival (/ frame 60.0)))
-
-(defun main ()
-  (raylib:with-window
-	  (640 480 "thdawn")
-	(raylib:set-target-fps 60)
-	(raylib:set-exit-key 0)
-	(load-audio)
-	(load-sfx)
-	(let ((textures (load-textures)))
-	  (raylib:play-music-stream ojamajo-carnival)
-	  (loop
-		(when (raylib:window-should-close)
-		  (return))
+(define (main)
+  (collect-notify #t)
+  (raylib:init-window 640 480 "thdawn")
+  (raylib:set-target-fps 60)
+  (raylib:set-exit-key 0)
+  (load-audio)
+  (load-sfx)
+  (let ([textures (load-textures)])
+	(raylib:play-music-stream ojamajo-carnival)
+	(let loop ()
+	  (unless (raylib:window-should-close)
 		(handle-input)
 		(raylib:update-music-stream ojamajo-carnival)
 		(unless paused
-		  (when (plusp iframes)
-			(decf iframes))
+		  (when (positive? iframes)
+			(set! iframes (sub1 iframes)))
 		  (handle-player-movement)
-		  (tick-bullets)
-		  (tick-enemies)
+		  (vector-for-each-truthy
+		   (lambda (blt) (despawn-out-of-bound-bullet blt))
+		   live-bullets)
+		  (prune-dead-enemies)
+		  (run-tasks)
 		  (tick-misc-ents)
 		  (process-collisions))
-		(raylib:with-drawing
-		  (render-all textures))
-		(unless paused (incf frames)))
-	  (unload-audio)
-	  (unload-textures textures)
-	  (unload-sfx))))
+		(raylib:begin-drawing)
+		(render-all textures)
+		(raylib:end-drawing)
+		(unless paused
+		  (set! frames (add1 frames)))
+		(loop)))
+	(unload-audio)
+	(unload-textures textures)
+	(unload-sfx)
+	(raylib:close-window)))
