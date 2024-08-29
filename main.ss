@@ -49,7 +49,9 @@
    enemy1
    hud
    misc
-   bullet1 bullet2 bullet3 bullet4 bullet5 bullet6))
+   bullet1 bullet2 bullet3 bullet4 bullet5 bullet6
+   bg1 bg2 bg3 bg4
+   ))
 (define (load-textures)
   (define (ltex file)
 	(raylib:load-texture (string-append "assets/img/" file)))  
@@ -58,23 +60,25 @@
    (ltex "enemy1.png")
    (ltex "ui_bg.png")
    (ltex "misc.png")
-   (ltex "bullet1.png")
-   (ltex "bullet2.png")
-   (ltex "bullet3.png")
-   (ltex "bullet4.png")
-   (ltex "bullet5.png")
-   (ltex "bullet6.png")))
+   (ltex "bullet1.png") (ltex "bullet2.png") (ltex "bullet3.png")
+   (ltex "bullet4.png") (ltex "bullet5.png") (ltex "bullet6.png")
+   (ltex "background_1.png") (ltex "background_2.png")
+   (ltex "background_3.png") (ltex "background_4.png")))
 (define (unload-textures textures)
   (raylib:unload-texture (txbundle-reimu textures))
+  (raylib:unload-texture (txbundle-enemy1 textures))
   (raylib:unload-texture (txbundle-hud textures))
+  (raylib:unload-texture (txbundle-misc textures))
   (raylib:unload-texture (txbundle-bullet1 textures))
   (raylib:unload-texture (txbundle-bullet2 textures))
   (raylib:unload-texture (txbundle-bullet3 textures))
   (raylib:unload-texture (txbundle-bullet4 textures))
   (raylib:unload-texture (txbundle-bullet5 textures))
   (raylib:unload-texture (txbundle-bullet6 textures))
-  (raylib:unload-texture (txbundle-enemy1 textures))
-  (raylib:unload-texture (txbundle-misc textures)))
+  (raylib:unload-texture (txbundle-bg1 textures))
+  (raylib:unload-texture (txbundle-bg2 textures))
+  (raylib:unload-texture (txbundle-bg3 textures))
+  (raylib:unload-texture (txbundle-bg4 textures)))
 
 (define-record-type sprite-descriptor
   (fields
@@ -179,7 +183,7 @@
 ;; [15-463] y bounds of playfield in the hud texture
 ;; idea is to have logical game x in [-192, 192] (192 is (416-31)/2, roughly), and y in [0, 448] 
 ;; logical game 0, 0 is at gl (31+(416-31)/2), 15
-;; offset logical coords by 223, 15 to get to GL coords for render render
+;; offset logical coords by 223, 15 to get to GL coords for render
 (define +playfield-render-offset-x+ 223)
 (define +playfield-render-offset-y+ 15)
 (define +playfield-min-x+ -192)
@@ -607,8 +611,27 @@
 	  (raylib:draw-circle-v render-player-x render-player-y hit-radius
 						    red))))
 
+(define screen-full-bounds
+  (make-rectangle 0.0 0.0 640.0 480.0))
 (define (render-all textures)
   (raylib:clear-background 0)
+  (raylib:draw-texture-pro (txbundle-bg1 textures)
+						   (make-rectangle 0.0 (mod (* frames -0.75) 224.0) 256.0 224.0)
+						   screen-full-bounds
+						   v2zero 0.0 #xc0c0c0ff)
+  (raylib:draw-texture-pro (txbundle-bg2 textures)
+						   (make-rectangle 0.0 (mod (* frames -1.2) 224.0) 256.0 224.0)
+						   screen-full-bounds
+						   v2zero 0.0 #xc0c0c0ff)
+  (raylib:draw-texture-pro (txbundle-bg3 textures)
+						   (make-rectangle 0.0 (mod (* frames -1.8) 224.0) 256.0 224.0)
+						   screen-full-bounds
+						   v2zero 0.0 #xc0c0c0ff)
+  ;; (raylib:draw-texture-pro (txbundle-bg4 textures)
+  ;; 						   (make-rectangle 0.0 (mod (* frames -0.5) 224.0) 256.0 224.0)
+  ;; 						   screen-full-bounds
+  ;; 						   v2zero 0.0 -1)
+  
   (draw-player textures)
   (draw-enemies textures)
   (draw-misc-ents textures)

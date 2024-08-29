@@ -6,7 +6,7 @@
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
 		  load-sound play-sound unload-sound
-		  load-texture unload-texture draw-texture-rec draw-texture
+		  load-texture unload-texture draw-texture-rec draw-texture draw-texture-pro
 		  is-key-down get-key-pressed set-exit-key
 		  push-matrix pop-matrix translatef rotatef)
   (import (chezscheme) (geom))
@@ -64,17 +64,14 @@
 	(struct (x float) (y float) (width float) (height float)))
   (define global-rectangle
 	(make-ftype-pointer RayRect (foreign-alloc (ftype-sizeof RayRect))))
-  (define (load-global-rectangle x y width height)
-	(ftype-set! RayRect (x) global-rectangle (inexact x))
-	(ftype-set! RayRect (y) global-rectangle (inexact y))
-	(ftype-set! RayRect (width) global-rectangle (inexact width))
-	(ftype-set! RayRect (height) global-rectangle (inexact height)))
-  (define (unload-global-rectangle)
-	(define x (ftype-ref RayRect (x) global-rectangle))
-	(define y (ftype-ref RayRect (y) global-rectangle))
-	(define width (ftype-ref RayRect (width) global-rectangle))
-	(define height (ftype-ref RayRect (height) global-rectangle))
-	(values x y width height))
+  ;; Two of them, because some calls take two :D
+  (define global-rectangle2
+	(make-ftype-pointer RayRect (foreign-alloc (ftype-sizeof RayRect))))
+  (define (load-global-rectangle dest x y width height)
+	(ftype-set! RayRect (x) dest (inexact x))
+	(ftype-set! RayRect (y) dest (inexact y))
+	(ftype-set! RayRect (width) dest (inexact width))
+	(ftype-set! RayRect (height) dest (inexact height)))
 
   (define init-window
 	(foreign-procedure "InitWindow" (int int string) void))
@@ -111,21 +108,21 @@
   (define init-audio-device
 	(foreign-procedure "InitAudioDevice" () void))
 
-  ;; ABI as of Raylib 5
+  ;; ABI as of Raylib 5.0-1
   (define-ftype AudioStream
 	(struct
-	  (buffer uptr)
-	  (processor uptr)
-	  (sample-rate unsigned-int)
-	  (sample-size unsigned-int)
-	  (channels unsigned-int)))
+	  (_ uptr)
+	  (_ uptr)
+	  (_ unsigned-int)
+	  (_ unsigned-int)
+	  (_ unsigned-int)))
   (define-ftype Music
 	(struct
-	  (stream AudioStream)
-	  (frame-count unsigned-int)
-	  (looping boolean)
-	  (ctx-type int)
-	  (ctx-data void*)))
+	  (_ AudioStream)
+	  (_ unsigned-int)
+	  (_ boolean)
+	  (_ int)
+	  (_ void*)))
   
   (define load-music-stream0
 	(foreign-procedure "LoadMusicStream" (string) (& Music)))
@@ -172,7 +169,7 @@
   (define draw-rectangle-rec0
 	(foreign-procedure "DrawRectangleRec" ((& RayRect) (& Color)) void))
   (define (draw-rectangle-rec x y width height rgba)
-	(load-global-rectangle x y width height)
+	(load-global-rectangle global-rectangle x y width height)
 	(load-global-color rgba)
 	(draw-rectangle-rec0 global-rectangle global-color))
 
@@ -208,8 +205,10 @@
 					   ((& Texture) (& RayRect)
 						(& RayVector2) (& Color)) void))
   (define (draw-texture-rec tex rect v rgba)
-	(load-global-rectangle (rectangle-x rect) (rectangle-y rect)
-						   (rectangle-width rect) (rectangle-height rect))
+	(load-global-rectangle
+	 global-rectangle
+	 (rectangle-x rect) (rectangle-y rect)
+	 (rectangle-width rect) (rectangle-height rect))
 	(load-global-vector2 (v2x v) (v2y v))
 	(load-global-color rgba)
 	(draw-texture-rec0 tex global-rectangle global-vector2 global-color))
@@ -220,8 +219,24 @@
 	(load-global-color rgba)
 	(draw-texture0 tex x y global-color))
 
-  ;; check-collision-circles
-  ;; check-collision-recs
+  (define draw-texture-pro0
+	(foreign-procedure "DrawTexturePro"
+					   ((& Texture) (& RayRect) (& RayRect)
+						(& RayVector2) float (& Color))
+					   void))
+  (define (draw-texture-pro tex src dest origin rotation rgba)
+	(load-global-rectangle
+	 global-rectangle
+	 (rectangle-x src) (rectangle-y src)
+	 (rectangle-width src) (rectangle-height src))
+	(load-global-rectangle
+	 global-rectangle2
+	 (rectangle-x dest) (rectangle-y dest)
+	 (rectangle-width dest) (rectangle-height dest))
+	(load-global-vector2 (v2x origin) (v2y origin))
+	(load-global-color rgba)
+	(draw-texture-pro0 tex global-rectangle global-rectangle2
+					   global-vector2 rotation global-color))
 
   ;; HACK: If I type this as boolean, as the Raylib header states,
   ;; I get issues where is-key-down always returns true.
