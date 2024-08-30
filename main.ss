@@ -1,5 +1,7 @@
 #!chezscheme
-(import (chezscheme)) ;; this is needed to bring add-prefix into scope
+;; this is needed separately to bring add-prefix into scope when treating this
+;; file as a r6rs Program
+(import (chezscheme))
 (import (add-prefix (raylib) raylib:)
 		(coro) (geom))
 (define key-space 32)
@@ -692,4 +694,4 @@
 	(unload-sfx)
 	(raylib:close-window)))
 
-(main)
+(scheme-start (lambda _ (main)))
