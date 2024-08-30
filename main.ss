@@ -1,3 +1,5 @@
+#!chezscheme
+(import (chezscheme)) ;; this is needed to bring add-prefix into scope
 (import (add-prefix (raylib) raylib:)
 		(coro) (geom))
 (define key-space 32)
@@ -602,7 +604,7 @@
 	  (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
 	  (draw-sprite textures 'focus-sigil
 				   0.0 0.0 ;; manually translated to final position above
-				   (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))
+				   (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))	  
 	  (raylib:pop-matrix))
 
 	(when show-hitboxes
@@ -689,3 +691,5 @@
 	(unload-textures textures)
 	(unload-sfx)
 	(raylib:close-window)))
+
+(main)
