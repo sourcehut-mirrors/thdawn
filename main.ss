@@ -44,7 +44,11 @@
 		 (lsfx "se_pause.wav") (lsfx "se_select00.wav")
 		 (lsfx "se_timeout.wav") (lsfx "se_timeout2.wav"))))
 (define (unload-sfx)
-  ;; meh, todo on unloading all the individual sounds
+  (define rtd (record-type-descriptor sebundle))
+  (define num-sounds (vector-length (record-type-field-names rtd)))
+  (for-each (lambda (i)
+			  (raylib:unload-sound ((record-accessor rtd i) sounds)))
+			(iota num-sounds))
   (set! sounds #f))
 
 (define-record-type txbundle
@@ -69,20 +73,11 @@
    (ltex "background_1.png") (ltex "background_2.png")
    (ltex "background_3.png") (ltex "background_4.png")))
 (define (unload-textures textures)
-  (raylib:unload-texture (txbundle-reimu textures))
-  (raylib:unload-texture (txbundle-enemy1 textures))
-  (raylib:unload-texture (txbundle-hud textures))
-  (raylib:unload-texture (txbundle-misc textures))
-  (raylib:unload-texture (txbundle-bullet1 textures))
-  (raylib:unload-texture (txbundle-bullet2 textures))
-  (raylib:unload-texture (txbundle-bullet3 textures))
-  (raylib:unload-texture (txbundle-bullet4 textures))
-  (raylib:unload-texture (txbundle-bullet5 textures))
-  (raylib:unload-texture (txbundle-bullet6 textures))
-  (raylib:unload-texture (txbundle-bg1 textures))
-  (raylib:unload-texture (txbundle-bg2 textures))
-  (raylib:unload-texture (txbundle-bg3 textures))
-  (raylib:unload-texture (txbundle-bg4 textures)))
+  (define rtd (record-type-descriptor txbundle))
+  (define num-textures (vector-length (record-type-field-names rtd)))
+  (for-each (lambda (i)
+			  (raylib:unload-texture ((record-accessor rtd i) textures)))
+			(iota num-textures)))
 
 (define-record-type sprite-descriptor
   (fields
