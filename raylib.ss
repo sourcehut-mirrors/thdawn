@@ -2,7 +2,7 @@
   (export init-window close-window window-should-close set-target-fps get-frame-time
 		  begin-drawing end-drawing clear-background draw-circle-v
 		  draw-text draw-fps draw-rectangle-rec
-		  init-audio-device
+		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
 		  load-sound play-sound unload-sound
@@ -107,6 +107,8 @@
 
   (define init-audio-device
 	(foreign-procedure "InitAudioDevice" () void))
+  (define close-audio-device
+	(foreign-procedure "CloseAudioDevice" () void))
 
   ;; ABI as of Raylib 5.0-1
   (define-ftype AudioStream

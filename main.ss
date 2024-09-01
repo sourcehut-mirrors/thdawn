@@ -218,6 +218,7 @@
   (raylib:init-audio-device)
   (set! ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav")))
 (define (unload-audio)
+  (raylib:close-audio-device)
   (raylib:unload-music-stream ojamajo-carnival))
 
 (define-record-type bullet
