@@ -17,6 +17,8 @@
 
 (define (ease-out-cubic x)
   (- 1 (expt (- 1 x) 3.0)))
+(define (lerp a b progress)
+  (+ a (* progress (- b a))))
 
 (define-record-type sebundle
   (fields
@@ -193,6 +195,8 @@
 
 (define frames 0) ;; Number of frames the current stage has been running
 (define iframes 0) ;; Remaining frames of invincibility
+(define respawning 0) ;; Nonzero if going through the respawn animation
+(define +respawning-max+ 60)
 (define show-hitboxes #f)
 (define graze 0)
 (define paused #f)
@@ -202,7 +206,8 @@
 (define graze-radius 22.0)
 (define hit-radius 3.0)
 (define player-x 0.0)
-(define player-y (- +playfield-max-y+ 10.0))
+(define +initial-player-y+ (- +playfield-max-y+ 20.0))
+(define player-y +initial-player-y+)
 (define player-speed 200)
 (define player-xv 0.0)
 (define player-yv 0.0)
@@ -352,6 +357,13 @@
 		  (vector-set! live-enm idx #f)))
 	  (loop (add1 idx)))))
 
+(define (kill-player)
+  (raylib:play-sound (sebundle-playerdie sounds))
+  (set! iframes 180)
+  (set! respawning +respawning-max+)
+  (set! player-x 0.0)
+  (set! player-y +initial-player-y+))
+
 (define (process-collisions)
   (define (each bullet)
 	(when (and (not (bullet-grazed bullet))
@@ -368,8 +380,7 @@
 				player-x player-y hit-radius
 				(bullet-x bullet) (bullet-y bullet)
 				(bullet-hit-radius (bullet-type bullet))))
-	  (raylib:play-sound (sebundle-playerdie sounds))
-	  (set! iframes 180)))
+	  (kill-player)))
   (vector-for-each-truthy each live-bullets))
 
 
@@ -393,12 +404,6 @@
 		 (+ x +playfield-render-offset-x+)
 		 (+ y +playfield-render-offset-y+) w h red))))
   (vector-for-each-truthy each live-enm))
-
-;; Remaining todo:
-;; get practice writing some basic patterns:
-;; - perfect freeze?
-;; - TD tojiko midspell zigzags
-;; - outward-multiplying ring (each bullet splits into 3, then each of those splits, into 3, etc.)
 
 (define (perfect-freeze-bullet blt)
   (do ([i 0 (add1 i)])
@@ -516,7 +521,7 @@
 
 (define (handle-input)
   ;; level triggered stuff
-  (unless paused
+  (when (and (not paused) (zero? respawning))
 	(when (raylib:is-key-down key-left)
 	  (set! player-xv (sub1 player-xv)))
 	(when (raylib:is-key-down key-right)
@@ -545,15 +550,15 @@
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(= k key-space)
 	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
-	  ;; (spawn-task
-	  ;;  "spawner"
-	  ;;  (lambda ()
-	  ;; 	 (do ((i 0 (add1 i)))
-	  ;; 		 ((= i 300))
-	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
-	  ;; 		 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
-	  ;; 	   (yield)))
-	  ;;  (constantly #t))
+	  (spawn-task
+	   "spawner"
+	   (lambda ()
+		 (do ((i 0 (add1 i)))
+			 ((= i 300))
+		   (let ([ang (- (random (* 2 pi)) pi)])
+			 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
+		   (yield)))
+	   (constantly #t))
 	  ])
 	(unless (zero? k)
 	  (loop (raylib:get-key-pressed)))))
@@ -573,58 +578,94 @@
     (set! player-xv 0.0)
     (set! player-yv 0.0)))
 
+(define (get-player-render-pos)
+  (if (positive? respawning)
+	  (let ([progress (/ (- +respawning-max+ respawning)
+						 +respawning-max+)]
+			[start-y (+ +playfield-max-y+ 5.0)]
+			[end-y +initial-player-y+])
+		(values (+ 0.0 +playfield-render-offset-x+)
+				(+ (lerp start-y end-y progress) +playfield-render-offset-y+)))
+	  (values (+ player-x +playfield-render-offset-x+)
+			  (+ player-y +playfield-render-offset-y+))))
+
 (define focus-sigil-strength 0.0)
 (define (draw-player textures)
-  (let* ([render-player-x (+ player-x +playfield-render-offset-x+)]
-		 [render-player-y (+ player-y +playfield-render-offset-y+)])
-	;; player sprite (todo: directional moving sprites)
-	(let ((x-texture-index (truncate (mod (/ frames 9) 8)))
-		  (iframe-blink
-		   (if (and (player-invincible?)
-					(< (mod frames 4) 2))
-			   (packcolor 64 64 255 255)
-			   #xffffffff)))
-	  (raylib:draw-texture-rec
-	   (txbundle-reimu textures)
-	   (make-rectangle (* 32.0 x-texture-index) 0.0 32.0 48.0)
-	   (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
-	   iframe-blink))
-	
-	;; focus sigil
-	(if (raylib:is-key-down key-left-shift)
-		(when (< focus-sigil-strength 1.0)
-		  (set! focus-sigil-strength (min (+ focus-sigil-strength 0.1) 1.0)))
-		(when (> focus-sigil-strength 0.0)
-		  (set! focus-sigil-strength (max (- focus-sigil-strength 0.1) 0.0))))
-	(when (> focus-sigil-strength 0.0)
-	  (raylib:push-matrix)
-	  (raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
-	  (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
-	  (draw-sprite textures 'focus-sigil
-				   0.0 0.0 ;; manually translated to final position above
-				   (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))	  
-	  (raylib:pop-matrix))
+  (define-values (render-player-x render-player-y)
+	(get-player-render-pos))
+  ;; player sprite (todo: directional moving sprites)
+  (let ((x-texture-index (truncate (mod (/ frames 9) 8)))
+		(iframe-blink
+		 (if (and (player-invincible?)
+				  (< (mod frames 4) 2))
+			 (packcolor 64 64 255 255)
+			 #xffffffff)))
+	(raylib:draw-texture-rec
+	 (txbundle-reimu textures)
+	 (make-rectangle (* 32.0 x-texture-index) 0.0 32.0 48.0)
+	 (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
+	 iframe-blink))
+  
+  ;; focus sigil
+  (if (raylib:is-key-down key-left-shift)
+	  (when (< focus-sigil-strength 1.0)
+		(set! focus-sigil-strength (min (+ focus-sigil-strength 0.1) 1.0)))
+	  (when (> focus-sigil-strength 0.0)
+		(set! focus-sigil-strength (max (- focus-sigil-strength 0.1) 0.0))))
+  (when (> focus-sigil-strength 0.0)
+	(raylib:push-matrix)
+	(raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
+	(raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
+	(draw-sprite textures 'focus-sigil
+				 0.0 0.0 ;; manually translated to final position above
+				 (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))	  
+	(raylib:pop-matrix))
 
-	(when show-hitboxes
-	  (raylib:draw-circle-v render-player-x render-player-y graze-radius
-							(packcolor 0 228 48 255))
-	  (raylib:draw-circle-v render-player-x render-player-y hit-radius
-						    red))))
+  (when show-hitboxes
+	(raylib:draw-circle-v render-player-x render-player-y graze-radius
+						  (packcolor 0 228 48 255))
+	(raylib:draw-circle-v render-player-x render-player-y hit-radius
+						  red)))
 
+(define bg1-scroll 0.0)
+(define bg2-scroll 0.0)
+(define bg3-scroll 0.0)
 (define screen-full-bounds
   (make-rectangle 0.0 0.0 640.0 480.0))
 (define (render-all textures)
-  (raylib:clear-background 0)
+  (raylib:clear-background #x42024aff) ;; todo: some variability :D
+  (unless paused
+	(let ([bg1-vel
+		   ;; 800-900 0.5 1.0 1.5
+		   ;; 3250 3550 accel
+		   ;; 3600-5200 1.8 2.0 2.5
+		   ;; 5500-6300 decel
+		   ;; 6400 0.5 1.0 1.5
+		   ;; 9150 9450 accel
+		   ;; 9500-11100 1.8 2.0 2.5
+		   ;; 11100 0.4 0.9 1.4 (or slower)
+		   ;; 11850 1.8 2.0 2.5 (with brief accel)
+		   ;; 12800 decel to 0.5 1.0 1.5
+		   (cond
+		    [else 1.8])]
+		  [bg2-vel
+		   (cond
+			[else 2.1])]
+		  [bg3-vel
+		   (cond [else 2.7])])
+	  (set! bg1-scroll (fl- bg1-scroll bg1-vel))
+	  (set! bg2-scroll (fl- bg2-scroll bg2-vel))
+	  (set! bg3-scroll (fl- bg3-scroll bg3-vel))))
   (raylib:draw-texture-pro (txbundle-bg1 textures)
-						   (make-rectangle 0.0 (mod (* frames -0.75) 224.0) 256.0 224.0)
+						   (make-rectangle 0.0 bg1-scroll 256.0 224.0)
 						   screen-full-bounds
 						   v2zero 0.0 #xc0c0c0ff)
   (raylib:draw-texture-pro (txbundle-bg2 textures)
-						   (make-rectangle 0.0 (mod (* frames -1.2) 224.0) 256.0 224.0)
+						   (make-rectangle 0.0 bg2-scroll 256.0 224.0)
 						   screen-full-bounds
 						   v2zero 0.0 #xc0c0c0ff)
   (raylib:draw-texture-pro (txbundle-bg3 textures)
-						   (make-rectangle 0.0 (mod (* frames -1.8) 224.0) 256.0 224.0)
+						   (make-rectangle 0.0 bg3-scroll 256.0 224.0)
 						   screen-full-bounds
 						   v2zero 0.0 #xc0c0c0ff)
   ;; (raylib:draw-texture-pro (txbundle-bg4 textures)
@@ -641,6 +682,9 @@
 	(raylib:draw-text "PAUSED" 175 150 28 (packcolor 200 122 255 255)))
 
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
+  (raylib:draw-text (format "FRAME: ~d" frames)
+					500 325
+					18 -1)
   (raylib:draw-text (format "MISC: ~d" (vector-popcnt live-misc-ents))
 					500 350
 					18 -1)
@@ -664,6 +708,7 @@
   (load-sfx)
   (let ([textures (load-textures)])
 	(raylib:play-music-stream ojamajo-carnival)
+	(set! iframes 180)
 	(let loop ()
 	  (unless (raylib:window-should-close)
 		(handle-input)
@@ -671,6 +716,8 @@
 		(unless paused
 		  (when (positive? iframes)
 			(set! iframes (sub1 iframes)))
+		  (when (positive? respawning)
+			(set! respawning (sub1 respawning)))
 		  (handle-player-movement)
 		  (vector-for-each-truthy
 		   (lambda (blt) (despawn-out-of-bound-bullet blt))
