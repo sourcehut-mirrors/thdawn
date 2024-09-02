@@ -682,22 +682,26 @@
 	(raylib:draw-text "PAUSED" 175 150 28 (packcolor 200 122 255 255)))
 
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
+  (raylib:draw-text (format "MEM: ~,2f MiB" (/ (current-memory-bytes)
+											   (* 1024.0 1024.0)))
+					450 300
+					18 -1)
   (raylib:draw-text (format "FRAME: ~d" frames)
-					500 325
+					450 325
 					18 -1)
   (raylib:draw-text (format "MISC: ~d" (vector-popcnt live-misc-ents))
-					500 350
+					450 350
 					18 -1)
   (raylib:draw-text (format "GRAZE: ~d" graze)
-					500 375
+					450 375
 					18 -1)
   (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
-					500 400
+					450 400
 					18 -1)
   (raylib:draw-text (format "BLT: ~d" (vector-popcnt live-bullets))
-					500 425
+					450 425
 					18 -1)
-  (raylib:draw-fps 500 450))
+  (raylib:draw-fps 450 450))
 
 (define (main)
   (collect-notify #t)

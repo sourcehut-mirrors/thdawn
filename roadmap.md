@@ -9,13 +9,14 @@ Midbosses: 1-3 of the Ojamajo Doremi girls, haven't decided yet.
 Boss: Not sure yet.
 
 ## Immediate TODOs
-* fix bottomdragging
-* (willie) investigate if we want to adopt a system similar to the official Touhou games'
-  "two-level" position and velocity system
-* a simple stage background (e.g. black with scrolling stars or hearts or something, similar to the pc98 backgrounds)
+* fix bottomdragging and adjust movement speed to feel "right"
+* implement spawn delay and blurred pre-spawn rendering
+* implementing directional moving sprites for the player
+* implement background speed changes
+* implement first chapter of stage to flesh out API's needed
 * boss tracking and support
   * spell tracking and hud
-* stage pattern design
-* boss pattern design
 * dialogue system
 * player and boss portraits
+* investigate if we want to adopt a system similar to the official Touhou games'
+  "two-level" position and velocity system
