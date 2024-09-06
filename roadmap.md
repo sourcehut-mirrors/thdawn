@@ -9,7 +9,6 @@ Midbosses: 1-3 of the Ojamajo Doremi girls, haven't decided yet.
 Boss: Not sure yet.
 
 ## Immediate TODOs
-* fix bottomdragging and adjust movement speed to feel "right"
 * implement spawn delay and blurred pre-spawn rendering
 * implementing directional moving sprites for the player
 * implement background speed changes

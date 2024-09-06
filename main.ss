@@ -208,9 +208,6 @@
 (define player-x 0.0)
 (define +initial-player-y+ (- +playfield-max-y+ 20.0))
 (define player-y +initial-player-y+)
-(define player-speed 200)
-(define player-xv 0.0)
-(define player-yv 0.0)
 
 (define (player-invincible?)
   (positive? iframes))
@@ -522,14 +519,7 @@
 (define (handle-input)
   ;; level triggered stuff
   (when (and (not paused) (zero? respawning))
-	(when (raylib:is-key-down key-left)
-	  (set! player-xv (sub1 player-xv)))
-	(when (raylib:is-key-down key-right)
-	  (set! player-xv (add1 player-xv)))
-	(when (raylib:is-key-down key-up)
-	  (set! player-yv (sub1 player-yv)))
-	(when (raylib:is-key-down key-down)
-	  (set! player-yv (add1 player-yv)))
+	(handle-player-movement)
 	(when (and (raylib:is-key-down key-z)
 			   (zero? (mod frames 5))) ;; todo separate counter
 	  (let ((y (- player-y 20)))
@@ -564,19 +554,21 @@
 	  (loop (raylib:get-key-pressed)))))
 
 (define (handle-player-movement)
-  (when (not (and (zero? player-xv) (zero? player-yv)))
-    (let* ((delta-time (raylib:get-frame-time))
-           (velocity (* player-speed delta-time (if (raylib:is-key-down key-left-shift) 0.5 1)))
-           (normalized-direction (v2unit (vec2 player-xv player-yv)))
-           (acceleration (v2* normalized-direction velocity))
-           (new-x (+ player-x (v2x acceleration)))
-           (new-y (+ player-y (v2y acceleration))))
-	  ;; todo: refine this so that you can bottomdrag instead of not moving at all
-      (when (not (or (> new-x +playfield-max-x+) (> new-y +playfield-max-y+) (< new-y +playfield-min-y+) (< new-x +playfield-min-x+)))
-        (set! player-x new-x)
-        (set! player-y new-y)))
-    (set! player-xv 0.0)
-    (set! player-yv 0.0)))
+  (define left-pressed (raylib:is-key-down key-left))
+  (define right-pressed (raylib:is-key-down key-right))
+  (define up-pressed (raylib:is-key-down key-up))
+  (define down-pressed (raylib:is-key-down key-down))
+  (define dir (vec2 (fl+ (if left-pressed -1.0 0.0) (if right-pressed 1.0 0.0))
+					(fl+ (if up-pressed -1.0 0.0) (if down-pressed 1.0 0.0))))
+  (when (not (and (flzero? (v2x dir)) (flzero? (v2y dir))))
+	(let* ([speed (if (raylib:is-key-down key-left-shift) 2.25 4.125)]
+		   [velvec (v2* (v2unit dir) speed)]
+		   [new-x (clamp (fl+ player-x (v2x velvec))
+						 +playfield-min-x+ +playfield-max-x+)]
+		   [new-y (clamp (fl+ player-y (v2y velvec))
+						 +playfield-min-y+ +playfield-max-y+)])
+	  (set! player-x new-x)
+	  (set! player-y new-y))))
 
 (define (get-player-render-pos)
   (if (positive? respawning)
@@ -722,7 +714,6 @@
 			(set! iframes (sub1 iframes)))
 		  (when (positive? respawning)
 			(set! respawning (sub1 respawning)))
-		  (handle-player-movement)
 		  (vector-for-each-truthy
 		   (lambda (blt) (despawn-out-of-bound-bullet blt))
 		   live-bullets)
