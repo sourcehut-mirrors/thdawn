@@ -17,6 +17,12 @@
   ;; so this is the right place to do it
   (define _dummy (load-shared-object "libraylib.so")) ;; todo windows and macos
 
+  ;; WARNING: Chez's FFI treats the boolean ftype as C `int`,
+  ;; NOT as C99 _Bool/bool. Raylib, on all the target platforms we care about,
+  ;; is compiled against C99 bool. Ideally we shouldn't assume sizeof(bool) is 1,
+  ;; but on any sane platform that should be the case. Therefore, we should type all
+  ;; C bools that appear as unsigned-8.
+
   ;; For foreign structs that Raylib handles by-value, we just allocate
   ;; one location and use it to pass and return things from ffi by-value
   ;; This avoids thrashing foreign-alloc and foreign-free, as many of these functions
@@ -80,7 +86,7 @@
 	(foreign-procedure "CloseWindow" () void))
 
   (define window-should-close
-	(foreign-procedure "WindowShouldClose" () boolean))
+	(foreign-procedure "WindowShouldClose" () unsigned-8))
 
   (define set-target-fps
 	(foreign-procedure "SetTargetFPS" (int) void))
@@ -122,7 +128,7 @@
 	(struct
 	  (_ AudioStream)
 	  (_ unsigned-int)
-	  (_ boolean)
+	  (_ unsigned-8)
 	  (_ int)
 	  (_ void*)))
   
@@ -240,13 +246,6 @@
 	(draw-texture-pro0 tex global-rectangle global-rectangle2
 					   global-vector2 rotation global-color))
 
-  ;; HACK: If I type this as boolean, as the Raylib header states,
-  ;; I get issues where is-key-down always returns true.
-  ;; It seems like there's some bug, and searching on the Internet
-  ;; reveals some other people that run into this as well.
-  ;; The hack here is to treat the ABI as unsigned char and do
-  ;; the zero-comparison ourselves.
-  ;; TODO: test that this works on all the main platforms
   (define is-key-down0
 	(foreign-procedure "IsKeyDown" (int) unsigned-8))
   (define (is-key-down k)

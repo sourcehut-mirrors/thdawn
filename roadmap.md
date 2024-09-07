@@ -13,8 +13,10 @@ Boss: Not sure yet.
 * implementing directional moving sprites for the player
 * implement background speed changes
 * implement first chapter of stage to flesh out API's needed
-* boss tracking and support
-  * spell tracking and hud
+* boss aura
+* boss spell circle
+* spell tracking and hud
+* boss position marker
 * dialogue system
 * player and boss portraits
 * investigate if we want to adopt a system similar to the official Touhou games'
