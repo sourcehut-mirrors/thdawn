@@ -7,13 +7,22 @@
 (generate-wpo-files #t)
 
 ;; Do the main compilation
-(display (compile-program "main.ss"))
+(define libs-used (compile-program "main.ss"))
+(display "Libraries used: ")
+(display libs-used)
+(newline)
 (newline)
 
 ;; Now we have the wpos, build the lto-ed binary
 ;; Library wpos are automatically detected
 (display "Compiling WPO-ed program\n")
-(display (compile-whole-program "main.wpo" "main_wpo.so"))
+(define missing-wpo-libs (compile-whole-program "main.wpo" "main_wpo.so"))
+(when (not (null? missing-wpo-libs))
+  (display missing-wpo-libs)
+  (newline))
+;; must be empty, meaning that all scheme libraries have been found and bundled
+;; into the wpo-ed object file
+(assert (null? missing-wpo-libs))
 (newline)
 
 ;; Create the final boot file

@@ -21,7 +21,7 @@
   ;; NOT as C99 _Bool/bool. Raylib, on all the target platforms we care about,
   ;; is compiled against C99 bool. Ideally we shouldn't assume sizeof(bool) is 1,
   ;; but on any sane platform that should be the case. Therefore, we should type all
-  ;; C bools that appear as unsigned-8.
+  ;; C bools that appear as unsigned-8 and do the zero check on the Chez side.
 
   ;; For foreign structs that Raylib handles by-value, we just allocate
   ;; one location and use it to pass and return things from ffi by-value
@@ -85,8 +85,10 @@
   (define close-window
 	(foreign-procedure "CloseWindow" () void))
 
-  (define window-should-close
+  (define window-should-close0
 	(foreign-procedure "WindowShouldClose" () unsigned-8))
+  (define (window-should-close)
+	(not (fxzero? (window-should-close0))))
 
   (define set-target-fps
 	(foreign-procedure "SetTargetFPS" (int) void))
@@ -249,7 +251,7 @@
   (define is-key-down0
 	(foreign-procedure "IsKeyDown" (int) unsigned-8))
   (define (is-key-down k)
-	(not (zero? (is-key-down0 k))))
+	(not (fxzero? (is-key-down0 k))))
 
   (define get-key-pressed
 	(foreign-procedure "GetKeyPressed" () int))
