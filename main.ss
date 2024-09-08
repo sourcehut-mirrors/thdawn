@@ -452,21 +452,18 @@
 	   (miscent-y-set! ent (- (miscent-y ent) 10.0))
 	   (call/1cc
 		(lambda (return)
-		  (let ((hitbox (make-rectangle
-						 (- (miscent-x ent) 6) (- (miscent-y ent) 10)
-						 12 16)))
-			(vector-for-each-truthy
-			 (lambda (enm)
-			   (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
-				 (when (check-collision-recs
-						ehx ehy ehw ehh
-						(- (miscent-x ent) 6)
-						(- (miscent-y ent) 6)
-						12 16)
-				   (delete-misc-ent ent)
-				   (enm-health-set! enm (- (enm-health enm) 50))
-				   (return))))
-			 live-enm))
+		  (vector-for-each-truthy
+		   (lambda (enm)
+			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
+			   (when (check-collision-recs
+					  ehx ehy ehw ehh
+					  (- (miscent-x ent) 6)
+					  (- (miscent-y ent) 6)
+					  12 16)
+				 (delete-misc-ent ent)
+				 (enm-health-set! enm (- (enm-health enm) 50))
+				 (return))))
+		   live-enm)
 		  (when (< (miscent-y ent) +playfield-min-y+)
 			(delete-misc-ent ent)))))))
   (vector-for-each-truthy each live-misc-ents))
