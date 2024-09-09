@@ -88,76 +88,76 @@
    center-shift))
 
 (define (make-sprite-data)
-  (let ([ret (make-eq-hashtable)]
-		[shift8 (vec2 -8.0 -8.0)]
-		[shift16 (vec2 -16.0 -16.0)])
-	(define (make type accessor x y width height shift)
-	  (hashtable-set!
-	   ret type
-	   (make-sprite-descriptor accessor
-							   (make-rectangle
-								(inexact x) (inexact y)
-								(inexact width) (inexact height))
-							   shift)))
-	;; bullets
-	(make 'pellet-red txbundle-bullet2 176 0 16 16 shift8)
-	(make 'pellet-magenta txbundle-bullet2 176 32 16 16 shift8)
-	(make 'pellet-blue txbundle-bullet2 176 80 16 16 shift8)
-	(make 'pellet-cyan txbundle-bullet2 176 96 16 16 shift8)
-	(make 'pellet-green txbundle-bullet2 176 112 16 16 shift8)
-	(make 'pellet-yellow txbundle-bullet2 176 160 16 16 shift8)
-	(make 'pellet-orange txbundle-bullet2 176 192 16 16 shift8)
-	(make 'pellet-gray txbundle-bullet2 176 208 16 16 shift8)
-	(make 'pellet-white txbundle-bullet2 176 224 16 16 shift8)
-	(make 'small-star-red txbundle-bullet2 96 0 16 16 shift8)
-	(make 'small-star-magenta txbundle-bullet2 96 32 16 16 shift8)
-	(make 'small-star-blue txbundle-bullet2 96 64 16 16 shift8)
-	(make 'small-star-cyan txbundle-bullet2 96 96 16 16 shift8)
-	(make 'small-star-green txbundle-bullet2 96 128 16 16 shift8)
-	(make 'small-star-yellow txbundle-bullet2 96 160 16 16 shift8)
-	(make 'small-star-orange txbundle-bullet2 96 192 16 16 shift8)
-	(make 'small-star-white txbundle-bullet2 96 224 16 16 shift8)
-	(make 'small-star-black txbundle-bullet2 96 240 16 16 shift8)
-	(make 'big-star-red txbundle-bullet2 224 0 32 32 shift16)
-	(make 'big-star-magenta txbundle-bullet2 224 32 32 32 shift16)
-	(make 'big-star-blue txbundle-bullet2 224 64 32 32 shift16)
-	(make 'big-star-cyan txbundle-bullet2 224 96 32 32 shift16)
-	(make 'big-star-green txbundle-bullet2 224 128 32 32 shift16)
-	(make 'big-star-yellow txbundle-bullet2 224 160 32 32 shift16)
-	(make 'big-star-orange txbundle-bullet2 224 192 32 32 shift16)
-	(make 'big-star-white txbundle-bullet2 224 224 32 32 shift16)
+  (define ret (make-hashtable symbol-hash eq?))
+  (define shift8 (vec2 -8.0 -8.0))
+  (define shift16 (vec2 -16.0 -16.0))
+  (define (make type accessor x y width height shift)
+	(symbol-hashtable-set!
+	 ret type
+	 (make-sprite-descriptor accessor
+							 (make-rectangle
+							  (inexact x) (inexact y)
+							  (inexact width) (inexact height))
+							 shift)))
+  ;; bullets
+  (make 'pellet-red txbundle-bullet2 176 0 16 16 shift8)
+  (make 'pellet-magenta txbundle-bullet2 176 32 16 16 shift8)
+  (make 'pellet-blue txbundle-bullet2 176 80 16 16 shift8)
+  (make 'pellet-cyan txbundle-bullet2 176 96 16 16 shift8)
+  (make 'pellet-green txbundle-bullet2 176 112 16 16 shift8)
+  (make 'pellet-yellow txbundle-bullet2 176 160 16 16 shift8)
+  (make 'pellet-orange txbundle-bullet2 176 192 16 16 shift8)
+  (make 'pellet-gray txbundle-bullet2 176 208 16 16 shift8)
+  (make 'pellet-white txbundle-bullet2 176 224 16 16 shift8)
+  (make 'small-star-red txbundle-bullet2 96 0 16 16 shift8)
+  (make 'small-star-magenta txbundle-bullet2 96 32 16 16 shift8)
+  (make 'small-star-blue txbundle-bullet2 96 64 16 16 shift8)
+  (make 'small-star-cyan txbundle-bullet2 96 96 16 16 shift8)
+  (make 'small-star-green txbundle-bullet2 96 128 16 16 shift8)
+  (make 'small-star-yellow txbundle-bullet2 96 160 16 16 shift8)
+  (make 'small-star-orange txbundle-bullet2 96 192 16 16 shift8)
+  (make 'small-star-white txbundle-bullet2 96 224 16 16 shift8)
+  (make 'small-star-black txbundle-bullet2 96 240 16 16 shift8)
+  (make 'big-star-red txbundle-bullet2 224 0 32 32 shift16)
+  (make 'big-star-magenta txbundle-bullet2 224 32 32 32 shift16)
+  (make 'big-star-blue txbundle-bullet2 224 64 32 32 shift16)
+  (make 'big-star-cyan txbundle-bullet2 224 96 32 32 shift16)
+  (make 'big-star-green txbundle-bullet2 224 128 32 32 shift16)
+  (make 'big-star-yellow txbundle-bullet2 224 160 32 32 shift16)
+  (make 'big-star-orange txbundle-bullet2 224 192 32 32 shift16)
+  (make 'big-star-white txbundle-bullet2 224 224 32 32 shift16)
 
-	;; enemies
-	(make 'red-fairy txbundle-enemy1 0 384 32 32 shift16)
+  ;; enemies
+  (make 'red-fairy txbundle-enemy1 0 384 32 32 shift16)
 
-	;; misc
-	(make 'focus-sigil txbundle-misc 128 0 64 64 (vec2 -32.0 -32.0))
-	(make 'mainshot txbundle-reimu 192 160 64 16 (vec2 -54.0 -8.0))
-	ret))
+  ;; misc
+  (make 'focus-sigil txbundle-misc 128 0 64 64 (vec2 -32.0 -32.0))
+  (make 'mainshot txbundle-reimu 192 160 64 16 (vec2 -54.0 -8.0))
+  ret)
 
 (define sprite-data (make-sprite-data))
 
 (define (draw-sprite textures sprite-id x y color)
-  (let ([data (hashtable-ref sprite-data sprite-id #f)])
-	(raylib:draw-texture-rec
-	 ((sprite-descriptor-tx-accessor data) textures)
-	 (sprite-descriptor-bounds data)
-	 (v2+ (vec2 x y) (sprite-descriptor-center-shift data))
-	 color)))
+  (define data (symbol-hashtable-ref sprite-data sprite-id #f))
+  (raylib:draw-texture-rec
+   ((sprite-descriptor-tx-accessor data) textures)
+   (sprite-descriptor-bounds data)
+   (v2+ (vec2 x y) (sprite-descriptor-center-shift data))
+   color))
 
 (define (draw-sprite-with-rotation textures sprite-id rotation x y color)
-  (let* ([data (hashtable-ref sprite-data sprite-id #f)]
-		 [center-shift (sprite-descriptor-center-shift data)])
-	(raylib:push-matrix)
-	(raylib:translatef x y 0.0)
-	(raylib:rotatef rotation 0.0 0.0 1.0)
-	(raylib:translatef (+ (v2x center-shift)) (+ (v2y center-shift)) 0.0)
-	(raylib:draw-texture-rec
-	 ((sprite-descriptor-tx-accessor data) textures)
-	 (sprite-descriptor-bounds data)
-	 v2zero
-	 color)
-	(raylib:pop-matrix)))
+  (define data (symbol-hashtable-ref sprite-data sprite-id #f))
+  (define center-shift (sprite-descriptor-center-shift data))
+  (raylib:push-matrix)
+  (raylib:translatef x y 0.0)
+  (raylib:rotatef rotation 0.0 0.0 1.0)
+  (raylib:translatef (+ (v2x center-shift)) (+ (v2y center-shift)) 0.0)
+  (raylib:draw-texture-rec
+   ((sprite-descriptor-tx-accessor data) textures)
+   (sprite-descriptor-bounds data)
+   v2zero
+   color)
+  (raylib:pop-matrix))
 
 (define (constantly x)
   (lambda _args x))
@@ -240,25 +240,25 @@
 (define live-bullets (make-vector 4096 #f))
 
 (define (vector-index elem v)
-  (let ([len (vector-length v)])
-	(let loop ([i 0])
-	  (if (>= i len)
-		  #f
-		  (let ([elemi (vector-ref v i)])
-			(if (eq? elem elemi)
-				i
-				(loop (add1 i))))))))
+  (define len (vector-length v))
+  (let loop ([i 0])
+	(if (>= i len)
+		#f
+		(let ([elemi (vector-ref v i)])
+		  (if (eq? elem elemi)
+			  i
+			  (loop (add1 i)))))))
 
 (define (vector-popcnt v)
-  (let ([len (vector-length v)])
-	(let loop ([i 0]
-			   [n 0])
-	  (if (>= i len)
-		  n
-		  (let ([elemi (vector-ref v i)])
-			(if elemi
-				(loop (add1 i) (add1 n))
-				(loop (add1 i) n)))))))
+  (define len (vector-length v)) 
+  (let loop ([i 0]
+			 [n 0])
+	(if (>= i len)
+		n
+		(let ([elemi (vector-ref v i)])
+		  (if elemi
+			  (loop (add1 i) (add1 n))
+			  (loop (add1 i) n))))))
 
 (define (spawn-bullet type x y facing speed control-function)
   (let ([idx (vector-index #f live-bullets)])
@@ -402,19 +402,6 @@
 		 (+ x +playfield-render-offset-x+)
 		 (+ y +playfield-render-offset-y+) w h red))))
   (vector-for-each-truthy each live-enm))
-
-(define (perfect-freeze-bullet blt)
-  (do ([i 0 (add1 i)])
-	  ((= i 240))
-	(linear-step blt)
-	(yield))
-  (bullet-speed-set! blt 0)
-  (wait 300)
-  (let loop ()
-	(linear-step blt)
-	(bullet-speed-set! blt (+ (bullet-speed blt) 5))
-	(yield)
-	(loop)))
 
 (define (linear-step-forever blt)
   (let loop ()
