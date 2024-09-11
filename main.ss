@@ -12,6 +12,7 @@
 (define key-left 263)
 (define key-down 264)
 (define key-up 265)
+(define key-y 89)
 (define key-z 90)
 (define pi 3.141592)
 
@@ -58,7 +59,7 @@
    reimu
    enemy1
    hud
-   misc
+   misc item
    bullet1 bullet2 bullet3 bullet4 bullet5 bullet6
    bg1 bg2 bg3 bg4
    ))
@@ -69,7 +70,7 @@
    (ltex "reimu.png")
    (ltex "enemy1.png")
    (ltex "ui_bg.png")
-   (ltex "misc.png")
+   (ltex "misc.png") (ltex "item.png")
    (ltex "bullet1.png") (ltex "bullet2.png") (ltex "bullet3.png")
    (ltex "bullet4.png") (ltex "bullet5.png") (ltex "bullet6.png")
    (ltex "background_1.png") (ltex "background_2.png")
@@ -129,6 +130,16 @@
 
   ;; enemies
   (make 'red-fairy txbundle-enemy1 0 384 32 32 shift16)
+
+  ;; items
+  (make 'life-frag txbundle-item 0 32 32 32 shift16)
+  (make 'big-piv txbundle-item 0 64 32 32 shift16)
+  (make 'life txbundle-item 0 96 32 32 shift16)
+  (make 'bomb-frag txbundle-item 0 128 32 32 shift16)
+
+  (make 'point txbundle-item 32 0 32 32 shift16)
+  (make 'small-piv txbundle-item 32 96 32 32 shift16)
+  (make 'bomb txbundle-item 32 128 32 32 shift16)
 
   ;; misc
   (make 'focus-sigil txbundle-misc 128 0 64 64 (vec2 -32.0 -32.0))
@@ -208,6 +219,8 @@
 (define player-x 0.0)
 (define +initial-player-y+ (- +playfield-max-y+ 20.0))
 (define player-y +initial-player-y+)
+(define item-value 10000)
+(define current-score 0)
 
 (define (player-invincible?)
   (positive? iframes))
@@ -453,22 +466,28 @@
 				 (return))))
 		   live-enm)
 		  (when (< (miscent-y ent) +playfield-min-y+)
-			(delete-misc-ent ent)))))))
+			(delete-misc-ent ent)))))
+	  ([point life-frag big-piv life bomb-frag small-piv bomb]
+	   #f ;; todo
+	   )))
   (vector-for-each-truthy each live-misc-ents))
 
 (define (draw-misc-ents textures)
   (define (each ent)
-	(case (miscent-type ent)
+	(define type (miscent-type ent))
+	(define render-x (+ +playfield-render-offset-x+ (miscent-x ent)))
+	(define render-y (+ +playfield-render-offset-y+ (miscent-y ent)))
+	(case type
 	  ((mainshot)
-	   (let ((render-x (+ +playfield-render-offset-x+ (miscent-x ent)))
-			 (render-y (+ +playfield-render-offset-y+ (miscent-y ent))))
-		 (draw-sprite-with-rotation
-		  textures 'mainshot -90.0
-		  render-x render-y -1)
-		 (when show-hitboxes
-		   (raylib:draw-rectangle-rec
-			(- render-x 6) (- render-y 10) 12 16
-			red))))))
+	   (draw-sprite-with-rotation
+		textures 'mainshot -90.0
+		render-x render-y -1)
+	   (when show-hitboxes
+		 (raylib:draw-rectangle-rec
+		  (- render-x 6) (- render-y 10) 12 16
+		  red)))
+	  ([point life-frag big-piv life bomb-frag small-piv bomb]
+	   (draw-sprite textures type render-x render-y -1))))
   (vector-for-each-truthy each live-misc-ents))
 
 (define (ease-cubic-to x y duration enm)
@@ -524,17 +543,19 @@
 			(raylib:pause-music-stream ojamajo-carnival))
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(= k key-space)
-	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
-	  (spawn-task
-	   "spawner"
-	   (lambda ()
-		 (do ((i 0 (add1 i)))
-			 ((= i 300))
-		   (let ([ang (- (random (* 2 pi)) pi)])
-			 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
-		   (yield)))
-	   (constantly #t))
-	  ])
+	  ;; (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
+	  ;; (spawn-task
+	  ;;  "spawner"
+	  ;;  (lambda ()
+	  ;; 	 (do ((i 0 (add1 i)))
+	  ;; 		 ((= i 300))
+	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
+	  ;; 		 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
+	  ;; 	   (yield)))
+	  ;;  (constantly #t))
+	  #f]
+	 [(= k key-y)
+	  (vector-fill! live-misc-ents #f)])
 	(unless (zero? k)
 	  (loop (raylib:get-key-pressed)))))
 
