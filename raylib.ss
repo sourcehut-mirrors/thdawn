@@ -1,6 +1,6 @@
 (library (raylib)
   (export init-window close-window window-should-close set-target-fps get-frame-time
-		  begin-drawing end-drawing clear-background draw-circle-v
+		  begin-drawing end-drawing clear-background draw-circle-v draw-line
 		  draw-text draw-fps draw-rectangle-rec
 		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
@@ -105,6 +105,11 @@
 	(load-global-color rgba)
 	(clear-background0 global-color))
 
+  (define draw-line0
+	(foreign-procedure "DrawLine" (int int int int (& Color)) void))
+  (define (draw-line sx sy ex ey rgba)
+	(load-global-color rgba)
+	(draw-line0 sx sy ex ey global-color))
 
   (define draw-circle-v0
 	(foreign-procedure "DrawCircleV" ((& RayVector2) float (& Color)) void))

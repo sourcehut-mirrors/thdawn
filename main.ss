@@ -31,7 +31,7 @@
    extend graze bell
    oldvwoopfast oldvwoopslow
    pause menuselect
-   timeout timeoutwarn))
+   timeout timeoutwarn item))
 (define sounds #f)
 (define (load-sfx)
   (define (lsfx file) (raylib:load-sound (string-append "assets/sfx/" file)))
@@ -45,7 +45,8 @@
 		 (lsfx "se_extend.wav") (lsfx "se_graze.wav") (lsfx "se_kira00.wav")
 		 (lsfx "se_power1.wav") (lsfx "se_power2.wav")
 		 (lsfx "se_pause.wav") (lsfx "se_select00.wav")
-		 (lsfx "se_timeout.wav") (lsfx "se_timeout2.wav"))))
+		 (lsfx "se_timeout.wav") (lsfx "se_timeout2.wav")
+		 (lsfx "se_item00.wav"))))
 (define (unload-sfx)
   (define rtd (record-type-descriptor sebundle))
   (define num-sounds (vector-length (record-type-field-names rtd)))
@@ -161,7 +162,7 @@
   (define center-shift (sprite-descriptor-center-shift data))
   (raylib:push-matrix)
   (raylib:translatef x y 0.0)
-  (raylib:rotatef rotation 0.0 0.0 1.0)
+  (raylib:rotatef (inexact rotation) 0.0 0.0 1.0)
   (raylib:translatef (+ (v2x center-shift)) (+ (v2y center-shift)) 0.0)
   (raylib:draw-texture-rec
    ((sprite-descriptor-tx-accessor data) textures)
@@ -202,6 +203,7 @@
 (define +playfield-min-y+ 0)
 (define +playfield-max-x+ 192)
 (define +playfield-max-y+ 448)
+(define +poc-y+ 120)
 (define +oob-bullet-despawn-fuzz+ 10)
 
 (define frames 0) ;; Number of frames the current stage has been running
@@ -326,7 +328,7 @@
 		((pellet)
 		 (draw-sprite textures type render-x render-y #xffffffff))
 		((small-star big-star)
-		 (draw-sprite-with-rotation textures type (mod (* frames 5.0) 360.0)
+		 (draw-sprite-with-rotation textures type (mod (* frames 5) 360)
 									render-x render-y #xffffffff)))
 	  (when show-hitboxes
 		(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
@@ -429,7 +431,17 @@
 	(bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing))))))
 
 (define-record-type miscent
-  (fields type (mutable x) (mutable y)))
+  (fields
+   type
+   (mutable x)
+   (mutable y)
+   (mutable vy)
+   (mutable ay)
+   (mutable lifespan)
+   (mutable autocollect)))
+
+(define (miscent-supports-autocollect? ent)
+  (not (eq? (miscent-type ent) 'mainshot)))
 
 (define live-misc-ents
   (make-vector 512 #f))
@@ -448,9 +460,16 @@
 
 (define (tick-misc-ents)
   (define (each ent)
+	(define (do-standard-movement)
+	  (let ([vy (miscent-vy ent)]
+			[ay (miscent-ay ent)])
+		(when (not (zero? vy))
+	  	  (miscent-y-set! ent (+ (miscent-y ent) vy)))
+		(when (not (zero? ay))
+		  (miscent-vy-set! ent (+ vy ay)))))
 	(case (miscent-type ent)
 	  ((mainshot)
-	   (miscent-y-set! ent (- (miscent-y ent) 10.0))
+	   (do-standard-movement)
 	   (call/1cc
 		(lambda (return)
 		  (vector-for-each-truthy
@@ -468,8 +487,33 @@
 		  (when (< (miscent-y ent) +playfield-min-y+)
 			(delete-misc-ent ent)))))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
-	   #f ;; todo
-	   )))
+	   (cond
+		[(miscent-autocollect ent)
+		 ;; todo dedupe with below
+		 ;; todo acceleration?
+		 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
+											(- player-y (miscent-y ent))))])
+		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 8)))
+		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 8))))]
+		[(and
+			(raylib:is-key-down key-left-shift)
+			(check-collision-circle-rec
+			 player-x player-y graze-radius
+			 (- (miscent-x ent) 8) (- (miscent-y ent) 8)
+			 16 16))
+		 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
+											(- player-y (miscent-y ent))))])
+		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 3)))
+		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 3))))]
+		[else (do-standard-movement)])
+	   (when (check-collision-circle-rec player-x player-y hit-radius
+										 (- (miscent-x ent) 8) (- (miscent-y ent) 8)
+										 16 16)
+		 (raylib:play-sound (sebundle-item sounds))
+		 (delete-misc-ent ent))
+	   (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
+		 (delete-misc-ent ent))))
+	(miscent-lifespan-set! ent (add1 (miscent-lifespan ent))))
   (vector-for-each-truthy each live-misc-ents))
 
 (define (draw-misc-ents textures)
@@ -480,14 +524,26 @@
 	(case type
 	  ((mainshot)
 	   (draw-sprite-with-rotation
-		textures 'mainshot -90.0
+		textures 'mainshot -90
 		render-x render-y -1)
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
 		  (- render-x 6) (- render-y 10) 12 16
 		  red)))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
-	   (draw-sprite textures type render-x render-y -1))))
+	   (let ([lifespan (miscent-lifespan ent)])
+		 ;; this rendering is sketchy (it's not lined up right so
+		 ;; the final rotation isn't -45, so there's a discontinuous snap).
+		 ;; no one will probably notice but todo improve it ig lol
+		 (if (> lifespan 24)
+			 (draw-sprite textures type render-x render-y -1)
+			 (draw-sprite-with-rotation
+			  textures type (* 45.0 (floor (/ lifespan 3)))
+			  render-x render-y -1)))
+	   (when show-hitboxes
+		 (raylib:draw-rectangle-rec
+		  (- render-x 8) (- render-y 8) 16 16
+		  red)))))
   (vector-for-each-truthy each live-misc-ents))
 
 (define (ease-cubic-to x y duration enm)
@@ -527,8 +583,10 @@
 	(when (and (raylib:is-key-down key-z)
 			   (zero? (mod frames 5))) ;; todo separate counter
 	  (let ((y (- player-y 20)))
-		(spawn-misc-ent (make-miscent 'mainshot (- player-x 10) y))
-		(spawn-misc-ent (make-miscent 'mainshot (+ player-x 10) y))
+		(spawn-misc-ent (make-miscent 'mainshot (- player-x 10) y
+									  -10 0 0 #f))
+		(spawn-misc-ent (make-miscent 'mainshot (+ player-x 10) y
+									  -10 0 0 #f))
 		(raylib:play-sound (sebundle-playershoot sounds)))))
   ;; edge triggered stuff
   (let loop ([k (raylib:get-key-pressed)])
@@ -543,6 +601,7 @@
 			(raylib:pause-music-stream ojamajo-carnival))
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(= k key-space)
+	  (spawn-misc-ent (make-miscent 'life 0.0 50.0 -2.0 0.1 0 #f))
 	  ;; (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
 	  ;; (spawn-task
 	  ;;  "spawner"
@@ -574,7 +633,13 @@
 		   [new-y (clamp (fl+ player-y (v2y velvec))
 						 +playfield-min-y+ +playfield-max-y+)])
 	  (set! player-x new-x)
-	  (set! player-y new-y))))
+	  (set! player-y new-y)))
+  (when (< player-y +poc-y+)
+	(vector-for-each-truthy
+	 (lambda (ent)
+	   (when (miscent-supports-autocollect? ent)
+		 (miscent-autocollect-set! ent #t)))
+	 live-misc-ents)))
 
 (define (get-player-render-pos)
   (if (positive? respawning)
@@ -670,7 +735,12 @@
   ;; 						   (make-rectangle 0.0 (mod (* frames -0.5) 224.0) 256.0 224.0)
   ;; 						   screen-full-bounds
   ;; 						   v2zero 0.0 -1)
-  
+  (when show-hitboxes
+	(raylib:draw-line (+ +playfield-render-offset-x+ +playfield-min-x+)
+					  (+ +playfield-render-offset-y+ +poc-y+)
+					  (+ +playfield-render-offset-x+ +playfield-max-x+)
+					  (+ +playfield-render-offset-y+ +poc-y+)
+					  -1))
   (draw-player textures)
   (draw-enemies textures)
   (draw-misc-ents textures)
@@ -680,6 +750,9 @@
 	(raylib:draw-text "PAUSED" 175 150 28 (packcolor 200 122 255 255)))
 
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
+  (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
+					450 275
+					18 -1)
   (raylib:draw-text (format "MEM: ~,2f MiB" (/ (current-memory-bytes)
 											   (* 1024.0 1024.0)))
 					450 300
