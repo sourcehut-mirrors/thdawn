@@ -532,9 +532,6 @@
 		  red)))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
 	   (let ([lifespan (miscent-lifespan ent)])
-		 ;; this rendering is sketchy (it's not lined up right so
-		 ;; the final rotation isn't -45, so there's a discontinuous snap).
-		 ;; no one will probably notice but todo improve it ig lol
 		 (if (> lifespan 24)
 			 (draw-sprite textures type render-x render-y -1)
 			 (draw-sprite-with-rotation

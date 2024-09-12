@@ -22,9 +22,12 @@ All these steps are one time
 1. Install geiser and geiser-chez in emacs
 1. C-c C-z to start a REPL
 1. C-c C-b to eval the main.ss buffer
-1. (fork-thread main) in the REPL to fork 
 1. Spawn a game window in a thread by evaluating in the REPL `(fork-thread main)`.
    XXX: this won't work on macOS which requires first thread to be the one that does GUI stuff.
 
 ## Distribution Build
-TODO: figure this out
+Run the `build.ss` program, which will create the output artifact `thdawn.boot`. On Unix
+systems you can do this by running `make`.
+
+Distribute this with the assets, a copy of Chez Scheme, and raylib's dynamic library. This
+step is probably going to be manual.
