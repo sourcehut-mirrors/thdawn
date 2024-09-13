@@ -223,6 +223,9 @@
 (define player-y +initial-player-y+)
 (define item-value 10000)
 (define current-score 0)
+;; fragments are stored as Scheme's fractional data types
+(define life-stock 2)
+(define bomb-stock 3)
 
 (define (player-invincible?)
   (positive? iframes))
@@ -460,6 +463,7 @@
 
 (define (tick-misc-ents)
   (define (each ent)
+	(define type (miscent-type ent))
 	(define (do-standard-movement)
 	  (let ([vy (miscent-vy ent)]
 			[ay (miscent-ay ent)])
@@ -467,7 +471,7 @@
 	  	  (miscent-y-set! ent (+ (miscent-y ent) vy)))
 		(when (not (zero? ay))
 		  (miscent-vy-set! ent (+ vy ay)))))
-	(case (miscent-type ent)
+	(case type
 	  ((mainshot)
 	   (do-standard-movement)
 	   (call/1cc
@@ -506,10 +510,37 @@
 		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 3)))
 		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 3))))]
 		[else (do-standard-movement)])
-	   (when (check-collision-circle-rec player-x player-y hit-radius
-										 (- (miscent-x ent) 8) (- (miscent-y ent) 8)
-										 16 16)
-		 (raylib:play-sound (sebundle-item sounds))
+	   (when (check-collision-circle-rec
+			  player-x player-y hit-radius
+			  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
+			  16 16)
+		 ;; todo life and bomb limits
+		 (case type
+		   ([point]
+			(raylib:play-sound (sebundle-item sounds))
+			(set! current-score (+ current-score item-value)))
+		   ([life-frag]
+			(set! life-stock (+ 1/3 life-stock))
+			(when (integer? life-stock)
+			  (raylib:play-sound (sebundle-extend sounds))))
+		   ([life]
+			(set! life-stock (add1 life-stock))
+			(raylib:play-sound (sebundle-extend sounds)))
+		   ([bomb-frag]
+			(set! bomb-stock (+ 1/3 bomb-stock))
+			(when (integer? bomb-stock)
+			  (raylib:play-sound (sebundle-spellcapture sounds))))
+		   ([bomb]
+			(set! bomb-stock (add1 bomb-stock))
+			(raylib:play-sound (sebundle-spellcapture sounds)))
+		   ([small-piv]
+			(raylib:play-sound (sebundle-item sounds))
+			(set! item-value (+ 50 item-value))
+			(set! current-score (+ 1000 current-score)))
+		   ([big-piv]
+			(raylib:play-sound (sebundle-item sounds))
+			(set! item-value (+ 200 item-value))
+			(set! current-score (+ 1000 current-score))))
 		 (delete-misc-ent ent))
 	   (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
 		 (delete-misc-ent ent))))
@@ -598,7 +629,7 @@
 			(raylib:pause-music-stream ojamajo-carnival))
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(= k key-space)
-	  (spawn-misc-ent (make-miscent 'life 0.0 50.0 -2.0 0.1 0 #f))
+	  (spawn-misc-ent (make-miscent 'bomb-frag 0.0 50.0 -2.0 0.1 0 #f))
 	  ;; (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
 	  ;; (spawn-task
 	  ;;  "spawner"
@@ -747,6 +778,19 @@
 	(raylib:draw-text "PAUSED" 175 150 28 (packcolor 200 122 255 255)))
 
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
+  ;; todo actually make this look good
+  (raylib:draw-text (format "LIVES: ~d" life-stock)
+					450 175
+					18 -1)
+  (raylib:draw-text (format "BOMBS: ~d" bomb-stock)
+					450 200
+					18 -1)
+  (raylib:draw-text (format "SCORE: ~d" current-score)
+					450 225
+					18 -1)
+  (raylib:draw-text (format "VALUE: ~d" item-value)
+					450 250
+					18 -1)
   (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
 					450 275
 					18 -1)
