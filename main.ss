@@ -409,12 +409,13 @@
 	  (bullet-grazed-set! bullet #t)
 	  (raylib:play-sound (sebundle-graze sounds)))
 
-	(when (and (not (player-invincible?))
-			   (check-collision-circles
-				player-x player-y hit-radius
-				(bullet-x bullet) (bullet-y bullet)
-				(bullet-hit-radius (bullet-type bullet))))
-	  (kill-player)))
+	(when (check-collision-circles
+		   player-x player-y hit-radius
+		   (bullet-x bullet) (bullet-y bullet)
+		   (bullet-hit-radius (bullet-type bullet)))
+	  (cancel-bullet bullet)
+	  (when (not (player-invincible?))
+		(kill-player))))
   (vector-for-each-truthy each live-bullets))
 
 
@@ -599,7 +600,7 @@
 		   ([small-piv]
 			(raylib:play-sound (sebundle-item sounds))
 			(set! item-value (+ 50 item-value))
-			(set! current-score (+ 1000 current-score)))
+			(set! current-score (+ 100 current-score)))
 		   ([big-piv]
 			(raylib:play-sound (sebundle-item sounds))
 			(set! item-value (+ 200 item-value))

@@ -9,7 +9,6 @@ Midbosses: 1-3 of the Ojamajo Doremi girls, haven't decided yet.
 Boss: Not sure yet.
 
 ## Immediate TODOs
-* implement bullet cancel particle effect
 * implement spawn delay and blurred pre-spawn rendering
   * vanilla touhou seems just render a xiaoyu but with an appropriate color and end size
 	to the eventual bullet that's spawned. we can probably get away with the same.
