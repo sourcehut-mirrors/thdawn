@@ -366,15 +366,18 @@
    (mutable x)
    (mutable y)
    (mutable health)
+   ;; alist of (miscent type . count) to drop on death.
+   drops
    ;; extra hashtable for scratch pad. not set by default, allocate manually if needed
    (mutable extras)))
 (define live-enm (make-vector 256 #f))
+(define default-drop '((point . 1)))
 
-(define (spawn-enemy type x y health control-function)
+(define (spawn-enemy type x y health control-function drops)
   (let ((idx (vector-index #f live-enm)))
 	(unless idx
 	  (error 'spawn-enemy "No more open enemy slots!"))
-	(let ([enemy (make-enm type x y health #f)]) ;; todo allow extras to be passed in
+	(let ([enemy (make-enm type x y health drops #f)]) ;; todo allow extras to be passed in
 	  (vector-set! live-enm idx enemy)
 	  (spawn-task
 	   (symbol->string type)
@@ -386,11 +389,36 @@
 	(when idx
 	  (vector-set! live-enm idx #f))))
 
+(define (spawn-drops enm)
+  (define drops (enm-drops enm))
+  (define x (enm-x enm))
+  (define y (enm-y enm))
+  (for-each
+   (lambda (drop)
+	 (define type (car drop))
+	 (define count (cdr drop))
+	 (do [(i 0 (fx1+ i))]
+		 [(fx>= i count)]
+	   ;; skip fuzz on the very first item, so that in the simple case of a single
+	   ;; drop, it doesn't awkwardly get spawned away from the enemy
+	   (let* ([skip-fuzz (and (fxzero? i)
+							  (eq? drop (car drops)))]
+			  ;; xxx(replays) random access
+			  [fuzz-x (if skip-fuzz 0.0 (- (random 18.0) 9.0))]
+			  [fuzz-y (if skip-fuzz 0.0 (- (random 8.0) 4.0))])
+		 (spawn-misc-ent
+		  (make-miscent
+		   type
+		   (+ x fuzz-x) (+ y fuzz-y)
+		   -3.0 0.1 0 #f)))))
+   drops))
+
 (define (prune-dead-enemies)
   (let loop ([idx 0])
 	(when (< idx (vector-length live-enm))
 	  (let ([enemy (vector-ref live-enm idx)])
 		(when (and enemy (<= (enm-health enemy) 0))
+		  (spawn-drops enemy)
 		  (raylib:play-sound (sebundle-enmdie sounds))
 		  (vector-set! live-enm idx #f)))
 	  (loop (add1 idx)))))
@@ -702,17 +730,17 @@
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(fx= k key-space)
 	  
-	  ;; (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
-	  (spawn-task
-	   "spawner"
-	   (lambda ()
-		 (do ((i 0 (add1 i)))
-			 ((= i 300))
-		   (let ([ang (- (random (* 2 pi)) pi)])
-			 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
-		   (yield)))
-	   (constantly #t))
-	  #f]
+	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control '((point . 1)))
+	  ;; (spawn-task
+	  ;;  "spawner"
+	  ;;  (lambda ()
+	  ;; 	 (do ((i 0 (add1 i)))
+	  ;; 		 ((= i 300))
+	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
+	  ;; 		 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
+	  ;; 	   (yield)))
+	  ;;  (constantly #t))
+	  ]
 	 [(fx= k key-y)
 	  (vector-for-each-truthy
 	   (lambda (blt) (cancel-bullet-with-drop blt 'small-piv))
@@ -806,7 +834,7 @@
 (define screen-full-bounds
   (make-rectangle 0.0 0.0 640.0 480.0))
 (define (render-all textures)
-  (raylib:clear-background #x42024aff) ;; todo: some variability :D
+  (raylib:clear-background 0) ;;#x42024aff) ;; todo: some variability :D
   (unless paused
 	(let ([bg1-vel
 		   ;; 800-900 0.5 1.0 1.5
