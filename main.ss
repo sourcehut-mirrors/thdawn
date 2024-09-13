@@ -295,6 +295,21 @@
 	(when idx
 	  (vector-set! live-bullets idx #f))))
 
+(define (cancel-bullet bullet)
+  (spawn-particle (make-particle
+				   'cancel
+				   (bullet-x bullet) (bullet-y bullet)
+				   23 0))
+  (delete-bullet bullet))
+
+(define (cancel-bullet-with-drop bullet drop)
+  (define ent (make-miscent drop (bullet-x bullet) (bullet-y bullet) -2.0 0.1 0 #f))
+  (spawn-misc-ent ent)
+  (spawn-task "delayed autocollect"
+			  (lambda () (wait 30) (miscent-autocollect-set! ent #t))
+			  (constantly #t))
+  (cancel-bullet bullet))
+
 (define (despawn-out-of-bound-bullet bullet)
   (let ([x (bullet-x bullet)]
 		[y (bullet-y bullet)])
@@ -436,6 +451,51 @@
 	(bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
 	(bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing))))))
 
+(define-record-type particle
+  (fields
+   type
+   (mutable x)
+   (mutable y)
+   max-age
+   (mutable age)))
+
+(define live-particles (make-vector 4096 #f))
+
+(define (spawn-particle p)
+  (let ([idx (vector-index #f live-particles)])
+	(unless idx
+	  (error 'spawn-particle "No more open particle slots!"))
+	(vector-set! live-particles idx p)))
+
+(define (delete-particle p)
+  (let ([idx (vector-index p live-particles)])
+	(when idx
+	  ;; tolerate killing already-removed/dead
+	  (vector-set! live-particles idx #f))))
+
+(define (tick-particles)
+  (define (each p)
+	(particle-age-set! p (fx1+ (particle-age p)))
+	(when (fx> (particle-age p) (particle-max-age p))
+	  (delete-particle p)))
+  (vector-for-each-truthy each live-particles))
+
+(define (draw-particles textures)
+  (define (each p)
+	(define render-x (+ (particle-x p) +playfield-render-offset-x+))
+	(define render-y (+ (particle-y p) +playfield-render-offset-y+))
+	(case (particle-type p)
+	  ([cancel]
+	   (let* ([age (floor (/ (particle-age p) 3))]
+			  [v (if (fx< age 4) 0.0 64.0)]
+			  [u (* 64 (fxmod age 4))])
+		 (raylib:draw-texture-pro
+		  (txbundle-bulletcancel textures)
+		  (make-rectangle u v 64.0 64.0)
+		  (make-rectangle (- render-x 24.0) (- render-y 24.0) 48.0 48.0)
+		  v2zero 0.0 -1)))))
+  (vector-for-each-truthy each live-particles))
+
 (define-record-type miscent
   (fields
    type
@@ -450,7 +510,7 @@
   (not (eq? (miscent-type ent) 'mainshot)))
 
 (define live-misc-ents
-  (make-vector 512 #f))
+  (make-vector 4096 #f))
 
 (define (spawn-misc-ent ent)
   (let ((idx (vector-index #f live-misc-ents)))
@@ -635,20 +695,20 @@
 			(raylib:pause-music-stream ojamajo-carnival))
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(= k key-space)
-	  (spawn-misc-ent (make-miscent 'small-piv 0.0 50.0 -2.0 0.1 0 #f))
+	  
 	  ;; (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
-	  ;; (spawn-task
-	  ;;  "spawner"
-	  ;;  (lambda ()
-	  ;; 	 (do ((i 0 (add1 i)))
-	  ;; 		 ((= i 300))
-	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
-	  ;; 		 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
-	  ;; 	   (yield)))
-	  ;;  (constantly #t))
+	  (spawn-task
+	   "spawner"
+	   (lambda ()
+		 (do ((i 0 (add1 i)))
+			 ((= i 300))
+		   (let ([ang (- (random (* 2 pi)) pi)])
+			 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
+		   (yield)))
+	   (constantly #t))
 	  #f]
 	 [(= k key-y)
-	  (vector-fill! live-misc-ents #f)])
+	  (vector-for-each-truthy (lambda (blt) (cancel-bullet-with-drop blt 'small-piv)) live-bullets)])
 	(unless (zero? k)
 	  (loop (raylib:get-key-pressed)))))
 
@@ -778,6 +838,7 @@
   (draw-player textures)
   (draw-enemies textures)
   (draw-misc-ents textures)
+  (draw-particles textures)
   (draw-bullets textures)
 
   (when paused
@@ -846,6 +907,7 @@
 		  (prune-dead-enemies)
 		  (run-tasks)
 		  (tick-misc-ents)
+		  (tick-particles)
 		  (process-collisions))
 		(raylib:begin-drawing)
 		(render-all textures)
