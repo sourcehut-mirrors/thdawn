@@ -173,8 +173,13 @@
    color)
   (raylib:pop-matrix))
 
-(define (constantly x)
-  (lambda _args x))
+(define constantly
+  ;; some common stuff to avoid gc spamming
+  (let* ([constantly-t (lambda _args #t)])
+	(lambda (x)
+	  (cond
+	   [(eq? #t x) constantly-t]
+	   [else (lambda _args x)]))))
 
 (define (vector-for-each-truthy f v)
   (vector-for-each
@@ -686,16 +691,16 @@
   ;; edge triggered stuff
   (let loop ([k (raylib:get-key-pressed)])
 	(cond
-	 [(= k key-f3)
+	 [(fx= k key-f3)
 	  (set! show-hitboxes (not show-hitboxes))]
-	 [(= k key-escape)
+	 [(fx= k key-escape)
 	  (set! paused (not paused))
 	  (if paused
 		  (let ()
 			(raylib:play-sound (sebundle-pause sounds))
 			(raylib:pause-music-stream ojamajo-carnival))
 		  (raylib:resume-music-stream ojamajo-carnival))]
-	 [(= k key-space)
+	 [(fx= k key-space)
 	  
 	  ;; (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
 	  (spawn-task
@@ -708,8 +713,18 @@
 		   (yield)))
 	   (constantly #t))
 	  #f]
-	 [(= k key-y)
-	  (vector-for-each-truthy (lambda (blt) (cancel-bullet-with-drop blt 'small-piv)) live-bullets)])
+	 [(fx= k key-y)
+	  (vector-for-each-truthy
+	   (lambda (blt) (cancel-bullet-with-drop blt 'small-piv))
+	   live-bullets)]
+	 [(= k 71)
+	  (enable-object-counts #t)
+	  (collect (collect-maximum-generation))
+	  (display (object-counts))
+	  (newline)
+	  (enable-object-counts #f)
+	  ]
+	 )
 	(unless (zero? k)
 	  (loop (raylib:get-key-pressed)))))
 
