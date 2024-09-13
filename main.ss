@@ -63,6 +63,7 @@
    misc item
    bullet1 bullet2 bullet3 bullet4 bullet5 bullet6
    bg1 bg2 bg3 bg4
+   bulletcancel
    ))
 (define (load-textures)
   (define (ltex file)
@@ -75,7 +76,8 @@
    (ltex "bullet1.png") (ltex "bullet2.png") (ltex "bullet3.png")
    (ltex "bullet4.png") (ltex "bullet5.png") (ltex "bullet6.png")
    (ltex "background_1.png") (ltex "background_2.png")
-   (ltex "background_3.png") (ltex "background_4.png")))
+   (ltex "background_3.png") (ltex "background_4.png")
+   (ltex "etbreak.png")))
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
   (define num-textures (vector-length (record-type-field-names rtd)))
@@ -374,6 +376,7 @@
 	  (loop (add1 idx)))))
 
 (define (kill-player)
+  (set! life-stock (sub1 life-stock)) ;; todo gameovering
   (raylib:play-sound (sebundle-playerdie sounds))
   (set! iframes 180)
   (set! respawning +respawning-max+)

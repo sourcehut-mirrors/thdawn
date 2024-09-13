@@ -9,10 +9,6 @@ Midbosses: 1-3 of the Ojamajo Doremi girls, haven't decided yet.
 Boss: Not sure yet.
 
 ## Immediate TODOs
-* implement other miscellaneous items
-  * bomb/frag
-  * life/frag
-  * piv
 * implement bullet cancel particle effect
 * implement spawn delay and blurred pre-spawn rendering
   * vanilla touhou seems just render a xiaoyu but with an appropriate color and end size
@@ -20,7 +16,9 @@ Boss: Not sure yet.
 * implementing directional moving sprites for the player
 * implement background speed changes
 * implement first chapter of stage to flesh out API's needed
-* implement simple reigeki bomb
+  * and all bullet types needed for it
+* implement simple bomb (mof reigeki, or eosd reimu B)
+* implement gameover
 * boss aura
 * boss spell circle
 * spell tracking and hud
