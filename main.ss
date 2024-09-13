@@ -267,7 +267,7 @@
 (define (vector-index elem v)
   (define len (vector-length v))
   (let loop ([i 0])
-	(if (>= i len)
+	(if (fx>= i len)
 		#f
 		(let ([elemi (vector-ref v i)])
 		  (if (eq? elem elemi)
@@ -278,7 +278,7 @@
   (define len (vector-length v)) 
   (let loop ([i 0]
 			 [n 0])
-	(if (>= i len)
+	(if (fx>= i len)
 		n
 		(let ([elemi (vector-ref v i)])
 		  (if elemi
@@ -635,7 +635,7 @@
 		  red)))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
 	   (let ([lifespan (miscent-lifespan ent)])
-		 (if (and (<= lifespan 24) (miscent-should-spin? ent))
+		 (if (and (fx<= lifespan 24) (miscent-should-spin? ent))
 			 (draw-sprite-with-rotation
 			  textures type (* 45.0 (floor (/ lifespan 3)))
 			  render-x render-y -1)
@@ -649,8 +649,8 @@
 (define (ease-cubic-to x y duration enm)
   (define x0 (enm-x enm))
   (define y0 (enm-y enm))
-  (do ([i 0 (add1 i)])
-	  ((> i duration))
+  (do ([i 0 (fx1+ i)])
+	  ((fx> i duration))
 	(let* ([progress (/ i duration)]
 		   [eased (ease-out-cubic (clamp progress 0.0 1.0))]
 		   [x (+ x0 (* eased (- x x0)))]
@@ -681,7 +681,7 @@
   (when (and (not paused) (zero? respawning))
 	(handle-player-movement)
 	(when (and (raylib:is-key-down key-z)
-			   (zero? (mod frames 5))) ;; todo separate counter
+			   (fxzero? (mod frames 5))) ;; todo separate counter
 	  (let ((y (- player-y 20)))
 		(spawn-misc-ent (make-miscent 'mainshot (- player-x 10) y
 									  -10 0 0 #f))
@@ -752,12 +752,12 @@
 	 live-misc-ents)))
 
 (define (get-player-render-pos)
-  (if (positive? respawning)
-	  (let ([progress (/ (- +respawning-max+ respawning)
+  (if (fxpositive? respawning)
+	  (let ([progress (/ (fx- +respawning-max+ respawning)
 						 +respawning-max+)]
 			[start-y (+ +playfield-max-y+ 5.0)]
 			[end-y +initial-player-y+])
-		(values (+ 0.0 +playfield-render-offset-x+)
+		(values (inexact +playfield-render-offset-x+)
 				(+ (lerp start-y end-y progress) +playfield-render-offset-y+)))
 	  (values (+ player-x +playfield-render-offset-x+)
 			  (+ player-y +playfield-render-offset-y+))))
