@@ -547,6 +547,9 @@
 	(miscent-lifespan-set! ent (add1 (miscent-lifespan ent))))
   (vector-for-each-truthy each live-misc-ents))
 
+(define (miscent-should-spin? ent)
+  (memq (miscent-type ent) '(point life life-frag bomb bomb-frag)))
+
 (define (draw-misc-ents textures)
   (define (each ent)
 	(define type (miscent-type ent))
@@ -563,11 +566,11 @@
 		  red)))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
 	   (let ([lifespan (miscent-lifespan ent)])
-		 (if (> lifespan 24)
-			 (draw-sprite textures type render-x render-y -1)
+		 (if (and (<= lifespan 24) (miscent-should-spin? ent))
 			 (draw-sprite-with-rotation
 			  textures type (* 45.0 (floor (/ lifespan 3)))
-			  render-x render-y -1)))
+			  render-x render-y -1)
+			 (draw-sprite textures type render-x render-y -1)))
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
 		  (- render-x 8) (- render-y 8) 16 16
@@ -629,7 +632,7 @@
 			(raylib:pause-music-stream ojamajo-carnival))
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(= k key-space)
-	  (spawn-misc-ent (make-miscent 'bomb-frag 0.0 50.0 -2.0 0.1 0 #f))
+	  (spawn-misc-ent (make-miscent 'small-piv 0.0 50.0 -2.0 0.1 0 #f))
 	  ;; (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control)
 	  ;; (spawn-task
 	  ;;  "spawner"
