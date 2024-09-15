@@ -63,7 +63,7 @@
    misc item
    bullet1 bullet2 bullet3 bullet4 bullet5 bullet6
    bg1 bg2 bg3 bg4
-   bulletcancel
+   bulletcancel hint
    ))
 (define (load-textures)
   (define (ltex file)
@@ -77,12 +77,27 @@
    (ltex "bullet4.png") (ltex "bullet5.png") (ltex "bullet6.png")
    (ltex "background_1.png") (ltex "background_2.png")
    (ltex "background_3.png") (ltex "background_4.png")
-   (ltex "etbreak.png")))
+   (ltex "etbreak.png") (ltex "hint.png")))
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
   (define num-textures (vector-length (record-type-field-names rtd)))
   (for-each (lambda (i)
 			  (raylib:unload-texture ((record-accessor rtd i) textures)))
+			(iota num-textures)))
+
+(define-record-type fontbundle
+  (fields
+   bubblegum
+   cabin))
+(define (load-fonts)
+  (make-fontbundle
+   (raylib:load-font "assets/font/BubblegumSans-Regular.ttf")
+   (raylib:load-font "assets/font/Cabin-Regular.ttf")))
+(define (unload-fonts fonts)
+  (define rtd (record-type-descriptor fontbundle))
+  (define num-textures (vector-length (record-type-field-names rtd)))
+  (for-each (lambda (i)
+			  (raylib:unload-font ((record-accessor rtd i) textures)))
 			(iota num-textures)))
 
 (define-record-type sprite-descriptor
@@ -833,7 +848,7 @@
 (define bg3-scroll 0.0)
 (define screen-full-bounds
   (make-rectangle 0.0 0.0 640.0 480.0))
-(define (render-all textures)
+(define (render-all textures fonts)
   (raylib:clear-background 0) ;;#x42024aff) ;; todo: some variability :D
   (unless paused
 	(let ([bg1-vel
@@ -890,41 +905,53 @@
 
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
   ;; todo actually make this look good
-  (raylib:draw-text (format "LIVES: ~d" life-stock)
-					450 175
-					18 -1)
-  (raylib:draw-text (format "BOMBS: ~d" bomb-stock)
-					450 200
-					18 -1)
-  (raylib:draw-text (format "SCORE: ~d" current-score)
-					450 225
-					18 -1)
-  (raylib:draw-text (format "VALUE: ~d" item-value)
-					450 250
-					18 -1)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Score: ~:d" current-score)
+   440 15 24.0 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Life")
+   440 45
+   24.0 0.0 #xFF69FCFF)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Bomb")
+   440 75
+   24.0 0.0 #x72E57AFF)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Graze: ~d" graze)
+   440 105
+   24.0 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Value: ~:d" item-value)
+   440 135
+   24.0 0.0 -1)
+
+  ;; todo: for prod release, hide this behind f3
   (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
-					450 275
+					440 275
 					18 -1)
-  (raylib:draw-text (format "MEM: ~,2f MiB" (/ (current-memory-bytes)
-											   (* 1024.0 1024.0)))
-					450 300
+  (raylib:draw-text (format "MEM: ~,2f MiB"
+							(/ (current-memory-bytes)
+							   (* 1024.0 1024.0)))
+					440 300
 					18 -1)
   (raylib:draw-text (format "FRAME: ~d" frames)
-					450 325
+					440 325
 					18 -1)
   (raylib:draw-text (format "MISC: ~d" (vector-popcnt live-misc-ents))
-					450 350
-					18 -1)
-  (raylib:draw-text (format "GRAZE: ~d" graze)
-					450 375
+					440 350
 					18 -1)
   (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
-					450 400
+					440 375
 					18 -1)
   (raylib:draw-text (format "BLT: ~d" (vector-popcnt live-bullets))
-					450 425
+					440 400
 					18 -1)
-  (raylib:draw-fps 450 450))
+  (raylib:draw-fps 440 450))
 
 (define (main)
   (collect-notify #t)
@@ -933,7 +960,8 @@
   (raylib:set-exit-key 0)
   (load-audio)
   (load-sfx)
-  (let ([textures (load-textures)])
+  (let ([textures (load-textures)]
+		[fonts (load-fonts)])
 	(raylib:play-music-stream ojamajo-carnival)
 	(set! iframes 180)
 	(let loop ()
@@ -954,12 +982,13 @@
 		  (tick-particles)
 		  (process-collisions))
 		(raylib:begin-drawing)
-		(render-all textures)
+		(render-all textures fonts)
 		(raylib:end-drawing)
 		(unless paused
 		  (set! frames (add1 frames)))
 		(loop)))
 	(unload-audio)
+	(unload-fonts fonts)
 	(unload-textures textures)
 	(unload-sfx)
 	(raylib:close-window)))

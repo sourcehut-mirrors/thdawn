@@ -4,11 +4,15 @@ Scheme and Raylib.
 
 Stage is to be themed roughly around music. BGM will be Ojamajo Carnival.
 
-Midbosses: 1-3 of the Ojamajo Doremi girls, haven't decided yet.
+Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 
-Boss: Not sure yet.
+Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 
 ## Immediate TODOs
+* prettify the hud and render lives/bombs properly
+  * import fonts we want to use
+* implements enemy dying effect
+* implements reimu's options (needles probably)
 * implement spawn delay and blurred pre-spawn rendering
   * vanilla touhou seems just render a xiaoyu but with an appropriate color and end size
 	to the eventual bullet that's spawned. we can probably get away with the same.

@@ -1,12 +1,13 @@
 (library (raylib)
   (export init-window close-window window-should-close set-target-fps get-frame-time
 		  begin-drawing end-drawing clear-background draw-circle-v draw-line
-		  draw-text draw-fps draw-rectangle-rec
+		  draw-text draw-text-ex draw-fps draw-rectangle-rec
 		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
 		  load-sound play-sound unload-sound
 		  load-texture unload-texture draw-texture-rec draw-texture draw-texture-pro
+		  load-font unload-font
 		  is-key-down get-key-pressed set-exit-key
 		  push-matrix pop-matrix translatef rotatef)
   (import (chezscheme) (geom))
@@ -193,6 +194,13 @@
   (define (draw-text text x y font-size rgba)
 	(load-global-color rgba)
 	(draw-text0 text x y font-size global-color))
+  (define draw-text-ex0
+	(foreign-procedure "DrawTextEx" ((& Font) string (& RayVector2)
+									 float float (& Color)) void))
+  (define (draw-text-ex font text x y size spacing rgba)
+	(load-global-vector2 x y)
+	(load-global-color rgba)
+	(draw-text-ex0 font text global-vector2 size spacing global-color))
 
   (define draw-fps
 	(foreign-procedure "DrawFPS" (int int) void))
@@ -252,6 +260,27 @@
 	(load-global-color rgba)
 	(draw-texture-pro0 tex global-rectangle global-rectangle2
 					   global-vector2 rotation global-color))
+
+  (define-ftype Font
+	(struct
+	  (baseSize int)
+	  (glyphCount int)
+	  (glyphPadding int)
+	  (texture Texture)
+	  (recs void*)
+	  (glyphs void*)
+	  (frame-count unsigned-int)))
+  (define load-font0
+	(foreign-procedure "LoadFont" (string) (& Font)))
+  (define (load-font file)
+	(define result (make-ftype-pointer Font (foreign-alloc (ftype-sizeof Font))))
+	(load-font0 result file)
+    result)
+  (define unload-font0
+	(foreign-procedure "UnloadFont" ((& Font)) void))
+  (define (unload-font font)
+	(unload-font0 font)
+	(foreign-free (ftype-pointer-address font)))
 
   (define is-key-down0
 	(foreign-procedure "IsKeyDown" (int) unsigned-8))
