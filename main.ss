@@ -453,7 +453,9 @@
 				player-x player-y graze-radius
 				(bullet-x bullet) (bullet-y bullet)
 				(bullet-hit-radius (bullet-type bullet))))
-	  (set! graze (add1 graze))
+	  (set! graze (fx1+ graze))
+	  (when (fxzero? (mod graze 10))
+		(set! item-value (fx+ 10 item-value)))
 	  (bullet-grazed-set! bullet #t)
 	  (raylib:play-sound (sebundle-graze sounds)))
 
@@ -746,15 +748,15 @@
 	 [(fx= k key-space)
 	  
 	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control '((point . 1)))
-	  ;; (spawn-task
-	  ;;  "spawner"
-	  ;;  (lambda ()
-	  ;; 	 (do ((i 0 (add1 i)))
-	  ;; 		 ((= i 300))
-	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
-	  ;; 		 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
-	  ;; 	   (yield)))
-	  ;;  (constantly #t))
+	  (spawn-task
+	   "spawner"
+	   (lambda ()
+		 (do ((i 0 (add1 i)))
+			 ((= i 300))
+		   (let ([ang (- (random (* 2 pi)) pi)])
+			 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
+		   (yield)))
+	   (constantly #t))
 	  ]
 	 [(fx= k key-y)
 	  (vector-for-each-truthy
@@ -928,7 +930,7 @@
    (fontbundle-bubblegum fonts)
    (format "Value: ~:d" item-value)
    440 135
-   24.0 0.0 -1)
+   24.0 0.0 #x49D0FFFF)
 
   ;; todo: for prod release, hide this behind f3
   (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
