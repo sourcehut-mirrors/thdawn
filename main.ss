@@ -95,10 +95,10 @@
    (raylib:load-font "assets/font/Cabin-Regular.ttf")))
 (define (unload-fonts fonts)
   (define rtd (record-type-descriptor fontbundle))
-  (define num-textures (vector-length (record-type-field-names rtd)))
+  (define num-fonts (vector-length (record-type-field-names rtd)))
   (for-each (lambda (i)
-			  (raylib:unload-font ((record-accessor rtd i) textures)))
-			(iota num-textures)))
+			  (raylib:unload-font ((record-accessor rtd i) fonts)))
+			(iota num-fonts)))
 
 (define-record-type sprite-descriptor
   (fields
@@ -228,7 +228,10 @@
 (define +poc-y+ 120)
 (define +oob-bullet-despawn-fuzz+ 10)
 
-(define frames 0) ;; Number of frames the current stage has been running
+;; Number of frames the current stage has been running. Does not increment when paused
+(define frames 0)
+;; Always increments by one per frame no matter what. Should not be used often.
+(define true-frames 0)
 (define iframes 0) ;; Remaining frames of invincibility
 (define respawning 0) ;; Nonzero if going through the respawn animation
 (define +respawning-max+ 60)
@@ -845,6 +848,57 @@
 	(raylib:draw-circle-v render-player-x render-player-y hit-radius
 						  red)))
 
+(define (draw-hud textures fonts)
+  (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
+  ;; todo actually make this look good
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Score: ~:d" current-score)
+   440 15 24.0 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Life")
+   440 45
+   24.0 0.0 #xFF69FCFF)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Bomb")
+   440 75
+   24.0 0.0 #x72E57AFF)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Graze: ~d" graze)
+   440 105
+   24.0 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts)
+   (format "Value: ~:d" item-value)
+   440 135
+   24.0 0.0 #x49D0FFFF)
+
+  ;; todo: for prod release, hide this behind f3
+  (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
+					440 275
+					18 -1)
+  (raylib:draw-text (format "MEM: ~,2f MiB"
+							(/ (current-memory-bytes)
+							   (* 1024.0 1024.0)))
+					440 300
+					18 -1)
+  (raylib:draw-text (format "FRAME: ~d" frames)
+					440 325
+					18 -1)
+  (raylib:draw-text (format "MISC: ~d" (vector-popcnt live-misc-ents))
+					440 350
+					18 -1)
+  (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
+					440 375
+					18 -1)
+  (raylib:draw-text (format "BLT: ~d" (vector-popcnt live-bullets))
+					440 400
+					18 -1)
+  (raylib:draw-fps 440 450))
+
 (define bg1-scroll 0.0)
 (define bg2-scroll 0.0)
 (define bg3-scroll 0.0)
@@ -902,58 +956,12 @@
   (draw-particles textures)
   (draw-bullets textures)
 
-  (when paused
-	(raylib:draw-text "PAUSED" 175 150 28 (packcolor 200 122 255 255)))
-
-  (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
-  ;; todo actually make this look good
-  (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
-   (format "Score: ~:d" current-score)
-   440 15 24.0 0.0 -1)
-  (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
-   (format "Life")
-   440 45
-   24.0 0.0 #xFF69FCFF)
-  (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
-   (format "Bomb")
-   440 75
-   24.0 0.0 #x72E57AFF)
-  (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
-   (format "Graze: ~d" graze)
-   440 105
-   24.0 0.0 -1)
-  (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
-   (format "Value: ~:d" item-value)
-   440 135
-   24.0 0.0 #x49D0FFFF)
-
-  ;; todo: for prod release, hide this behind f3
-  (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
-					440 275
-					18 -1)
-  (raylib:draw-text (format "MEM: ~,2f MiB"
-							(/ (current-memory-bytes)
-							   (* 1024.0 1024.0)))
-					440 300
-					18 -1)
-  (raylib:draw-text (format "FRAME: ~d" frames)
-					440 325
-					18 -1)
-  (raylib:draw-text (format "MISC: ~d" (vector-popcnt live-misc-ents))
-					440 350
-					18 -1)
-  (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
-					440 375
-					18 -1)
-  (raylib:draw-text (format "BLT: ~d" (vector-popcnt live-bullets))
-					440 400
-					18 -1)
-  (raylib:draw-fps 440 450))
+  (when (and paused (< (mod true-frames 60) 30))
+	(raylib:draw-text-ex
+	 (fontbundle-bubblegum fonts)
+	 "~ Paused ~"
+	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
+  (draw-hud textures fonts))
 
 (define (main)
   (collect-notify #t)
@@ -987,7 +995,8 @@
 		(render-all textures fonts)
 		(raylib:end-drawing)
 		(unless paused
-		  (set! frames (add1 frames)))
+		  (set! frames (fx1+ frames)))
+		(set! true-frames (fx1+ true-frames))
 		(loop)))
 	(unload-audio)
 	(unload-fonts fonts)
