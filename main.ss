@@ -162,6 +162,12 @@
   ;; misc
   (make 'focus-sigil txbundle-misc 128 0 64 64 (vec2 -32.0 -32.0))
   (make 'mainshot txbundle-reimu 192 160 64 16 (vec2 -54.0 -8.0))
+  (make 'life-third txbundle-hint 288 16 16 16 v2zero)
+  (make 'life-two-thirds txbundle-hint 320 16 16 16 v2zero)
+  (make 'life-full txbundle-hint 304 0 16 16 v2zero)
+  (make 'bomb-third txbundle-hint 288 32 16 16 v2zero)
+  (make 'bomb-two-thirds txbundle-hint 320 32 16 16 v2zero)
+  (make 'bomb-full txbundle-hint 336 0 16 16 v2zero)
   ret)
 
 (define sprite-data (make-sprite-data))
@@ -442,7 +448,8 @@
 	  (loop (add1 idx)))))
 
 (define (kill-player)
-  (set! life-stock (sub1 life-stock)) ;; todo gameovering
+  (when (> life-stock 1)
+	(set! life-stock (sub1 life-stock))) ;; todo gameovering
   (raylib:play-sound (sebundle-playerdie sounds))
   (set! iframes 180)
   (set! respawning +respawning-max+)
@@ -750,16 +757,16 @@
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(fx= k key-space)
 	  
-	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control '((point . 1)))
-	  (spawn-task
-	   "spawner"
-	   (lambda ()
-		 (do ((i 0 (add1 i)))
-			 ((= i 300))
-		   (let ([ang (- (random (* 2 pi)) pi)])
-			 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
-		   (yield)))
-	   (constantly #t))
+	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control '((bomb-frag . 1)))
+	  ;; (spawn-task
+	  ;;  "spawner"
+	  ;;  (lambda ()
+	  ;; 	 (do ((i 0 (add1 i)))
+	  ;; 		 ((= i 300))
+	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
+	  ;; 		 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
+	  ;; 	   (yield)))
+	  ;;  (constantly #t))
 	  ]
 	 [(fx= k key-y)
 	  (vector-for-each-truthy
@@ -875,6 +882,38 @@
    (format "Value: ~:d" item-value)
    440 135
    24.0 0.0 #x49D0FFFF)
+
+  (let* ([start-x 490.0]
+		 [y 48.0]
+		 [whole-lives (floor life-stock)]
+		 ;; will always be 0, 1, or 2
+		 [fractional-lives (* 3 (- life-stock whole-lives))])
+	(do [(i 0 (1+ i))]
+		[(>= i whole-lives)]
+	  (draw-sprite textures 'life-full (+ start-x (* 16.0 i)) y -1))
+	(cond
+	 [(fx= fractional-lives 1)
+	  (draw-sprite textures 'life-third
+				   (+ start-x (* 16.0 whole-lives)) y -1)]
+	 [(fx= fractional-lives 2)
+	  (draw-sprite textures 'life-two-thirds
+				   (+ start-x (* 16.0 whole-lives)) y -1)]))
+
+  (let* ([start-x 490.0]
+		 [y 77.0]
+		 [whole-bombs (floor bomb-stock)]
+		 ;; will always be 0, 1, or 2
+		 [fractional-bombs (* 3 (- bomb-stock whole-bombs))])
+	(do [(i 0 (1+ i))]
+		[(>= i whole-bombs)]
+	  (draw-sprite textures 'bomb-full (+ start-x (* 16.0 i)) y -1))
+	(cond
+	 [(fx= fractional-bombs 1)
+	  (draw-sprite textures 'bomb-third
+				   (+ start-x (* 16.0 whole-bombs)) y -1)]
+	 [(fx= fractional-bombs 2)
+	  (draw-sprite textures 'bomb-two-thirds
+				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
   ;; todo: for prod release, hide this behind f3
   (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
