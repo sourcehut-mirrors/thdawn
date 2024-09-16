@@ -9,15 +9,12 @@ Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 
 ## Immediate TODOs
-* prettify the hud and render lives/bombs properly
-  * import fonts we want to use
 * implements enemy dying effect
 * implements reimu's options (needles probably)
 * implement spawn delay and blurred pre-spawn rendering
   * vanilla touhou seems just render a xiaoyu but with an appropriate color and end size
 	to the eventual bullet that's spawned. we can probably get away with the same.
 * implementing directional moving sprites for the player
-* implement background speed changes
 * implement first chapter of stage to flesh out API's needed
   * and all bullet types needed for it
 * implement simple bomb (mof reigeki, or eosd reimu B)

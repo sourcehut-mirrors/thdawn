@@ -20,6 +20,11 @@
   (- 1 (expt (- 1 x) 3.0)))
 (define (lerp a b progress)
   (+ a (* progress (- b a))))
+;; automatically computes the progress based on x's progress between xa and xb,
+;; then lerps from a to b based on that progress
+(define (lerp-auto-progress a b xa xb x)
+  (define progress (/ (- x xa) (- xb xa)))
+  (lerp a b (inexact progress)))
 
 (define-record-type sebundle
   (fields
@@ -943,27 +948,62 @@
 (define bg3-scroll 0.0)
 (define screen-full-bounds
   (make-rectangle 0.0 0.0 640.0 480.0))
+(define (background-acceleration frames)
+  ;; todo: make this more data driven
+  (cond
+   [(fx< frames 3250)
+	(values 0.5 1.0 1.5)]
+   [(fx< 3250 frames 3600)
+	(let ([progress (/ (fx- frames 3250)
+					   (fx- 3600 3250))])
+	  (values
+	   (lerp 0.5 1.8 progress)
+	   (lerp 1.0 2.0 progress)
+	   (lerp 1.5 2.5 progress)))]
+   [(fx< 3600 frames 5500)
+	(values 1.8 2.0 2.5)]
+   [(fx< 5500 frames 6300)
+	(let ([progress (/ (fx- frames 5500)
+						(fx- 6300 5500))])
+	  (values
+	   (lerp 1.8 0.5 progress)
+	   (lerp 2.0 1.0 progress)
+	   (lerp 2.5 1.5 progress)))]
+   [(fx< 6300 frames 9000)
+	(values 0.5 1.0 1.5)]
+   [(fx< 9000 frames 9500)
+	(let ([progress (/ (fx- frames 9000)
+					   (fx- 9500 9000))])
+	  (values
+	   (lerp 0.5 1.8 progress)
+	   (lerp 1.0 2.0 progress)
+	   (lerp 1.5 2.5 progress)))]
+   [(fx< 9500 frames 11070)
+	(values 1.8 2.0 2.5)]
+   [(fx< 11070 frames 11550)
+	(values 0.4 0.9 1.4)]
+   [(fx< 11550 frames 11850)
+	(let ([progress (/ (fx- frames 11550)
+					   (fx- 11850 11550))])
+	  (values
+	   (lerp 0.4 1.8 progress)
+	   (lerp 0.9 2.0 progress)
+	   (lerp 1.4 2.5 progress)))]
+   [(fx< 11850 frames 12800)
+	(values 1.8 2.0 2.5)]
+   [(fx< 12800 frames 13000)
+	(let ([progress (/ (fx- frames 12800)
+					   (fx- 13200 12800))])
+	  (values
+	   (lerp 1.8 0.5 progress)
+	   (lerp 2.0 1.0 progress)
+	   (lerp 2.5 1.5 progress)))]
+   [else (values 0.5 1.0 1.5)]))
+
 (define (render-all textures fonts)
   (raylib:clear-background 0) ;;#x42024aff) ;; todo: some variability :D
   (unless paused
-	(let ([bg1-vel
-		   ;; 800-900 0.5 1.0 1.5
-		   ;; 3250 3550 accel
-		   ;; 3600-5200 1.8 2.0 2.5
-		   ;; 5500-6300 decel
-		   ;; 6400 0.5 1.0 1.5
-		   ;; 9150 9450 accel
-		   ;; 9500-11100 1.8 2.0 2.5
-		   ;; 11100 0.4 0.9 1.4 (or slower)
-		   ;; 11850 1.8 2.0 2.5 (with brief accel)
-		   ;; 12800 decel to 0.5 1.0 1.5
-		   (cond
-		    [else 1.8])]
-		  [bg2-vel
-		   (cond
-			[else 2.1])]
-		  [bg3-vel
-		   (cond [else 2.7])])
+	(let-values ([(bg1-vel bg2-vel bg3-vel) (background-acceleration frames)])
 	  (set! bg1-scroll (fl- bg1-scroll bg1-vel))
 	  (set! bg2-scroll (fl- bg2-scroll bg2-vel))
 	  (set! bg3-scroll (fl- bg3-scroll bg3-vel))))
