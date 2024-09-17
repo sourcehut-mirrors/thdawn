@@ -447,14 +447,13 @@
 
 (define (prune-dead-enemies)
   (define length (vector-length live-enm))
-  (let loop ([idx 0])
-	(when (< idx length)
+  (do [(idx 0 (fx1+ idx))]
+	  [(fx>= idx length)]
 	  (let ([enemy (vector-ref live-enm idx)])
 		(when (and enemy (<= (enm-health enemy) 0))
 		  (spawn-drops enemy)
 		  (raylib:play-sound (sebundle-enmdie sounds))
-		  (vector-set! live-enm idx #f)))
-	  (loop (add1 idx)))))
+		  (vector-set! live-enm idx #f)))))
 
 (define (kill-player)
   (when (> life-stock 1)
@@ -784,7 +783,8 @@
 									  -10 0 0 #f))
 		(raylib:play-sound (sebundle-playershoot sounds)))))
   ;; edge triggered stuff
-  (let loop ([k (raylib:get-key-pressed)])
+  (do [(k (raylib:get-key-pressed) (raylib:get-key-pressed))]
+	  [(fxzero? k)]
 	(cond
 	 [(fx= k key-f3)
 	  (set! show-hitboxes (not show-hitboxes))]
@@ -818,10 +818,7 @@
 	  (display (object-counts))
 	  (newline)
 	  (enable-object-counts #f)
-	  ]
-	 )
-	(unless (zero? k)
-	  (loop (raylib:get-key-pressed)))))
+	  ])))
 
 (define (handle-player-movement)
   (define left-pressed (raylib:is-key-down key-left))
@@ -1093,27 +1090,25 @@
 		[fonts (load-fonts)])
 	(raylib:play-music-stream ojamajo-carnival)
 	(set! iframes 180)
-	(let loop ()
-	  (unless (raylib:window-should-close)
-		(handle-input)
-		(raylib:update-music-stream ojamajo-carnival)
-		(unless paused
-		  (tick-player)
-		  (vector-for-each-truthy
-		   (lambda (blt) (despawn-out-of-bound-bullet blt))
-		   live-bullets)
-		  (prune-dead-enemies)
-		  (run-tasks)
-		  (tick-misc-ents)
-		  (tick-particles)
-		  (process-collisions))
-		(raylib:begin-drawing)
-		(render-all textures fonts)
-		(raylib:end-drawing)
-		(unless paused
-		  (set! frames (fx1+ frames)))
-		(set! true-frames (fx1+ true-frames))
-		(loop)))
+	(do [] [(raylib:window-should-close)]
+	  (handle-input)
+	  (raylib:update-music-stream ojamajo-carnival)
+	  (unless paused
+		(tick-player)
+		(vector-for-each-truthy
+		 (lambda (blt) (despawn-out-of-bound-bullet blt))
+		 live-bullets)
+		(prune-dead-enemies)
+		(run-tasks)
+		(tick-misc-ents)
+		(tick-particles)
+		(process-collisions))
+	  (raylib:begin-drawing)
+	  (render-all textures fonts)
+	  (raylib:end-drawing)
+	  (unless paused
+		(set! frames (fx1+ frames)))
+	  (set! true-frames (fx1+ true-frames)))
 	(unload-audio)
 	(unload-fonts fonts)
 	(unload-textures textures)
