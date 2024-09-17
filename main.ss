@@ -167,6 +167,8 @@
   ;; misc
   (make 'focus-sigil txbundle-misc 128 0 64 64 (vec2 -32.0 -32.0))
   (make 'mainshot txbundle-reimu 192 160 64 16 (vec2 -54.0 -8.0))
+  (make 'option txbundle-reimu 64 144 16 16 shift8)
+  (make 'needle txbundle-reimu 64 176 64 16 (vec2 -54.0 -8.0))
   (make 'life-third txbundle-hint 288 16 16 16 v2zero)
   (make 'life-two-thirds txbundle-hint 320 16 16 16 v2zero)
   (make 'life-full txbundle-hint 304 0 16 16 v2zero)
@@ -257,6 +259,13 @@
 (define player-x 0.0)
 (define +initial-player-y+ (- +playfield-max-y+ 20.0))
 (define player-y +initial-player-y+)
+(define focused-immediate #f)
+;; increases when focus is held, decreases when it isn't
+;; used for things that smooth over several frames
+(define focus-frames 0)
+(define +max-focus-frames+ 10)
+(define option-xs (make-vector 4 0.0))
+(define option-ys (make-vector 4 0.0))
 (define item-value 10000)
 (define current-score 0)
 ;; fragments are stored as Scheme's fractional data types
@@ -443,8 +452,9 @@
    drops))
 
 (define (prune-dead-enemies)
+  (define length (vector-length live-enm))
   (let loop ([idx 0])
-	(when (< idx (vector-length live-enm))
+	(when (< idx length)
 	  (let ([enemy (vector-ref live-enm idx)])
 		(when (and enemy (<= (enm-health enemy) 0))
 		  (spawn-drops enemy)
@@ -736,8 +746,39 @@
 	(loop))
   )
 
+(define (tick-player)
+  (when (positive? iframes)
+	(set! iframes (sub1 iframes)))
+  (when (positive? respawning)
+	(set! respawning (sub1 respawning)))
+
+  ;; set the option positions
+  (let ([progress (ease-out-cubic (/ focus-frames +max-focus-frames+))])
+	(vector-set! option-xs 0
+				 (lerp (- player-x 35) (- player-x 25) progress))
+	(vector-set! option-ys 0
+				 (lerp player-y (- player-y 18) progress))
+	(vector-set! option-xs 1
+				 (lerp (- player-x 17) (- player-x 10) progress))
+	(vector-set! option-ys 1
+				 (lerp (- player-y 30) (- player-y 35) progress))
+	(vector-set! option-xs 2
+				 (lerp (+ player-x 17) (+ player-x 10) progress))
+	(vector-set! option-ys 2
+				 (lerp (- player-y 30) (- player-y 35) progress))
+	(vector-set! option-xs 3
+				 (lerp (+ player-x 35) (+ player-x 25) progress))
+	(vector-set! option-ys 3
+				 (lerp player-y (- player-y 17) progress))))
+
 (define (handle-input)
   ;; level triggered stuff
+  (set! focused-immediate (raylib:is-key-down key-left-shift))
+  (if focused-immediate
+	  (when (fx< focus-frames +max-focus-frames+)
+		(set! focus-frames (fx1+ focus-frames)))
+	  (when (fx> focus-frames 0)
+		(set! focus-frames (fx1- focus-frames))))
   (when (and (not paused) (zero? respawning))
 	(handle-player-movement)
 	(when (and (raylib:is-key-down key-z)
@@ -796,7 +837,7 @@
   (define dir (vec2 (fl+ (if left-pressed -1.0 0.0) (if right-pressed 1.0 0.0))
 					(fl+ (if up-pressed -1.0 0.0) (if down-pressed 1.0 0.0))))
   (when (not (and (flzero? (v2x dir)) (flzero? (v2y dir))))
-	(let* ([speed (if (raylib:is-key-down key-left-shift) 2.25 4.125)]
+	(let* ([speed (if focused-immediate 2.25 4.125)]
 		   [velvec (v2* (v2unit dir) speed)]
 		   [new-x (clamp (fl+ player-x (v2x velvec))
 						 +playfield-min-x+ +playfield-max-x+)]
@@ -822,7 +863,6 @@
 	  (values (+ player-x +playfield-render-offset-x+)
 			  (+ player-y +playfield-render-offset-y+))))
 
-(define focus-sigil-strength 0.0)
 (define (draw-player textures)
   (define-values (render-player-x render-player-y)
 	(get-player-render-pos))
@@ -838,21 +878,27 @@
 	 (make-rectangle (* 32.0 x-texture-index) 0.0 32.0 48.0)
 	 (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
 	 iframe-blink))
+
+  ;; options
+  (vector-for-each
+   (lambda (x y)
+	 (define render-x (+ x +playfield-render-offset-x+))
+	 (define render-y (+ y +playfield-render-offset-y+))
+	 (draw-sprite-with-rotation
+	  textures 'option (mod (* frames 4) 360)
+	  render-x render-y -1))
+   option-xs option-ys)
   
   ;; focus sigil
-  (if (raylib:is-key-down key-left-shift)
-	  (when (< focus-sigil-strength 1.0)
-		(set! focus-sigil-strength (min (+ focus-sigil-strength 0.1) 1.0)))
-	  (when (> focus-sigil-strength 0.0)
-		(set! focus-sigil-strength (max (- focus-sigil-strength 0.1) 0.0))))
-  (when (> focus-sigil-strength 0.0)
-	(raylib:push-matrix)
-	(raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
-	(raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
-	(draw-sprite textures 'focus-sigil
-				 0.0 0.0 ;; manually translated to final position above
-				 (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))	  
-	(raylib:pop-matrix))
+  (let ([focus-sigil-strength (/ focus-frames +max-focus-frames+)])
+	(when (> focus-sigil-strength 0)
+	  (raylib:push-matrix)
+	  (raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
+	  (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
+	  (draw-sprite textures 'focus-sigil
+				   0.0 0.0 ;; manually translated to final position above
+				   (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))
+	  (raylib:pop-matrix)))
 
   (when show-hitboxes
 	(raylib:draw-circle-v render-player-x render-player-y graze-radius
@@ -1058,10 +1104,7 @@
 		(handle-input)
 		(raylib:update-music-stream ojamajo-carnival)
 		(unless paused
-		  (when (positive? iframes)
-			(set! iframes (sub1 iframes)))
-		  (when (positive? respawning)
-			(set! respawning (sub1 respawning)))
+		  (tick-player)
 		  (vector-for-each-truthy
 		   (lambda (blt) (despawn-out-of-bound-bullet blt))
 		   live-bullets)
