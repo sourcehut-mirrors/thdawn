@@ -214,12 +214,6 @@
    (lambda (e) (when e (f e)))
    v))
 
-(define (vector-for-each-indexed f v)
-  (define len (vector-length v))
-  (let loop ([i 0])
-	(when (< i len)
-	  (f i (vector-ref v i)))))
-
 (define (packcolor r g b a)
   (bitwise-ior (bitwise-arithmetic-shift-left r 24)
 			   (bitwise-arithmetic-shift-left g 16)
