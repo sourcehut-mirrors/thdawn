@@ -12,6 +12,7 @@
 (define key-left 263)
 (define key-down 264)
 (define key-up 265)
+(define key-x 88)
 (define key-y 89)
 (define key-z 90)
 (define pi 3.141592)
@@ -20,11 +21,6 @@
   (- 1 (expt (- 1 x) 3.0)))
 (define (lerp a b progress)
   (+ a (* progress (- b a))))
-;; automatically computes the progress based on x's progress between xa and xb,
-;; then lerps from a to b based on that progress
-(define (lerp-auto-progress a b xa xb x)
-  (define progress (/ (- x xa) (- xb xa)))
-  (lerp a b (inexact progress)))
 
 (define-record-type sebundle
   (fields
@@ -244,6 +240,8 @@
 (define respawning 0) ;; Nonzero if going through the respawn animation
 (define +respawning-max+ 60)
 (define show-hitboxes #f)
+(define bombing 0) ;; Nonzero if a bomb is in progress
+(define +bombing-max+ 180)
 (define graze 0)
 (define paused #f)
 (define current-boss-name #f)
@@ -770,10 +768,14 @@
   )
 
 (define (tick-player)
-  (when (positive? iframes)
+  (when (fxpositive? iframes)
 	(set! iframes (sub1 iframes)))
-  (when (positive? respawning)
+  (when (fxpositive? respawning)
 	(set! respawning (sub1 respawning)))
+  (when (fxpositive? bombing)
+	(when (= bombing (- +bombing-max+ 60))
+	  (raylib:play-sound (sebundle-oldvwoopfast sounds)))
+	(set! bombing (sub1 bombing)))
 
   ;; set the option positions
   (let ([progress (ease-out-cubic (/ focus-frames +max-focus-frames+))])
@@ -806,17 +808,17 @@
 	(handle-player-movement)
 	(when (and (raylib:is-key-down key-z)
 			   (fxzero? (mod frames 5))) ;; todo separate counter
+	  ;; todo separate fire rate for options?
+	  (vector-for-each
+	   (lambda (x y)
+		 (spawn-misc-ent (make-miscent 'needle x y -10 0 0 #f)))
+	   option-xs option-ys)
 	  (let ((y (- player-y 20)))
 		(spawn-misc-ent (make-miscent 'mainshot (- player-x 10) y
 									  -10 0 0 #f))
 		(spawn-misc-ent (make-miscent 'mainshot (+ player-x 10) y
 									  -10 0 0 #f))
-		(raylib:play-sound (sebundle-playershoot sounds)))
-	  ;; todo separate fire rate for options?
-	  (vector-for-each
-	   (lambda (x y)
-		 (spawn-misc-ent (make-miscent 'needle x y -10 0 0 #f)))
-	   option-xs option-ys)))
+		(raylib:play-sound (sebundle-playershoot sounds)))))
   ;; edge triggered stuff
   (do [(k (raylib:get-key-pressed) (raylib:get-key-pressed))]
 	  [(fxzero? k)]
@@ -830,6 +832,14 @@
 			(raylib:play-sound (sebundle-pause sounds))
 			(raylib:pause-music-stream ojamajo-carnival))
 		  (raylib:resume-music-stream ojamajo-carnival))]
+	 [(fx= k key-x)
+	  (when (and (not (player-invincible?))
+				 (zero? bombing)
+				 (>= bomb-stock 1))
+		(set! bombing +bombing-max+)
+		(set! iframes 180)
+		(set! bomb-stock (sub1 bomb-stock))
+		(raylib:play-sound (sebundle-spelldeclare sounds)))]
 	 [(fx= k key-space)
 	  
 	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control '((bomb-frag . 1)))
@@ -1106,6 +1116,7 @@
   (draw-misc-ents textures)
   (draw-particles textures)
   (draw-bullets textures)
+  (raylib:draw-rectangle-gradient-v 50 50 50 50 #x0000ffff #x0000ff00)
 
   (when (and paused (< (mod true-frames 60) 30))
 	(raylib:draw-text-ex

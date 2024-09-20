@@ -2,6 +2,7 @@
   (export init-window close-window window-should-close set-target-fps get-frame-time
 		  begin-drawing end-drawing clear-background draw-circle-v draw-line
 		  draw-text draw-text-ex draw-fps draw-rectangle-rec
+		  draw-rectangle-gradient-h draw-rectangle-gradient-v
 		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
@@ -36,15 +37,17 @@
 	(struct (r unsigned-8) (g unsigned-8) (b unsigned-8) (a unsigned-8)))
   (define global-color
 	(make-ftype-pointer Color (foreign-alloc (ftype-sizeof Color))))
-  (define (load-global-color rgba)
+  (define global-color2
+	(make-ftype-pointer Color (foreign-alloc (ftype-sizeof Color))))
+  (define (load-global-color dest rgba)
 	(define r (bitwise-and #xff (bitwise-arithmetic-shift-right rgba 24)))
 	(define g (bitwise-and #xff (bitwise-arithmetic-shift-right rgba 16)))
 	(define b (bitwise-and #xff (bitwise-arithmetic-shift-right rgba 8)))
 	(define a (bitwise-and #xff rgba))
-	(ftype-set! Color (r) global-color r)
-	(ftype-set! Color (g) global-color g)
-	(ftype-set! Color (b) global-color b)
-	(ftype-set! Color (a) global-color a))
+	(ftype-set! Color (r) dest r)
+	(ftype-set! Color (g) dest g)
+	(ftype-set! Color (b) dest b)
+	(ftype-set! Color (a) dest a))
   (define (unload-global-color)
 	(define r (ftype-ref Color (r) global-color))
 	(define g (ftype-ref Color (g) global-color))
@@ -103,21 +106,36 @@
   (define clear-background0
 	(foreign-procedure "ClearBackground" ((& Color)) void))
   (define (clear-background rgba)
-	(load-global-color rgba)
+	(load-global-color global-color rgba)
 	(clear-background0 global-color))
 
   (define draw-line0
 	(foreign-procedure "DrawLine" (int int int int (& Color)) void))
   (define (draw-line sx sy ex ey rgba)
-	(load-global-color rgba)
+	(load-global-color global-color rgba)
 	(draw-line0 sx sy ex ey global-color))
 
   (define draw-circle-v0
 	(foreign-procedure "DrawCircleV" ((& RayVector2) float (& Color)) void))
   (define (draw-circle-v x y radius rgba)
 	(load-global-vector2 x y)
-	(load-global-color rgba)
+	(load-global-color global-color rgba)
 	(draw-circle-v0 global-vector2 radius global-color))
+
+  (define draw-rectangle-gradient-v0
+	(foreign-procedure "DrawRectangleGradientV"
+					   (int int int int (& Color) (& Color)) void))
+  (define (draw-rectangle-gradient-v x y w h rgba-upper rgba-lower)
+	(load-global-color global-color rgba-upper)
+	(load-global-color global-color2 rgba-lower)
+	(draw-rectangle-gradient-v0 x y w h global-color global-color2))
+  (define draw-rectangle-gradient-h0
+	(foreign-procedure "DrawRectangleGradientH"
+					   (int int int int (& Color) (& Color)) void))
+  (define (draw-rectangle-gradient-h x y w h rgba-left rgba-right)
+	(load-global-color global-color rgba-left)
+	(load-global-color global-color2 rgba-right)
+	(draw-rectangle-gradient-h0 x y w h global-color global-color2))
 
   (define init-audio-device
 	(foreign-procedure "InitAudioDevice" () void))
@@ -186,20 +204,20 @@
 	(foreign-procedure "DrawRectangleRec" ((& RayRect) (& Color)) void))
   (define (draw-rectangle-rec x y width height rgba)
 	(load-global-rectangle global-rectangle x y width height)
-	(load-global-color rgba)
+	(load-global-color global-color rgba)
 	(draw-rectangle-rec0 global-rectangle global-color))
 
   (define draw-text0
 	(foreign-procedure "DrawText" (string int int int (& Color)) void))
   (define (draw-text text x y font-size rgba)
-	(load-global-color rgba)
+	(load-global-color global-color rgba)
 	(draw-text0 text x y font-size global-color))
   (define draw-text-ex0
 	(foreign-procedure "DrawTextEx" ((& Font) string (& RayVector2)
 									 float float (& Color)) void))
   (define (draw-text-ex font text x y size spacing rgba)
 	(load-global-vector2 x y)
-	(load-global-color rgba)
+	(load-global-color global-color rgba)
 	(draw-text-ex0 font text global-vector2 size spacing global-color))
 
   (define draw-fps
@@ -233,13 +251,13 @@
 	 (rectangle-x rect) (rectangle-y rect)
 	 (rectangle-width rect) (rectangle-height rect))
 	(load-global-vector2 (v2x v) (v2y v))
-	(load-global-color rgba)
+	(load-global-color global-color rgba)
 	(draw-texture-rec0 tex global-rectangle global-vector2 global-color))
 
   (define draw-texture0
 	(foreign-procedure "DrawTexture" ((& Texture) int int (& Color)) void))
   (define (draw-texture tex x y rgba)
-	(load-global-color rgba)
+	(load-global-color global-color rgba)
 	(draw-texture0 tex x y global-color))
 
   (define draw-texture-pro0
@@ -257,7 +275,7 @@
 	 (rectangle-x dest) (rectangle-y dest)
 	 (rectangle-width dest) (rectangle-height dest))
 	(load-global-vector2 (v2x origin) (v2y origin))
-	(load-global-color rgba)
+	(load-global-color global-color rgba)
 	(draw-texture-pro0 tex global-rectangle global-rectangle2
 					   global-vector2 rotation global-color))
 
