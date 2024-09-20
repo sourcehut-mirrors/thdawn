@@ -623,6 +623,24 @@
 		   live-enm)
 		  (when (< (miscent-y ent) +playfield-min-y+)
 			(delete-misc-ent ent)))))
+	  ([needle]
+	   (do-standard-movement)
+	   	   (call/1cc
+		(lambda (return)
+		  (vector-for-each-truthy
+		   (lambda (enm)
+			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
+			   (when (check-collision-recs
+					  ehx ehy ehw ehh
+					  (- (miscent-x ent) 5)
+					  (- (miscent-y ent) 6)
+					  10 52)
+				 (delete-misc-ent ent)
+				 (enm-health-set! enm (- (enm-health enm) 20))
+				 (return))))
+		   live-enm)
+		  (when (< (miscent-y ent) (- +playfield-min-y+ 50)) ;; extra fuzz for length
+			(delete-misc-ent ent)))))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
 	   (cond
 		[(miscent-autocollect ent)
@@ -696,6 +714,16 @@
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
 		  (- render-x 6) (- render-y 10) 12 16
+		  red)
+		 (raylib:draw-circle-v render-x render-y 2.0 green)))
+	  ([needle]
+	   ;; todo: different rendering when it hits something?
+	   (draw-sprite-with-rotation
+		textures 'needle -90
+		render-x render-y -1)
+	   (when show-hitboxes
+		 (raylib:draw-rectangle-rec
+		  (- render-x 5) (- render-y 6) 10 52
 		  red)
 		 (raylib:draw-circle-v render-x render-y 2.0 green)))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
@@ -783,7 +811,12 @@
 									  -10 0 0 #f))
 		(spawn-misc-ent (make-miscent 'mainshot (+ player-x 10) y
 									  -10 0 0 #f))
-		(raylib:play-sound (sebundle-playershoot sounds)))))
+		(raylib:play-sound (sebundle-playershoot sounds)))
+	  ;; todo separate fire rate for options?
+	  (vector-for-each
+	   (lambda (x y)
+		 (spawn-misc-ent (make-miscent 'needle x y -10 0 0 #f)))
+	   option-xs option-ys)))
   ;; edge triggered stuff
   (do [(k (raylib:get-key-pressed) (raylib:get-key-pressed))]
 	  [(fxzero? k)]
