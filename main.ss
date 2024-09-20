@@ -51,9 +51,9 @@
 (define (unload-sfx)
   (define rtd (record-type-descriptor sebundle))
   (define num-sounds (vector-length (record-type-field-names rtd)))
-  (for-each (lambda (i)
-			  (raylib:unload-sound ((record-accessor rtd i) sounds)))
-			(iota num-sounds))
+  (do [(i 0 (1+ i))]
+	  [(>= i num-sounds)]
+	(raylib:unload-sound ((record-accessor rtd i) sounds)))
   (set! sounds #f))
 
 (define-record-type txbundle
@@ -82,9 +82,9 @@
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
   (define num-textures (vector-length (record-type-field-names rtd)))
-  (for-each (lambda (i)
-			  (raylib:unload-texture ((record-accessor rtd i) textures)))
-			(iota num-textures)))
+  (do [(i 0 (1+ i))]
+	  [(>= i num-textures)]
+	(raylib:unload-texture ((record-accessor rtd i) textures))))
 
 (define-record-type fontbundle
   (fields
