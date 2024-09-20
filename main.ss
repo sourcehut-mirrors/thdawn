@@ -220,6 +220,7 @@
 			   (bitwise-arithmetic-shift-left b 8)
 			   a))
 (define red (packcolor 230 41 55 255))
+(define green (packcolor 0 228 48 255))
 
 ;; [31-416] x bounds of playfield in the hud texture
 ;; [15-463] y bounds of playfield in the hud texture
@@ -614,7 +615,7 @@
 			   (when (check-collision-recs
 					  ehx ehy ehw ehh
 					  (- (miscent-x ent) 6)
-					  (- (miscent-y ent) 6)
+					  (- (miscent-y ent) 10)
 					  12 16)
 				 (delete-misc-ent ent)
 				 (enm-health-set! enm (- (enm-health enm) 50))
@@ -695,7 +696,8 @@
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
 		  (- render-x 6) (- render-y 10) 12 16
-		  red)))
+		  red)
+		 (raylib:draw-circle-v render-x render-y 2.0 green)))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
 	   (let ([lifespan (miscent-lifespan ent)])
 		 (if (and (fx<= lifespan 24) (miscent-should-spin? ent))
