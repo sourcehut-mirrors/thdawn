@@ -17,10 +17,28 @@
 (define key-z 90)
 (define pi 3.141592)
 
+(define (draw-line-round sx sy ex ey rgba)
+  (define rsx (exact (round sx)))
+  (define rsy (exact (round sy)))
+  (define rex (exact (round ex)))
+  (define rey (exact (round ey)))
+  (raylib:draw-line rsx rsy rex rey rgba))
+
 (define (ease-out-cubic x)
   (- 1 (expt (- 1 x) 3.0)))
 (define (lerp a b progress)
   (+ a (* progress (- b a))))
+(define (ease-in-out-quart x)
+  (if (< x 0.5)
+	  (* 8 x x x x)
+	  (- 1 (/ (expt (+ (* -2 x) 2) 4)
+			  2))))
+(define (ease-out-quart x)
+  (- 1 (expt (- 1 x) 4)))
+(define (ease-out-expo x)
+  (if (= 1 x)
+	  x
+	  (- 1 (expt 2 (* -10 x)))))
 
 (define-record-type sebundle
   (fields
@@ -97,9 +115,9 @@
 (define (unload-fonts fonts)
   (define rtd (record-type-descriptor fontbundle))
   (define num-fonts (vector-length (record-type-field-names rtd)))
-  (for-each (lambda (i)
-			  (raylib:unload-font ((record-accessor rtd i) fonts)))
-			(iota num-fonts)))
+  (do [(i 0 (1+ i))]
+	  [(>= i num-fonts)]
+	(raylib:unload-font ((record-accessor rtd i) fonts))))
 
 (define-record-type sprite-descriptor
   (fields
@@ -229,6 +247,8 @@
 (define +playfield-min-y+ 0)
 (define +playfield-max-x+ 192)
 (define +playfield-max-y+ 448)
+(define +playfield-width+ (- +playfield-max-x+ +playfield-min-x+))
+(define +playfield-height+ (- +playfield-max-y+ +playfield-min-y+))
 (define +poc-y+ 120)
 (define +oob-bullet-despawn-fuzz+ 10)
 
@@ -242,6 +262,17 @@
 (define show-hitboxes #f)
 (define bombing 0) ;; Nonzero if a bomb is in progress
 (define +bombing-max+ 180)
+(define +bomb-initial-phase-length+ 60)
+(define +bomb-noninitial-phase-length+ (- +bombing-max+ +bomb-initial-phase-length+))
+;; todo: consider putting these in a single "bomb state" struct
+(define bomb-sweep-x-left 0.0)
+(define bomb-sweep-x-right 0.0)
+(define bomb-sweep-y-up 0.0)
+(define bomb-sweep-y-down 0.0)
+(define initial-bomb-sweep-x-left 0.0)
+(define initial-bomb-sweep-x-right 0.0)
+(define initial-bomb-sweep-y-up 0.0)
+(define initial-bomb-sweep-y-down 0.0)
 (define graze 0)
 (define paused #f)
 (define current-boss-name #f)
@@ -390,6 +421,57 @@
 		(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
 							  red))))
   (vector-for-each-truthy each live-bullets))
+
+(define (draw-bomb textures)
+  (when show-hitboxes
+	(draw-line-round (+ +playfield-render-offset-x+ bomb-sweep-x-left)
+					 +playfield-render-offset-y+
+					 (+ +playfield-render-offset-x+ bomb-sweep-x-left)
+					 (+ +playfield-render-offset-y+ +playfield-max-y+)
+					 -1)
+	(draw-line-round (+ +playfield-render-offset-x+ bomb-sweep-x-right)
+					 +playfield-render-offset-y+
+					 (+ +playfield-render-offset-x+ bomb-sweep-x-right)
+					 (+ +playfield-render-offset-y+ +playfield-max-y+)
+					 -1)
+	(draw-line-round (+ +playfield-render-offset-x+ +playfield-min-x+)
+					 (+ +playfield-render-offset-y+ bomb-sweep-y-up)
+					 (+ +playfield-render-offset-x+ +playfield-max-x+)
+					 (+ +playfield-render-offset-y+ bomb-sweep-y-up)
+					 -1)
+	(draw-line-round (+ +playfield-render-offset-x+ +playfield-min-x+)
+					 (+ +playfield-render-offset-y+ bomb-sweep-y-down)
+					 (+ +playfield-render-offset-x+ +playfield-max-x+)
+					 (+ +playfield-render-offset-y+ bomb-sweep-y-down)
+					 -1))
+  (raylib:draw-rectangle-gradient-h
+   (exact (round (+ +playfield-render-offset-x+ (- bomb-sweep-x-left 290))))
+   (+ +playfield-render-offset-y+ +playfield-min-y+)
+   290
+   +playfield-height+
+   #x0000ff00
+   #x0000ffbe)
+  (raylib:draw-rectangle-gradient-v
+   (+ +playfield-render-offset-x+ +playfield-min-x+)
+   (exact (round (+ +playfield-render-offset-y+ (- bomb-sweep-y-up 365))))
+   +playfield-width+
+   365
+   #xff000000
+   #xff0000be)
+  (raylib:draw-rectangle-gradient-h
+   (exact (round (+ +playfield-render-offset-x+ bomb-sweep-x-right)))
+   (+ +playfield-render-offset-y+ +playfield-min-y+)
+   290
+   +playfield-height+
+   #x0000ffbe
+   #x0000ff00)
+  (raylib:draw-rectangle-gradient-v
+   (+ +playfield-render-offset-x+ +playfield-min-x+)
+   (exact (round (+ +playfield-render-offset-y+ bomb-sweep-y-down)))
+   +playfield-width+
+   365
+   #xff0000be
+   #xff000000))
 
 (define-record-type enm
   (fields
@@ -577,6 +659,13 @@
 (define (miscent-supports-autocollect? ent)
   (not (eq? (miscent-type ent) 'mainshot)))
 
+(define (autocollect-all-items)
+  (vector-for-each-truthy
+   (lambda (ent)
+	 (when (miscent-supports-autocollect? ent)
+	   (miscent-autocollect-set! ent #t)))
+   live-misc-ents))
+
 (define live-misc-ents
   (make-vector 4096 #f))
 
@@ -649,7 +738,7 @@
 		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 8)))
 		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 8))))]
 		[(and
-			(raylib:is-key-down key-left-shift)
+			focused-immediate
 			(check-collision-circle-rec
 			 player-x player-y graze-radius
 			 (- (miscent-x ent) 8) (- (miscent-y ent) 8)
@@ -767,15 +856,91 @@
 	(loop))
   )
 
+(define (bomb-sweep-x-left-hitbox)
+  (values (- bomb-sweep-x-left 20.0)
+		  +playfield-min-y+
+		  40
+		  +playfield-height+))
+
+(define (bomb-sweep-x-right-hitbox)
+  (values (- bomb-sweep-x-right 20.0)
+		  +playfield-min-y+
+		  40
+		  +playfield-height+))
+
+(define (bomb-sweep-y-up-hitbox)
+  (values +playfield-min-x+
+		  (- bomb-sweep-y-up 20.0)
+		  +playfield-width+
+		  40))
+
+(define (bomb-sweep-y-down-hitbox)
+  (values +playfield-min-x+
+		  (- bomb-sweep-y-down 20.0)
+		  +playfield-width+
+		  40))
+
+(define (tick-bomb)
+  (autocollect-all-items)
+  (when (= bombing (- +bombing-max+ +bomb-initial-phase-length+))
+	(raylib:play-sound (sebundle-oldvwoopfast sounds)))
+  (when (<= bombing (- +bombing-max+ +bomb-initial-phase-length+))
+	(let ([progress (ease-out-expo
+					 (inexact (/ (- +bomb-noninitial-phase-length+ bombing)
+								 +bomb-noninitial-phase-length+)))]
+		  [bomb-sweep-x-left-max
+		   (max +playfield-min-x+ (- initial-bomb-sweep-x-left 290))]
+		  [bomb-sweep-x-right-max
+		   (min +playfield-max-x+ (+ initial-bomb-sweep-x-right 290))]
+		  [bomb-sweep-y-up-max
+		   (max +playfield-min-y+ (- initial-bomb-sweep-y-up 365))]
+		  [bomb-sweep-y-down-max
+		   (min +playfield-max-y+ (+ initial-bomb-sweep-y-down 365))])
+	  (set! bomb-sweep-x-left
+			(lerp initial-bomb-sweep-x-left bomb-sweep-x-left-max progress))
+	  (set! bomb-sweep-x-right
+			(lerp initial-bomb-sweep-x-right bomb-sweep-x-right-max progress))
+	  (set! bomb-sweep-y-up
+			(lerp initial-bomb-sweep-y-up bomb-sweep-y-up-max progress))
+	  (set! bomb-sweep-y-down
+			(lerp initial-bomb-sweep-y-down bomb-sweep-y-down-max progress))))
+  (let-values ([(xlx xly xlw xlh) (bomb-sweep-x-left-hitbox)]
+			   [(xrx xry xrw xrh) (bomb-sweep-x-right-hitbox)]
+			   [(yux yuy yuw yuh) (bomb-sweep-y-up-hitbox)]
+			   [(ydx ydy ydw ydh) (bomb-sweep-y-down-hitbox)])
+	(vector-for-each-truthy
+	 (lambda (blt)
+	   (let ([x (bullet-x blt)]
+			 [y (bullet-y blt)]
+			 [hit-radius (bullet-hit-radius (bullet-type blt))])
+		 (when (or (check-collision-circle-rec x y hit-radius
+											   xlx xly xlw xlh)
+				   (check-collision-circle-rec x y hit-radius
+											   xrx xry xrw xrh)
+				   (check-collision-circle-rec x y hit-radius
+											   yux yuy yuw yuh)
+				   (check-collision-circle-rec x y hit-radius
+											   ydx ydy ydw ydh))
+		   (cancel-bullet-with-drop blt 'small-piv))))
+	 live-bullets)
+	(vector-for-each-truthy
+	 (lambda (enm)
+	   (let-values ([(x y w h) (enm-hurtbox enm)])
+		 (when (or (check-collision-recs x y w h xlx xly xlw xlh)
+				   (check-collision-recs x y w h xrx xry xrw xrh)
+				   (check-collision-recs x y w h yux yuy yuw yuh)
+				   (check-collision-recs x y w h ydx ydy ydw ydh))
+		   (enm-health-set! enm (- (enm-health enm) 70)))))
+	 live-enm))
+  (set! bombing (sub1 bombing)))
+
 (define (tick-player)
+  (when (fxpositive? bombing)
+	(tick-bomb))
   (when (fxpositive? iframes)
 	(set! iframes (sub1 iframes)))
   (when (fxpositive? respawning)
 	(set! respawning (sub1 respawning)))
-  (when (fxpositive? bombing)
-	(when (= bombing (- +bombing-max+ 60))
-	  (raylib:play-sound (sebundle-oldvwoopfast sounds)))
-	(set! bombing (sub1 bombing)))
 
   ;; set the option positions
   (let ([progress (ease-out-cubic (/ focus-frames +max-focus-frames+))])
@@ -839,24 +1004,33 @@
 		(set! bombing +bombing-max+)
 		(set! iframes 180)
 		(set! bomb-stock (sub1 bomb-stock))
-		(raylib:play-sound (sebundle-spelldeclare sounds)))]
+		(raylib:play-sound (sebundle-spelldeclare sounds))
+		(vector-for-each-truthy
+		 (lambda (blt)
+		   (cancel-bullet-with-drop blt 'small-piv))
+		 live-bullets)
+		(set! bomb-sweep-x-left (- player-x 50.0))
+		(set! initial-bomb-sweep-x-left (- player-x 50.0))
+		(set! bomb-sweep-x-right (+ player-x 50.0))
+		(set! initial-bomb-sweep-x-right (+ player-x 50.0))
+		(set! bomb-sweep-y-down (+ player-y 50.0))
+		(set! initial-bomb-sweep-y-down (+ player-y 50.0))
+		(set! bomb-sweep-y-up (- player-y 50.0))
+		(set! initial-bomb-sweep-y-up (- player-y 50.0)))]
 	 [(fx= k key-space)
 	  
 	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control '((bomb-frag . 1)))
-	  ;; (spawn-task
-	  ;;  "spawner"
-	  ;;  (lambda ()
-	  ;; 	 (do ((i 0 (add1 i)))
-	  ;; 		 ((= i 300))
-	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
-	  ;; 		 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
-	  ;; 	   (yield)))
-	  ;;  (constantly #t))
+	  (spawn-task
+	   "spawner"
+	   (lambda ()
+		 (do ((i 0 (add1 i)))
+			 ((= i 300))
+		   (let ([ang (- (random (* 2 pi)) pi)])
+			 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
+		   (yield)))
+	   (constantly #t))
 	  ]
-	 [(fx= k key-y)
-	  (vector-for-each-truthy
-	   (lambda (blt) (cancel-bullet-with-drop blt 'small-piv))
-	   live-bullets)]
+	 [(fx= k key-y) #f]
 	 [(= k 71)
 	  (enable-object-counts #t)
 	  (collect (collect-maximum-generation))
@@ -882,11 +1056,7 @@
 	  (set! player-x new-x)
 	  (set! player-y new-y)))
   (when (< player-y +poc-y+)
-	(vector-for-each-truthy
-	 (lambda (ent)
-	   (when (miscent-supports-autocollect? ent)
-		 (miscent-autocollect-set! ent #t)))
-	 live-misc-ents)))
+	(autocollect-all-items)))
 
 (define (get-player-render-pos)
   (if (fxpositive? respawning)
@@ -1116,7 +1286,8 @@
   (draw-misc-ents textures)
   (draw-particles textures)
   (draw-bullets textures)
-  (raylib:draw-rectangle-gradient-v 50 50 50 50 #x0000ffff #x0000ff00)
+  (when (positive? bombing)
+	(draw-bomb textures))
 
   (when (and paused (< (mod true-frames 60) 30))
 	(raylib:draw-text-ex

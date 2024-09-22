@@ -24,5 +24,6 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 * dialogue system
 * player and boss portraits
 * implementing directional moving sprites for the player
+* pan sfx based on horizontal position
 * investigate if we want to adopt a system similar to the official Touhou games'
   "two-level" position and velocity system
