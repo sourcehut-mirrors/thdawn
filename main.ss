@@ -857,26 +857,26 @@
   )
 
 (define (bomb-sweep-x-left-hitbox)
-  (values (- bomb-sweep-x-left 20.0)
+  (values (- bomb-sweep-x-left 40.0)
 		  +playfield-min-y+
 		  40
 		  +playfield-height+))
 
 (define (bomb-sweep-x-right-hitbox)
-  (values (- bomb-sweep-x-right 20.0)
+  (values bomb-sweep-x-right
 		  +playfield-min-y+
 		  40
 		  +playfield-height+))
 
 (define (bomb-sweep-y-up-hitbox)
   (values +playfield-min-x+
-		  (- bomb-sweep-y-up 20.0)
+		  (- bomb-sweep-y-up 40.0)
 		  +playfield-width+
 		  40))
 
 (define (bomb-sweep-y-down-hitbox)
   (values +playfield-min-x+
-		  (- bomb-sweep-y-down 20.0)
+		  bomb-sweep-y-down
 		  +playfield-width+
 		  40))
 
