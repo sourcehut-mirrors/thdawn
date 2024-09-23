@@ -10,6 +10,7 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 
 ## Immediate TODOs
 * implement simple bomb (mof reigeki, or eosd reimu B)
+  * deathbomb
 * implement spawn delay and blurred pre-spawn rendering
   * vanilla touhou seems just render a xiaoyu but with an appropriate color and end size
 	to the eventual bullet that's spawned. we can probably get away with the same.

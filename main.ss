@@ -449,29 +449,29 @@
    (+ +playfield-render-offset-y+ +playfield-min-y+)
    290
    +playfield-height+
-   #x0000ff00
-   #x0000ffbe)
+   #x8a2be200
+   #x8a2be2be)
   (raylib:draw-rectangle-gradient-v
    (+ +playfield-render-offset-x+ +playfield-min-x+)
    (exact (round (+ +playfield-render-offset-y+ (- bomb-sweep-y-up 365))))
    +playfield-width+
    365
-   #xff000000
-   #xff0000be)
+   #xdc143c00
+   #xdc143cbe)
   (raylib:draw-rectangle-gradient-h
    (exact (round (+ +playfield-render-offset-x+ bomb-sweep-x-right)))
    (+ +playfield-render-offset-y+ +playfield-min-y+)
    290
    +playfield-height+
-   #x0000ffbe
-   #x0000ff00)
+   #x8a2be2be
+   #x8a2be200)
   (raylib:draw-rectangle-gradient-v
    (+ +playfield-render-offset-x+ +playfield-min-x+)
    (exact (round (+ +playfield-render-offset-y+ bomb-sweep-y-down)))
    +playfield-width+
    365
-   #xff0000be
-   #xff000000))
+   #xdc143cbe
+   #xdc143c00))
 
 (define-record-type enm
   (fields
