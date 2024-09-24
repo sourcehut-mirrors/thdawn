@@ -264,7 +264,6 @@
 (define +bombing-max+ 180)
 (define +bomb-initial-phase-length+ 60)
 (define +bomb-noninitial-phase-length+ (- +bombing-max+ +bomb-initial-phase-length+))
-;; todo: consider putting these in a single "bomb state" struct
 (define bomb-sweep-x-left 0.0)
 (define bomb-sweep-x-right 0.0)
 (define bomb-sweep-y-up 0.0)
@@ -273,6 +272,9 @@
 (define initial-bomb-sweep-x-right 0.0)
 (define initial-bomb-sweep-y-up 0.0)
 (define initial-bomb-sweep-y-down 0.0)
+(define +deathbomb-time+ 10)
+;; If positive, player is going to be killed in N frames, unless a bomb is used.
+(define death-timer 0)
 (define graze 0)
 (define paused #f)
 (define current-boss-name #f)
@@ -536,10 +538,16 @@
 		  (raylib:play-sound (sebundle-enmdie sounds))
 		  (vector-set! live-enm idx #f)))))
 
+(define (damage-player)
+  ;; if player is already dying, don't reset this
+  (when (zero? death-timer)
+	(raylib:play-sound (sebundle-playerdie sounds))
+	(set! death-timer +deathbomb-time+)))
+
 (define (kill-player)
-  (when (> life-stock 1)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (when (>= life-stock 1)
 	(set! life-stock (sub1 life-stock))) ;; todo gameovering
-  (raylib:play-sound (sebundle-playerdie sounds))
   (set! iframes 180)
   (set! respawning +respawning-max+)
   (set! player-x 0.0)
@@ -564,7 +572,7 @@
 		   (bullet-hit-radius (bullet-type bullet)))
 	  (cancel-bullet bullet)
 	  (when (not (player-invincible?))
-		(kill-player))))
+		(damage-player))))
   (vector-for-each-truthy each live-bullets))
 
 
@@ -941,6 +949,10 @@
 	(set! iframes (sub1 iframes)))
   (when (fxpositive? respawning)
 	(set! respawning (sub1 respawning)))
+  (when (fxpositive? death-timer)
+	(set! death-timer (sub1 death-timer))
+	(when (zero? death-timer)
+		(kill-player)))
 
   ;; set the option positions
   (let ([progress (ease-out-cubic (/ focus-frames +max-focus-frames+))])
@@ -970,7 +982,9 @@
 	  (when (fx> focus-frames 0)
 		(set! focus-frames (fx1- focus-frames))))
   (when (and (not paused) (zero? respawning))
-	(handle-player-movement)
+	(when (zero? death-timer)
+	  ;; don't allow moving between hit/death
+	  (handle-player-movement))
 	(when (and (raylib:is-key-down key-z)
 			   (fxzero? (mod frames 5))) ;; todo separate counter
 	  ;; todo separate fire rate for options?
@@ -1001,6 +1015,7 @@
 	  (when (and (not (player-invincible?))
 				 (zero? bombing)
 				 (>= bomb-stock 1))
+		(set! death-timer 0)
 		(set! bombing +bombing-max+)
 		(set! iframes 180)
 		(set! bomb-stock (sub1 bomb-stock))
@@ -1084,6 +1099,11 @@
 	 (make-rectangle (* 32.0 x-texture-index) 0.0 32.0 48.0)
 	 (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
 	 iframe-blink))
+
+  (when (positive? death-timer)
+	(let ([radius (lerp 80.0 0.0 (/ (- +deathbomb-time+ death-timer)
+									+deathbomb-time+))])
+	  (raylib:draw-circle-v render-player-x render-player-y radius #xff000088)))
 
   ;; options
   (vector-for-each
