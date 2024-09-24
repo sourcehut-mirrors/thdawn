@@ -552,6 +552,8 @@
   (raylib:play-sound (sebundle-shoot0 sounds))
   (when (>= life-stock 1)
 	(set! life-stock (sub1 life-stock))) ;; todo gameovering
+  (when (< bomb-stock 3)
+	(set! bomb-stock 3))
   (set! iframes 180)
   (set! respawning +respawning-max+)
   (set! player-x 0.0)
