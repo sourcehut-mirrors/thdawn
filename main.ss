@@ -504,6 +504,10 @@
 	(when idx
 	  (vector-set! live-enm idx #f))))
 
+(define (damage-enemy enm amount)
+  (enm-health-set! enm (- (enm-health enm) amount))
+  (set! current-score (+ current-score amount)))
+
 (define (spawn-drops enm)
   (define drops (enm-drops enm))
   (define x (enm-x enm))
@@ -713,7 +717,7 @@
 					  (- (miscent-y ent) 10)
 					  12 16)
 				 (delete-misc-ent ent)
-				 (enm-health-set! enm (- (enm-health enm) 50))
+				 (damage-enemy enm 50)
 				 (return))))
 		   live-enm)
 		  (when (< (miscent-y ent) +playfield-min-y+)
@@ -731,7 +735,7 @@
 					  (- (miscent-y ent) 6)
 					  10 52)
 				 (delete-misc-ent ent)
-				 (enm-health-set! enm (- (enm-health enm) 20))
+				 (damage-enemy enm 20)
 				 (return))))
 		   live-enm)
 		  (when (< (miscent-y ent) (- +playfield-min-y+ 50)) ;; extra fuzz for length
@@ -938,7 +942,7 @@
 				   (check-collision-recs x y w h xrx xry xrw xrh)
 				   (check-collision-recs x y w h yux yuy yuw yuh)
 				   (check-collision-recs x y w h ydx ydy ydw ydh))
-		   (enm-health-set! enm (- (enm-health enm) 70)))))
+		   (damage-enemy enm 70))))
 	 live-enm))
   (set! bombing (sub1 bombing)))
 
