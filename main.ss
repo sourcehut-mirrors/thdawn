@@ -985,19 +985,20 @@
 	(when (zero? death-timer)
 	  ;; don't allow moving between hit/death
 	  (handle-player-movement))
-	(when (and (raylib:is-key-down key-z)
-			   (fxzero? (mod frames 5))) ;; todo separate counter
-	  ;; todo separate fire rate for options?
-	  (vector-for-each
-	   (lambda (x y)
-		 (spawn-misc-ent (make-miscent 'needle x y -10 0 0 #f)))
-	   option-xs option-ys)
-	  (let ((y (- player-y 20)))
-		(spawn-misc-ent (make-miscent 'mainshot (- player-x 10) y
-									  -10 0 0 #f))
-		(spawn-misc-ent (make-miscent 'mainshot (+ player-x 10) y
-									  -10 0 0 #f))
-		(raylib:play-sound (sebundle-playershoot sounds)))))
+	(when (raylib:is-key-down key-z)
+	  ;; todo separate counters from main frame counter?
+	  (when (fxzero? (mod frames 10))
+		(vector-for-each
+		 (lambda (x y)
+		   (spawn-misc-ent (make-miscent 'needle x y -10 0 0 #f)))
+		 option-xs option-ys))
+	  (when (fxzero? (mod frames 5))
+		(let ([y (- player-y 20)])
+		  (spawn-misc-ent (make-miscent 'mainshot (- player-x 10) y
+										-10 0 0 #f))
+		  (spawn-misc-ent (make-miscent 'mainshot (+ player-x 10) y
+										-10 0 0 #f))
+		  (raylib:play-sound (sebundle-playershoot sounds))))))
   ;; edge triggered stuff
   (do [(k (raylib:get-key-pressed) (raylib:get-key-pressed))]
 	  [(fxzero? k)]
