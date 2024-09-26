@@ -372,8 +372,7 @@
   (delete-bullet bullet))
 
 (define (cancel-bullet-with-drop bullet drop)
-  (define ent (make-miscent drop (bullet-x bullet) (bullet-y bullet) -2.0 0.1 0 #f))
-  (spawn-misc-ent ent)
+  (define ent (spawn-misc-ent drop (bullet-x bullet) (bullet-y bullet) -2.0 0.1))
   (spawn-task "delayed autocollect"
 			  (lambda () (wait 30) (miscent-autocollect-set! ent #t))
 			  (constantly #t))
@@ -526,10 +525,9 @@
 			  [fuzz-x (if skip-fuzz 0.0 (- (random 18.0) 9.0))]
 			  [fuzz-y (if skip-fuzz 0.0 (- (random 8.0) 4.0))])
 		 (spawn-misc-ent
-		  (make-miscent
-		   type
-		   (+ x fuzz-x) (+ y fuzz-y)
-		   -3.0 0.1 0 #f)))))
+		  type
+		  (+ x fuzz-x) (+ y fuzz-y)
+		  -3.0 0.1))))
    drops))
 
 (define (prune-dead-enemies)
@@ -683,11 +681,13 @@
 (define live-misc-ents
   (make-vector 4096 #f))
 
-(define (spawn-misc-ent ent)
+(define (spawn-misc-ent type x y vy ay)
   (let ((idx (vector-index #f live-misc-ents)))
 	(unless idx
 	  (error 'spawn-misc-ent "No more open misc entity slots!"))
-	(vector-set! live-misc-ents idx ent)))
+	(let ([ent (make-miscent type x y vy ay 0 #f)])
+	  (vector-set! live-misc-ents idx ent)
+	  ent)))
 
 (define (delete-misc-ent ent)
   (let ((idx (vector-index ent live-misc-ents)))
@@ -996,14 +996,14 @@
 	  (when (fxzero? (mod frames 10))
 		(vector-for-each
 		 (lambda (x y)
-		   (spawn-misc-ent (make-miscent 'needle x y -10 0 0 #f)))
+		   (spawn-misc-ent 'needle x y -10 0))
 		 option-xs option-ys))
 	  (when (fxzero? (mod frames 5))
 		(let ([y (- player-y 20)])
-		  (spawn-misc-ent (make-miscent 'mainshot (- player-x 10) y
-										-10 0 0 #f))
-		  (spawn-misc-ent (make-miscent 'mainshot (+ player-x 10) y
-										-10 0 0 #f))
+		  (spawn-misc-ent 'mainshot (- player-x 10) y
+						  -10 0)
+		  (spawn-misc-ent 'mainshot (+ player-x 10) y
+						  -10 0)
 		  (raylib:play-sound (sebundle-playershoot sounds))))))
   ;; edge triggered stuff
   (do [(k (raylib:get-key-pressed) (raylib:get-key-pressed))]
