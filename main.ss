@@ -1019,8 +1019,7 @@
 			(raylib:pause-music-stream ojamajo-carnival))
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(fx= k key-x)
-	  (when (and (not (player-invincible?))
-				 (zero? bombing)
+	  (when (and (zero? bombing)
 				 (>= bomb-stock 1))
 		(set! death-timer 0)
 		(set! bombing +bombing-max+)
