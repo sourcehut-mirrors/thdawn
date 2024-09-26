@@ -1204,7 +1204,7 @@
 					440 275
 					18 -1)
   (raylib:draw-text (format "MEM: ~,2f MiB"
-							(/ (current-memory-bytes)
+							(/ (bytes-allocated)
 							   (* 1024.0 1024.0)))
 					440 300
 					18 -1)
