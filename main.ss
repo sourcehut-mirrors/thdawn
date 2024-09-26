@@ -1059,7 +1059,8 @@
 	  (display (object-counts))
 	  (newline)
 	  (enable-object-counts #f)
-	  ])))
+	  ]
+	 )))
 
 (define (handle-player-movement)
   (define left-pressed (raylib:is-key-down key-left))
@@ -1325,13 +1326,15 @@
 
 (define (main)
   (collect-notify #t)
-  (raylib:init-window 640 480 "thdawn")
+  (raylib:init-window 1280 960 "thdawn")
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)
   (load-audio)
   (load-sfx)
-  (let ([textures (load-textures)]
-		[fonts (load-fonts)])
+  (let* ([textures (load-textures)]
+		 [fonts (load-fonts)]
+		 [render-texture (raylib:load-render-texture 640 480)]
+		 [render-texture-inner (raylib:render-texture-inner render-texture)])
 	(raylib:play-music-stream ojamajo-carnival)
 	(set! iframes 180)
 	(do [] [(raylib:window-should-close)]
@@ -1347,8 +1350,25 @@
 		(tick-misc-ents)
 		(tick-particles)
 		(process-collisions))
-	  (raylib:begin-drawing)
+	  
+	  (raylib:begin-texture-mode render-texture)
 	  (render-all textures fonts)
+	  (raylib:end-texture-mode)
+
+	  (raylib:begin-drawing)
+	  (raylib:clear-background 0)
+	  (raylib:draw-texture-pro
+	   render-texture-inner
+	   ;; why negative height?
+	   ;; raylib is origin-at-top-left, and all our code from before render targets
+	   ;; started being used assumes that. However, opengl is origin-at-bottom-left,
+	   ;; so drawing to a render target then immediately blitting that to the
+	   ;; framebuffer results in an inverted image. Supplying a negative height
+	   ;; here flips it again to correct for that. It's unfortunate that in
+	   ;; trying to paper over an OpenGL design choice, Raylib actually introduces
+	   ;; another mismatch.
+	   (make-rectangle 0.0 0.0 640.0 -480.0)
+	   (make-rectangle 0.0 0.0 1280.0 960.0) v2zero 0.0 -1)
 	  (raylib:end-drawing)
 	  (unless paused
 		(set! frames (fx1+ frames)))

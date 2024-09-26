@@ -1,5 +1,9 @@
 (library (raylib)
   (export init-window close-window window-should-close set-target-fps get-frame-time
+		  toggle-borderless-windowed toggle-fullscreen
+		  set-window-min-size get-screen-height get-screen-width
+		  begin-texture-mode end-texture-mode
+		  load-render-texture unload-render-texture render-texture-inner
 		  begin-drawing end-drawing clear-background draw-circle-v draw-line
 		  draw-text draw-text-ex draw-fps draw-rectangle-rec
 		  draw-rectangle-gradient-h draw-rectangle-gradient-v
@@ -89,6 +93,17 @@
   (define close-window
 	(foreign-procedure "CloseWindow" () void))
 
+  (define toggle-borderless-windowed
+	(foreign-procedure "ToggleBorderlessWindowed" () void))
+  (define toggle-fullscreen
+	(foreign-procedure "ToggleFullscreen" () void))
+  (define set-window-min-size
+	(foreign-procedure "SetWindowMinSize" (int int) void))
+  (define get-screen-width
+	(foreign-procedure "GetScreenWidth" () int))
+  (define get-screen-height
+	(foreign-procedure "GetScreenHeight" () int))
+
   (define window-should-close0
 	(foreign-procedure "WindowShouldClose" () unsigned-8))
   (define (window-should-close)
@@ -102,6 +117,11 @@
 
   (define end-drawing
 	(foreign-procedure "EndDrawing" () void))
+
+  (define begin-texture-mode
+	(foreign-procedure "BeginTextureMode" ((& RenderTexture)) void))
+  (define end-texture-mode
+	(foreign-procedure "EndTextureMode" () void))
 
   (define clear-background0
 	(foreign-procedure "ClearBackground" ((& Color)) void))
@@ -241,6 +261,29 @@
   (define (unload-texture tex)
 	(unload-texture0 tex)
 	(foreign-free (ftype-pointer-address tex)))
+
+  (define-ftype RenderTexture
+	(struct
+	  [id unsigned-int]
+	  [texture Texture]
+	  [depth Texture]))
+
+  (define load-render-texture0
+	(foreign-procedure "LoadRenderTexture" (int int) (& RenderTexture)))
+  (define (load-render-texture width height)
+	(define result (make-ftype-pointer RenderTexture
+									   (foreign-alloc (ftype-sizeof RenderTexture))))
+	(load-render-texture0 result width height)
+	result)
+  (define unload-render-texture0
+	(foreign-procedure "UnloadRenderTexture" ((& RenderTexture)) void))
+  (define (unload-render-texture rtexture)
+	(unload-render-texture0 rtexture)
+	(foreign-free (ftype-pointer-address rtexture)))
+
+  (define (render-texture-inner rtexture)
+	(ftype-&ref RenderTexture (texture) rtexture))
+  
   (define draw-texture-rec0
 	(foreign-procedure "DrawTextureRec"
 					   ((& Texture) (& RayRect)
