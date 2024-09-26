@@ -12,7 +12,6 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 * implement spawn delay and blurred pre-spawn rendering
   * vanilla touhou seems just render a xiaoyu but with an appropriate color and end size
 	to the eventual bullet that's spawned. we can probably get away with the same.
-* allow maximization of the window (with upscaled render)
 * implement enemy dying effect
 * implement graze particle
 * implement first chapter of stage to flesh out API's needed

@@ -811,7 +811,7 @@
 	  ((mainshot)
 	   (draw-sprite-with-rotation
 		textures 'mainshot -90
-		render-x render-y -1)
+		render-x render-y #xffffffdd)
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
 		  (- render-x 6) (- render-y 10) 12 16
@@ -821,7 +821,7 @@
 	   ;; todo: different rendering when it hits something?
 	   (draw-sprite-with-rotation
 		textures 'needle -90
-		render-x render-y -1)
+		render-x render-y #xffffffdd)
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
 		  (- render-x 5) (- render-y 6) 10 52
@@ -1031,13 +1031,13 @@
 		   (cancel-bullet-with-drop blt 'small-piv))
 		 live-bullets)
 		(set! bomb-sweep-x-left (- player-x 50.0))
-		(set! initial-bomb-sweep-x-left (- player-x 50.0))
+		(set! initial-bomb-sweep-x-left bomb-sweep-x-left)
 		(set! bomb-sweep-x-right (+ player-x 50.0))
-		(set! initial-bomb-sweep-x-right (+ player-x 50.0))
+		(set! initial-bomb-sweep-x-right bomb-sweep-x-right)
 		(set! bomb-sweep-y-down (+ player-y 50.0))
-		(set! initial-bomb-sweep-y-down (+ player-y 50.0))
+		(set! initial-bomb-sweep-y-down bomb-sweep-y-down)
 		(set! bomb-sweep-y-up (- player-y 50.0))
-		(set! initial-bomb-sweep-y-up (- player-y 50.0)))]
+		(set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
 	 [(fx= k key-space)
 	  
 	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control '((bomb-frag . 1)))
