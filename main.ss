@@ -726,7 +726,7 @@
 			(delete-misc-ent ent)))))
 	  ([needle]
 	   (do-standard-movement)
-	   	   (call/1cc
+	   (call/1cc
 		(lambda (return)
 		  (vector-for-each-truthy
 		   (lambda (enm)
@@ -1279,8 +1279,8 @@
 	   (lerp 2.5 1.5 progress)))]
    [else (values 0.5 1.0 1.5)]))
 
-(define (render-all textures fonts)
-  (raylib:clear-background 0) ;;#x42024aff) ;; todo: some variability :D
+(define (do-render-all textures fonts)
+  (raylib:clear-background #x000000ff) ;;#x42024aff) ;; todo: some variability :D
   (unless paused
 	(let-values ([(bg1-vel bg2-vel bg3-vel) (background-acceleration frames)])
 	  (set! bg1-scroll (fl- bg1-scroll bg1-vel))
@@ -1323,6 +1323,27 @@
 	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
   (draw-hud textures fonts))
 
+(define (render-all render-texture render-texture-inner textures fonts)
+  (raylib:begin-texture-mode render-texture)
+  (do-render-all textures fonts)
+  (raylib:end-texture-mode)
+
+  (raylib:begin-drawing)
+  (raylib:clear-background #x000000ff)
+  (raylib:draw-texture-pro
+   render-texture-inner
+   ;; why negative height?
+   ;; raylib is origin-at-top-left, and all our code from before render targets
+   ;; started being used assumes that. However, opengl is origin-at-bottom-left,
+   ;; so drawing to a render target then immediately blitting that to the
+   ;; framebuffer results in an inverted image. Supplying a negative height
+   ;; here flips it again to correct for that. It's unfortunate that in
+   ;; trying to paper over an OpenGL design choice, Raylib actually introduces
+   ;; another mismatch.
+   (make-rectangle 0.0 0.0 640.0 -480.0)
+   (make-rectangle 0.0 0.0 1280.0 960.0) v2zero 0.0 -1)
+  (raylib:end-drawing))
+
 (define (main)
   (collect-notify #t)
   (raylib:init-window 1280 960 "thdawn")
@@ -1349,26 +1370,7 @@
 		(tick-misc-ents)
 		(tick-particles)
 		(process-collisions))
-	  
-	  (raylib:begin-texture-mode render-texture)
-	  (render-all textures fonts)
-	  (raylib:end-texture-mode)
-
-	  (raylib:begin-drawing)
-	  (raylib:clear-background 0)
-	  (raylib:draw-texture-pro
-	   render-texture-inner
-	   ;; why negative height?
-	   ;; raylib is origin-at-top-left, and all our code from before render targets
-	   ;; started being used assumes that. However, opengl is origin-at-bottom-left,
-	   ;; so drawing to a render target then immediately blitting that to the
-	   ;; framebuffer results in an inverted image. Supplying a negative height
-	   ;; here flips it again to correct for that. It's unfortunate that in
-	   ;; trying to paper over an OpenGL design choice, Raylib actually introduces
-	   ;; another mismatch.
-	   (make-rectangle 0.0 0.0 640.0 -480.0)
-	   (make-rectangle 0.0 0.0 1280.0 960.0) v2zero 0.0 -1)
-	  (raylib:end-drawing)
+	  (render-all render-texture render-texture-inner textures fonts)
 	  (unless paused
 		(set! frames (fx1+ frames)))
 	  (set! true-frames (fx1+ true-frames)))
