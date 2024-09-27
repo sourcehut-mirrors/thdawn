@@ -3,7 +3,7 @@
 ;; file as a r6rs Program
 (import (chezscheme))
 (import (add-prefix (raylib) raylib:)
-		(coro) (geom))
+		(coro) (geom) (funcutils))
 (define key-space 32)
 (define key-escape 256)
 (define key-f3 292)
@@ -224,26 +224,6 @@
    color)
   (raylib:pop-matrix))
 
-(define constantly
-  ;; some common stuff to avoid gc spamming
-  (let* ([constantly-t (lambda _args #t)])
-	(lambda (x)
-	  (cond
-	   [(eq? #t x) constantly-t]
-	   [else (lambda _args x)]))))
-
-(define (vector-for-each-truthy f v)
-  (vector-for-each
-   (lambda (e) (when e (f e)))
-   v))
-
-(define (for-each-indexed f l)
-  (unless (null? l)
-	(do [(cur l (cdr cur))
-		 (i 0 (add1 i))]
-		[(null? cur)]
-	  (f i (car cur)))))
-
 (define (packcolor r g b a)
   (bitwise-ior (bitwise-arithmetic-shift-left r 24)
 			   (bitwise-arithmetic-shift-left g 16)
@@ -338,7 +318,9 @@
    (mutable facing) ;; radians
    (mutable speed)
    (mutable grazed)
-   (mutable lifespan)
+   ;; how many frames we've been alive. If < 0, then bullet is in "prespawn"
+   ;; and does not participate in gameplay, only renders a preimg sprite
+   (mutable livetime) 
    ;; extra hashtable for scratch pad. not set by default, allocate manually if needed
    (mutable extras)))
 
@@ -681,7 +663,7 @@
    (mutable y)
    (mutable vy)
    (mutable ay)
-   (mutable lifespan)
+   (mutable livetime)
    (mutable autocollect)))
 
 (define (miscent-supports-autocollect? ent)
@@ -812,7 +794,7 @@
 		 (delete-misc-ent ent))
 	   (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
 		 (delete-misc-ent ent))))
-	(miscent-lifespan-set! ent (add1 (miscent-lifespan ent))))
+	(miscent-livetime-set! ent (add1 (miscent-livetime ent))))
   (vector-for-each-truthy each live-misc-ents))
 
 (define (miscent-should-spin? ent)
@@ -844,10 +826,10 @@
 		  red)
 		 (raylib:draw-circle-v render-x render-y 2.0 green)))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
-	   (let ([lifespan (miscent-lifespan ent)])
-		 (if (and (fx<= lifespan 24) (miscent-should-spin? ent))
+	   (let ([livetime (miscent-livetime ent)])
+		 (if (and (fx<= livetime 24) (miscent-should-spin? ent))
 			 (draw-sprite-with-rotation
-			  textures type (* 45.0 (floor (/ lifespan 3)))
+			  textures type (* 45.0 (floor (/ livetime 3)))
 			  render-x render-y -1)
 			 (draw-sprite textures type render-x render-y -1)))
 	   (when show-hitboxes
