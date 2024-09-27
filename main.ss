@@ -129,6 +129,7 @@
   (define ret (make-hashtable symbol-hash eq?))
   (define shift8 (vec2 -8.0 -8.0))
   (define shift16 (vec2 -16.0 -16.0))
+  (define basic-colors '(red magenta blue cyan green yellow orange white))
   (define (make type accessor x y width height shift)
 	(symbol-hashtable-set!
 	 ret type
@@ -137,6 +138,16 @@
 							  (inexact x) (inexact y)
 							  (inexact width) (inexact height))
 							 shift)))
+  (define (make-vertical-group prefix elems accessor x y width height shift)
+	(for-each-indexed
+	 (lambda (i elem)
+	   (define type
+		 (string->symbol (string-append
+						  (symbol->string prefix)
+						  "-"
+						  (symbol->string elem))))
+	   (make type accessor x (+ y (* i height)) width height shift))
+	 elems))
   ;; bullets
   (make 'pellet-red txbundle-bullet2 176 0 16 16 shift8)
   (make 'pellet-magenta txbundle-bullet2 176 32 16 16 shift8)
@@ -156,14 +167,12 @@
   (make 'small-star-orange txbundle-bullet2 96 192 16 16 shift8)
   (make 'small-star-white txbundle-bullet2 96 224 16 16 shift8)
   (make 'small-star-black txbundle-bullet2 96 240 16 16 shift8)
-  (make 'big-star-red txbundle-bullet2 224 0 32 32 shift16)
-  (make 'big-star-magenta txbundle-bullet2 224 32 32 32 shift16)
-  (make 'big-star-blue txbundle-bullet2 224 64 32 32 shift16)
-  (make 'big-star-cyan txbundle-bullet2 224 96 32 32 shift16)
-  (make 'big-star-green txbundle-bullet2 224 128 32 32 shift16)
-  (make 'big-star-yellow txbundle-bullet2 224 160 32 32 shift16)
-  (make 'big-star-orange txbundle-bullet2 224 192 32 32 shift16)
-  (make 'big-star-white txbundle-bullet2 224 224 32 32 shift16)
+  (make-vertical-group
+   'big-star basic-colors
+   txbundle-bullet2 224 0 32 32 shift16)
+  (make-vertical-group
+   'preimg basic-colors
+   txbundle-bullet1 80 0 32 32 shift16)
 
   ;; enemies
   (make 'red-fairy txbundle-enemy1 0 384 32 32 shift16)
@@ -227,6 +236,13 @@
   (vector-for-each
    (lambda (e) (when e (f e)))
    v))
+
+(define (for-each-indexed f l)
+  (unless (null? l)
+	(do [(cur l (cdr cur))
+		 (i 0 (add1 i))]
+		[(null? cur)]
+	  (f i (car cur)))))
 
 (define (packcolor r g b a)
   (bitwise-ior (bitwise-arithmetic-shift-left r 24)
@@ -1047,7 +1063,7 @@
 		 (do ((i 0 (add1 i)))
 			 ((= i 300))
 		   (let ([ang (- (random (* 2 pi)) pi)])
-			 (spawn-bullet 'big-star-red 0.0 100.0 ang 2 linear-step-forever))
+			 (spawn-bullet 'big-star-white 0.0 100.0 ang 2 linear-step-forever))
 		   (yield)))
 	   (constantly #t))
 	  ]
