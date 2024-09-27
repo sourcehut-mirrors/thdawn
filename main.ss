@@ -359,7 +359,8 @@
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda () (control-function blt))
-				  (lambda () (eq? blt (vector-ref live-bullets idx)))))))
+				  (lambda () (eq? blt (vector-ref live-bullets idx))))
+	  blt)))
 
 (define (delete-bullet bullet)
   (let ([idx (vector-index bullet live-bullets)])
@@ -414,6 +415,9 @@
 	(let ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
 		  [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
 		  [type (bullet-type bullet)])
+	  (when (fxnegative? (bullet-livetime bullet))
+		  (draw-sprite textures 'preimg-white render-x render-y -1)
+		  )
 	  (case (bullet-family type)
 		((pellet)
 		 (draw-sprite textures type render-x render-y #xffffffff))
@@ -856,6 +860,19 @@
 	  (enm-y-set! enm y))
 	(yield)))
 
+(define (shoot-at-player x y type speed delay)
+  (let* ([dir (v2unit (vec2 (- player-x x) (- player-y y)))]
+		[blt (spawn-bullet type x y (atan (v2y dir) (v2x dir)) speed
+						   (lambda (blt)
+							 (do [(i 0 (add1 i))]
+								 [(>= i delay)]
+							   (bullet-livetime-set! blt (add1 (bullet-livetime blt)))
+							   (yield))
+							 (raylib:play-sound (sebundle-shoot0 sounds))
+							 (linear-step-forever blt)))])
+	(bullet-livetime-set! blt (- delay))
+	))
+
 (define (test-fairy-control enm)
   (define (pick-next-position)
 	(let* ((x (enm-x enm))
@@ -869,6 +886,7 @@
 	  (values nx ny)))
   (let loop ()
 	(define-values (x y) (pick-next-position))
+	(shoot-at-player (enm-x enm) (enm-y enm) 'pellet-white 2.0 5)
 	(ease-cubic-to x y 90 enm)
 	(loop))
   )
@@ -1046,15 +1064,15 @@
 	 [(fx= k key-space)
 	  
 	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control '((bomb-frag . 1)))
-	  (spawn-task
-	   "spawner"
-	   (lambda ()
-		 (do ((i 0 (add1 i)))
-			 ((= i 300))
-		   (let ([ang (- (random (* 2 pi)) pi)])
-			 (spawn-bullet 'big-star-white 0.0 100.0 ang 2 linear-step-forever))
-		   (yield)))
-	   (constantly #t))
+	  ;; (spawn-task
+	  ;;  "spawner"
+	  ;;  (lambda ()
+	  ;; 	 (do ((i 0 (add1 i)))
+	  ;; 		 ((= i 300))
+	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
+	  ;; 		 (spawn-bullet 'big-star-white 0.0 100.0 ang 2 linear-step-forever))
+	  ;; 	   (yield)))
+	  ;;  (constantly #t))
 	  ]
 	 [(fx= k key-y) #f]
 	 [(= k 71)

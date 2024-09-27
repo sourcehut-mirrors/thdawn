@@ -32,10 +32,9 @@
 
   ;; Yields the specified number of times before returning
   (define (wait n)
-	(let loop ([i 0])
-	  (when (< i n)
-		(yield)
-		(loop (add1 i)))))
+	(do [(i 0 (add1 i))]
+		[(>= i n)]
+	  (yield)))
 
   ;; Yields until (pred) becomes true.
   ;; If pred is already true when called, does not perform any yields.
