@@ -324,6 +324,10 @@
    ;; extra hashtable for scratch pad. not set by default, allocate manually if needed
    (mutable extras)))
 
+(define (bullet-active? blt)
+  ;; whether the bullet participates in gameplay
+  (fxnonnegative? (bullet-livetime blt)))
+
 (define live-bullets (make-vector 4096 #f))
 
 (define (vector-index elem v)
@@ -557,24 +561,25 @@
 
 (define (process-collisions)
   (define (each bullet)
-	(when (and (not (bullet-grazed bullet))
-			   (check-collision-circles
-				player-x player-y graze-radius
-				(bullet-x bullet) (bullet-y bullet)
-				(bullet-hit-radius (bullet-type bullet))))
-	  (set! graze (fx1+ graze))
-	  (when (fxzero? (mod graze 10))
-		(set! item-value (fx+ 10 item-value)))
-	  (bullet-grazed-set! bullet #t)
-	  (raylib:play-sound (sebundle-graze sounds)))
+	(when (bullet-active? bullet)
+	  (when (and (not (bullet-grazed bullet))
+				 (check-collision-circles
+				  player-x player-y graze-radius
+				  (bullet-x bullet) (bullet-y bullet)
+				  (bullet-hit-radius (bullet-type bullet))))
+		(set! graze (fx1+ graze))
+		(when (fxzero? (mod graze 10))
+		  (set! item-value (fx+ 10 item-value)))
+		(bullet-grazed-set! bullet #t)
+		(raylib:play-sound (sebundle-graze sounds)))
 
-	(when (check-collision-circles
-		   player-x player-y hit-radius
-		   (bullet-x bullet) (bullet-y bullet)
-		   (bullet-hit-radius (bullet-type bullet)))
-	  (cancel-bullet bullet)
-	  (when (not (player-invincible?))
-		(damage-player))))
+	  (when (check-collision-circles
+			 player-x player-y hit-radius
+			 (bullet-x bullet) (bullet-y bullet)
+			 (bullet-hit-radius (bullet-type bullet)))
+		(cancel-bullet bullet)
+		(when (not (player-invincible?))
+		  (damage-player)))))
   (vector-for-each-truthy each live-bullets))
 
 
@@ -922,18 +927,19 @@
 			   [(ydx ydy ydw ydh) (bomb-sweep-y-down-hitbox)])
 	(vector-for-each-truthy
 	 (lambda (blt)
-	   (let ([x (bullet-x blt)]
-			 [y (bullet-y blt)]
-			 [hit-radius (bullet-hit-radius (bullet-type blt))])
-		 (when (or (check-collision-circle-rec x y hit-radius
-											   xlx xly xlw xlh)
-				   (check-collision-circle-rec x y hit-radius
-											   xrx xry xrw xrh)
-				   (check-collision-circle-rec x y hit-radius
-											   yux yuy yuw yuh)
-				   (check-collision-circle-rec x y hit-radius
-											   ydx ydy ydw ydh))
-		   (cancel-bullet-with-drop blt 'small-piv))))
+	   (when (bullet-active? blt)
+		 (let ([x (bullet-x blt)]
+			   [y (bullet-y blt)]
+			   [hit-radius (bullet-hit-radius (bullet-type blt))])
+		   (when (or (check-collision-circle-rec x y hit-radius
+												 xlx xly xlw xlh)
+					 (check-collision-circle-rec x y hit-radius
+												 xrx xry xrw xrh)
+					 (check-collision-circle-rec x y hit-radius
+												 yux yuy yuw yuh)
+					 (check-collision-circle-rec x y hit-radius
+												 ydx ydy ydw ydh))
+			 (cancel-bullet-with-drop blt 'small-piv)))))
 	 live-bullets)
 	(vector-for-each-truthy
 	 (lambda (enm)
@@ -1026,7 +1032,8 @@
 		(raylib:play-sound (sebundle-spelldeclare sounds))
 		(vector-for-each-truthy
 		 (lambda (blt)
-		   (cancel-bullet-with-drop blt 'small-piv))
+		   (when (bullet-active? blt)
+			 (cancel-bullet-with-drop blt 'small-piv)))
 		 live-bullets)
 		(set! bomb-sweep-x-left (- player-x 50.0))
 		(set! initial-bomb-sweep-x-left bomb-sweep-x-left)
@@ -1361,7 +1368,7 @@
 	  (unless paused
 		(tick-player)
 		(vector-for-each-truthy
-		 (lambda (blt) (despawn-out-of-bound-bullet blt))
+		 despawn-out-of-bound-bullet
 		 live-bullets)
 		(prune-dead-enemies)
 		(run-tasks)

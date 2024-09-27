@@ -3,7 +3,7 @@
 (library (geom)
   (export rectangle-x rectangle-y rectangle-width rectangle-height make-rectangle
 		  (rename (make-vector2 vec2) (vector2-x v2x) (vector2-y v2y))
-		  v2+ v2* v2zero v2unit
+		  v2+ v2- v2* v2zero v2unit
 		  check-collision-circles check-collision-recs check-collision-circle-rec)
   (import (chezscheme))
 
@@ -25,6 +25,11 @@
 	(make-vector2
 	 (+ (vector2-x a) (vector2-x b))
 	 (+ (vector2-y a) (vector2-y b))))
+
+  (define (v2- a b)
+	(make-vector2
+	 (- (vector2-x a) (vector2-x b))
+	 (- (vector2-y a) (vector2-y b))))
 
   (define (v2* v scalar)
 	(make-vector2
