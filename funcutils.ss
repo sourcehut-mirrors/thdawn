@@ -16,8 +16,7 @@
 	 v))
 
   (define (for-each-indexed f l)
-	(unless (null? l)
-	  (do [(cur l (cdr cur))
-		   (i 0 (add1 i))]
-		  [(null? cur)]
-		(f i (car cur))))))
+	(do [(cur l (cdr cur))
+		 (i 0 (add1 i))]
+		[(null? cur)]
+	  (f i (car cur)))))
