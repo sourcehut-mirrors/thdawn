@@ -210,6 +210,14 @@
    (v2+ (vec2 x y) (sprite-descriptor-center-shift data))
    color))
 
+(define (draw-sprite-pro textures sprite-id dest color)
+  (define data (symbol-hashtable-ref sprite-data sprite-id #f))
+  (raylib:draw-texture-pro
+   ((sprite-descriptor-tx-accessor data) textures)
+   (sprite-descriptor-bounds data)
+   dest
+   v2zero 0.0 color))
+
 (define (draw-sprite-with-rotation textures sprite-id rotation x y color)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
   (define center-shift (sprite-descriptor-center-shift data))
@@ -320,7 +328,8 @@
    (mutable grazed)
    ;; how many frames we've been alive. If < 0, then bullet is in "prespawn"
    ;; and does not participate in gameplay, only renders a preimg sprite
-   (mutable livetime) 
+   (mutable livetime)
+   initial-livetime
    ;; extra hashtable for scratch pad. not set by default, allocate manually if needed
    (mutable extras)))
 
@@ -351,11 +360,11 @@
 			  (loop (add1 i) (add1 n))
 			  (loop (add1 i) n))))))
 
-(define (spawn-bullet type x y facing speed control-function)
+(define (spawn-bullet type x y facing speed delay control-function)
   (let ([idx (vector-index #f live-bullets)])
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
-	(let ([blt (make-bullet type 'white x y facing speed #f 0 #f)])
+	(let ([blt (make-bullet type 'white x y facing speed #f (- delay) (- delay) #f)])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda () (control-function blt))
@@ -403,6 +412,17 @@
 	  big-star-green big-star-yellow big-star-orange big-star-white)
 	 'big-star)))
 
+(define (bullet-preimg-sprite type)
+  (case type
+	([pellet-red small-star-red big-star-red] 'preimg-red)
+	([pellet-magenta small-star-magenta big-star-magenta] 'preimg-magenta)
+	([pellet-blue small-star-blue big-star-blue] 'preimg-blue)
+	([pellet-cyan small-star-cyan big-star-cyan] 'preimg-cyan)
+	([pellet-green small-star-green big-star-green] 'preimg-green)
+	([pellet-yellow small-star-yellow big-star-yellow] 'preimg-yellow)
+	([pellet-orange small-star-orange big-star-orange] 'preimg-orange)
+	(else 'preimg-white))) ;; all grays and whites
+
 (define (bullet-hit-radius type)
   (case (bullet-family type)
 	((pellet) 2.0)
@@ -414,19 +434,26 @@
   (define (each bullet)
 	(let ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
 		  [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
-		  [type (bullet-type bullet)])
-	  (when (fxnegative? (bullet-livetime bullet))
-		  (draw-sprite textures 'preimg-white render-x render-y -1)
-		  )
-	  (case (bullet-family type)
-		((pellet)
-		 (draw-sprite textures type render-x render-y #xffffffff))
-		((small-star big-star)
-		 (draw-sprite-with-rotation textures type (mod (* frames 5) 360)
-									render-x render-y #xffffffff)))
-	  (when show-hitboxes
-		(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
-							  red))))
+		  [type (bullet-type bullet)]
+		  [livetime (bullet-livetime bullet)])
+	  (if (fxnegative? livetime)
+		  ;; todo: potentially allow the bounds to be customized
+		  (let ([radius (lerp 2.0 20.0  (/ livetime (bullet-initial-livetime bullet)))])
+			(draw-sprite-pro
+			 textures (bullet-preimg-sprite type)
+			 (make-rectangle (- render-x radius) (- render-y radius)
+							 (* 2.0 radius) (* 2.0 radius))
+			 -1))
+		(let ()
+		  (case (bullet-family type)
+			((pellet)
+			 (draw-sprite textures type render-x render-y #xffffffff))
+			((small-star big-star)
+			 (draw-sprite-with-rotation textures type (mod (* frames 5) 360)
+										render-x render-y #xffffffff)))
+		  (when show-hitboxes
+			(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
+								  red))))))
   (vector-for-each-truthy each live-bullets))
 
 (define (draw-bomb textures)
@@ -861,16 +888,17 @@
 	(yield)))
 
 (define (shoot-at-player x y type speed delay)
-  (let* ([dir (v2unit (vec2 (- player-x x) (- player-y y)))]
-		[blt (spawn-bullet type x y (atan (v2y dir) (v2x dir)) speed
-						   (lambda (blt)
-							 (do [(i 0 (add1 i))]
-								 [(>= i delay)]
-							   (bullet-livetime-set! blt (add1 (bullet-livetime blt)))
-							   (yield))
-							 (raylib:play-sound (sebundle-shoot0 sounds))
-							 (linear-step-forever blt)))])
-	(bullet-livetime-set! blt (- delay))
+  (let ([dir (v2unit (vec2 (- player-x x) (- player-y y)))])
+	(spawn-bullet
+	 type x y (atan (v2y dir) (v2x dir)) speed
+	 delay
+	 (lambda (blt)
+	   (do [(i 0 (add1 i))]
+		   [(>= i delay)]
+		 (bullet-livetime-set! blt (add1 (bullet-livetime blt)))
+		 (yield))
+	   (raylib:play-sound (sebundle-shoot0 sounds))
+	   (linear-step-forever blt)))
 	))
 
 (define (test-fairy-control enm)
@@ -886,7 +914,9 @@
 	  (values nx ny)))
   (let loop ()
 	(define-values (x y) (pick-next-position))
-	(shoot-at-player (enm-x enm) (enm-y enm) 'pellet-white 2.0 5)
+	(shoot-at-player (enm-x enm) (enm-y enm)
+					 (if (< (random 1.0) 0.5) 'big-star-orange 'pellet-white)
+					 2.0 5)
 	(ease-cubic-to x y 90 enm)
 	(loop))
   )
@@ -1379,7 +1409,10 @@
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
 	(raylib:play-music-stream ojamajo-carnival)
+	;; clear these just in case they were left over from previous repl session
 	(set! iframes 180)
+	(set! frames 0)
+	(set! paused #f)
 	(do [] [(raylib:window-should-close)]
 	  (handle-input)
 	  (raylib:update-music-stream ojamajo-carnival)
