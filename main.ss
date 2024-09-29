@@ -173,6 +173,12 @@
   (make-vertical-group
    'preimg basic-colors
    txbundle-bullet1 80 0 32 32 shift16)
+  (make-vertical-group
+   'butterfly basic-colors
+   txbundle-bullet1 112 0 32 32 shift16)
+  (make-vertical-group
+   'ellipse basic-colors
+   txbundle-bullet1 224 0 32 32 shift16)
 
   ;; enemies
   (make 'red-fairy txbundle-enemy1 0 384 32 32 shift16)
@@ -401,33 +407,53 @@
 
 (define (bullet-family type)
   (case type
-	((pellet-white pellet-gray pellet-orange pellet-yellow
-	  pellet-green pellet-cyan pellet-blue pellet-magenta pellet-red)
+	([pellet-white pellet-gray pellet-orange pellet-yellow
+	  pellet-green pellet-cyan pellet-blue pellet-magenta pellet-red]
 	 'pellet)
-	((small-star-red small-star-magenta small-star-blue small-star-cyan
+	([small-star-red small-star-magenta small-star-blue small-star-cyan
 	  small-star-green small-star-yellow small-star-orange
-	  small-star-white small-star-black)
+	  small-star-white small-star-black]
 	 'small-star)
-	((big-star-red big-star-magenta big-star-blue big-star-cyan
-	  big-star-green big-star-yellow big-star-orange big-star-white)
-	 'big-star)))
+	([big-star-red big-star-magenta big-star-blue big-star-cyan
+	  big-star-green big-star-yellow big-star-orange big-star-white]
+	 'big-star)
+	([butterfly-red butterfly-magenta butterfly-blue butterfly-cyan
+	  butterfly-green butterfly-yellow butterfly-orange butterfly-white]
+	 'butterfly)
+	([ellipse-red ellipse-magenta ellipse-blue ellipse-cyan
+	  ellipse-green ellipse-yellow ellipse-orange ellipse-white]
+	 'ellipse)))
 
 (define (bullet-preimg-sprite type)
   (case type
-	([pellet-red small-star-red big-star-red] 'preimg-red)
-	([pellet-magenta small-star-magenta big-star-magenta] 'preimg-magenta)
-	([pellet-blue small-star-blue big-star-blue] 'preimg-blue)
-	([pellet-cyan small-star-cyan big-star-cyan] 'preimg-cyan)
-	([pellet-green small-star-green big-star-green] 'preimg-green)
-	([pellet-yellow small-star-yellow big-star-yellow] 'preimg-yellow)
-	([pellet-orange small-star-orange big-star-orange] 'preimg-orange)
+	([pellet-red small-star-red big-star-red butterfly-red ellipse-red]
+	 'preimg-red)
+	([pellet-magenta small-star-magenta big-star-magenta butterfly-magenta
+					 ellipse-magenta]
+	 'preimg-magenta)
+	([pellet-blue small-star-blue big-star-blue butterfly-blue
+				  ellipse-blue]
+	 'preimg-blue)
+	([pellet-cyan small-star-cyan big-star-cyan butterfly-cyan
+				  ellipse-cyan]
+	 'preimg-cyan)
+	([pellet-green small-star-green big-star-green butterfly-green
+				   ellipse-green]
+	 'preimg-green)
+	([pellet-yellow small-star-yellow big-star-yellow butterfly-yellow
+					ellipse-yellow]
+	 'preimg-yellow)
+	([pellet-orange small-star-orange big-star-orange butterfly-orange
+					ellipse-orange]
+	 'preimg-orange)
 	(else 'preimg-white))) ;; all grays and whites
 
 (define (bullet-hit-radius type)
   (case (bullet-family type)
-	((pellet) 2.0)
-	((small-star) 3.7)
-	((big-star) 5.5)
+	([pellet] 2.0)
+	([small-star butterfly] 3.7)
+	([big-star] 5.5)
+	([ellipse] 4.0)
 	(else 0.0)))
 
 (define (draw-bullets textures)
@@ -446,9 +472,16 @@
 			 -1))
 		(let ()
 		  (case (bullet-family type)
-			((pellet)
+			;; basic
+			([pellet]
 			 (draw-sprite textures type render-x render-y #xffffffff))
-			((small-star big-star)
+			;; aimed in direction of movement
+			([butterfly ellipse]
+			 (draw-sprite-with-rotation textures type
+										(* 180 (/ 1 pi) (bullet-facing bullet))
+										render-x render-y -1))
+			;; spinny
+			([small-star big-star]
 			 (draw-sprite-with-rotation textures type (mod (* frames 5) 360)
 										render-x render-y #xffffffff)))
 		  (when show-hitboxes
@@ -915,7 +948,7 @@
   (let loop ()
 	(define-values (x y) (pick-next-position))
 	(shoot-at-player (enm-x enm) (enm-y enm)
-					 (if (< (random 1.0) 0.5) 'big-star-orange 'pellet-white)
+					 (if (< (random 1.0) 0.5) 'ellipse-red 'ellipse-white)
 					 2.0 5)
 	(ease-cubic-to x y 90 enm)
 	(loop))
