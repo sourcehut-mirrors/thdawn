@@ -1104,7 +1104,8 @@
 			(raylib:pause-music-stream ojamajo-carnival))
 		  (raylib:resume-music-stream ojamajo-carnival))]
 	 [(fx= k key-x)
-	  (when (and (zero? bombing)
+	  (when (and (not paused)
+				 (zero? bombing)
 				 (>= bomb-stock 1))
 		(set! death-timer 0)
 		(set! bombing +bombing-max+)
@@ -1136,14 +1137,6 @@
 	  ;; 		 (spawn-bullet 'big-star-white 0.0 100.0 ang 2 linear-step-forever))
 	  ;; 	   (yield)))
 	  ;;  (constantly #t))
-	  ]
-	 [(fx= k key-y) #f]
-	 [(= k 71)
-	  (enable-object-counts #t)
-	  (collect (collect-maximum-generation))
-	  (display (object-counts))
-	  (newline)
-	  (enable-object-counts #f)
 	  ]
 	 )))
 
