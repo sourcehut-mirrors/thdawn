@@ -1045,12 +1045,13 @@
 
 (define (handle-input)
   ;; level triggered stuff
-  (set! focused-immediate (raylib:is-key-down key-left-shift))
-  (if focused-immediate
-	  (when (fx< focus-frames +max-focus-frames+)
-		(set! focus-frames (fx1+ focus-frames)))
-	  (when (fx> focus-frames 0)
-		(set! focus-frames (fx1- focus-frames))))
+  (when (not paused)
+	(set! focused-immediate (raylib:is-key-down key-left-shift))
+	(if focused-immediate
+		(when (fx< focus-frames +max-focus-frames+)
+		  (set! focus-frames (fx1+ focus-frames)))
+		(when (fx> focus-frames 0)
+		  (set! focus-frames (fx1- focus-frames)))))
   (when (and (not paused) (zero? respawning))
 	(when (zero? death-timer)
 	  ;; don't allow moving between hit/death
