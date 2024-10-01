@@ -467,27 +467,6 @@
   (vector-for-each-truthy each live-bullets))
 
 (define (draw-bomb textures)
-  (when show-hitboxes
-	(draw-line-round (+ +playfield-render-offset-x+ bomb-sweep-x-left)
-					 +playfield-render-offset-y+
-					 (+ +playfield-render-offset-x+ bomb-sweep-x-left)
-					 (+ +playfield-render-offset-y+ +playfield-max-y+)
-					 -1)
-	(draw-line-round (+ +playfield-render-offset-x+ bomb-sweep-x-right)
-					 +playfield-render-offset-y+
-					 (+ +playfield-render-offset-x+ bomb-sweep-x-right)
-					 (+ +playfield-render-offset-y+ +playfield-max-y+)
-					 -1)
-	(draw-line-round (+ +playfield-render-offset-x+ +playfield-min-x+)
-					 (+ +playfield-render-offset-y+ bomb-sweep-y-up)
-					 (+ +playfield-render-offset-x+ +playfield-max-x+)
-					 (+ +playfield-render-offset-y+ bomb-sweep-y-up)
-					 -1)
-	(draw-line-round (+ +playfield-render-offset-x+ +playfield-min-x+)
-					 (+ +playfield-render-offset-y+ bomb-sweep-y-down)
-					 (+ +playfield-render-offset-x+ +playfield-max-x+)
-					 (+ +playfield-render-offset-y+ bomb-sweep-y-down)
-					 -1))
   (raylib:draw-rectangle-gradient-h
    (exact (round (+ +playfield-render-offset-x+ (- bomb-sweep-x-left 290))))
    (+ +playfield-render-offset-y+ +playfield-min-y+)
