@@ -344,27 +344,6 @@
 
 (define live-bullets (make-vector 4096 #f))
 
-(define (vector-index elem v)
-  (define len (vector-length v))
-  (let loop ([i 0])
-	(if (fx>= i len)
-		#f
-		(let ([elemi (vector-ref v i)])
-		  (if (eq? elem elemi)
-			  i
-			  (loop (add1 i)))))))
-
-(define (vector-popcnt v)
-  (define len (vector-length v)) 
-  (let loop ([i 0]
-			 [n 0])
-	(if (fx>= i len)
-		n
-		(let ([elemi (vector-ref v i)])
-		  (if elemi
-			  (loop (add1 i) (add1 n))
-			  (loop (add1 i) n))))))
-
 (define (spawn-bullet type x y facing speed delay control-function)
   (let ([idx (vector-index #f live-bullets)])
 	(unless idx
