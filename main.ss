@@ -148,25 +148,24 @@
 						  (symbol->string elem))))
 	   (make type accessor x (+ y (* i height)) width height shift))
 	 elems))
+  ;; skip double the space between each member of the group
+  (define (make-vertical-group-skip prefix elems accessor x y width height shift)
+	(for-each-indexed
+	 (lambda (i elem)
+	   (define type
+		 (string->symbol (string-append
+						  (symbol->string prefix)
+						  "-"
+						  (symbol->string elem))))
+	   (make type accessor x (+ y (* 2 i height)) width height shift))
+	 elems))
   ;; bullets
-  (make 'pellet-red txbundle-bullet2 176 0 16 16 shift8)
-  (make 'pellet-magenta txbundle-bullet2 176 32 16 16 shift8)
-  (make 'pellet-blue txbundle-bullet2 176 80 16 16 shift8)
-  (make 'pellet-cyan txbundle-bullet2 176 96 16 16 shift8)
-  (make 'pellet-green txbundle-bullet2 176 112 16 16 shift8)
-  (make 'pellet-yellow txbundle-bullet2 176 160 16 16 shift8)
-  (make 'pellet-orange txbundle-bullet2 176 192 16 16 shift8)
-  (make 'pellet-gray txbundle-bullet2 176 208 16 16 shift8)
-  (make 'pellet-white txbundle-bullet2 176 224 16 16 shift8)
-  (make 'small-star-red txbundle-bullet2 96 0 16 16 shift8)
-  (make 'small-star-magenta txbundle-bullet2 96 32 16 16 shift8)
-  (make 'small-star-blue txbundle-bullet2 96 64 16 16 shift8)
-  (make 'small-star-cyan txbundle-bullet2 96 96 16 16 shift8)
-  (make 'small-star-green txbundle-bullet2 96 128 16 16 shift8)
-  (make 'small-star-yellow txbundle-bullet2 96 160 16 16 shift8)
-  (make 'small-star-orange txbundle-bullet2 96 192 16 16 shift8)
-  (make 'small-star-white txbundle-bullet2 96 224 16 16 shift8)
-  (make 'small-star-black txbundle-bullet2 96 240 16 16 shift8)
+  (make-vertical-group-skip
+   'pellet basic-colors
+   txbundle-bullet2 176 0 16 16 shift8)
+  (make-vertical-group-skip
+   'small-star basic-colors
+   txbundle-bullet2 96 0 16 16 shift8)
   (make-vertical-group
    'big-star basic-colors
    txbundle-bullet2 224 0 32 32 shift16)
@@ -948,7 +947,7 @@
   (let loop ()
 	(define-values (x y) (pick-next-position))
 	(shoot-at-player (enm-x enm) (enm-y enm)
-					 (if (< (random 1.0) 0.5) 'ellipse-red 'ellipse-white)
+					 (if (< (random 1.0) 0.5) 'small-star-red 'small-star-white)
 					 2.0 5)
 	(ease-cubic-to x y 90 enm)
 	(loop))
