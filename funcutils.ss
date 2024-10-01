@@ -33,7 +33,7 @@
 				(loop (add1 i)))))))
 
   (define (vector-popcnt v)
-	(define len (vector-length v)) 
+	(define len (vector-length v))
 	(let loop ([i 0]
 			   [n 0])
 	  (if (fx>= i len)

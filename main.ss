@@ -338,6 +338,44 @@
    ;; extra hashtable for scratch pad. not set by default, allocate manually if needed
    (mutable extras)))
 
+(define-record-type blttype
+  (fields
+   id
+   family
+   preimg-sprite
+   hit-radius))
+
+(define bullet-types
+  (let* ([ret (make-hashtable symbol-hash eq?)]
+		 [basic-colors '(red magenta blue cyan green yellow orange white)]
+		 [preimg-sprite-mapping
+		  (map (lambda (color)
+				 (cons color (string->symbol (string-append "preimg-"
+															(symbol->string color)))))
+			   basic-colors)]
+		 [make-family
+		  (lambda (family colors hit-radius)
+			(for-each (lambda (color)
+						(define type
+						  (string->symbol (string-append
+										   (symbol->string family)
+										   "-"
+										   (symbol->string color))))
+						(define preimg-sprite
+						  (let ([entry (assq color preimg-sprite-mapping)])
+							(if entry (cdr entry) 'preimg-white)))
+						(symbol-hashtable-set!
+						 ret
+						 type
+						 (make-blttype type family preimg-sprite hit-radius)))
+					  colors))])
+	(make-family 'small-star basic-colors 3.7)
+	(make-family 'big-star basic-colors 5.5)
+	(make-family 'pellet basic-colors 2.0)
+	(make-family 'butterfly basic-colors 3.7)
+	(make-family 'ellipse basic-colors 4.0)
+	ret))
+
 (define (bullet-active? blt)
   ;; whether the bullet participates in gameplay
   (fxnonnegative? (bullet-livetime blt)))
@@ -384,55 +422,16 @@
 	  (delete-bullet bullet))))
 
 (define (bullet-family type)
-  (case type
-	([pellet-white pellet-gray pellet-orange pellet-yellow
-	  pellet-green pellet-cyan pellet-blue pellet-magenta pellet-red]
-	 'pellet)
-	([small-star-red small-star-magenta small-star-blue small-star-cyan
-	  small-star-green small-star-yellow small-star-orange
-	  small-star-white small-star-black]
-	 'small-star)
-	([big-star-red big-star-magenta big-star-blue big-star-cyan
-	  big-star-green big-star-yellow big-star-orange big-star-white]
-	 'big-star)
-	([butterfly-red butterfly-magenta butterfly-blue butterfly-cyan
-	  butterfly-green butterfly-yellow butterfly-orange butterfly-white]
-	 'butterfly)
-	([ellipse-red ellipse-magenta ellipse-blue ellipse-cyan
-	  ellipse-green ellipse-yellow ellipse-orange ellipse-white]
-	 'ellipse)))
+  (define bt (symbol-hashtable-ref bullet-types type #f))
+  (blttype-family bt))
 
 (define (bullet-preimg-sprite type)
-  (case type
-	([pellet-red small-star-red big-star-red butterfly-red ellipse-red]
-	 'preimg-red)
-	([pellet-magenta small-star-magenta big-star-magenta butterfly-magenta
-					 ellipse-magenta]
-	 'preimg-magenta)
-	([pellet-blue small-star-blue big-star-blue butterfly-blue
-				  ellipse-blue]
-	 'preimg-blue)
-	([pellet-cyan small-star-cyan big-star-cyan butterfly-cyan
-				  ellipse-cyan]
-	 'preimg-cyan)
-	([pellet-green small-star-green big-star-green butterfly-green
-				   ellipse-green]
-	 'preimg-green)
-	([pellet-yellow small-star-yellow big-star-yellow butterfly-yellow
-					ellipse-yellow]
-	 'preimg-yellow)
-	([pellet-orange small-star-orange big-star-orange butterfly-orange
-					ellipse-orange]
-	 'preimg-orange)
-	(else 'preimg-white))) ;; all grays and whites
+  (define bt (symbol-hashtable-ref bullet-types type #f))
+  (blttype-preimg-sprite bt))
 
 (define (bullet-hit-radius type)
-  (case (bullet-family type)
-	([pellet] 2.0)
-	([small-star butterfly] 3.7)
-	([big-star] 5.5)
-	([ellipse] 4.0)
-	(else 0.0)))
+  (define bt (symbol-hashtable-ref bullet-types type #f))
+  (blttype-hit-radius bt))
 
 (define (draw-bullets textures)
   (define (each bullet)
@@ -925,12 +924,14 @@
 	  (values nx ny)))
   (let loop ()
 	(define-values (x y) (pick-next-position))
+	(define type (vector-ref
+				  (hashtable-keys bullet-types)
+				  (random (hashtable-size bullet-types))))
 	(shoot-at-player (enm-x enm) (enm-y enm)
-					 (if (< (random 1.0) 0.5) 'small-star-red 'small-star-white)
+					 type
 					 2.0 5)
 	(ease-cubic-to x y 90 enm)
-	(loop))
-  )
+	(loop)))
 
 (define (bomb-sweep-x-left-hitbox)
   (values (- bomb-sweep-x-left 40.0)
