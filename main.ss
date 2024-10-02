@@ -178,6 +178,15 @@
   (make-vertical-group
    'ellipse basic-colors
    txbundle-bullet1 224 0 32 32 shift16)
+  (make-vertical-group-skip
+   'arrow basic-colors
+   txbundle-bullet1 0 0 16 16 shift8)
+  (make-vertical-group-skip
+   'amulet basic-colors
+   txbundle-bullet1 152 0 16 16 shift8)
+  (make-vertical-group
+   'small-ball basic-colors
+   txbundle-bullet1 176 0 32 32 shift16)
 
   ;; enemies
   (make 'red-fairy txbundle-enemy1 0 384 32 32 shift16)
@@ -374,6 +383,9 @@
 	(make-family 'pellet basic-colors 2.0)
 	(make-family 'butterfly basic-colors 3.7)
 	(make-family 'ellipse basic-colors 4.0)
+	(make-family 'arrow basic-colors 3.0)
+	(make-family 'amulet basic-colors 3.1)
+	(make-family 'small-ball basic-colors 3.0)
 	ret))
 
 (define (bullet-active? blt)
@@ -450,10 +462,10 @@
 		(let ()
 		  (case (bullet-family type)
 			;; basic
-			([pellet]
+			([pellet small-ball]
 			 (draw-sprite textures type render-x render-y #xffffffff))
 			;; aimed in direction of movement
-			([butterfly ellipse]
+			([butterfly ellipse arrow amulet]
 			 (draw-sprite-with-rotation textures type
 										(* 180 (/ 1 pi) (bullet-facing bullet))
 										render-x render-y -1))
