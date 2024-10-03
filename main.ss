@@ -83,6 +83,7 @@
    bullet1 bullet2 bullet3 bullet4 bullet5 bullet6
    bg1 bg2 bg3 bg4
    bulletcancel hint
+   bullet-ball-huge
    ))
 (define (load-textures)
   (define (ltex file)
@@ -96,7 +97,8 @@
    (ltex "bullet4.png") (ltex "bullet5.png") (ltex "bullet6.png")
    (ltex "background_1.png") (ltex "background_2.png")
    (ltex "background_3.png") (ltex "background_4.png")
-   (ltex "etbreak.png") (ltex "hint.png")))
+   (ltex "etbreak.png") (ltex "hint.png")
+   (ltex "bullet_ball_huge.png")))
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
   (define num-textures (vector-length (record-type-field-names rtd)))
@@ -129,6 +131,7 @@
   (define ret (make-hashtable symbol-hash eq?))
   (define shift8 (vec2 -8.0 -8.0))
   (define shift16 (vec2 -16.0 -16.0))
+  (define shift32 (vec2 -32.0 -32.0))
   (define basic-colors '(red magenta blue cyan green yellow orange white))
   (define (make type accessor x y width height shift)
 	(symbol-hashtable-set!
@@ -187,6 +190,21 @@
   (make-vertical-group
    'small-ball basic-colors
    txbundle-bullet1 176 0 32 32 shift16)
+  (make-vertical-group
+   'medium-ball basic-colors
+   txbundle-bullet2 192 0 32 32 shift16)
+  (make-vertical-group
+   'ice-shard basic-colors
+   txbundle-bullet2 128 0 16 16 shift8)
+
+  (make 'bubble-red txbundle-bullet-ball-huge 0 0 64 64 shift32)
+  (make 'bubble-green txbundle-bullet-ball-huge 0 64 64 64 shift32)
+  (make 'bubble-magenta txbundle-bullet-ball-huge 64 0 64 64 shift32)
+  (make 'bubble-yellow txbundle-bullet-ball-huge 64 64 64 64 shift32)
+  (make 'bubble-blue txbundle-bullet-ball-huge 128 0 64 64 shift32)
+  (make 'bubble-orange txbundle-bullet-ball-huge 128 64 64 64 shift32)
+  (make 'bubble-cyan txbundle-bullet-ball-huge 192 0 64 64 shift32)
+  (make 'bubble-white txbundle-bullet-ball-huge 192 64 64 64 shift32)  
 
   ;; enemies
   (make 'red-fairy txbundle-enemy1 0 384 32 32 shift16)
@@ -386,6 +404,9 @@
 	(make-family 'arrow basic-colors 3.0)
 	(make-family 'amulet basic-colors 3.1)
 	(make-family 'small-ball basic-colors 3.0)
+	(make-family 'medium-ball basic-colors 9.0)
+	(make-family 'ice-shard basic-colors 2.5)
+	(make-family 'bubble basic-colors 18.0)
 	ret))
 
 (define (bullet-active? blt)
@@ -462,17 +483,20 @@
 		(let ()
 		  (case (bullet-family type)
 			;; basic
-			([pellet small-ball]
+			([pellet small-ball medium-ball]
 			 (draw-sprite textures type render-x render-y #xffffffff))
 			;; aimed in direction of movement
-			([butterfly ellipse arrow amulet]
+			([butterfly ellipse arrow amulet ice-shard]
 			 (draw-sprite-with-rotation textures type
 										(* 180 (/ 1 pi) (bullet-facing bullet))
 										render-x render-y -1))
 			;; spinny
 			([small-star big-star]
 			 (draw-sprite-with-rotation textures type (mod (* frames 5) 360)
-										render-x render-y #xffffffff)))
+										render-x render-y -1))
+			([bubble]
+			 (draw-sprite-with-rotation textures type (mod (* frames 8) 360)
+										render-x render-y -1)))
 		  (when show-hitboxes
 			(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
 								  red))))))
