@@ -286,7 +286,7 @@
 (define +playfield-width+ (- +playfield-max-x+ +playfield-min-x+))
 (define +playfield-height+ (- +playfield-max-y+ +playfield-min-y+))
 (define +poc-y+ 120)
-(define +oob-bullet-despawn-fuzz+ 10)
+(define +oob-bullet-despawn-fuzz+ 80)
 
 ;; Number of frames the current stage has been running. Does not increment when paused
 (define frames 0)
