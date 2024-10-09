@@ -1,7 +1,24 @@
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
-		  vector-index vector-popcnt)
+		  vector-index vector-popcnt -> ->>)
   (import (chezscheme))
+
+  ;; threading macros from clojure
+  (define-syntax ->
+	(syntax-rules ()
+	  [(_ x) x]
+	  [(_ x (f fargs ...) rst ...)
+	   (-> (f x fargs ...) rst ...)]
+	  [(_ x f rst ...)
+	   (-> (f x) rst ...)]))
+
+  (define-syntax ->>
+	(syntax-rules ()
+	  [(_ x) x]
+	  [(_ x (f fargs ...) rst ...)
+	   (->> (f fargs ... x) rst ...)]
+	  [(_ x f rst ...)
+	   (->> (f x) rst ...)]))
   
   (define constantly
 	;; some common stuff to avoid gc spamming
