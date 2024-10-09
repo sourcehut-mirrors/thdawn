@@ -754,6 +754,37 @@
 	  ;; tolerate killing already-removed/dead
 	  (vector-set! live-misc-ents idx #f))))
 
+(define (add-bombs amt)
+  (define old-stock bomb-stock)
+  (define limit 8)
+  (define new-stock (+ bomb-stock amt))
+  (define amt-over-limit (- new-stock limit))
+  (if (positive? amt-over-limit)
+	  (let ()
+		(set! bomb-stock limit)
+		;; nb: must be divisible by 3
+		(set! item-value (+ item-value (* 6000 amt-over-limit))))
+	  (set! bomb-stock new-stock))
+  (when (or (>= (- bomb-stock old-stock) 1)
+			(and (not (= bomb-stock old-stock))
+				 (integer? bomb-stock)))
+	(raylib:play-sound (sebundle-spellcapture sounds))))
+
+(define (add-lives amt)
+  (define old-stock life-stock)
+  (define limit 8)
+  (define new-stock (+ life-stock amt))
+  (define amt-over-limit (- new-stock limit))
+  (if (positive? amt-over-limit)
+	  (let ()
+		(set! life-stock limit)
+		(add-bombs amt-over-limit))
+	  (set! life-stock new-stock))
+  (when (or (>= (- life-stock old-stock) 1)
+			(and (not (= life-stock old-stock))
+				 (integer? life-stock)))
+	(raylib:play-sound (sebundle-extend sounds))))
+
 (define (tick-misc-ents)
   (define (each ent)
 	(define type (miscent-type ent))
@@ -825,25 +856,18 @@
 			  player-x player-y hit-radius
 			  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
 			  16 16)
-		 ;; todo life and bomb limits
 		 (case type
 		   ([point]
 			(raylib:play-sound (sebundle-item sounds))
 			(set! current-score (+ current-score item-value)))
 		   ([life-frag]
-			(set! life-stock (+ 1/3 life-stock))
-			(when (integer? life-stock)
-			  (raylib:play-sound (sebundle-extend sounds))))
+			(add-lives 1/3))
 		   ([life]
-			(set! life-stock (add1 life-stock))
-			(raylib:play-sound (sebundle-extend sounds)))
+			(add-lives 1))
 		   ([bomb-frag]
-			(set! bomb-stock (+ 1/3 bomb-stock))
-			(when (integer? bomb-stock)
-			  (raylib:play-sound (sebundle-spellcapture sounds))))
+			(add-bombs 1/3))
 		   ([bomb]
-			(set! bomb-stock (add1 bomb-stock))
-			(raylib:play-sound (sebundle-spellcapture sounds)))
+			(add-bombs 1))
 		   ([small-piv]
 			(raylib:play-sound (sebundle-item sounds))
 			(set! item-value (+ 50 item-value))
@@ -1121,8 +1145,11 @@
 		(set! bomb-sweep-y-up (- player-y 50.0))
 		(set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
 	 [(fx= k key-space)
-	  
-	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control '((bomb-frag . 1)))
+	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control
+				   (if (< (random 1.0) 0.5)
+					   '((life-frag . 1))
+					   '((life . 1))
+					   ))
 	  ;; (spawn-task
 	  ;;  "spawner"
 	  ;;  (lambda ()
