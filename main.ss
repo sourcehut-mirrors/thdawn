@@ -765,9 +765,7 @@
 		;; nb: must be divisible by 3
 		(set! item-value (+ item-value (* 6000 amt-over-limit))))
 	  (set! bomb-stock new-stock))
-  (when (or (>= (- bomb-stock old-stock) 1)
-			(and (not (= bomb-stock old-stock))
-				 (integer? bomb-stock)))
+  (when (not (= (floor old-stock) (floor bomb-stock)))
 	(raylib:play-sound (sebundle-spellcapture sounds))))
 
 (define (add-lives amt)
@@ -780,9 +778,7 @@
 		(set! life-stock limit)
 		(add-bombs amt-over-limit))
 	  (set! life-stock new-stock))
-  (when (or (>= (- life-stock old-stock) 1)
-			(and (not (= life-stock old-stock))
-				 (integer? life-stock)))
+  (when (not (= (floor old-stock) (floor life-stock)))
 	(raylib:play-sound (sebundle-extend sounds))))
 
 (define (tick-misc-ents)
