@@ -1230,17 +1230,6 @@
 	  textures 'option (mod (* frames 4) 360)
 	  render-x render-y -1))
    option-xs option-ys)
-  
-  ;; focus sigil
-  (let ([focus-sigil-strength (/ focus-frames +max-focus-frames+)])
-	(when (> focus-sigil-strength 0)
-	  (raylib:push-matrix)
-	  (raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
-	  (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
-	  (draw-sprite textures 'focus-sigil
-				   0.0 0.0 ;; manually translated to final position above
-				   (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))
-	  (raylib:pop-matrix)))
 
   (when show-hitboxes
 	(raylib:draw-circle-v render-player-x render-player-y graze-radius
@@ -1422,6 +1411,24 @@
   (draw-misc-ents textures)
   (draw-particles textures)
   (draw-bullets textures)
+
+  ;; focus sigil. Done here after the bullets because we want the player hitbox
+  ;; to render on top of big bullets like bubbles, and ryannlib has the hitbox and
+  ;; focus sigil combined in one texture. We should consider separating the two and
+  ;; drawing them separately, because having the sigil show up on top of bullets too
+  ;; is kinda weird.
+  (let-values ([(render-player-x render-player-y)
+				(get-player-render-pos)]
+			   [(focus-sigil-strength) (fx/ focus-frames +max-focus-frames+)])
+	(when (> focus-sigil-strength 0)
+	  (raylib:push-matrix)
+	  (raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
+	  (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
+	  (draw-sprite textures 'focus-sigil
+				   0.0 0.0 ;; manually translated to final position above
+				   (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))
+	  (raylib:pop-matrix)))
+  
   (when (positive? bombing)
 	(draw-bomb textures))
 

@@ -9,6 +9,7 @@ Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 
 ## Immediate TODOs
+* implement lasers
 * implement enemy dying effect
 * implement graze particle
 * implement first chapter of stage to flesh out API's needed
