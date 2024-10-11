@@ -370,6 +370,7 @@
    id
    family
    preimg-sprite
+   preimg-begin-size preimg-end-size
    hit-radius))
 
 (define bullet-types
@@ -394,7 +395,9 @@
 						(symbol-hashtable-set!
 						 ret
 						 type
-						 (make-blttype type family preimg-sprite hit-radius)))
+						 (make-blttype type family preimg-sprite
+									   20.0 2.0
+									   hit-radius)))
 					  colors))])
 	(make-family 'small-star basic-colors 3.7)
 	(make-family 'big-star basic-colors 5.5)
@@ -406,7 +409,16 @@
 	(make-family 'small-ball basic-colors 3.0)
 	(make-family 'medium-ball basic-colors 9.0)
 	(make-family 'ice-shard basic-colors 2.5)
-	(make-family 'bubble basic-colors 18.0)
+	(for-each (lambda (color)
+				(define type
+				  (string->symbol (string-append
+								   "bubble-"
+								   (symbol->string color))))
+				(symbol-hashtable-set!
+				 ret
+				 type
+				 (make-blttype type 'bubble type 2.0 32.0 18.0)))
+			  basic-colors)
 	ret))
 
 (define (bullet-active? blt)
@@ -458,25 +470,25 @@
   (define bt (symbol-hashtable-ref bullet-types type #f))
   (blttype-family bt))
 
-(define (bullet-preimg-sprite type)
-  (define bt (symbol-hashtable-ref bullet-types type #f))
-  (blttype-preimg-sprite bt))
-
 (define (bullet-hit-radius type)
   (define bt (symbol-hashtable-ref bullet-types type #f))
   (blttype-hit-radius bt))
 
 (define (draw-bullets textures)
   (define (each bullet)
-	(let ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
-		  [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
-		  [type (bullet-type bullet)]
-		  [livetime (bullet-livetime bullet)])
+	(let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
+		   [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
+		   [type (bullet-type bullet)]
+		   [bt (symbol-hashtable-ref bullet-types type #f)]
+		   [livetime (bullet-livetime bullet)])
 	  (if (fxnegative? livetime)
-		  ;; todo: potentially allow the bounds to be customized
-		  (let ([radius (lerp 2.0 20.0  (/ livetime (bullet-initial-livetime bullet)))])
+		  (let* ([preimg-begin (blttype-preimg-begin-size bt)]
+				 [preimg-end (blttype-preimg-end-size bt)]
+				 ;; reversed because the factor is negative
+				 [radius (lerp preimg-end preimg-begin
+							   (/ livetime (bullet-initial-livetime bullet)))])
 			(draw-sprite-pro
-			 textures (bullet-preimg-sprite type)
+			 textures (blttype-preimg-sprite bt)
 			 (make-rectangle (- render-x radius) (- render-y radius)
 							 (* 2.0 radius) (* 2.0 radius))
 			 -1))
