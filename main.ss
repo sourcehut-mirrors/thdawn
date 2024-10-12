@@ -352,7 +352,6 @@
 (define-record-type bullet
   (fields
    type
-   color
    (mutable x)
    (mutable y)
    (mutable facing) ;; radians
@@ -362,7 +361,7 @@
    ;; and does not participate in gameplay, only renders a preimg sprite
    (mutable livetime)
    initial-livetime
-   ;; extra hashtable for scratch pad. not set by default, allocate manually if needed
+   ;; alist of extra scratch pad data
    (mutable extras)))
 
 (define-record-type blttype
@@ -431,7 +430,7 @@
   (let ([idx (vector-index #f live-bullets)])
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
-	(let ([blt (make-bullet type 'white x y facing speed #f (- delay) (- delay) #f)])
+	(let ([blt (make-bullet type x y facing speed #f (- delay) (- delay) '())])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda () (control-function blt))
