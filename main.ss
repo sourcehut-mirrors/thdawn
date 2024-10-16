@@ -1418,7 +1418,7 @@
   ;; is kinda weird.
   (let-values ([(render-player-x render-player-y)
 				(get-player-render-pos)]
-			   [(focus-sigil-strength) (fx/ focus-frames +max-focus-frames+)])
+			   [(focus-sigil-strength) (/ focus-frames +max-focus-frames+)])
 	(when (> focus-sigil-strength 0)
 	  (raylib:push-matrix)
 	  (raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are

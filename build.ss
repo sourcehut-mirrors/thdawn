@@ -5,6 +5,8 @@
 (compile-imported-libraries #t)
 ;; Generate wpo (chez term for LTO, mostly) files
 (generate-wpo-files #t)
+(when (getenv "PROD")
+  (optimize-level 3))
 
 ;; Do the main compilation
 (define libs-used (compile-program "main.ss"))
