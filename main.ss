@@ -17,6 +17,9 @@
 (define key-z 90)
 (define pi 3.141592)
 
+(define (torad x)
+  (* (/ pi 180.0) x))
+
 (define (draw-line-round sx sy ex ey rgba)
   (define rsx (exact (round sx)))
   (define rsy (exact (round sy)))
@@ -416,7 +419,7 @@
 				(symbol-hashtable-set!
 				 ret
 				 type
-				 (make-blttype type 'bubble type 2.0 32.0 18.0)))
+				 (make-blttype type 'bubble type 2.0 32.0 16.0)))
 			  basic-colors)
 	ret))
 
@@ -542,6 +545,54 @@
    365
    #xdc143cbe
    #xdc143c00))
+
+(define-record-type fan-builder
+  (fields
+   (mutable rows)
+   (mutable row-width)
+   (mutable min-speed)
+   (mutable max-speed)
+   (mutable global-angle)
+   (mutable local-angle)
+   (mutable aimed)))
+(define (fb)
+  (make-fan-builder 0 0 0.0 0.0 0.0 0.0 'at))
+(define (fbcounts fb rows row-width)
+  (assert (and (positive? rows) (positive? row-width)))
+  (fan-builder-rows-set! fb rows)
+  (fan-builder-row-width-set! fb row-width)
+  fb)
+(define (fbspeed fb min max)
+  (fan-builder-min-speed-set! fb min)
+  (fan-builder-max-speed-set! fb max)
+  fb)
+(define (fbang fb global local)
+  (fan-builder-global-angle-set! fb global)
+  (fan-builder-local-angle-set! fb local)
+  fb)
+(define (fbshoot fb type x y delay control-function)
+  (define rows (fan-builder-rows fb))
+  (define row-width (fan-builder-row-width fb))
+  (define min-speed (fan-builder-min-speed fb))
+  (define max-speed (fan-builder-max-speed fb))
+  (define base-angle
+	(+ (fan-builder-global-angle fb)
+	   (atan (- player-y y) (- player-x x))))
+  (define local-angle (fan-builder-local-angle fb))
+  (define starting-angle-offset
+	(if (odd? row-width)
+		(- (* (quotient row-width 2)
+			  local-angle))
+		(- (+ (/ local-angle 2.0)
+			  (* (sub1 (/ row-width 2))
+				 local-angle)))))
+  (do [(row 0 (add1 row))] [(>= row rows)]
+	(let ([speed (lerp min-speed max-speed (/ row rows))])
+	  (do [(col 0 (add1 col))] [(>= col row-width)]
+		(spawn-bullet type x y
+					  (+ base-angle starting-angle-offset
+						 (* col (fan-builder-local-angle fb)))
+					  speed delay control-function)))))
 
 (define-record-type enm
   (fields
@@ -968,14 +1019,26 @@
 		   (nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+))
 		   (ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)))
 	  (values nx ny)))
+  (define b (-> (fb)
+				(fbcounts 4 10)
+				(fbspeed 1.0 3.0)
+				(fbang 0.0 (torad 6.0))))
   (let loop ()
 	(define-values (x y) (pick-next-position))
 	(define type (vector-ref
 				  (hashtable-keys bullet-types)
 				  (random (hashtable-size bullet-types))))
-	(shoot-at-player (enm-x enm) (enm-y enm)
-					 type
-					 2.0 5)
+	(fbshoot b type (enm-x enm) (enm-y enm) 5
+			 (lambda (blt)
+			   (do [(i 0 (add1 i))]
+				   [(>= i 5)]
+				 (bullet-livetime-set! blt (add1 (bullet-livetime blt)))
+				 (yield))
+			   (raylib:play-sound (sebundle-shoot0 sounds))
+			   (linear-step-forever blt)))
+	;; (shoot-at-player (enm-x enm) (enm-y enm)
+	;; 				 type
+	;; 				 2.0 5)
 	(ease-cubic-to x y 90 enm)
 	(loop)))
 
