@@ -10,6 +10,8 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 
 ## Immediate TODOs
 * implement ECL ring aim modes
+* implement explicit gameplay rng
+* fix stretching artifacts in the background
 * design multi-task abstractions so that an enemy can e.g. move and shoot independently
 * fix z-ordering of bullet rendering, currently arbitrary based on bullet array order
   * needs to be later bullets always on top
@@ -26,6 +28,9 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 * player and boss portraits
 * implementing directional moving sprites for the player
 * replays
+* make sure we're doing proper alpha blending (premultiplication and such)
+* find a way to avoid having to add render-offset-x and y everywhere.
+  * for example, draw to a separate framebuffer for gameplay area then move that whole thing
 * lasers
 * pan sfx based on horizontal position
 * investigate if we want to adopt a system similar to the official Touhou games'
