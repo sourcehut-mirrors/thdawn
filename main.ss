@@ -570,7 +570,7 @@
   (fan-builder-global-angle-set! fb global)
   (fan-builder-local-angle-set! fb local)
   fb)
-(define (fbshoot fb type x y delay control-function)
+(define (fbshoot fb x y consume)
   (define rows (fan-builder-rows fb))
   (define row-width (fan-builder-row-width fb))
   (define min-speed (fan-builder-min-speed fb))
@@ -589,10 +589,9 @@
   (do [(row 0 (add1 row))] [(>= row rows)]
 	(let ([speed (lerp min-speed max-speed (/ row rows))])
 	  (do [(col 0 (add1 col))] [(>= col row-width)]
-		(spawn-bullet type x y
-					  (+ base-angle starting-angle-offset
-						 (* col (fan-builder-local-angle fb)))
-					  speed delay control-function)))))
+		(consume row col speed
+ 				 (+ base-angle starting-angle-offset
+					(* col local-angle)))))))
 
 (define-record-type enm
   (fields
@@ -994,20 +993,6 @@
 	  (enm-y-set! enm y))
 	(yield)))
 
-(define (shoot-at-player x y type speed delay)
-  (let ([dir (v2unit (vec2 (- player-x x) (- player-y y)))])
-	(spawn-bullet
-	 type x y (atan (v2y dir) (v2x dir)) speed
-	 delay
-	 (lambda (blt)
-	   (do [(i 0 (add1 i))]
-		   [(>= i delay)]
-		 (bullet-livetime-set! blt (add1 (bullet-livetime blt)))
-		 (yield))
-	   (raylib:play-sound (sebundle-shoot0 sounds))
-	   (linear-step-forever blt)))
-	))
-
 (define (test-fairy-control enm)
   (define (pick-next-position)
 	(let* ((x (enm-x enm))
@@ -1028,17 +1013,19 @@
 	(define type (vector-ref
 				  (hashtable-keys bullet-types)
 				  (random (hashtable-size bullet-types))))
-	(fbshoot b type (enm-x enm) (enm-y enm) 5
-			 (lambda (blt)
-			   (do [(i 0 (add1 i))]
-				   [(>= i 5)]
-				 (bullet-livetime-set! blt (add1 (bullet-livetime blt)))
-				 (yield))
-			   (raylib:play-sound (sebundle-shoot0 sounds))
-			   (linear-step-forever blt)))
-	;; (shoot-at-player (enm-x enm) (enm-y enm)
-	;; 				 type
-	;; 				 2.0 5)
+	(fbshoot b (enm-x enm) (enm-y enm)
+			 (lambda (row col speed facing)
+			   (spawn-bullet
+				type (enm-x enm) (enm-y enm)
+				facing speed 5
+				(lambda (blt)
+				  ;; todo: lift this delay stuff into common infra
+				  (do [(i 0 (add1 i))]
+					  [(>= i 5)]
+					(bullet-livetime-set! blt (add1 (bullet-livetime blt)))
+					(yield))
+				  (raylib:play-sound (sebundle-shoot0 sounds))
+				  (linear-step-forever blt)))))
 	(ease-cubic-to x y 90 enm)
 	(loop)))
 
