@@ -1367,6 +1367,9 @@
   (raylib:draw-text (format "BLT: ~d" (vector-popcnt live-bullets))
 					440 400
 					18 -1)
+  (raylib:draw-text (format "TASK: ~d" (task-count))
+					440 425
+					18 -1)
   (raylib:draw-fps 440 450))
 
 (define bg1-scroll 0.0)

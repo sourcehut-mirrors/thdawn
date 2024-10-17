@@ -3,7 +3,7 @@
 ;; - Only one thread interacts with this system at all times
 ;; - No nonlocal jumps into/out of run-tasks
 (library (coro)
-  (export wait wait-until yield spawn-task kill-task run-tasks)
+  (export wait wait-until yield spawn-task kill-task run-tasks task-count)
   (import (chezscheme))
 
   (define-record-type task
@@ -72,6 +72,10 @@
   ;; run-tasks call ends.
   (define (kill-task task)
 	(eq-hashtable-set! tasks-to-remove task #t))
+
+  (define (task-count)
+	(+ (length task-queue)
+	   (length tasks-to-add)))
 
   ;; Run one iteration of the task loop
   (define (run-tasks)

@@ -9,7 +9,10 @@ Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 
 ## Immediate TODOs
-* implement lasers
+* implement ECL ring aim modes
+* design multi-task abstractions so that an enemy can e.g. move and shoot independently
+* fix z-ordering of bullet rendering, currently arbitrary based on bullet array order
+  * needs to be later bullets always on top
 * implement enemy dying effect
 * implement graze particle
 * implement first chapter of stage to flesh out API's needed
@@ -23,6 +26,7 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 * player and boss portraits
 * implementing directional moving sprites for the player
 * replays
+* lasers
 * pan sfx based on horizontal position
 * investigate if we want to adopt a system similar to the official Touhou games'
   "two-level" position and velocity system
