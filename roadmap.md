@@ -9,8 +9,6 @@ Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 
 ## Immediate TODOs
-* implement ECL ring aim modes
-* implement explicit gameplay rng
 * fix stretching artifacts in the background
 * design multi-task abstractions so that an enemy can e.g. move and shoot independently
 * fix z-ordering of bullet rendering, currently arbitrary based on bullet array order

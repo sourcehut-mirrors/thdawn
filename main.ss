@@ -336,6 +336,8 @@
 ;; fragments are stored as Scheme's fractional data types
 (define life-stock 2)
 (define bomb-stock 3)
+(define game-rng (make-pseudo-random-generator))
+(define roll pseudo-random-generator-next!) ;; convenience alias
 
 (define (player-invincible?)
   (positive? iframes))
@@ -692,9 +694,8 @@
 	   ;; drop, it doesn't awkwardly get spawned away from the enemy
 	   (let* ([skip-fuzz (and (fxzero? i)
 							  (eq? drop (car drops)))]
-			  ;; xxx(replays) random access
-			  [fuzz-x (if skip-fuzz 0.0 (- (random 18.0) 9.0))]
-			  [fuzz-y (if skip-fuzz 0.0 (- (random 8.0) 4.0))])
+			  [fuzz-x (if skip-fuzz 0.0 (- (roll game-rng 18) 9.0))]
+			  [fuzz-y (if skip-fuzz 0.0 (- (roll game-rng 8) 4.0))])
 		 (spawn-misc-ent
 		  type
 		  (+ x fuzz-x) (+ y fuzz-y)
@@ -1049,7 +1050,7 @@
   (define (pick-next-position)
 	(let* ((x (enm-x enm))
 		   (y (enm-y enm))
-		   (angle (random (* 2 pi))) ;; XXX(replays): rng access
+		   (angle (* (roll game-rng) (* 2 pi)))
 		   (magnitude 50.0)
 		   (dx (* magnitude (cos angle)))
 		   (dy (* magnitude (sin angle)))
@@ -1065,7 +1066,7 @@
 	(define-values (x y) (pick-next-position))
 	(define type (vector-ref
 				  (hashtable-keys bullet-types)
-				  (random (hashtable-size bullet-types))))
+				  (roll game-rng (hashtable-size bullet-types))))
 	(cbshoot b (enm-x enm) (enm-y enm)
 			 (lambda (row col speed facing)
 			   (spawn-bullet
@@ -1256,7 +1257,7 @@
 		(set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
 	 [(fx= k key-space)
 	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control
-				   (if (< (random 1.0) 0.5)
+				   (if (< (roll game-rng) 0.5)
 					   '((life-frag . 1))
 					   '((life . 1))
 					   ))
@@ -1265,7 +1266,7 @@
 	  ;;  (lambda ()
 	  ;; 	 (do ((i 0 (add1 i)))
 	  ;; 		 ((= i 300))
-	  ;; 	   (let ([ang (- (random (* 2 pi)) pi)])
+	  ;; 	   (let ([ang (- (* (roll game-rng) (* 2 pi)) pi)])
 	  ;; 		 (spawn-bullet 'big-star-white 0.0 100.0 ang 2 linear-step-forever))
 	  ;; 	   (yield)))
 	  ;;  (constantly #t))
