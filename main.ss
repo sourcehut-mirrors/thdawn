@@ -598,6 +598,46 @@
  				 (+ base-angle starting-angle-offset
 					(* col local-angle)))))))
 
+(define-record-type circle-builder
+  (fields
+   (mutable layers)
+   (mutable bullets-per-layer)
+   (mutable min-speed)
+   (mutable max-speed)
+   (mutable global-angle)
+   (mutable per-layer-angle)))
+(define (cb)
+  (make-circle-builder 0 0 0.0 0.0 0.0 0.0))
+(define (cbcount cb layers per-layer)
+  (circle-builder-layers-set! cb layers)
+  (circle-builder-bullets-per-layer-set! cb per-layer)
+  cb)
+;; If min-speed < max-speed, the layers are fired from inside to outside.
+;; Otherwise, the layers are fired from outside to inside
+(define (cbspeed cb min-speed max-speed)
+  (circle-builder-min-speed-set! cb min-speed)
+  (circle-builder-max-speed-set! cb max-speed)
+  cb)
+(define (cbang cb global per-layer)
+  (circle-builder-global-angle-set! cb global)
+  (circle-builder-per-layer-angle-set! cb per-layer)
+  cb)
+(define (cbshoot cb x y consume)
+  (define layers (circle-builder-layers cb))
+  (define per-layer (circle-builder-bullets-per-layer cb))
+  (define min-speed (circle-builder-min-speed cb))
+  (define max-speed (circle-builder-max-speed cb))
+  (define per-layer-angle (circle-builder-per-layer-angle cb))
+  (define initial-angle (+ (circle-builder-global-angle cb)
+						   (atan (- player-y y) (- player-x x))))
+  (define per-bullet-angle (/ (* 2.0 pi) per-layer))
+  (do [(layer 0 (add1 layer))] [(>= layer layers)]
+	(let ([speed (lerp min-speed max-speed (/ layer layers))]
+		  [layer-angle (+ initial-angle (* layer per-layer-angle))])
+	  (do [(in-layer 0 (add1 in-layer))] [(>= in-layer per-layer)]
+		(consume layer in-layer speed
+				 (+ layer-angle (* in-layer per-bullet-angle)))))))
+
 (define-record-type enm
   (fields
    type
@@ -1009,17 +1049,16 @@
 		   (nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+))
 		   (ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)))
 	  (values nx ny)))
-  (define b (-> (fb)
-				(fbabsolute-aim)
-				(fbcounts 4 10)
-				(fbspeed 1.0 3.0)
-				(fbang (random (* 2 pi)) (torad 6.0))))
+  (define b (-> (cb)
+				(cbcount 3 20)
+				(cbspeed 3.0 2.0)
+				(cbang 0.0 (torad 10.0))))
   (let loop ()
 	(define-values (x y) (pick-next-position))
 	(define type (vector-ref
 				  (hashtable-keys bullet-types)
 				  (random (hashtable-size bullet-types))))
-	(fbshoot b (enm-x enm) (enm-y enm)
+	(cbshoot b (enm-x enm) (enm-y enm)
 			 (lambda (row col speed facing)
 			   (spawn-bullet
 				type (enm-x enm) (enm-y enm)
@@ -1529,7 +1568,7 @@
 		 [fonts (load-fonts)]
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
-	(raylib:play-music-stream ojamajo-carnival)
+	;(raylib:play-music-stream ojamajo-carnival)
 	;; clear these just in case they were left over from previous repl session
 	(set! iframes 180)
 	(set! frames 0)
