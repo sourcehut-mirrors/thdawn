@@ -20,13 +20,6 @@
 (define (torad x)
   (* (/ pi 180.0) x))
 
-(define (draw-line-round sx sy ex ey rgba)
-  (define rsx (exact (round sx)))
-  (define rsy (exact (round sy)))
-  (define rex (exact (round ex)))
-  (define rey (exact (round ey)))
-  (raylib:draw-line rsx rsy rex rey rgba))
-
 (define (ease-out-cubic x)
   (- 1 (expt (- 1 x) 3.0)))
 (define (lerp a b progress)
