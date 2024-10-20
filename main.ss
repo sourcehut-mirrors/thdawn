@@ -605,12 +605,16 @@
    (mutable min-speed)
    (mutable max-speed)
    (mutable global-angle)
-   (mutable per-layer-angle)))
+   (mutable per-layer-angle)
+   (mutable aimed-at-player)))
 (define (cb)
-  (make-circle-builder 0 0 0.0 0.0 0.0 0.0))
+  (make-circle-builder 0 0 0.0 0.0 0.0 0.0 #t))
 (define (cbcount cb layers per-layer)
   (circle-builder-layers-set! cb layers)
   (circle-builder-bullets-per-layer-set! cb per-layer)
+  cb)
+(define (cbabsolute-aim cb)
+  (circle-builder-aimed-at-player-set! cb #f)
   cb)
 ;; If min-speed < max-speed, the layers are fired from inside to outside.
 ;; Otherwise, the layers are fired from outside to inside
@@ -628,8 +632,11 @@
   (define min-speed (circle-builder-min-speed cb))
   (define max-speed (circle-builder-max-speed cb))
   (define per-layer-angle (circle-builder-per-layer-angle cb))
-  (define initial-angle (+ (circle-builder-global-angle cb)
-						   (atan (- player-y y) (- player-x x))))
+  (define initial-angle
+	(if (circle-builder-aimed-at-player cb)
+		(+ (circle-builder-global-angle cb)
+		   (atan (- player-y y) (- player-x x)))
+		(circle-builder-global-angle cb)))
   (define per-bullet-angle (/ (* 2.0 pi) per-layer))
   (do [(layer 0 (add1 layer))] [(>= layer layers)]
 	(let ([speed (lerp min-speed max-speed (/ layer layers))]
@@ -1050,9 +1057,10 @@
 		   (ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)))
 	  (values nx ny)))
   (define b (-> (cb)
-				(cbcount 3 20)
-				(cbspeed 3.0 2.0)
-				(cbang 0.0 (torad 10.0))))
+				(cbcount 3 5)
+				(cbspeed 2.0 1.0)
+				(cbabsolute-aim)
+				(cbang (torad 20.0) (torad 0.0))))
   (let loop ()
 	(define-values (x y) (pick-next-position))
 	(define type (vector-ref
