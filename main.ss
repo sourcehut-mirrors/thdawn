@@ -1422,8 +1422,6 @@
 (define bg1-scroll 0.0)
 (define bg2-scroll 0.0)
 (define bg3-scroll 0.0)
-(define screen-full-bounds
-  (make-rectangle 0.0 0.0 640.0 480.0))
 (define (background-acceleration frames)
   ;; todo: make this more data driven
   (cond
@@ -1476,6 +1474,9 @@
 	   (lerp 2.5 1.5 progress)))]
    [else (values 0.5 1.0 1.5)]))
 
+(define background-draw-bounds
+  ;; chosen to be integer multiple of the texture size
+  (make-rectangle 0.0 0.0 512.0 448.0))
 (define (do-render-all textures fonts)
   (raylib:clear-background #x000000ff) ;;#x42024aff) ;; todo: some variability :D
   (unless paused
@@ -1485,19 +1486,19 @@
 	  (set! bg3-scroll (fl- bg3-scroll bg3-vel))))
   (raylib:draw-texture-pro (txbundle-bg1 textures)
 						   (make-rectangle 0.0 bg1-scroll 256.0 224.0)
-						   screen-full-bounds
+						   background-draw-bounds
 						   v2zero 0.0 #xc0c0c0ff)
   (raylib:draw-texture-pro (txbundle-bg2 textures)
 						   (make-rectangle 0.0 bg2-scroll 256.0 224.0)
-						   screen-full-bounds
+						   background-draw-bounds
 						   v2zero 0.0 #xc0c0c0ff)
   (raylib:draw-texture-pro (txbundle-bg3 textures)
 						   (make-rectangle 0.0 bg3-scroll 256.0 224.0)
-						   screen-full-bounds
+						   background-draw-bounds
 						   v2zero 0.0 #xc0c0c0ff)
   ;; (raylib:draw-texture-pro (txbundle-bg4 textures)
   ;; 						   (make-rectangle 0.0 (mod (* frames -0.5) 224.0) 256.0 224.0)
-  ;; 						   screen-full-bounds
+  ;; 						   background-draw-bounds
   ;; 						   v2zero 0.0 -1)
   (when show-hitboxes
 	(raylib:draw-line (+ +playfield-render-offset-x+ +playfield-min-x+)
@@ -1536,7 +1537,8 @@
 	 (fontbundle-bubblegum fonts)
 	 "~ Paused ~"
 	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
-  (draw-hud textures fonts))
+  (draw-hud textures fonts)
+  )
 
 (define (render-all render-texture render-texture-inner textures fonts)
   (raylib:begin-texture-mode render-texture)

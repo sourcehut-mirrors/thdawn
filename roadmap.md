@@ -9,7 +9,6 @@ Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 
 ## Immediate TODOs
-* fix stretching artifacts in the background
 * design multi-task abstractions so that an enemy can e.g. move and shoot independently
 * design how chapters and stage flow will work in both a prod build and in-dev
   * ability to find and kill individual tasks in coro.ss
