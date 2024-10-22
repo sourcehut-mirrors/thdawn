@@ -11,6 +11,13 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 ## Immediate TODOs
 * fix stretching artifacts in the background
 * design multi-task abstractions so that an enemy can e.g. move and shoot independently
+* design how chapters and stage flow will work in both a prod build and in-dev
+  * ability to find and kill individual tasks in coro.ss
+  * chapters are individual functions that tail call each other, driven by a single task.
+	As opposed to a main task that calls the chapters sequentially.
+	This will allow starting at individual chapters for debugging.
+	Debug will need ability to kill current "stage driver" task (or maybe just all tasks),
+	reset the music, and start the right chapter.
 * fix z-ordering of bullet rendering, currently arbitrary based on bullet array order
   * needs to be later bullets always on top
 * implement enemy dying effect
