@@ -1229,6 +1229,7 @@
 	 [(fx= k key-x)
 	  (when (and (not paused)
 				 (zero? bombing)
+				 (zero? respawning)
 				 (>= bomb-stock 1))
 		(set! death-timer 0)
 		(set! bombing +bombing-max+)
