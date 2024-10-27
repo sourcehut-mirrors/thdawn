@@ -1265,6 +1265,20 @@
 	  ;; 	   (yield)))
 	  ;;  (constantly #t))
 	  ]
+	 [(fx= k key-y)
+	  ;; (enable-object-counts #t)
+	  ;; (collect 4 4)
+	  ;; (let ([c (sort! (lambda (a b)
+	  ;; 					;; each is (type (generation . bytes) ...)
+	  ;; 					(define a-sum (fold-left (lambda (acc x) (+ acc (cddr x))) 0 (cdr a)))
+	  ;; 					(define b-sum (fold-left (lambda (acc x) (+ acc (cddr x))) 0 (cdr b)))
+	  ;; 					(< b-sum a-sum))
+	  ;; 				  (object-counts)
+	  ;; 				  )])
+	  ;; 	(display c))
+	  ;; (enable-object-counts #f)
+	  #f
+	  ]
 	 )))
 
 (define (handle-player-movement)
