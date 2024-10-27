@@ -330,7 +330,7 @@
 (define life-stock 2)
 (define bomb-stock 3)
 (define game-rng (make-pseudo-random-generator))
-(define roll pseudo-random-generator-next!) ;; convenience alias
+(alias roll pseudo-random-generator-next!) ;; convenience alias
 
 (define (player-invincible?)
   (positive? iframes))
