@@ -203,7 +203,28 @@
   (make 'bubble-white txbundle-bullet-ball-huge 192 64 64 64 shift32)  
 
   ;; enemies
-  (make 'red-fairy txbundle-enemy1 0 384 32 32 shift16)
+  (do [(i 0 (add1 i))]
+	  [(>= i 12)]
+	;; this is gross but not sure what names would be less bad than
+	;; just straight up integers. See rendering code for what each one means.
+	(let* ([snum (number->string i)]
+		   [red (->> snum
+					 (string-append "red-fairy")
+					 string->symbol)]
+		   [green (->> snum
+					   (string-append "green-fairy")
+					   string->symbol)]
+		   [blue (->> snum
+					  (string-append "blue-fairy")
+					  string->symbol)]
+		   [yellow (->> snum
+						(string-append "yellow-fairy")
+						string->symbol)])
+	  (make red txbundle-enemy1 (* 32 i) 384 32 32 shift16)
+	  (make green txbundle-enemy1 (* 32 i) 416 32 32 shift16)
+	  (make blue txbundle-enemy1 (* 32 i) 448 32 32 shift16)
+	  (make yellow txbundle-enemy1 (* 32 i) 480 32 32 shift16)))
+
 
   ;; items
   (make 'life-frag txbundle-item 0 32 32 32 shift16)
@@ -646,9 +667,15 @@
    (mutable x)
    (mutable y)
    (mutable health)
+   ;; "x momentum" of the enemy.
+   ;; every frame the enemy is moving right, this increments (resp. left/decrement).
+   ;; if the enemy does not move on the X axis, this moves back towards zero.
+   ;; Used to determine which sprite of the enemy to render for enemies with
+   ;; different facing sprites.
+   (mutable dx-render)
    ;; alist of (miscent type . count) to drop on death.
    drops
-   ;; extra hashtable for scratch pad. not set by default, allocate manually if needed
+   ;; arbitrary scratchpad for custom data, not allocated by default
    (mutable extras)))
 (define live-enm (make-vector 256 #f))
 (define default-drop '((point . 1)))
@@ -657,7 +684,7 @@
   (let ((idx (vector-index #f live-enm)))
 	(unless idx
 	  (error 'spawn-enemy "No more open enemy slots!"))
-	(let ([enemy (make-enm type x y health drops #f)]) ;; todo allow extras to be passed in
+	(let ([enemy (make-enm type x y health 0 drops #f)])
 	  (vector-set! live-enm idx enemy)
 	  (spawn-task
 	   (symbol->string type)
@@ -748,7 +775,7 @@
 
 (define (enm-hurtbox enm)
   (case (and enm (enm-type enm))
-	((red-fairy)
+	((red-fairy green-fairy blue-fairy yellow-fairy)
 	 (values (- (enm-x enm) 16)
 			 (- (enm-y enm) 16)
 			 32 32))))
@@ -758,8 +785,14 @@
 	(let ((render-x (+ (enm-x enm) +playfield-render-offset-x+))
 		  (render-y (+ (enm-y enm) +playfield-render-offset-y+)))
 	  (case (enm-type enm)
-		((red-fairy)
-		 (draw-sprite textures 'red-fairy render-x render-y -1))))
+		([red-fairy]
+		 (draw-sprite textures 'red-fairy1 render-x render-y -1))
+		([green-fairy]
+		 (draw-sprite textures 'green-fairy1 render-x render-y -1))
+		([blue-fairy]
+		 (draw-sprite textures 'blue-fairy1 render-x render-y -1))
+		([yellow-fairy]
+		 (draw-sprite textures 'yellow-fairy1 render-x render-y -1))))
 	(when show-hitboxes
 	  (let-values ([(x y w h) (enm-hurtbox enm)])
 		(raylib:draw-rectangle-rec
@@ -1250,7 +1283,7 @@
 		(set! bomb-sweep-y-up (- player-y 50.0))
 		(set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
 	 [(fx= k key-space)
-	  (spawn-enemy 'red-fairy 0.0 100.0 200.0 test-fairy-control
+	  (spawn-enemy 'yellow-fairy 0.0 100.0 200.0 test-fairy-control
 				   (if (< (roll game-rng) 0.5)
 					   '((life-frag . 1))
 					   '((life . 1))
