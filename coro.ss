@@ -1,7 +1,7 @@
 ;; Every Scheme 101 course's "implement coroutines with continuations" assignment
 ;; Assumptions:
 ;; - Only one thread interacts with this system at all times
-;; - No nonlocal jumps into/out of run-tasks
+;; - No nonlocal jumps into or out of run-tasks
 (library (coro)
   (export wait wait-until yield spawn-task kill-task run-tasks task-count)
   (import (chezscheme))
@@ -9,7 +9,8 @@
   (define-record-type task
 	(fields
 	 name
-	 keep-running? ;; nullary function returning bool. Checked before every re-entry into a task. If it returns false, then the task is removed instead.
+	 pre-hook
+	 post-hook
 	 (mutable continuation)))
 
   (define (yield0-fallback _resume)
@@ -20,8 +21,6 @@
   ;; down into any utility functions, etc.
   ;; When not executing any coroutine, set to yield0-fallback
   (define yield0 yield0-fallback)
-  (define (clear-yield0)
-	(set! yield0 yield0-fallback))
 
   ;; Yield the current coroutine to the next one in line to run
   ;; If this is called outside coroutine context, raises an error.
@@ -49,18 +48,23 @@
   (define tasks-to-add '())
   (define tasks-to-remove (make-eq-hashtable))
 
-  ;; Enqueue a new coroutine to run.
+  ;; Enqueue thunk as a new coroutine to run.
   ;; If called while coroutine loop is being run, the spawned task does not begin
   ;; execution until the next iteration of the loop.
   ;; If thunk returns any value, the coroutine is treated as completed.
-  (define (spawn-task name thunk keep-running?)
+  ;; 
+  ;; pre-hook: Called before each time the coroutine resumes. If it returns #f,
+  ;;  the task is removed (without calling post-hook).
+  ;; post-hook: Called after each time the coroutine resumes. Return value is ignored.
+  ;;  Also called on the final exit after the coroutine exits normally.
+  (define (spawn-task name thunk pre-hook post-hook)
 	(let* ([scaffolded-coroutine
 			(lambda (yielder)
 			  ;; add initial entry/final exit scaffolding
 			  (set! yield0 yielder)
 			  (thunk)
 			  (yield0 #f))]
-		   [task (make-task name keep-running? scaffolded-coroutine)])
+		   [task (make-task name pre-hook post-hook scaffolded-coroutine)])
 	  (if loop-running?
 		  (set! tasks-to-add
 				(cons task tasks-to-add))
@@ -88,10 +92,11 @@
 		;; go in order.
 		(define next-task-queue-rev
 		  (fold-left (lambda (acc task)
-					   (if ((task-keep-running? task))
+					   (if ((task-pre-hook task))
 						   (let ()
 							 (define next-continuation
 							   (call/1cc (task-continuation task)))
+							 ((task-post-hook task))
 							 (if (procedure? next-continuation)
 								 (let ()
 								   (task-continuation-set! task next-continuation)
