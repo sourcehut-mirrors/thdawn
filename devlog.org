@@ -1,0 +1,42 @@
+* [2024-11-23 Sat]
+Started this devlog to help track progress and motivate myself. A bit late since a lot of
+the core infra of the game has already been laid down, but late is better than never.
+
+Added support in the coroutine system for generic pre- and post-hooks that are run before
+and after each time a coroutine resumes. This will be used for running general bookkeeping
+needed for all enemy types. Slightly worried if I can keep a good separation between
+the bookkeeping and the main task logic, but won't dwell on it until it becomes a problem.
+
+Also went on a sidequest to finally read up about how errors and conditions work in
+R6RS/Chez. I was thinking it'd be nice to have exception handlers around certain parts of
+the code like each coroutine resume for better interactive dev (if it's possible to
+recover from such errors, I'm not sure how flexible Chez is here).
+
+Turns out the condition system is kinda complex because it has additional polymorphism
+behavior beyond which R6RS records specify. Chez provides the continuation for lots of
+condition types, but you can't use it to implement CL style restarts, presumably because
+the point at which the continuation is captured is always "too late"?
+
+For example, this:
+#+BEGIN_SRC scheme
+(define (p m) (display m) (newline))
+
+(guard (x [else
+		   (p "before")
+		   ((condition-continuation x) 1) ;; try to resume from the (error) call
+		   (p "after")])
+  (let ([f (error 'who "what")])
+	(p "out")
+	f))
+
+(p "done")
+#+END_SRC
+does not print "after" nor "out".
+
+So any error handling I do won't provide a friendlier repl experience, though I could
+presumably fail-safe and discard the erroring enemy to prevent a program crash.
+
+Next: Want to actually start implementing the movement animation system that I've been
+procastinating about the last 3 weeks. At least the infra-side tracking of the delta
+motion if not the actual rendering.
+
