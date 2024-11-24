@@ -17,8 +17,6 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 	This will allow starting at individual chapters for debugging.
 	Debug will need ability to kill current "stage driver" task (or maybe just all tasks),
 	reset the music, and start the right chapter.
-* fix z-ordering of bullet rendering, currently arbitrary based on bullet array order
-  * needs to be later bullets always on top
 * implement enemy dying effect
 * implement graze particle
 * implement first chapter of stage to flesh out API's needed

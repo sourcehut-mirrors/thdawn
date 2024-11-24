@@ -7,6 +7,10 @@ and after each time a coroutine resumes. This will be used for running general b
 needed for all enemy types. Slightly worried if I can keep a good separation between
 the bookkeeping and the main task logic, but won't dwell on it until it becomes a problem.
 
+Sorted bullets before render. Just uses the allocating vector-sort instead of a dedicated
+buffer, since GC's generally don't like old-to-young gen pointers, and there's no optimized
+primitive to blit one vector to another. It seems to perform just fine.
+
 Also went on a sidequest to finally read up about how errors and conditions work in
 R6RS/Chez. I was thinking it'd be nice to have exception handlers around certain parts of
 the code like each coroutine resume for better interactive dev (if it's possible to

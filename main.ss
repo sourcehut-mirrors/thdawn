@@ -368,8 +368,15 @@
   (set! ojamajo-carnival #f)
   (raylib:close-audio-device))
 
+(define next-bullet-id 1)
+(define (get-next-bullet-id)
+  (define res next-bullet-id)
+  (set! next-bullet-id (fx1+ next-bullet-id))
+  res)
+
 (define-record-type bullet
   (fields
+   id ;; globally incrementing number. Used to sort the bullets before rendering.
    type
    (mutable x)
    (mutable y)
@@ -449,7 +456,8 @@
   (let ([idx (vector-index #f live-bullets)])
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
-	(let ([blt (make-bullet type x y facing speed #f (- delay) (- delay) '())])
+	(let ([blt (make-bullet (get-next-bullet-id)
+							type x y facing speed #f (- delay) (- delay) '())])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda () (control-function blt))
@@ -531,7 +539,14 @@
 		  (when show-hitboxes
 			(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
 								  red))))))
-  (vector-for-each-truthy each live-bullets))
+  (->> live-bullets
+	   (vector-sort
+		(lambda (a b)
+		  (cond
+		   [(not a) #t]
+		   [(not b) #f]
+		   [else (fx< (bullet-id a) (bullet-id b))])))
+	   (vector-for-each-truthy each)))
 
 (define (draw-bomb textures)
   (raylib:draw-rectangle-gradient-h
@@ -1461,7 +1476,9 @@
   (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
 					440 375
 					18 -1)
-  (raylib:draw-text (format "BLT: ~d" (vector-popcnt live-bullets))
+  (raylib:draw-text (format "BLT: ~d (LFT ~d)"
+							(vector-popcnt live-bullets)
+							(fx1- next-bullet-id))
 					440 400
 					18 -1)
   (raylib:draw-text (format "TASK: ~d" (task-count))
