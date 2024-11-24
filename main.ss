@@ -462,7 +462,7 @@
 	  (spawn-task "bullet"
 				  (lambda () (control-function blt))
 				  (lambda () (eq? blt (vector-ref live-bullets idx)))
-				  void)
+				  values)
 	  blt)))
 
 (define (delete-bullet bullet)
@@ -481,7 +481,7 @@
   (define ent (spawn-misc-ent drop (bullet-x bullet) (bullet-y bullet) -2.0 0.1))
   (spawn-task "delayed autocollect"
 			  (lambda () (wait 30) (miscent-autocollect-set! ent #t))
-			  (constantly #t) void)
+			  (constantly #t) values)
   (cancel-bullet bullet))
 
 (define (despawn-out-of-bound-bullet bullet)
@@ -683,14 +683,14 @@
    (mutable x)
    (mutable y)
    (mutable health)
+   ;; alist of (miscent type . count) to drop on death.
+   drops
    ;; "x momentum" of the enemy.
    ;; every frame the enemy is moving right, this increments (resp. left/decrement).
    ;; if the enemy does not move on the X axis, this moves back towards zero.
    ;; Used to determine which sprite of the enemy to render for enemies with
    ;; different facing sprites.
    (mutable dx-render)
-   ;; alist of (miscent type . count) to drop on death.
-   drops
    ;; arbitrary scratchpad for custom data, not allocated by default
    (mutable extras)))
 (define live-enm (make-vector 256 #f))
@@ -700,13 +700,13 @@
   (let ((idx (vector-index #f live-enm)))
 	(unless idx
 	  (error 'spawn-enemy "No more open enemy slots!"))
-	(let ([enemy (make-enm type x y health 0 drops #f)])
+	(let ([enemy (make-enm type x y health drops 0 #f)])
 	  (vector-set! live-enm idx enemy)
 	  (spawn-task
 	   (symbol->string type)
 	   (lambda () (control-function enemy))
 	   (lambda () (eq? enemy (vector-ref live-enm idx)))
-	   void))))
+	   values))))
 
 (define (delete-enemy enm)
   (let ([idx (vector-index enm live-enm)])

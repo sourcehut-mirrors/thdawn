@@ -73,6 +73,10 @@ Chez Scheme provides enough of CL's interactivity and performance that sacrifici
 of CL's niceties (larger standard library, CLOS, SLIME, etc.) is well worth it in order
 to gain continuations.
 
+As for other Schemes, I briefly looked at Guile and Gambit as well, but neither seemed to
+have nearly as robust Windows support as Chez Scheme does. Racket was ruled out due to its
+*complete* lack of interactive development support.
+
 ### Why Ojamajo Doremi?
 I started watching this series around early 2023 or late 2022, I've forgotten. Ever since
 then, I've daydreamed many times of setting the opening theme to danmaku, while walking

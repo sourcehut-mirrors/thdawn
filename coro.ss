@@ -53,8 +53,9 @@
   ;; execution until the next iteration of the loop.
   ;; If thunk returns any value, the coroutine is treated as completed.
   ;; 
-  ;; pre-hook: Called before each time the coroutine resumes. If it returns #f,
-  ;;  the task is removed (without calling post-hook).
+  ;; pre-hook: Called before each time the coroutine resumes.
+  ;;  If it returns #f, the task is removed (without calling post-hook).
+  ;;  If it returns truthy, the value is passed to post-hook.
   ;; post-hook: Called after each time the coroutine resumes. Return value is ignored.
   ;;  Also called on the final exit after the coroutine exits normally.
   (define (spawn-task name thunk pre-hook post-hook)
@@ -92,11 +93,12 @@
 		;; go in order.
 		(define next-task-queue-rev
 		  (fold-left (lambda (acc task)
-					   (if ((task-pre-hook task))
+					   (define pre-data ((task-pre-hook task)))
+					   (if pre-data
 						   (let ()
 							 (define next-continuation
 							   (call/1cc (task-continuation task)))
-							 ((task-post-hook task))
+							 ((task-post-hook task) pre-data)
 							 (if (procedure? next-continuation)
 								 (let ()
 								   (task-continuation-set! task next-continuation)
