@@ -64,14 +64,14 @@
 	  [(name thunk keep-running?)
 	   (spawn-task name thunk keep-running? (lambda () #f) values)]
 	  [(name thunk keep-running? pre-hook post-hook)
-	   (let* ([scaffolded-coroutine
+	   (let* ([task (make-task name keep-running? pre-hook post-hook #f)]
+			  [scaffolded-coroutine
 			   (lambda (yielder)
 				 ;; add initial entry/final exit scaffolding
 				 (set! yield0 yielder)
-				 (thunk)
-				 (yield0 #f))]
-			  [task (make-task name keep-running?
-							   pre-hook post-hook scaffolded-coroutine)])
+				 (thunk task)
+				 (yield0 #f))])
+		 (task-continuation-set! task scaffolded-coroutine)
 		 (if loop-running?
 			 (set! tasks-to-add
 				   (cons task tasks-to-add))

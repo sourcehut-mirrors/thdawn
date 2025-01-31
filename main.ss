@@ -460,7 +460,7 @@
 							type x y facing speed #f (- delay) (- delay) '())])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
-				  (lambda () (control-function blt))
+				  (lambda (task) (control-function blt))
 				  (lambda () (eq? blt (vector-ref live-bullets idx))))
 	  blt)))
 
@@ -479,7 +479,7 @@
 (define (cancel-bullet-with-drop bullet drop)
   (define ent (spawn-misc-ent drop (bullet-x bullet) (bullet-y bullet) -2.0 0.1))
   (spawn-task "delayed autocollect"
-			  (lambda () (wait 30) (miscent-autocollect-set! ent #t))
+			  (lambda (task) (wait 30) (miscent-autocollect-set! ent #t))
 			  (constantly #t))
   (cancel-bullet bullet))
 
@@ -703,7 +703,7 @@
 	  (vector-set! live-enm idx enemy)
 	  (spawn-task
 	   (symbol->string type)
-	   (lambda () (control-function enemy))
+	   (lambda (task) (control-function enemy))
 	   (lambda () (eq? enemy (vector-ref live-enm idx)))))))
 
 (define (delete-enemy enm)
