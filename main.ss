@@ -591,15 +591,23 @@
 (define (fbabsolute-aim fb)
   (fan-builder-aimed-at-player-set! fb #f)
   fb)
-(define (fbcounts fb rows row-width)
-  (assert (and (positive? rows) (positive? row-width)))
-  (fan-builder-rows-set! fb rows)
-  (fan-builder-row-width-set! fb row-width)
-  fb)
-(define (fbspeed fb min max)
-  (fan-builder-min-speed-set! fb min)
-  (fan-builder-max-speed-set! fb max)
-  fb)
+(define fbcounts
+  (case-lambda
+	[(fb row-width)
+	 (fbcounts row-width 1)]
+	[(fb row-width rows)
+	 (assert (and (positive? rows) (positive? row-width)))
+	 (fan-builder-rows-set! fb rows)
+	 (fan-builder-row-width-set! fb row-width)
+	 fb]))
+(define fbspeed
+  (case-lambda
+	[(fb speed)
+	 (fbspeed fb speed speed)]
+	[(fb min max)
+	 (fan-builder-min-speed-set! fb min)
+	 (fan-builder-max-speed-set! fb max)
+	 fb]))
 (define (fbang fb global local)
   (fan-builder-global-angle-set! fb global)
   (fan-builder-local-angle-set! fb local)
@@ -640,19 +648,27 @@
    (mutable aimed-at-player)))
 (define (cb)
   (make-circle-builder 0 0 0.0 0.0 0.0 0.0 #t))
-(define (cbcount cb layers per-layer)
-  (circle-builder-layers-set! cb layers)
-  (circle-builder-bullets-per-layer-set! cb per-layer)
-  cb)
+(define cbcount
+  (case-lambda
+	[(cb per-layer)
+	 (cbcount cb per-layer 1)]
+	[(cb per-layer layers)
+	 (circle-builder-layers-set! cb layers)
+	 (circle-builder-bullets-per-layer-set! cb per-layer)
+	 cb]))
 (define (cbabsolute-aim cb)
   (circle-builder-aimed-at-player-set! cb #f)
   cb)
 ;; If min-speed < max-speed, the layers are fired from inside to outside.
 ;; Otherwise, the layers are fired from outside to inside
-(define (cbspeed cb min-speed max-speed)
-  (circle-builder-min-speed-set! cb min-speed)
-  (circle-builder-max-speed-set! cb max-speed)
-  cb)
+(define cbspeed
+  (case-lambda
+	[(cb speed)
+	 (cbspeed cb speed speed)]
+	[(cb min-speed max-speed)
+	 (circle-builder-min-speed-set! cb min-speed)
+	 (circle-builder-max-speed-set! cb max-speed)
+	 cb]))
 (define (cbang cb global per-layer)
   (circle-builder-global-angle-set! cb global)
   (circle-builder-per-layer-angle-set! cb per-layer)
@@ -1089,8 +1105,9 @@
 
 (define (test-fairy-control2-ring1 enm)
   (define b (-> (cb)
-				(cbcount 1 10)
-				(cbspeed 1.0 1.0)))
+				(cbcount 10)
+				(cbspeed 4.0)
+				(cbang (torad 20.0) (torad 0.0))))
   (let loop ()
 	(cbshoot b (enm-x enm) (enm-y enm)
 			 (lambda (row col speed facing)
@@ -1110,9 +1127,8 @@
 
 (define (test-fairy-control2-ring2 enm)
   (define b (-> (cb)
-				(cbcount 1 5)
-				(cbspeed 2.0 2.0)
-				(cbang (torad 20.0) (torad 0.0))))
+				(cbcount 5)
+				(cbspeed 5.0)))
   (let loop ()
 	(cbshoot b (enm-x enm) (enm-y enm)
 			 (lambda (row col speed facing)
@@ -1139,45 +1155,24 @@
 				"ring2"
 				(lambda (_) (test-fairy-control2-ring2 enm))
 				(constantly #t) task))
+  (define move (spawn-subtask
+				"move"
+				(lambda (_)
+				  (let loop ()
+					(wait 50)
+					(let* ([x (enm-x enm)]
+						   [y (enm-y enm)]
+						   [angle (* (roll game-rng) (* 2 pi))]
+						   [magnitude 50.0]
+						   [dx (* magnitude (cos angle))]
+						   [dy (* magnitude (sin angle))]
+						   [nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+)]
+						   [ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)])
+					  (ease-cubic-to nx ny 90 enm))
+					(loop)))
+				(constantly #t) task))
   ;; loop forever running the subtasks until the enemy dies
   (wait-until (constantly #f)))
-
-(define (test-fairy-control task enm)
-  (define (pick-next-position)
-	(let* ((x (enm-x enm))
-		   (y (enm-y enm))
-		   (angle (* (roll game-rng) (* 2 pi)))
-		   (magnitude 50.0)
-		   (dx (* magnitude (cos angle)))
-		   (dy (* magnitude (sin angle)))
-		   (nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+))
-		   (ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)))
-	  (values nx ny)))
-  (define b (-> (cb)
-				(cbcount 3 5)
-				(cbspeed 2.0 1.0)
-				(cbabsolute-aim)
-				(cbang (torad 20.0) (torad 0.0))))
-  (let loop ()
-	(define-values (x y) (pick-next-position))
-	(define type (vector-ref
-				  (hashtable-keys bullet-types)
-				  (roll game-rng (hashtable-size bullet-types))))
-	(cbshoot b (enm-x enm) (enm-y enm)
-			 (lambda (row col speed facing)
-			   (spawn-bullet
-				type (enm-x enm) (enm-y enm)
-				facing speed 5
-				(lambda (blt)
-				  ;; todo: lift this delay stuff into common infra
-				  (do [(i 0 (add1 i))]
-					  [(>= i 5)]
-					(bullet-livetime-set! blt (add1 (bullet-livetime blt)))
-					(yield))
-				  (raylib:play-sound (sebundle-shoot0 sounds))
-				  (linear-step-forever blt)))))
-	(ease-cubic-to x y 90 enm)
-	(loop)))
 
 (define (bomb-sweep-x-left-hitbox)
   (values (- bomb-sweep-x-left 40.0)
