@@ -22,10 +22,12 @@
   
   (define constantly
 	;; some common stuff to avoid gc spamming
-	(let* ([constantly-t (lambda _args #t)])
+	(let* ([constantly-t (lambda _args #t)]
+		   [constantly-f (lambda _args #f)])
 	  (lambda (x)
 		(cond
 		 [(eq? #t x) constantly-t]
+		 [(eq? #f x) constantly-f]
 		 [else (lambda _args x)]))))
 
   (define (vector-for-each-truthy f v)

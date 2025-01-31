@@ -77,7 +77,14 @@
 	  [(name thunk keep-running? parent)
 	   (spawn-subtask name thunk keep-running? parent (lambda () #f) values)]
 	  [(name thunk keep-running? parent pre-hook post-hook)
-	   (let* ([task (make-task name keep-running? parent pre-hook post-hook #f #f)]
+	   (let* ([actual-keep-running?
+			   (if parent
+				   (let ([parent-keep-running (task-keep-running? parent)])
+					 (lambda () (and (parent-keep-running)
+									 (keep-running?))))
+				   keep-running?)]
+			  [task (make-task name actual-keep-running?
+							   parent pre-hook post-hook #f #f)]
 			  [scaffolded-coroutine
 			   (lambda (yielder)
 				 ;; add initial entry/final exit scaffolding

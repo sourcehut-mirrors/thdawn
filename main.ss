@@ -703,7 +703,7 @@
 	  (vector-set! live-enm idx enemy)
 	  (spawn-task
 	   (symbol->string type)
-	   (lambda (task) (control-function enemy))
+	   (lambda (task) (control-function task enemy))
 	   (lambda () (eq? enemy (vector-ref live-enm idx)))))))
 
 (define (delete-enemy enm)
@@ -1087,7 +1087,62 @@
 	  (enm-y-set! enm y))
 	(yield)))
 
-(define (test-fairy-control enm)
+(define (test-fairy-control2-ring1 enm)
+  (define b (-> (cb)
+				(cbcount 1 10)
+				(cbspeed 1.0 1.0)))
+  (let loop ()
+	(cbshoot b (enm-x enm) (enm-y enm)
+			 (lambda (row col speed facing)
+			   (spawn-bullet
+				'medium-ball-red (enm-x enm) (enm-y enm)
+				facing speed 5
+				(lambda (blt)
+				  ;; todo: lift this delay stuff into common infra
+				  (do [(i 0 (add1 i))]
+					  [(>= i 5)]
+					(bullet-livetime-set! blt (add1 (bullet-livetime blt)))
+					(yield))
+				  (raylib:play-sound (sebundle-shoot0 sounds))
+				  (linear-step-forever blt)))))
+	(wait 90)
+	(loop)))
+
+(define (test-fairy-control2-ring2 enm)
+  (define b (-> (cb)
+				(cbcount 1 5)
+				(cbspeed 2.0 2.0)
+				(cbang (torad 20.0) (torad 0.0))))
+  (let loop ()
+	(cbshoot b (enm-x enm) (enm-y enm)
+			 (lambda (row col speed facing)
+			   (spawn-bullet
+				'small-ball-blue (enm-x enm) (enm-y enm)
+				facing speed 5
+				(lambda (blt)
+				  ;; todo: lift this delay stuff into common infra
+				  (do [(i 0 (add1 i))]
+					  [(>= i 5)]
+					(bullet-livetime-set! blt (add1 (bullet-livetime blt)))
+					(yield))
+				  (raylib:play-sound (sebundle-bell sounds))
+				  (linear-step-forever blt)))))
+	(wait 30)
+	(loop)))
+
+(define (test-fairy-control2 task enm)
+  (define sub1 (spawn-subtask
+				"ring1"
+				(lambda (_) (test-fairy-control2-ring1 enm))
+				(constantly #t) task))
+  (define sub2 (spawn-subtask
+				"ring2"
+				(lambda (_) (test-fairy-control2-ring2 enm))
+				(constantly #t) task))
+  ;; loop forever running the subtasks until the enemy dies
+  (wait-until (constantly #f)))
+
+(define (test-fairy-control task enm)
   (define (pick-next-position)
 	(let* ((x (enm-x enm))
 		   (y (enm-y enm))
@@ -1298,7 +1353,7 @@
 		(set! bomb-sweep-y-up (- player-y 50.0))
 		(set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
 	 [(fx= k key-space)
-	  (spawn-enemy 'yellow-fairy 0.0 100.0 200.0 test-fairy-control
+	  (spawn-enemy 'yellow-fairy 0.0 100.0 200.0 test-fairy-control2
 				   (if (< (roll game-rng) 0.5)
 					   '((life-frag . 1))
 					   '((life . 1))
