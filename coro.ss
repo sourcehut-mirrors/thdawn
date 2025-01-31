@@ -9,6 +9,7 @@
   (define-record-type task
 	(fields
 	 name
+	 keep-running?
 	 pre-hook
 	 post-hook
 	 (mutable continuation)))
@@ -52,26 +53,31 @@
   ;; If called while coroutine loop is being run, the spawned task does not begin
   ;; execution until the next iteration of the loop.
   ;; If thunk returns any value, the coroutine is treated as completed.
-  ;; 
+  ;;
+  ;; keep-running?: Nullary predicate, if it returns false the task is removed
   ;; pre-hook: Called before each time the coroutine resumes.
-  ;;  If it returns #f, the task is removed (without calling post-hook).
-  ;;  If it returns truthy, the value is passed to post-hook.
+  ;;  The value it returns is passed to the post-hook
   ;; post-hook: Called after each time the coroutine resumes. Return value is ignored.
   ;;  Also called on the final exit after the coroutine exits normally.
-  (define (spawn-task name thunk pre-hook post-hook)
-	(let* ([scaffolded-coroutine
-			(lambda (yielder)
-			  ;; add initial entry/final exit scaffolding
-			  (set! yield0 yielder)
-			  (thunk)
-			  (yield0 #f))]
-		   [task (make-task name pre-hook post-hook scaffolded-coroutine)])
-	  (if loop-running?
-		  (set! tasks-to-add
-				(cons task tasks-to-add))
-		  (set! task-queue
-				(cons task task-queue)))
-	  task))
+  (define spawn-task
+	(case-lambda
+	  [(name thunk keep-running?)
+	   (spawn-task name thunk keep-running? (lambda () #f) values)]
+	  [(name thunk keep-running? pre-hook post-hook)
+	   (let* ([scaffolded-coroutine
+			   (lambda (yielder)
+				 ;; add initial entry/final exit scaffolding
+				 (set! yield0 yielder)
+				 (thunk)
+				 (yield0 #f))]
+			  [task (make-task name keep-running?
+							   pre-hook post-hook scaffolded-coroutine)])
+		 (if loop-running?
+			 (set! tasks-to-add
+				   (cons task tasks-to-add))
+			 (set! task-queue
+				   (cons task task-queue)))
+		 task)]))
 
   ;; Terminates a task. If called during run-tasks, takes effect only after the current
   ;; run-tasks call ends.
@@ -93,9 +99,8 @@
 		;; go in order.
 		(define next-task-queue-rev
 		  (fold-left (lambda (acc task)
-					   (define pre-data ((task-pre-hook task)))
-					   (if pre-data
-						   (let ()
+					   (if ((task-keep-running? task))
+						   (let ([pre-data ((task-pre-hook task))])
 							 (define next-continuation
 							   (call/1cc (task-continuation task)))
 							 ((task-post-hook task) pre-data)

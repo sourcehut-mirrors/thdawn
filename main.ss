@@ -461,8 +461,7 @@
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda () (control-function blt))
-				  (lambda () (eq? blt (vector-ref live-bullets idx)))
-				  values)
+				  (lambda () (eq? blt (vector-ref live-bullets idx))))
 	  blt)))
 
 (define (delete-bullet bullet)
@@ -481,7 +480,7 @@
   (define ent (spawn-misc-ent drop (bullet-x bullet) (bullet-y bullet) -2.0 0.1))
   (spawn-task "delayed autocollect"
 			  (lambda () (wait 30) (miscent-autocollect-set! ent #t))
-			  (constantly #t) values)
+			  (constantly #t))
   (cancel-bullet bullet))
 
 (define (despawn-out-of-bound-bullet bullet)
@@ -705,8 +704,7 @@
 	  (spawn-task
 	   (symbol->string type)
 	   (lambda () (control-function enemy))
-	   (lambda () (eq? enemy (vector-ref live-enm idx)))
-	   values))))
+	   (lambda () (eq? enemy (vector-ref live-enm idx)))))))
 
 (define (delete-enemy enm)
   (let ([idx (vector-index enm live-enm)])
