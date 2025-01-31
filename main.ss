@@ -1213,7 +1213,7 @@
   (when (fxpositive? death-timer)
 	(set! death-timer (sub1 death-timer))
 	(when (zero? death-timer)
-		(kill-player)))
+	  (kill-player)))
 
   ;; set the option positions
   (let ([progress (ease-out-cubic (/ focus-frames +max-focus-frames+))])

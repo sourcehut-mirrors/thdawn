@@ -3,16 +3,22 @@
 ;; - Only one thread interacts with this system at all times
 ;; - No nonlocal jumps into or out of run-tasks
 (library (coro)
-  (export wait wait-until yield spawn-task kill-task run-tasks task-count)
+  (export wait wait-until yield spawn-task spawn-subtask
+		  task-dead
+		  kill-task run-tasks task-count)
   (import (chezscheme))
 
   (define-record-type task
 	(fields
 	 name
 	 keep-running?
+	 parent
 	 pre-hook
 	 post-hook
-	 (mutable continuation)))
+	 (mutable continuation)
+	 ;; whether task ran and was terminated by any reason, including
+	 ;; returning normally, its keep-running returning false, or being killed
+	 (mutable dead)))
 
   (define (yield0-fallback _resume)
 	(error 'yield "yield0 called with no active coroutine"))
@@ -64,7 +70,14 @@
 	  [(name thunk keep-running?)
 	   (spawn-task name thunk keep-running? (lambda () #f) values)]
 	  [(name thunk keep-running? pre-hook post-hook)
-	   (let* ([task (make-task name keep-running? pre-hook post-hook #f)]
+	   (spawn-subtask name thunk keep-running? #f pre-hook post-hook)]))
+
+  (define spawn-subtask
+	(case-lambda
+	  [(name thunk keep-running? parent)
+	   (spawn-subtask name thunk keep-running? parent (lambda () #f) values)]
+	  [(name thunk keep-running? parent pre-hook post-hook)
+	   (let* ([task (make-task name keep-running? parent pre-hook post-hook #f #f)]
 			  [scaffolded-coroutine
 			   (lambda (yielder)
 				 ;; add initial entry/final exit scaffolding
@@ -108,9 +121,12 @@
 								 (let ()
 								   (task-continuation-set! task next-continuation)
 								   (cons task acc))
-								 ;; Not a procedure, task is done.
-								 acc))
-						   acc))
+								 (let ()
+								   (task-dead-set! task #t)
+								   acc)))
+						   (let ()
+							 (task-dead-set! task #t)
+							 acc)))
 					 '()
 					 task-queue))
 		;; Add any new tasks that arose during the iteration and
@@ -119,7 +135,11 @@
 			  (append! tasks-to-add
 					   (reverse! (remp
 								  (lambda (task)
-									(eq-hashtable-contains? tasks-to-remove task))
+									(define remove
+									  (eq-hashtable-contains? tasks-to-remove task))
+									(when remove
+									  (task-dead-set! task #t))
+									remove)
 								  next-task-queue-rev))))
 		(hashtable-clear! tasks-to-remove)
 		(set! tasks-to-add '()))
