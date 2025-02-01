@@ -1673,10 +1673,10 @@
   (raylib:end-drawing))
 
 (define (main)
-  (collect-notify #t)
   (raylib:init-window 1280 960 "thdawn")
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)
+  (raylib:set-trace-log-level 4) ;; WARNING or above
   (load-audio)
   (load-sfx)
   (let* ([textures (load-textures)]

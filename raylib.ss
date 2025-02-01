@@ -13,7 +13,7 @@
 		  load-sound play-sound unload-sound
 		  load-texture unload-texture draw-texture-rec draw-texture draw-texture-pro
 		  load-font unload-font
-		  is-key-down get-key-pressed set-exit-key
+		  is-key-down get-key-pressed set-exit-key set-trace-log-level
 		  push-matrix pop-matrix translatef rotatef)
   (import (chezscheme) (geom))
 
@@ -356,6 +356,9 @@
 
   (define get-frame-time
 	(foreign-procedure "GetFrameTime" () float))
+
+  (define set-trace-log-level
+	(foreign-procedure "SetTraceLogLevel" (int) void))
 
   (define push-matrix
 	(foreign-procedure "rlPushMatrix" () void))
