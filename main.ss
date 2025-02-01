@@ -460,7 +460,12 @@
 							type x y facing speed #f (- delay) (- delay) '())])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
-				  (lambda (task) (control-function blt))
+				  (lambda (task)
+					(do [(i 0 (add1 i))]
+						[(>= i delay)]
+					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
+					  (yield))
+					(control-function blt))
 				  (lambda () (eq? blt (vector-ref live-bullets idx))))
 	  blt)))
 
@@ -1117,11 +1122,6 @@
 				'medium-ball-red (enm-x enm) (enm-y enm)
 				facing speed 5
 				(lambda (blt)
-				  ;; todo: lift this delay stuff into common infra
-				  (do [(i 0 (add1 i))]
-					  [(>= i 5)]
-					(bullet-livetime-set! blt (add1 (bullet-livetime blt)))
-					(yield))
 				  (raylib:play-sound (sebundle-shoot0 sounds))
 				  (linear-step-forever blt)))))
 	(wait 90)
@@ -1136,13 +1136,8 @@
 			 (lambda (row col speed facing)
 			   (spawn-bullet
 				'small-ball-blue (enm-x enm) (enm-y enm)
-				facing speed 5
+				facing speed 10
 				(lambda (blt)
-				  ;; todo: lift this delay stuff into common infra
-				  (do [(i 0 (add1 i))]
-					  [(>= i 5)]
-					(bullet-livetime-set! blt (add1 (bullet-livetime blt)))
-					(yield))
 				  (raylib:play-sound (sebundle-bell sounds))
 				  (linear-step-forever blt)))))
 	(wait 30)
