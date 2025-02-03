@@ -466,7 +466,7 @@
 					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
 					  (yield))
 					(control-function blt))
-				  (lambda () (eq? blt (vector-ref live-bullets idx))))
+				  (thunk (eq? blt (vector-ref live-bullets idx))))
 	  blt)))
 
 (define (delete-bullet bullet)
@@ -702,6 +702,8 @@
    type
    (mutable x)
    (mutable y)
+   (mutable ox)
+   (mutable oy)
    (mutable health)
    ;; alist of (miscent type . count) to drop on death.
    drops
@@ -716,16 +718,47 @@
 (define live-enm (make-vector 256 #f))
 (define default-drop '((point . 1)))
 
+(define (pretick-enemies)
+  (define (each enm)
+	(enm-ox-set! enm (enm-x enm))
+	(enm-oy-set! enm (enm-y enm)))
+  (vector-for-each-truthy each live-enm))
+
+(define (epsilon-equal a b)
+  (fl< (flabs (fl- a b)) 0.00000001))
+
+(define (posttick-enemies)
+  (define (each enm)
+	(let* ([ox (enm-ox enm)] [oy (enm-oy enm)]
+		   [x (enm-x enm)] [y (enm-y enm)]
+		   [stationary-x (epsilon-equal ox x)]
+		   [stationary-y (epsilon-equal oy y)]
+		   [dx (enm-dx-render enm)])
+	  (cond
+	   ;; Didn't move: don't update at all
+	   [(and stationary-x stationary-y) #f]
+	   ;; Stationary on x (moving on y): Go back towards zero
+	   [stationary-x
+		(cond
+		 [(fxnegative? dx) (enm-dx-render-set! enm (fx1+ dx))]
+		 [(fxpositive? dx) (enm-dx-render-set! enm (fx1- dx))])]
+	   ;; Moving on x: Go in the direction we're moving
+	   [else
+		(enm-dx-render-set! enm (if (fl> x ox)
+									(fx1+ dx)
+									(fx1- dx)))])))
+  (vector-for-each-truthy each live-enm))
+
 (define (spawn-enemy type x y health control-function drops)
   (let ((idx (vector-index #f live-enm)))
 	(unless idx
 	  (error 'spawn-enemy "No more open enemy slots!"))
-	(let ([enemy (make-enm type x y health drops 0 #f)])
+	(let ([enemy (make-enm type x y x y health drops 0 #f)])
 	  (vector-set! live-enm idx enemy)
 	  (spawn-task
 	   (symbol->string type)
 	   (lambda (task) (control-function task enemy))
-	   (lambda () (eq? enemy (vector-ref live-enm idx)))))))
+	   (thunk (eq? enemy (vector-ref live-enm idx)))))))
 
 (define (delete-enemy enm)
   (let ([idx (vector-index enm live-enm)])
@@ -828,12 +861,15 @@
 		([blue-fairy]
 		 (draw-sprite textures 'blue-fairy1 render-x render-y -1))
 		([yellow-fairy]
-		 (draw-sprite textures 'yellow-fairy1 render-x render-y -1))))
-	(when show-hitboxes
-	  (let-values ([(x y w h) (enm-hurtbox enm)])
-		(raylib:draw-rectangle-rec
-		 (+ x +playfield-render-offset-x+)
-		 (+ y +playfield-render-offset-y+) w h red))))
+		 (draw-sprite textures 'yellow-fairy1 render-x render-y -1)))
+	  (when show-hitboxes
+		(let-values ([(x y w h) (enm-hurtbox enm)])
+		  (raylib:draw-rectangle-rec
+		   (+ x +playfield-render-offset-x+)
+		   (+ y +playfield-render-offset-y+) w h red))
+		(raylib:draw-text (format "~d" (enm-dx-render enm))
+						  (exact (floor render-x)) (exact (floor render-y))
+						  10 -1))))
   (vector-for-each-truthy each live-enm))
 
 (define (linear-step-forever blt)
@@ -1697,7 +1733,9 @@
 		 despawn-out-of-bound-bullet
 		 live-bullets)
 		(prune-dead-enemies)
+		(pretick-enemies)
 		(run-tasks)
+		(posttick-enemies)
 		(tick-misc-ents)
 		(tick-particles)
 		(process-collisions))

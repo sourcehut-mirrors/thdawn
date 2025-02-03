@@ -1,6 +1,6 @@
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
-		  vector-index vector-popcnt -> ->>)
+		  vector-index vector-popcnt -> ->> thunk)
   (import (chezscheme))
 
   ;; threading macros from clojure
@@ -19,6 +19,11 @@
 	   (->> (f fargs ... x) rst ...)]
 	  [(_ x f rst ...)
 	   (->> (f x) rst ...)]))
+
+  (define-syntax thunk
+	(syntax-rules ()
+	  [(_ e1 e2 ...)
+	   (lambda () e1 e2 ...)]))
   
   (define constantly
 	;; some common stuff to avoid gc spamming
