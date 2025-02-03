@@ -36,6 +36,25 @@
 	  x
 	  (- 1 (expt 2 (* -10 x)))))
 
+(define-syntax interval-loop
+  (syntax-rules ()
+	[(_ intvl b1 b2 ...)
+	 (let loop ()
+	   b1 b2 ...
+	   (wait intvl)
+	   (loop))]))
+(define-syntax interval-loop-waitfirst
+  (syntax-rules ()
+	[(_ intvl b1 b2 ...)
+	 (let loop ()
+	   (wait intvl)
+	   b1 b2 ...
+	   (loop))]))
+(define-syntax loop-forever
+  (syntax-rules ()
+	[(_ b1 b2 ...)
+	 (interval-loop 1 b1 b2 ...)]))
+
 (define-record-type sebundle
   (fields
    spellcapture spelldeclare
@@ -873,10 +892,7 @@
   (vector-for-each-truthy each live-enm))
 
 (define (linear-step-forever blt)
-  (let loop ()
-	(linear-step blt)
-	(yield)
-	(loop)))
+  (loop-forever (linear-step blt)))
 
 (define (linear-step blt)
   (let ([facing (bullet-facing blt)]
@@ -1151,33 +1167,29 @@
 				(cbcount 10)
 				(cbspeed 4.0)
 				(cbang (torad 20.0) (torad 0.0))))
-  (let loop ()
-	(cbshoot b (enm-x enm) (enm-y enm)
-			 (lambda (row col speed facing)
-			   (spawn-bullet
-				'medium-ball-red (enm-x enm) (enm-y enm)
-				facing speed 5
-				(lambda (blt)
-				  (raylib:play-sound (sebundle-shoot0 sounds))
-				  (linear-step-forever blt)))))
-	(wait 90)
-	(loop)))
+  (interval-loop
+   90
+   (raylib:play-sound (sebundle-shoot0 sounds))
+   (cbshoot b (enm-x enm) (enm-y enm)
+			(lambda (row col speed facing)
+			  (spawn-bullet
+			   'medium-ball-red (enm-x enm) (enm-y enm)
+			   facing speed 5
+			   linear-step-forever)))))
 
 (define (test-fairy-control2-ring2 enm)
   (define b (-> (cb)
 				(cbcount 5)
 				(cbspeed 5.0)))
-  (let loop ()
-	(cbshoot b (enm-x enm) (enm-y enm)
-			 (lambda (row col speed facing)
-			   (spawn-bullet
-				'small-ball-blue (enm-x enm) (enm-y enm)
-				facing speed 10
-				(lambda (blt)
-				  (raylib:play-sound (sebundle-bell sounds))
-				  (linear-step-forever blt)))))
-	(wait 30)
-	(loop)))
+  (interval-loop
+   30
+   (raylib:play-sound (sebundle-bell sounds))
+   (cbshoot b (enm-x enm) (enm-y enm)
+			(lambda (row col speed facing)
+			  (spawn-bullet
+			   'small-ball-blue (enm-x enm) (enm-y enm)
+			   facing speed 10
+			   linear-step-forever)))))
 
 (define (test-fairy-control2 task enm)
   (define sub1 (spawn-subtask
@@ -1191,18 +1203,17 @@
   (define move (spawn-subtask
 				"move"
 				(lambda (_)
-				  (let loop ()
-					(wait 50)
-					(let* ([x (enm-x enm)]
-						   [y (enm-y enm)]
-						   [angle (* (roll game-rng) (* 2 pi))]
-						   [magnitude 50.0]
-						   [dx (* magnitude (cos angle))]
-						   [dy (* magnitude (sin angle))]
-						   [nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+)]
-						   [ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)])
-					  (ease-cubic-to nx ny 90 enm))
-					(loop)))
+				  (interval-loop-waitfirst
+				   50
+				   (let* ([x (enm-x enm)]
+						  [y (enm-y enm)]
+						  [angle (* (roll game-rng) (* 2 pi))]
+						  [magnitude 50.0]
+						  [dx (* magnitude (cos angle))]
+						  [dy (* magnitude (sin angle))]
+						  [nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+)]
+						  [ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)])
+					 (ease-cubic-to nx ny 90 enm))))
 				(constantly #t) task))
   ;; loop forever running the subtasks until the enemy dies
   (wait-until (constantly #f)))
@@ -1381,20 +1392,7 @@
 		(set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
 	 [(fx= k key-space)
 	  (spawn-enemy 'yellow-fairy 0.0 100.0 200.0 test-fairy-control2
-				   (if (< (roll game-rng) 0.5)
-					   '((life-frag . 1))
-					   '((life . 1))
-					   ))
-	  ;; (spawn-task
-	  ;;  "spawner"
-	  ;;  (lambda ()
-	  ;; 	 (do ((i 0 (add1 i)))
-	  ;; 		 ((= i 300))
-	  ;; 	   (let ([ang (- (* (roll game-rng) (* 2 pi)) pi)])
-	  ;; 		 (spawn-bullet 'big-star-white 0.0 100.0 ang 2 linear-step-forever))
-	  ;; 	   (yield)))
-	  ;;  (constantly #t))
-	  ]
+				   default-drop)]
 	 [(fx= k key-y)
 	  ;; (enable-object-counts #t)
 	  ;; (collect 4 4)

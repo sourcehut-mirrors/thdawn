@@ -1,5 +1,6 @@
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
+		  dotimes
 		  vector-index vector-popcnt -> ->> thunk)
   (import (chezscheme))
 
@@ -24,6 +25,13 @@
 	(syntax-rules ()
 	  [(_ e1 e2 ...)
 	   (lambda () e1 e2 ...)]))
+
+  (define-syntax dotimes
+	(syntax-rules ()
+	  [(_ times e1 e2 ...)
+	   (do [(i 0 (fx1+ i))]
+		   [(fx= i times)]
+		 e1 e2 ...)]))
   
   (define constantly
 	;; some common stuff to avoid gc spamming
