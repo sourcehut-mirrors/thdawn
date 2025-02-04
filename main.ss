@@ -65,22 +65,23 @@
    extend graze bell
    oldvwoopfast oldvwoopslow
    pause menuselect
-   timeout timeoutwarn item))
+   timeout timeoutwarn item damage0 damage1))
 (define sounds #f)
 (define (load-sfx)
-  (define (lsfx file) (raylib:load-sound (string-append "assets/sfx/" file)))
   (set! sounds
-		(make-sebundle
-		 (lsfx "se_cardget.wav") (lsfx "se_cat00.wav")
-		 (lsfx "se_ch00.wav") (lsfx "se_ch02.wav")
-		 (lsfx "se_enep00.wav") (lsfx "se_enep01.wav")
-		 (lsfx "se_pldead00.wav") (lsfx "se_plst00.wav")
-		 (lsfx "se_tan00.wav") (lsfx "se_tan01.wav") (lsfx "se_tan02.wav")
-		 (lsfx "se_extend.wav") (lsfx "se_graze.wav") (lsfx "se_kira00.wav")
-		 (lsfx "se_power1.wav") (lsfx "se_power2.wav")
-		 (lsfx "se_pause.wav") (lsfx "se_select00.wav")
-		 (lsfx "se_timeout.wav") (lsfx "se_timeout2.wav")
-		 (lsfx "se_item00.wav"))))
+		(apply
+		 make-sebundle
+		 (map (lambda (file) (raylib:load-sound (string-append "assets/sfx/" file)))
+			  '("se_cardget.wav" "se_cat00.wav"
+				"se_ch00.wav" "se_ch02.wav"
+				"se_enep00.wav" "se_enep01.wav"
+				"se_pldead00.wav" "se_plst00.wav"
+				"se_tan00.wav" "se_tan01.wav" "se_tan02.wav"
+				"se_extend.wav" "se_graze.wav" "se_kira00.wav"
+				"se_power1.wav" "se_power2.wav"
+				"se_pause.wav" "se_select00.wav"
+				"se_timeout.wav" "se_timeout2.wav"
+				"se_item00.wav" "se_damage00.wav" "se_damage01.wav")))))
 (define (unload-sfx)
   (define rtd (record-type-descriptor sebundle))
   (define num-sounds (vector-length (record-type-field-names rtd)))
@@ -785,6 +786,7 @@
 	  (vector-set! live-enm idx #f))))
 
 (define (damage-enemy enm amount)
+  (raylib:play-sound (sebundle-damage0 sounds))
   (enm-health-set! enm (- (enm-health enm) amount))
   (set! current-score (+ current-score amount)))
 
