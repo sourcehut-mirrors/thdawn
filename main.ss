@@ -759,20 +759,20 @@
 	   ;; Stationary on x (moving on y): Go back towards zero
 	   [stationary-x
 		(cond
-		 [(fxnegative? dx) (enm-dx-render-set! enm (fx1+ dx))]
-		 [(fxpositive? dx) (enm-dx-render-set! enm (fx1- dx))])]
-	   ;; Moving on x: Go in the direction we're moving
+		 [(flnegative? dx) (enm-dx-render-set!
+							enm (flmin 0 (fl+ dx (abs (fl- y oy)))))]
+		 [(flpositive? dx) (enm-dx-render-set!
+							enm (flmax 0 (fl- dx (abs (fl- y oy)))))])]
+	   ;; Moving on x: Go in the direction we're moving (up to a cap)
 	   [else
-		(enm-dx-render-set! enm (if (fl> x ox)
-									(fx1+ dx)
-									(fx1- dx)))])))
+		(enm-dx-render-set! enm (clamp (fl+ dx (fl- x ox)) -30.0 30.0))])))
   (vector-for-each-truthy each live-enm))
 
 (define (spawn-enemy type x y health control-function drops)
   (let ((idx (vector-index #f live-enm)))
 	(unless idx
 	  (error 'spawn-enemy "No more open enemy slots!"))
-	(let ([enemy (make-enm type x y x y health drops 0 #f)])
+	(let ([enemy (make-enm type x y x y health drops 0.0 #f)])
 	  (vector-set! live-enm idx enemy)
 	  (spawn-task
 	   (symbol->string type)
@@ -870,8 +870,9 @@
 
 (define (draw-enemies textures)
   (define (each enm)
-	(let ((render-x (+ (enm-x enm) +playfield-render-offset-x+))
-		  (render-y (+ (enm-y enm) +playfield-render-offset-y+)))
+	(let ([render-x (+ (enm-x enm) +playfield-render-offset-x+)]
+		  [render-y (+ (enm-y enm) +playfield-render-offset-y+)]
+		  [dx (enm-dx-render enm)])
 	  (case (enm-type enm)
 		([red-fairy]
 		 (draw-sprite textures 'red-fairy1 render-x render-y -1))
@@ -880,13 +881,29 @@
 		([blue-fairy]
 		 (draw-sprite textures 'blue-fairy1 render-x render-y -1))
 		([yellow-fairy]
-		 (draw-sprite textures 'yellow-fairy1 render-x render-y -1)))
+		 (cond
+		  [(fl< (abs dx) 5.0)
+		   (let* ([fwd-sprites '#(yellow-fairy2 yellow-fairy3 yellow-fairy4)]
+				  [sprite (vector-ref fwd-sprites
+									  (truncate (mod (/ frames 5)
+													 (vector-length fwd-sprites))))])
+			 (draw-sprite textures sprite render-x render-y -1))]
+		  [(fl< (abs dx) 10.0)
+		   (draw-sprite textures 'yellow-fairy5 render-x render-y -1)]
+		  [(flpositive? dx)
+		   (let* ([right-sprites '#(yellow-fairy6 yellow-fairy7 yellow-fairy8
+												  yellow-fairy9 yellow-fairy10 yellow-fairy11)]
+				  [sprite (vector-ref right-sprites
+									  (truncate (mod (/ frames 7)
+													 (vector-length right-sprites))))])
+			 (draw-sprite textures sprite render-x render-y -1))])
+		 ))
 	  (when show-hitboxes
 		(let-values ([(x y w h) (enm-hurtbox enm)])
 		  (raylib:draw-rectangle-rec
 		   (+ x +playfield-render-offset-x+)
 		   (+ y +playfield-render-offset-y+) w h red))
-		(raylib:draw-text (format "~d" (enm-dx-render enm))
+		(raylib:draw-text (format "~,4f" (enm-dx-render enm))
 						  (exact (floor render-x)) (exact (floor render-y))
 						  10 -1))))
   (vector-for-each-truthy each live-enm))
@@ -1192,28 +1209,43 @@
 			   linear-step-forever)))))
 
 (define (test-fairy-control2 task enm)
-  (define sub1 (spawn-subtask
-				"ring1"
-				(lambda (_) (test-fairy-control2-ring1 enm))
-				(constantly #t) task))
-  (define sub2 (spawn-subtask
-				"ring2"
-				(lambda (_) (test-fairy-control2-ring2 enm))
-				(constantly #t) task))
+  ;; (define sub1 (spawn-subtask
+  ;; 				"ring1"
+  ;; 				(lambda (_) (test-fairy-control2-ring1 enm))
+  ;; 				(constantly #t) task))
+  ;; (define sub2 (spawn-subtask
+  ;; 				"ring2"
+  ;; 				(lambda (_) (test-fairy-control2-ring2 enm))
+  ;; 				(constantly #t) task))
   (define move (spawn-subtask
 				"move"
 				(lambda (_)
-				  (interval-loop-waitfirst
-				   50
-				   (let* ([x (enm-x enm)]
-						  [y (enm-y enm)]
-						  [angle (* (roll game-rng) (* 2 pi))]
-						  [magnitude 50.0]
-						  [dx (* magnitude (cos angle))]
-						  [dy (* magnitude (sin angle))]
-						  [nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+)]
-						  [ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)])
-					 (ease-cubic-to nx ny 90 enm))))
+				  (dotimes
+				   120
+				   (enm-y-set! enm (+ (enm-y enm) 0.5))
+				   (yield))
+				  (dotimes
+				   120
+				   (enm-y-set! enm (+ (enm-y enm) 0.5))
+				   (enm-x-set! enm (+ (enm-x enm) 0.5))
+				   (yield))
+				  (dotimes
+				   240
+				   (enm-y-set! enm (+ (enm-y enm) 0.5))
+				   (enm-x-set! enm (- (enm-x enm) 0.5))
+				   (yield))
+				  ;; (interval-loop-waitfirst
+				  ;;  50
+				  ;;  (let* ([x (enm-x enm)]
+				  ;; 		  [y (enm-y enm)]
+				  ;; 		  [angle (* (roll game-rng) (* 2 pi))]
+				  ;; 		  [magnitude 50.0]
+				  ;; 		  [dx (* magnitude (cos angle))]
+				  ;; 		  [dy (* magnitude (sin angle))]
+				  ;; 		  [nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+)]
+				  ;; 		  [ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)])
+				  ;; 	 (ease-cubic-to nx ny 90 enm)))
+				  )
 				(constantly #t) task))
   ;; loop forever running the subtasks until the enemy dies
   (wait-until (constantly #f)))
@@ -1443,12 +1475,11 @@
   (define-values (render-player-x render-player-y)
 	(get-player-render-pos))
   ;; player sprite (todo: directional moving sprites)
-  (let ((x-texture-index (truncate (mod (/ frames 9) 8)))
-		(iframe-blink
-		 (if (and (player-invincible?)
-				  (< (mod frames 4) 2))
+  (let ([x-texture-index (truncate (mod (/ frames 9) 8))]
+		[iframe-blink
+		 (if (and (player-invincible?) (< (mod frames 4) 2))
 			 (packcolor 64 64 255 255)
-			 #xffffffff)))
+			 -1)])
 	(raylib:draw-texture-rec
 	 (txbundle-reimu textures)
 	 (make-rectangle (* 32.0 x-texture-index) 0.0 32.0 48.0)
