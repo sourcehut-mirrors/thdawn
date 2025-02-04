@@ -29,6 +29,8 @@
 	  (* 8 x x x x)
 	  (- 1 (/ (expt (+ (* -2 x) 2) 4)
 			  2))))
+(define (ease-in-quad x)
+  (* x x))
 (define (ease-out-quart x)
   (- 1 (expt (- 1 x) 4)))
 (define (ease-out-expo x)
@@ -496,9 +498,9 @@
 
 (define (cancel-bullet bullet)
   (spawn-particle (make-particle
-				   'cancel
+				   (particletype cancel)
 				   (bullet-x bullet) (bullet-y bullet)
-				   23 0))
+				   23 0 #f))
   (delete-bullet bullet))
 
 (define (cancel-bullet-with-drop bullet drop)
@@ -919,13 +921,15 @@
 	(bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
 	(bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing))))))
 
+(define-enumeration particletype (cancel itemvalue) make-particletype-set)
 (define-record-type particle
   (fields
    type
    (mutable x)
    (mutable y)
    max-age
-   (mutable age)))
+   (mutable age)
+   extra-data))
 
 (define live-particles (make-vector 4096 #f))
 
@@ -961,7 +965,16 @@
 		  (txbundle-bulletcancel textures)
 		  (make-rectangle u v 64.0 64.0)
 		  (make-rectangle (- render-x 24.0) (- render-y 24.0) 48.0 48.0)
-		  v2zero 0.0 -1)))))
+		  v2zero 0.0 -1)))
+	  ([itemvalue]
+	   (let* ([alpha (round (lerp 255 0
+								  (ease-in-quad
+								   (/ (particle-age p) (particle-max-age p)))))])
+		 (raylib:draw-text
+		  (number->string (particle-extra-data p))
+		  (exact (round (fl+ render-x 10.0)))
+		  (exact (round render-y))
+		  12 (packcolor 255 215 0 alpha))))))
   (vector-for-each-truthy each live-particles))
 
 (define-record-type miscent
@@ -1104,7 +1117,11 @@
 		 (case type
 		   ([point]
 			(raylib:play-sound (sebundle-item sounds))
-			(set! current-score (+ current-score item-value)))
+			(set! current-score (+ current-score item-value))
+			(spawn-particle
+			 (make-particle (particletype itemvalue)
+							(miscent-x ent) (miscent-y ent)
+							120 0 item-value)))
 		   ([life-frag]
 			(add-lives 1/3))
 		   ([life]
@@ -1581,7 +1598,9 @@
   (raylib:draw-text (format "FRAME: ~d" frames)
 					440 325
 					18 -1)
-  (raylib:draw-text (format "MISC: ~d" (vector-popcnt live-misc-ents))
+  (raylib:draw-text (format "MISC: ~d / PART: ~d"
+							(vector-popcnt live-misc-ents)
+							(vector-popcnt live-particles))
 					440 350
 					18 -1)
   (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
