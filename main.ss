@@ -502,9 +502,9 @@
   (delete-bullet bullet))
 
 (define (cancel-bullet-with-drop bullet drop)
-  (define ent (spawn-misc-ent drop (bullet-x bullet) (bullet-y bullet) -2.0 0.1))
+  (define ent (spawn-misc-ent drop (bullet-x bullet) (bullet-y bullet) -3.0 0.1))
   (spawn-task "delayed autocollect"
-			  (lambda (task) (wait 30) (miscent-autocollect-set! ent #t))
+			  (lambda (task) (wait 45) (miscent-autocollect-set! ent #t))
 			  (constantly #t))
   (cancel-bullet bullet))
 
@@ -1211,14 +1211,14 @@
 			   linear-step-forever)))))
 
 (define (test-fairy-control2 task enm)
-  ;; (define sub1 (spawn-subtask
-  ;; 				"ring1"
-  ;; 				(lambda (_) (test-fairy-control2-ring1 enm))
-  ;; 				(constantly #t) task))
-  ;; (define sub2 (spawn-subtask
-  ;; 				"ring2"
-  ;; 				(lambda (_) (test-fairy-control2-ring2 enm))
-  ;; 				(constantly #t) task))
+  (define sub1 (spawn-subtask
+				"ring1"
+				(lambda (_) (test-fairy-control2-ring1 enm))
+				(constantly #t) task))
+  (define sub2 (spawn-subtask
+				"ring2"
+				(lambda (_) (test-fairy-control2-ring2 enm))
+				(constantly #t) task))
   (define move (spawn-subtask
 				"move"
 				(lambda (_)
@@ -1276,7 +1276,6 @@
 			bomb-sweep-y-down
 			+playfield-width+
 			40))
-  (autocollect-all-items)
   (when (= bombing (- +bombing-max+ +bomb-initial-phase-length+))
 	(raylib:play-sound (sebundle-oldvwoopfast sounds)))
   (when (<= bombing (- +bombing-max+ +bomb-initial-phase-length+))
@@ -1410,6 +1409,7 @@
 		(set! bombing +bombing-max+)
 		(set! iframes 180)
 		(set! bomb-stock (sub1 bomb-stock))
+		(autocollect-all-items)
 		(raylib:play-sound (sebundle-spelldeclare sounds))
 		(vector-for-each-truthy
 		 (lambda (blt)
