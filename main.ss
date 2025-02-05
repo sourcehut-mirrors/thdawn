@@ -281,6 +281,16 @@
    (v2+ (vec2 x y) (sprite-descriptor-center-shift data))
    color))
 
+(define (draw-sprite-mirror-x textures sprite-id x y color)
+  (define data (symbol-hashtable-ref sprite-data sprite-id #f))
+  (define bounds (sprite-descriptor-bounds data))
+  (raylib:draw-texture-rec
+   ((sprite-descriptor-tx-accessor data) textures)
+   (make-rectangle (rectangle-x bounds) (rectangle-y bounds)
+				   (- (rectangle-width bounds)) (rectangle-height bounds))
+   (v2+ (vec2 x y) (sprite-descriptor-center-shift data))
+   color))
+
 (define (draw-sprite-pro textures sprite-id dest color)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
   (raylib:draw-texture-pro
@@ -746,10 +756,9 @@
 	(enm-oy-set! enm (enm-y enm)))
   (vector-for-each-truthy each live-enm))
 
-(define (epsilon-equal a b)
-  (fl< (flabs (fl- a b)) 0.00000001))
-
 (define (posttick-enemies)
+  (define (epsilon-equal a b)
+	(fl< (flabs (fl- a b)) 0.00000001))
   (define (each enm)
 	(let* ([ox (enm-ox enm)] [oy (enm-oy enm)]
 		   [x (enm-x enm)] [y (enm-y enm)]
@@ -760,15 +769,16 @@
 	   ;; Didn't move: don't update at all
 	   [(and stationary-x stationary-y) #f]
 	   ;; Stationary on x (moving on y): Go back towards zero
+	   ;; TODO: Do we really want this?
 	   [stationary-x
 		(cond
 		 [(flnegative? dx) (enm-dx-render-set!
-							enm (flmin 0 (fl+ dx (abs (fl- y oy)))))]
+							enm (flmin 0.0 (fl+ dx (abs (fl- y oy)))))]
 		 [(flpositive? dx) (enm-dx-render-set!
-							enm (flmax 0 (fl- dx (abs (fl- y oy)))))])]
+							enm (flmax 0.0 (fl- dx (abs (fl- y oy)))))])]
 	   ;; Moving on x: Go in the direction we're moving (up to a cap)
 	   [else
-		(enm-dx-render-set! enm (clamp (fl+ dx (fl- x ox)) -30.0 30.0))])))
+		(enm-dx-render-set! enm (clamp (fl+ dx (fl- x ox)) -10.0 10.0))])))
   (vector-for-each-truthy each live-enm))
 
 (define (spawn-enemy type x y health control-function drops)
@@ -876,32 +886,53 @@
   (define (each enm)
 	(let ([render-x (+ (enm-x enm) +playfield-render-offset-x+)]
 		  [render-y (+ (enm-y enm) +playfield-render-offset-y+)]
-		  [dx (enm-dx-render enm)])
-	  (case (enm-type enm)
-		([red-fairy]
-		 (draw-sprite textures 'red-fairy1 render-x render-y -1))
-		([green-fairy]
-		 (draw-sprite textures 'green-fairy1 render-x render-y -1))
-		([blue-fairy]
-		 (draw-sprite textures 'blue-fairy1 render-x render-y -1))
-		([yellow-fairy]
+		  [dx (enm-dx-render enm)]
+		  [type (enm-type enm)])
+	  (case type
+		([yellow-fairy red-fairy green-fairy blue-fairy]
 		 (cond
 		  [(fl< (abs dx) 5.0)
-		   (let* ([fwd-sprites '#(yellow-fairy2 yellow-fairy3 yellow-fairy4)]
+		   (let* ([fwd-sprites
+				   (case type
+					 ([yellow-fairy] '#(yellow-fairy2 yellow-fairy3 yellow-fairy4))
+					 ([red-fairy] '#(red-fairy2 red-fairy3 red-fairy4))
+					 ([green-fairy] '#(green-fairy2 green-fairy3 green-fairy4))
+					 ([blue-fairy] '#(blue-fairy2 blue-fairy3 blue-fairy4)))]
 				  [sprite (vector-ref fwd-sprites
 									  (truncate (mod (/ frames 5)
 													 (vector-length fwd-sprites))))])
 			 (draw-sprite textures sprite render-x render-y -1))]
 		  [(fl< (abs dx) 10.0)
-		   (draw-sprite textures 'yellow-fairy5 render-x render-y -1)]
-		  [(flpositive? dx)
-		   (let* ([right-sprites '#(yellow-fairy6 yellow-fairy7 yellow-fairy8
-												  yellow-fairy9 yellow-fairy10 yellow-fairy11)]
-				  [sprite (vector-ref right-sprites
+		   (let ([sprite
+				  (case type
+					([yellow-fairy] 'yellow-fairy5)
+					([red-fairy] 'red-fairy5)
+					([green-fairy] 'green-fairy5)
+					([blue-fairy] 'blue-fairy5))])
+			 (if (flnegative? dx)
+				 (draw-sprite-mirror-x textures sprite render-x render-y -1)
+				 (draw-sprite textures sprite render-x render-y -1)))]
+		  [else
+		   (let* ([side-sprites
+				   (case type
+					 ([yellow-fairy]
+					  '#(yellow-fairy6 yellow-fairy7 yellow-fairy8
+									   yellow-fairy9 yellow-fairy10 yellow-fairy11))
+					 ([red-fairy]
+					  '#(red-fairy6 red-fairy7 red-fairy8
+									red-fairy9 red-fairy10 red-fairy11))
+					 ([green-fairy]
+					  '#(green-fairy6 green-fairy7 green-fairy8
+									  green-fairy9 green-fairy10 green-fairy11))
+					 ([blue-fairy]
+					  '#(blue-fairy6 blue-fairy7 blue-fairy8
+									 blue-fairy9 blue-fairy10 blue-fairy11)))]
+				  [sprite (vector-ref side-sprites
 									  (truncate (mod (/ frames 7)
-													 (vector-length right-sprites))))])
-			 (draw-sprite textures sprite render-x render-y -1))])
-		 ))
+													 (vector-length side-sprites))))])
+			 (if (flnegative? dx)
+				 (draw-sprite-mirror-x textures sprite render-x render-y -1)
+				 (draw-sprite textures sprite render-x render-y -1)))])))
 	  (when show-hitboxes
 		(let-values ([(x y w h) (enm-hurtbox enm)])
 		  (raylib:draw-rectangle-rec
@@ -1256,6 +1287,10 @@
 				   (enm-y-set! enm (+ (enm-y enm) 0.5))
 				   (enm-x-set! enm (- (enm-x enm) 0.5))
 				   (yield))
+				  (dotimes
+				   120
+				   (enm-y-set! enm (- (enm-y enm) 0.5))
+				   (yield))
 				  ;; (interval-loop-waitfirst
 				  ;;  50
 				  ;;  (let* ([x (enm-x enm)]
@@ -1445,7 +1480,7 @@
 		(set! bomb-sweep-y-up (- player-y 50.0))
 		(set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
 	 [(fx= k key-space)
-	  (spawn-enemy 'yellow-fairy 0.0 100.0 200.0 test-fairy-control2
+	  (spawn-enemy 'blue-fairy 0.0 100.0 200.0 test-fairy-control2
 				   default-drop)]
 	 [(fx= k key-y)
 	  ;; (enable-object-counts #t)
