@@ -998,14 +998,16 @@
 		  (make-rectangle (- render-x 24.0) (- render-y 24.0) 48.0 48.0)
 		  v2zero 0.0 -1)))
 	  ([itemvalue]
-	   (let* ([alpha (round (lerp 255 0
-								  (ease-in-quad
-								   (/ (particle-age p) (particle-max-age p)))))])
+	   (let ([alpha (round (lerp 255 0
+								 (ease-in-quad
+								  (/ (particle-age p) (particle-max-age p)))))]
+			 [color (car (particle-extra-data p))]
+			 [value (cdr (particle-extra-data p))])
 		 (raylib:draw-text
-		  (number->string (particle-extra-data p))
+		  (number->string value)
 		  (exact (round (fl+ render-x 10.0)))
 		  (exact (round render-y))
-		  12 (packcolor 255 215 0 alpha))))))
+		  12 (bitwise-ior color alpha))))))
   (vector-for-each-truthy each live-particles))
 
 (define-enumeration miscenttype
@@ -1155,15 +1157,15 @@
 			(spawn-particle
 			 (make-particle (particletype itemvalue)
 							(miscent-x ent) (miscent-y ent)
-							60 0 item-value)))
-		   ([life-frag]
-			(add-lives 1/3))
-		   ([life]
-			(add-lives 1))
-		   ([bomb-frag]
-			(add-bombs 1/3))
-		   ([bomb]
-			(add-bombs 1))
+							60 0 (cons (if (or (miscent-autocollect ent)
+											   (< player-y +poc-y+))
+										   #xffd70000
+										   #xf5f5f500)
+									   item-value))))
+		   ([life-frag] (add-lives 1/3))
+		   ([life] (add-lives 1))
+		   ([bomb-frag] (add-bombs 1/3))
+		   ([bomb] (add-bombs 1))
 		   ([small-piv]
 			(raylib:play-sound (sebundle-item sounds))
 			(set! item-value (+ 50 item-value))
