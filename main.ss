@@ -818,10 +818,14 @@
 							  (eq? drop (car drops)))]
 			  [fuzz-x (if skip-fuzz 0.0 (- (roll game-rng 18) 9.0))]
 			  [fuzz-y (if skip-fuzz 0.0 (- (roll game-rng 8) 4.0))])
-		 (spawn-misc-ent
-		  type
-		  (+ x fuzz-x) (+ y fuzz-y)
-		  -3.0 0.1))))
+		 (let ([ent (spawn-misc-ent
+					 type
+					 (+ x fuzz-x) (+ y fuzz-y)
+					 -3.0 0.1)])
+		   (when (fxpositive? bombing)
+			 (spawn-task "delayed autocollect"
+						 (lambda (task) (wait 45) (miscent-autocollect-set! ent #t))
+						 (constantly #t)))))))
    drops))
 
 (define (prune-dead-enemies)
