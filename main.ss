@@ -821,7 +821,7 @@
 		 (let ([ent (spawn-misc-ent
 					 type
 					 (+ x fuzz-x) (+ y fuzz-y)
-					 -3.0 0.1)])
+					 -3.0 0.08)])
 		   (when (fxpositive? bombing)
 			 (spawn-task "delayed autocollect"
 						 (lambda (task) (wait 45) (miscent-autocollect-set! ent #t))
