@@ -738,7 +738,7 @@
    ;; arbitrary scratchpad for custom data, not allocated by default
    (mutable extras)))
 (define live-enm (make-vector 256 #f))
-(define default-drop '((point . 1)))
+(define default-drop (list (cons (miscenttype point) 1)))
 
 (define (pretick-enemies)
   (define (each enm)
@@ -977,6 +977,9 @@
 		  12 (packcolor 255 215 0 alpha))))))
   (vector-for-each-truthy each live-particles))
 
+(define-enumeration miscenttype
+  (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb)
+  make-miscent-type-set)
 (define-record-type miscent
   (fields
    type
@@ -1121,7 +1124,7 @@
 			(spawn-particle
 			 (make-particle (particletype itemvalue)
 							(miscent-x ent) (miscent-y ent)
-							120 0 item-value)))
+							60 0 item-value)))
 		   ([life-frag]
 			(add-lives 1/3))
 		   ([life]
@@ -1395,13 +1398,13 @@
 	  (when (fxzero? (mod frames 10))
 		(vector-for-each
 		 (lambda (x y)
-		   (spawn-misc-ent 'needle x y -10 0))
+		   (spawn-misc-ent (miscenttype needle) x y -10 0))
 		 option-xs option-ys))
 	  (when (fxzero? (mod frames 5))
 		(let ([y (- player-y 20)])
-		  (spawn-misc-ent 'mainshot (- player-x 10) y
+		  (spawn-misc-ent (miscenttype mainshot) (- player-x 10) y
 						  -10 0)
-		  (spawn-misc-ent 'mainshot (+ player-x 10) y
+		  (spawn-misc-ent (miscenttype mainshot) (+ player-x 10) y
 						  -10 0)
 		  (raylib:play-sound (sebundle-playershoot sounds))))))
   ;; edge triggered stuff
