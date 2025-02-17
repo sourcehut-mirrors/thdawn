@@ -383,7 +383,11 @@
 (define life-stock 2)
 (define bomb-stock 3)
 (define game-rng (make-pseudo-random-generator))
+(define visual-rng (make-pseudo-random-generator))
 (alias roll pseudo-random-generator-next!) ;; convenience alias
+(define (centered-roll rng radius)
+  (- (* (roll rng) 2 radius)
+	 radius))
 
 (define (player-invincible?)
   (positive? iframes))
@@ -836,6 +840,12 @@
 		(when (and enemy (<= (enm-health enemy) 0))
 		  (spawn-drops enemy)
 		  (raylib:play-sound (sebundle-enmdie sounds))
+		  (spawn-particle (make-particle
+						   (particletype enmdeath)
+						   (+ (enm-x enemy) (centered-roll visual-rng 20.0))
+						   (+ (enm-y enemy) (centered-roll visual-rng 20.0))
+						   30 0 '((start-radius . 2)
+								  (end-radius . 85))))
 		  (vector-set! live-enm idx #f)))))
 
 (define (damage-player)
@@ -956,7 +966,9 @@
 	(bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
 	(bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing))))))
 
-(define-enumeration particletype (cancel itemvalue) make-particletype-set)
+(define-enumeration particletype
+  (cancel itemvalue enmdeath)
+  make-particletype-set)
 (define-record-type particle
   (fields
    type
@@ -991,7 +1003,16 @@
   (define (each p)
 	(define render-x (+ (particle-x p) +playfield-render-offset-x+))
 	(define render-y (+ (particle-y p) +playfield-render-offset-y+))
+	(define extra-data (particle-extra-data p))
 	(case (particle-type p)
+	  ([enmdeath]
+	   (let ([age (/ (particle-age p) (particle-max-age p))])
+		 (raylib:draw-circle-lines-v
+		  render-x render-y
+		  (inexact (lerp (cdr (assq 'start-radius extra-data))
+						 (cdr (assq 'end-radius extra-data))
+						 age))
+		  (packcolor 255 255 255 (exact (round (lerp 255 0 age)))))))
 	  ([cancel]
 	   (let* ([age (floor (/ (particle-age p) 3))]
 			  [v (if (fx< age 4) 0.0 64.0)]
@@ -1005,8 +1026,8 @@
 	   (let ([alpha (round (lerp 255 0
 								 (ease-in-quad
 								  (/ (particle-age p) (particle-max-age p)))))]
-			 [color (car (particle-extra-data p))]
-			 [value (cdr (particle-extra-data p))])
+			 [color (car extra-data)]
+			 [value (cdr extra-data)])
 		 (raylib:draw-text
 		  (number->string value)
 		  (exact (round (fl+ render-x 10.0)))

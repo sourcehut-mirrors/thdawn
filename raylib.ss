@@ -5,6 +5,7 @@
 		  begin-texture-mode end-texture-mode
 		  load-render-texture unload-render-texture render-texture-inner
 		  begin-drawing end-drawing clear-background draw-circle-v draw-line
+		  draw-circle-lines-v
 		  draw-text draw-text-ex draw-fps draw-rectangle-rec
 		  draw-rectangle-gradient-h draw-rectangle-gradient-v
 		  init-audio-device close-audio-device
@@ -141,6 +142,13 @@
 	(load-global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-circle-v0 global-vector2 radius global-color))
+
+  (define draw-circle-lines-v0
+	(foreign-procedure "DrawCircleLinesV" ((& RayVector2) float (& Color)) void))
+  (define (draw-circle-lines-v x y radius rgba)
+	(load-global-vector2 x y)
+	(load-global-color global-color rgba)
+	(draw-circle-lines-v0 global-vector2 radius global-color))
 
   (define draw-rectangle-gradient-v0
 	(foreign-procedure "DrawRectangleGradientV"
