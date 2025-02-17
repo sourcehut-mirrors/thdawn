@@ -1830,38 +1830,43 @@
   (raylib:set-trace-log-level 4) ;; WARNING or above
   (load-audio)
   (load-sfx)
+  
   (let* ([textures (load-textures)]
 		 [fonts (load-fonts)]
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
-	;(raylib:play-music-stream ojamajo-carnival)
+	;;(raylib:play-music-stream ojamajo-carnival)
 	;; clear these just in case they were left over from previous repl session
 	(set! iframes 180)
 	(set! frames 0)
 	(set! paused #f)
-	(do [] [(raylib:window-should-close)]
-	  (handle-input)
-	  (raylib:update-music-stream ojamajo-carnival)
-	  (unless paused
-		(tick-player)
-		(vector-for-each-truthy
-		 despawn-out-of-bound-bullet
-		 live-bullets)
-		(prune-dead-enemies)
-		(pretick-enemies)
-		(run-tasks)
-		(posttick-enemies)
-		(tick-misc-ents)
-		(tick-particles)
-		(process-collisions))
-	  (render-all render-texture render-texture-inner textures fonts)
-	  (unless paused
-		(set! frames (fx1+ frames)))
-	  (set! true-frames (fx1+ true-frames)))
-	(unload-audio)
-	(unload-fonts fonts)
-	(unload-textures textures)
-	(unload-sfx)
-	(raylib:close-window)))
+	(dynamic-wind
+	  (thunk #f)
+	  (lambda ()
+		(do [] [(raylib:window-should-close)]
+		  (handle-input)
+		  (raylib:update-music-stream ojamajo-carnival)
+		  (unless paused
+			(tick-player)
+			(vector-for-each-truthy
+			 despawn-out-of-bound-bullet
+			 live-bullets)
+			(prune-dead-enemies)
+			(pretick-enemies)
+			(run-tasks)
+			(posttick-enemies)
+			(tick-misc-ents)
+			(tick-particles)
+			(process-collisions))
+		  (render-all render-texture render-texture-inner textures fonts)
+		  (unless paused
+			(set! frames (fx1+ frames)))
+		  (set! true-frames (fx1+ true-frames))))
+	  (lambda ()
+		(unload-audio)
+		(unload-fonts fonts)
+		(unload-textures textures)
+		(unload-sfx)
+		(raylib:close-window)))))
 
 (scheme-start (lambda _ (main)))
