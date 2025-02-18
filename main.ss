@@ -877,6 +877,20 @@
 		(when (fxzero? (mod graze 10))
 		  (set! item-value (fx+ 10 item-value)))
 		(bullet-grazed-set! bullet #t)
+		(spawn-particle (make-particle
+						 (particletype graze)
+						 player-x player-y
+						 25 0
+						 (list (cons 'dir
+									 ;; 80% of the time, particle flies towards bullet
+									 ;; 20% of the time, away from it
+									 (torad (+ (centered-roll visual-rng 90.0)
+											   (if (< (bullet-x bullet) player-x)
+												   180.0 0.0)
+											   (if (< (roll visual-rng) 0.2)
+												   180.0 0.0))))
+							   (cons 'speed (+ 1.0 (* 2.0 (roll visual-rng))))
+							   (cons 'rot (* (roll visual-rng) 360.0)))))
 		(raylib:play-sound (sebundle-graze sounds)))
 
 	  (when (check-collision-circles
@@ -967,7 +981,7 @@
 	(bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing))))))
 
 (define-enumeration particletype
-  (cancel itemvalue enmdeath)
+  (cancel itemvalue enmdeath graze)
   make-particletype-set)
 (define-record-type particle
   (fields
@@ -995,6 +1009,12 @@
 (define (tick-particles)
   (define (each p)
 	(particle-age-set! p (fx1+ (particle-age p)))
+	(case (particle-type p)
+	  ([graze]
+	   (let ([dir (cdr (assq 'dir (particle-extra-data p)))]
+			 [speed (cdr (assq 'speed (particle-extra-data p)))])
+		 (particle-x-set! p (+ (particle-x p) (* speed (cos dir))))
+		 (particle-y-set! p (+ (particle-y p) (* speed (sin dir)))))))
 	(when (fx> (particle-age p) (particle-max-age p))
 	  (delete-particle p)))
   (vector-for-each-truthy each live-particles))
@@ -1005,6 +1025,16 @@
 	(define render-y (+ (particle-y p) +playfield-render-offset-y+))
 	(define extra-data (particle-extra-data p))
 	(case (particle-type p)
+	  ([graze]
+	   (let* ([t (/ (particle-age p) (particle-max-age p))]
+			  [sz (lerp 6 0 t)]
+			  [rot (cdr (assq 'rot (particle-extra-data p)))])
+		 (raylib:draw-rectangle-pro render-x render-y sz sz
+									;; idk why this works it seems wrong,
+									;; but everything else you'd think is right
+									;; doesn't work
+									0 0
+									rot #xf5f5f5f5)))
 	  ([enmdeath]
 	   (let ([age (/ (particle-age p) (particle-max-age p))])
 		 (raylib:draw-circle-lines-v
@@ -1334,6 +1364,17 @@
   ;; loop forever running the subtasks until the enemy dies
   (wait-until (constantly #f)))
 
+(define (direct-shoot-forever task enm)
+  (define builder
+	(-> (fb)
+		(fbcounts 1 5)
+		(fbspeed 2.0 5.0)))
+  (interval-loop 10
+   (fbshoot builder (enm-x enm) (enm-y enm)
+			(lambda (row col speed facing)
+			  (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
+							facing speed 5 linear-step-forever)))))
+
 (define (tick-bomb)
   (define (bomb-sweep-x-left-hitbox)
 	(values (- bomb-sweep-x-left 40.0)
@@ -1507,7 +1548,7 @@
 		(set! bomb-sweep-y-up (- player-y 50.0))
 		(set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
 	 [(fx= k key-space)
-	  (spawn-enemy 'blue-fairy 0.0 100.0 200.0 test-fairy-control2
+	  (spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
 				   default-drop)]
 	 [(fx= k key-y)
 	  ;; (enable-object-counts #t)
@@ -1771,8 +1812,8 @@
   (draw-player textures)
   (draw-enemies textures)
   (draw-misc-ents textures)
-  (draw-particles textures)
   (draw-bullets textures)
+  (draw-particles textures)
 
   ;; focus sigil. Done here after the bullets because we want the player hitbox
   ;; to render on top of big bullets like bubbles, and ryannlib has the hitbox and
@@ -1824,10 +1865,10 @@
   (raylib:end-drawing))
 
 (define (main)
+  (raylib:set-trace-log-level 4) ;; WARNING or above
   (raylib:init-window 1280 960 "thdawn")
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)
-  (raylib:set-trace-log-level 4) ;; WARNING or above
   (load-audio)
   (load-sfx)
   

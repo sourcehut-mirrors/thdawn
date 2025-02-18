@@ -6,7 +6,7 @@
 		  load-render-texture unload-render-texture render-texture-inner
 		  begin-drawing end-drawing clear-background draw-circle-v draw-line
 		  draw-circle-lines-v
-		  draw-text draw-text-ex draw-fps draw-rectangle-rec
+		  draw-text draw-text-ex draw-fps draw-rectangle-rec draw-rectangle-pro
 		  draw-rectangle-gradient-h draw-rectangle-gradient-v
 		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
@@ -234,6 +234,18 @@
 	(load-global-rectangle global-rectangle x y width height)
 	(load-global-color global-color rgba)
 	(draw-rectangle-rec0 global-rectangle global-color))
+
+  (define draw-rectangle-pro0
+	(foreign-procedure "DrawRectanglePro" ((& RayRect) (& RayVector2)
+										   float (& Color)) void))
+  (define (draw-rectangle-pro x y width height ox oy rot rgba)
+	(load-global-rectangle global-rectangle x y width height)
+	(load-global-vector2 ox oy)
+	(load-global-color global-color rgba)
+	(draw-rectangle-pro0 global-rectangle
+						 global-vector2
+						 rot
+						 global-color))
 
   (define draw-text0
 	(foreign-procedure "DrawText" (string int int int (& Color)) void))
