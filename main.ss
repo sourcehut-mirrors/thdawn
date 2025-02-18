@@ -1033,10 +1033,7 @@
 			  [sz (lerp 6 0 t)]
 			  [rot (cdr (assq 'rot (particle-extra-data p)))])
 		 (raylib:draw-rectangle-pro render-x render-y sz sz
-									;; idk why this works it seems wrong,
-									;; but everything else you'd think is right
-									;; doesn't work
-									0 0
+									(/ sz 2) (/ sz 2)
 									rot #xf5f5f5f5)))
 	  ([enmdeath]
 	   (let ([age (/ (particle-age p) (particle-max-age p))])
