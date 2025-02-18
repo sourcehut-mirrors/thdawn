@@ -341,6 +341,9 @@
 (define frames 0)
 ;; Always increments by one per frame no matter what. Should not be used often.
 (define true-frames 0)
+;; The value of frames when the shot button was pressed down.
+;; -1 if shot is not currently held
+(define start-shot-frames -1)
 (define iframes 0) ;; Remaining frames of invincibility
 (define respawning 0) ;; Nonzero if going through the respawn animation
 (define +respawning-max+ 60)
@@ -1485,7 +1488,8 @@
 				 (lerp player-y (- player-y 17) progress))))
 
 (define (handle-input)
-  ;; level triggered stuff
+  ;; is-key-down: Level-triggered
+  ;; is-key-pressed, is-key-released: Edge-triggered
   (when (not paused)
 	(set! focused-immediate (raylib:is-key-down key-left-shift))
 	(if focused-immediate
@@ -1498,74 +1502,59 @@
 	  ;; don't allow moving between hit/death
 	  (handle-player-movement))
 	(when (raylib:is-key-down key-z)
-	  ;; todo separate counters from main frame counter?
-	  (when (fxzero? (mod frames 10))
+	  (when (raylib:is-key-pressed key-z)
+		(set! start-shot-frames frames))
+	  (when (= 5 (mod (fx- frames start-shot-frames) 10))
 		(vector-for-each
 		 (lambda (x y)
 		   (spawn-misc-ent (miscenttype needle) x y -10 0))
 		 option-xs option-ys))
-	  (when (fxzero? (mod frames 5))
+	  (when (zero? (mod (fx- frames start-shot-frames) 5))
 		(let ([y (- player-y 20)])
 		  (spawn-misc-ent (miscenttype mainshot) (- player-x 10) y
 						  -10 0)
 		  (spawn-misc-ent (miscenttype mainshot) (+ player-x 10) y
 						  -10 0)
 		  (raylib:play-sound (sebundle-playershoot sounds))))))
-  ;; edge triggered stuff
-  (do [(k (raylib:get-key-pressed) (raylib:get-key-pressed))]
-	  [(fxzero? k)]
-	(cond
-	 [(fx= k key-f3)
-	  (set! show-hitboxes (not show-hitboxes))]
-	 [(fx= k key-escape)
-	  (set! paused (not paused))
-	  (if paused
-		  (let ()
-			(raylib:play-sound (sebundle-pause sounds))
-			(raylib:pause-music-stream ojamajo-carnival))
-		  (raylib:resume-music-stream ojamajo-carnival))]
-	 [(fx= k key-x)
-	  (when (and (not paused)
-				 (zero? bombing)
-				 (zero? respawning)
-				 (>= bomb-stock 1))
-		(set! death-timer 0)
-		(set! bombing +bombing-max+)
-		(set! iframes 180)
-		(set! bomb-stock (sub1 bomb-stock))
-		(autocollect-all-items)
-		(raylib:play-sound (sebundle-spelldeclare sounds))
-		(vector-for-each-truthy
-		 (lambda (blt)
-		   (when (bullet-active? blt)
-			 (cancel-bullet-with-drop blt 'small-piv)))
-		 live-bullets)
-		(set! bomb-sweep-x-left (- player-x 50.0))
-		(set! initial-bomb-sweep-x-left bomb-sweep-x-left)
-		(set! bomb-sweep-x-right (+ player-x 50.0))
-		(set! initial-bomb-sweep-x-right bomb-sweep-x-right)
-		(set! bomb-sweep-y-down (+ player-y 50.0))
-		(set! initial-bomb-sweep-y-down bomb-sweep-y-down)
-		(set! bomb-sweep-y-up (- player-y 50.0))
-		(set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
-	 [(fx= k key-space)
-	  (spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
-				   default-drop)]
-	 [(fx= k key-y)
-	  ;; (enable-object-counts #t)
-	  ;; (collect 4 4)
-	  ;; (let ([c (sort! (lambda (a b)
-	  ;; 					;; each is (type (generation . bytes) ...)
-	  ;; 					(define a-sum (fold-left (lambda (acc x) (+ acc (cddr x))) 0 (cdr a)))
-	  ;; 					(define b-sum (fold-left (lambda (acc x) (+ acc (cddr x))) 0 (cdr b)))
-	  ;; 					(< b-sum a-sum))
-	  ;; 				  (object-counts)
-	  ;; 				  )])
-	  ;; 	(display c))
-	  ;; (enable-object-counts #f)
-	  #f
-	  ]
-	 )))
+  (cond
+   [(raylib:is-key-released key-z)
+	(set! start-shot-frames -1)]
+   [(raylib:is-key-pressed key-f3)
+	(set! show-hitboxes (not show-hitboxes))]
+   [(raylib:is-key-pressed key-escape)
+	(set! paused (not paused))
+	(if paused
+		(let ()
+		  (raylib:play-sound (sebundle-pause sounds))
+		  (raylib:pause-music-stream ojamajo-carnival))
+		(raylib:resume-music-stream ojamajo-carnival))]
+   [(raylib:is-key-pressed key-x)
+	(when (and (not paused)
+			   (zero? bombing)
+			   (zero? respawning)
+			   (>= bomb-stock 1))
+	  (set! death-timer 0)
+	  (set! bombing +bombing-max+)
+	  (set! iframes 180)
+	  (set! bomb-stock (sub1 bomb-stock))
+	  (autocollect-all-items)
+	  (raylib:play-sound (sebundle-spelldeclare sounds))
+	  (vector-for-each-truthy
+	   (lambda (blt)
+		 (when (bullet-active? blt)
+		   (cancel-bullet-with-drop blt 'small-piv)))
+	   live-bullets)
+	  (set! bomb-sweep-x-left (- player-x 50.0))
+	  (set! initial-bomb-sweep-x-left bomb-sweep-x-left)
+	  (set! bomb-sweep-x-right (+ player-x 50.0))
+	  (set! initial-bomb-sweep-x-right bomb-sweep-x-right)
+	  (set! bomb-sweep-y-down (+ player-y 50.0))
+	  (set! initial-bomb-sweep-y-down bomb-sweep-y-down)
+	  (set! bomb-sweep-y-up (- player-y 50.0))
+	  (set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
+   [(raylib:is-key-pressed key-space)
+	(spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
+				 default-drop)]))
 
 (define (handle-player-movement)
   (define left-pressed (raylib:is-key-down key-left))

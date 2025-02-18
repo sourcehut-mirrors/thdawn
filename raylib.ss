@@ -14,7 +14,8 @@
 		  load-sound play-sound unload-sound
 		  load-texture unload-texture draw-texture-rec draw-texture draw-texture-pro
 		  load-font unload-font
-		  is-key-down get-key-pressed set-exit-key set-trace-log-level
+		  is-key-down get-key-pressed set-exit-key is-key-pressed is-key-released
+		  set-trace-log-level
 		  push-matrix pop-matrix translatef rotatef)
   (import (chezscheme) (geom))
 
@@ -367,6 +368,16 @@
 	(foreign-procedure "IsKeyDown" (int) unsigned-8))
   (define (is-key-down k)
 	(not (fxzero? (is-key-down0 k))))
+
+  (define is-key-pressed0
+	(foreign-procedure "IsKeyPressed" (int) unsigned-8))
+  (define (is-key-pressed k)
+	(not (fxzero? (is-key-pressed0 k))))
+
+  (define is-key-released0
+	(foreign-procedure "IsKeyReleased" (int) unsigned-8))
+  (define (is-key-released k)
+	(not (fxzero? (is-key-released0 k))))
 
   (define get-key-pressed
 	(foreign-procedure "GetKeyPressed" () int))
