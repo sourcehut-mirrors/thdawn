@@ -103,6 +103,7 @@
    bulletcancel hint
    bullet-ball-huge
    laser1 laser2 laser3 laser4
+   magicircle
    ))
 (define (load-textures)
   (define (ltex file)
@@ -118,7 +119,8 @@
 					 "background_3.png" "background_4.png"
 					 "etbreak.png" "hint.png"
 					 "bullet_ball_huge.png"
-					 "laser1.png" "laser2.png" "laser3.png" "laser4.png"))))
+					 "laser1.png" "laser2.png" "laser3.png" "laser4.png"
+					 "eff_magicsquare.png"))))
 
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
@@ -272,6 +274,8 @@
   (make 'bomb-third txbundle-hint 288 32 16 16 v2zero)
   (make 'bomb-two-thirds txbundle-hint 320 32 16 16 v2zero)
   (make 'bomb-full txbundle-hint 336 0 16 16 v2zero)
+  (make 'magicircle txbundle-magicircle 0 0 256 256 (vec2 -128.0 -128.0))
+  (make 'enemy-indicator txbundle-misc 128 72 48 16 (vec2 -24.0 0.0))
   ret)
 
 (define sprite-data (make-sprite-data))
@@ -368,9 +372,6 @@
 (define death-timer 0)
 (define graze 0)
 (define paused #f)
-(define current-boss-name #f)
-(define current-spell-name #f)
-(define current-boss-timer-frames 0.0) ;; will be converted to seconds for display
 (define graze-radius 22.0)
 (define hit-radius 3.0)
 (define player-x 0.0)
@@ -739,6 +740,17 @@
 		(consume layer in-layer speed
 				 (+ layer-angle (* in-layer per-bullet-angle)))))))
 
+(define-record-type bossinfo
+  (fields
+   name
+   (mutable aura-active)
+   (mutable active-spell-name)
+   (mutable active-spell-time)
+   (mutable active-spell-initial-time)))
+
+(define-enumeration enmtype
+  (red-fairy green-fairy blue-fairy yellow-fairy boss)
+  make-enmtype-set)
 (define-record-type enm
   (fields
    type
@@ -755,7 +767,8 @@
    ;; Used to determine which sprite of the enemy to render for enemies with
    ;; different facing sprites.
    (mutable dx-render)
-   ;; arbitrary scratchpad for custom data, not allocated by default
+   ;; arbitrary scratchpad for custom data depending on type
+   ;; - boss: contains a bossinfo instance
    (mutable extras)))
 (define live-enm (make-vector 256 #f))
 (define default-drop (list (cons (miscenttype point) 1)))
@@ -800,7 +813,8 @@
 	  (spawn-task
 	   (symbol->string type)
 	   (lambda (task) (control-function task enemy))
-	   (thunk (eq? enemy (vector-ref live-enm idx)))))))
+	   (thunk (eq? enemy (vector-ref live-enm idx))))
+	  enemy)))
 
 (define (delete-enemy enm)
   (let ([idx (vector-index enm live-enm)])
@@ -911,10 +925,14 @@
 
 (define (enm-hurtbox enm)
   (case (and enm (enm-type enm))
-	((red-fairy green-fairy blue-fairy yellow-fairy)
+	([red-fairy green-fairy blue-fairy yellow-fairy]
 	 (values (- (enm-x enm) 16)
 			 (- (enm-y enm) 16)
-			 32 32))))
+			 32 32))
+	([boss]
+	 (values (- (enm-x enm) 24)
+			 (- (enm-y enm) 24)
+			 48 48))))
 
 (define (draw-enemies textures)
   (define (each enm)
@@ -923,6 +941,14 @@
 		  [dx (enm-dx-render enm)]
 		  [type (enm-type enm)])
 	  (case type
+		([boss]
+		 (when (bossinfo-aura-active (enm-extras enm))
+		   ;; TODO smaller
+		   (draw-sprite-with-rotation
+			textures 'magicircle
+			(mod (* frames 3.0) 360.0) render-x render-y #xffffffff))
+		 ;; TODO actual sprites lol
+		 (draw-sprite textures 'yellow-fairy2 render-x render-y -1))
 		([yellow-fairy red-fairy green-fairy blue-fairy]
 		 (cond
 		  [(fl< (abs dx) 5.0)
@@ -1553,8 +1579,9 @@
 	  (set! bomb-sweep-y-up (- player-y 50.0))
 	  (set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
    [(raylib:is-key-pressed key-space)
-	(spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
-				 default-drop)]))
+	(let ([enm (spawn-enemy 'boss 0.0 100.0 200.0 test-fairy-control2
+							default-drop)])
+	  (enm-extras-set! enm (make-bossinfo "My Boss" #t #f #f #f)))]))
 
 (define (handle-player-movement)
   (define left-pressed (raylib:is-key-down key-left))
@@ -1624,6 +1651,14 @@
 
 (define (draw-hud textures fonts)
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
+  (vector-for-each-truthy
+   (lambda (enm)
+	 (when (eq? 'boss (enm-type enm))
+	   (draw-sprite textures 'enemy-indicator
+					(+ +playfield-render-offset-x+ (enm-x enm))
+					(inexact (+ +playfield-max-y+ +playfield-render-offset-y+))
+					#xffffffc0)))
+   live-enm)
   ;; todo actually make this look good
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
@@ -1799,8 +1834,8 @@
 					  (+ +playfield-render-offset-x+ +playfield-max-x+)
 					  (+ +playfield-render-offset-y+ +poc-y+)
 					  -1))
-  (draw-player textures)
   (draw-enemies textures)
+  (draw-player textures)
   (draw-misc-ents textures)
   (draw-bullets textures)
   (draw-particles textures fonts)
