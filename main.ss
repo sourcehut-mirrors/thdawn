@@ -1019,7 +1019,7 @@
 	  (delete-particle p)))
   (vector-for-each-truthy each live-particles))
 
-(define (draw-particles textures)
+(define (draw-particles textures fonts)
   (define (each p)
 	(define render-x (+ (particle-x p) +playfield-render-offset-x+))
 	(define render-y (+ (particle-y p) +playfield-render-offset-y+))
@@ -1058,11 +1058,12 @@
 								  (/ (particle-age p) (particle-max-age p)))))]
 			 [color (car extra-data)]
 			 [value (cdr extra-data)])
-		 (raylib:draw-text
+		 (raylib:draw-text-ex
+		  (fontbundle-cabin fonts)
 		  (number->string value)
 		  (exact (round (fl+ render-x 10.0)))
 		  (exact (round render-y))
-		  12 (bitwise-ior color alpha))))))
+		  16.0 0.0 (bitwise-ior color alpha))))))
   (vector-for-each-truthy each live-particles))
 
 (define-enumeration miscenttype
@@ -1813,7 +1814,7 @@
   (draw-enemies textures)
   (draw-misc-ents textures)
   (draw-bullets textures)
-  (draw-particles textures)
+  (draw-particles textures fonts)
 
   ;; focus sigil. Done here after the bullets because we want the player hitbox
   ;; to render on top of big bullets like bubbles, and ryannlib has the hitbox and
