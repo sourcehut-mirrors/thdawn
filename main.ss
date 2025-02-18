@@ -102,21 +102,24 @@
    bg1 bg2 bg3 bg4
    bulletcancel hint
    bullet-ball-huge
+   laser1 laser2 laser3 laser4
    ))
 (define (load-textures)
   (define (ltex file)
 	(raylib:load-texture (string-append "assets/img/" file)))  
-  (make-txbundle
-   (ltex "reimu.png")
-   (ltex "enemy1.png")
-   (ltex "ui_bg.png")
-   (ltex "misc.png") (ltex "item.png")
-   (ltex "bullet1.png") (ltex "bullet2.png") (ltex "bullet3.png")
-   (ltex "bullet4.png") (ltex "bullet5.png") (ltex "bullet6.png")
-   (ltex "background_1.png") (ltex "background_2.png")
-   (ltex "background_3.png") (ltex "background_4.png")
-   (ltex "etbreak.png") (ltex "hint.png")
-   (ltex "bullet_ball_huge.png")))
+  (apply make-txbundle
+		 (map ltex '("reimu.png"
+					 "enemy1.png"
+					 "ui_bg.png"
+					 "misc.png" "item.png"
+					 "bullet1.png" "bullet2.png" "bullet3.png"
+					 "bullet4.png" "bullet5.png" "bullet6.png"
+					 "background_1.png" "background_2.png"
+					 "background_3.png" "background_4.png"
+					 "etbreak.png" "hint.png"
+					 "bullet_ball_huge.png"
+					 "laser1.png" "laser2.png" "laser3.png" "laser4.png"))))
+
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
   (define num-textures (vector-length (record-type-field-names rtd)))
