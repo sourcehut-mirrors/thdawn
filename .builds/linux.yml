@@ -1,6 +1,6 @@
-image: archlinux
+image: debian/trixie
 packages:
-  - chez-scheme
+  - chezscheme
 sources:
   - https://git.sr.ht/~williewillus/thdawn
 tasks:
