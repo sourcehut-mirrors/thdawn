@@ -5,4 +5,4 @@ sources:
   - https://git.sr.ht/~williewillus/thdawn
 tasks:
   - build: |
-      cd thdawn && PROD=1 make
+      cd thdawn && PROD=1 chezscheme --program build.ss
