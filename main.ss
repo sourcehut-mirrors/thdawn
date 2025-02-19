@@ -1667,7 +1667,8 @@
    (lambda (enm)
 	 (when (eq? 'boss (enm-type enm))
 	   (draw-sprite textures 'enemy-indicator
-					(+ +playfield-render-offset-x+ (enm-x enm))
+					(+ +playfield-render-offset-x+
+					   (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
 					(inexact (+ +playfield-max-y+ +playfield-render-offset-y+))
 					#xffffffc0)))
    live-enm)
