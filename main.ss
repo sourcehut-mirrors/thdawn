@@ -320,6 +320,14 @@
    color)
   (raylib:pop-matrix))
 
+(define (draw-sprite-pro-with-rotation textures sprite-id rotation dest color)
+  (define data (symbol-hashtable-ref sprite-data sprite-id #f))
+  (raylib:draw-texture-pro
+   ((sprite-descriptor-tx-accessor data) textures)
+   (sprite-descriptor-bounds data) dest
+   (vec2 (/ (rectangle-width dest) 2.0) (/ (rectangle-height dest) 2.0))
+   rotation color))
+
 (define (packcolor r g b a)
   (bitwise-ior (bitwise-arithmetic-shift-left r 24)
 			   (bitwise-arithmetic-shift-left g 16)
@@ -943,10 +951,14 @@
 	  (case type
 		([boss]
 		 (when (bossinfo-aura-active (enm-extras enm))
-		   ;; TODO smaller
-		   (draw-sprite-with-rotation
-			textures 'magicircle
-			(mod (* frames 3.0) 360.0) render-x render-y #xffffffff))
+		   (let ([radius (fl+ 90.0 (fl* 7.0 (sin (/ frames 18.0))))])
+			 (draw-sprite-pro-with-rotation
+			  textures 'magicircle
+			  (mod (* frames 3.0) 360.0)
+			  ;; idk why I don't subtract the radius here but it works so :shrug:
+			  (make-rectangle render-x render-y
+							  (* 2.0 radius) (* 2.0 radius))
+			  #xffffffff)))
 		 ;; TODO actual sprites lol
 		 (draw-sprite textures 'yellow-fairy2 render-x render-y -1))
 		([yellow-fairy red-fairy green-fairy blue-fairy]
