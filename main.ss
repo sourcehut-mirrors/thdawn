@@ -103,7 +103,7 @@
    bulletcancel hint
    bullet-ball-huge
    laser1 laser2 laser3 laser4
-   magicircle
+   magicircle boss
    ))
 (define (load-textures)
   (define (ltex file)
@@ -120,7 +120,7 @@
 					 "etbreak.png" "hint.png"
 					 "bullet_ball_huge.png"
 					 "laser1.png" "laser2.png" "laser3.png" "laser4.png"
-					 "eff_magicsquare.png"))))
+					 "eff_magicsquare.png" "boss.png"))))
 
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
@@ -383,6 +383,8 @@
 (define graze-radius 22.0)
 (define hit-radius 3.0)
 (define player-x 0.0)
+;; Increments away from 0 whenever horizontal movement happens, returns to 0 otherwise
+(define player-dx-render 0)
 (define +initial-player-y+ (- +playfield-max-y+ 20.0))
 (define player-y +initial-player-y+)
 (define focused-immediate #f)
@@ -1593,7 +1595,11 @@
    [(raylib:is-key-pressed key-space)
 	(let ([enm (spawn-enemy 'boss 0.0 100.0 200.0 test-fairy-control2
 							default-drop)])
-	  (enm-extras-set! enm (make-bossinfo "My Boss" #t #f #f #f)))]))
+	  (enm-extras-set! enm (make-bossinfo "My Boss" #t #f #f #f)))]
+   [(raylib:is-key-pressed key-y)
+	(spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
+							default-drop)
+	]))
 
 (define (handle-player-movement)
   (define left-pressed (raylib:is-key-down key-left))
@@ -1602,6 +1608,13 @@
   (define down-pressed (raylib:is-key-down key-down))
   (define dir (vec2 (fl+ (if left-pressed -1.0 0.0) (if right-pressed 1.0 0.0))
 					(fl+ (if up-pressed -1.0 0.0) (if down-pressed 1.0 0.0))))
+  (cond
+   [(not (flzero? (v2x dir)))
+	(set! player-dx-render (clamp (fx+ player-dx-render (exact (v2x dir))) -10 10))]
+   [(< player-dx-render 0)
+	(set! player-dx-render (fx1+ player-dx-render))]
+   [(> player-dx-render 0)
+	(set! player-dx-render (fx1- player-dx-render))])
   (when (not (and (flzero? (v2x dir)) (flzero? (v2y dir))))
 	(let* ([speed (if focused-immediate 2.25 4.125)]
 		   [velvec (v2* (v2unit dir) speed)]
@@ -1629,16 +1642,30 @@
   (define-values (render-player-x render-player-y)
 	(get-player-render-pos))
   ;; player sprite (todo: directional moving sprites)
-  (let ([x-texture-index (truncate (mod (/ frames 9) 8))]
-		[iframe-blink
-		 (if (and (player-invincible?) (< (mod frames 4) 2))
-			 (packcolor 64 64 255 255)
-			 -1)])
-	(raylib:draw-texture-rec
-	 (txbundle-reimu textures)
-	 (make-rectangle (* 32.0 x-texture-index) 0.0 32.0 48.0)
-	 (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
-	 iframe-blink))
+  (raylib:draw-texture-rec
+   (txbundle-reimu textures)
+   (cond
+	[(fxzero? player-dx-render)
+	 (let ([x-texture-index (truncate (mod (/ frames 9) 8))])
+	   (make-rectangle (* 32.0 x-texture-index) 0.0 32.0 48.0))]
+	[(fx<= 1 player-dx-render 3)
+	 (make-rectangle 32.0 96.0 32.0 48.0)]
+	[(fx<= 4 player-dx-render 7)
+	 (make-rectangle 64.0 96.0 32.0 48.0)]
+	[(fx> player-dx-render 7)
+	 (let ([x-texture-index (+ 3 (truncate (mod (/ frames 9) 5)))])
+	   (make-rectangle (* 32.0 x-texture-index) 96.0 32.0 48.0))]
+	[(fx<= -3 player-dx-render -1)
+	 (make-rectangle 32.0 48.0 32.0 48.0)]
+	[(fx<= -7 player-dx-render -4)
+	 (make-rectangle 64.0 48.0 32.0 48.0)]
+	[else
+	 (let ([x-texture-index (+ 3 (truncate (mod (/ frames 9) 5)))])
+	   (make-rectangle (* 32.0 x-texture-index) 48.0 32.0 48.0))])
+   (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
+   (if (and (player-invincible?) (< (mod frames 4) 2))
+	   (packcolor 64 64 255 255)
+	   -1))
 
   (when (positive? death-timer)
 	(let ([radius (lerp 80.0 0.0 (/ (- +deathbomb-time+ death-timer)
