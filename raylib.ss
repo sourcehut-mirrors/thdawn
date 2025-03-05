@@ -16,7 +16,8 @@
 		  load-font unload-font
 		  is-key-down get-key-pressed set-exit-key is-key-pressed is-key-released
 		  set-trace-log-level
-		  push-matrix pop-matrix translatef rotatef)
+		  push-matrix pop-matrix translatef rotatef
+		  rlbegin rlend vertex2 texcoord color4f set-texture)
   (import (chezscheme) (geom))
 
   ;; just calling load-shared-object is not permitted here
@@ -399,4 +400,18 @@
 	(foreign-procedure "rlTranslatef" (float float float) void))
   (define rotatef
 	(foreign-procedure "rlRotatef" (float float float float) void))
+  (define rlbegin
+	(foreign-procedure "rlBegin" (int) void))
+  (define rlend
+	(foreign-procedure "rlEnd" () void))
+  (define vertex2
+	(foreign-procedure "rlVertex2f" (float float) void))
+  (define texcoord
+	(foreign-procedure "rlTexCoord2f" (float float) void))
+  (define set-texture0
+	(foreign-procedure "rlSetTexture" (unsigned-int) void))
+  (define (set-texture tex)
+	(set-texture0 (if tex (ftype-ref Texture (id) tex) 0)))
+  (define color4f
+	(foreign-procedure "rlColor4f" (float float float float) void))
   )
