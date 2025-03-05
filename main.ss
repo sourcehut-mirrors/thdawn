@@ -67,7 +67,8 @@
    extend graze bell
    oldvwoopfast oldvwoopslow
    pause menuselect
-   timeout timeoutwarn item damage0 damage1))
+   timeout timeoutwarn item damage0 damage1)
+  (sealed #t))
 (define sounds #f)
 (define (load-sfx)
   (set! sounds
@@ -103,8 +104,8 @@
    bulletcancel hint
    bullet-ball-huge
    laser1 laser2 laser3 laser4
-   magicircle boss
-   ))
+   magicircle boss)
+  (sealed #t))
 (define (load-textures)
   (define (ltex file)
 	(raylib:load-texture (string-append "assets/img/" file)))  
@@ -132,7 +133,8 @@
 (define-record-type fontbundle
   (fields
    bubblegum
-   cabin))
+   cabin)
+  (sealed #t))
 (define (load-fonts)
   (make-fontbundle
    (raylib:load-font "assets/font/BubblegumSans-Regular.ttf")
@@ -148,7 +150,8 @@
   (fields
    tx-accessor
    bounds
-   center-shift))
+   center-shift)
+  (sealed #t))
 
 (define (make-sprite-data)
   (define ret (make-hashtable symbol-hash eq?))
@@ -449,7 +452,8 @@
    family
    preimg-sprite
    preimg-begin-size preimg-end-size
-   hit-radius))
+   hit-radius)
+  (sealed #t))
 
 (define bullet-types
   (let* ([ret (make-hashtable symbol-hash eq?)]
@@ -643,7 +647,8 @@
    (mutable max-speed)
    (mutable global-angle)
    (mutable local-angle)
-   (mutable aimed-at-player)))
+   (mutable aimed-at-player))
+  (sealed #t))
 (define (fb)
   (make-fan-builder 0 0 0.0 0.0 0.0 0.0 #t))
 (define (fbabsolute-aim fb)
@@ -703,7 +708,8 @@
    (mutable max-speed)
    (mutable global-angle)
    (mutable per-layer-angle)
-   (mutable aimed-at-player)))
+   (mutable aimed-at-player))
+  (sealed #t))
 (define (cb)
   (make-circle-builder 0 0 0.0 0.0 0.0 0.0 #t))
 (define cbcount
@@ -756,7 +762,8 @@
    (mutable aura-active)
    (mutable active-spell-name)
    (mutable active-spell-time)
-   (mutable active-spell-initial-time)))
+   (mutable active-spell-initial-time))
+  (sealed #t))
 
 (define-enumeration enmtype
   (red-fairy green-fairy blue-fairy yellow-fairy boss)
