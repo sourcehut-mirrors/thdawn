@@ -16,9 +16,12 @@
 (define key-y 89)
 (define key-z 90)
 (define pi 3.141592)
+(define tau (* 2.0 pi))
 
 (define (torad x)
   (* (/ pi 180.0) x))
+(define (todeg x)
+  (* (/ 180.0 pi) x))
 
 (define (ease-out-cubic x)
   (- 1 (expt (- 1 x) 3.0)))
@@ -588,7 +591,7 @@
 			;; aimed in direction of movement
 			([butterfly ellipse arrow amulet ice-shard]
 			 (draw-sprite-with-rotation textures type
-										(* 180 (/ 1 pi) (bullet-facing bullet))
+										(todeg (bullet-facing bullet))
 										render-x render-y -1))
 			;; spinny
 			([small-star big-star]
@@ -748,7 +751,7 @@
 		(+ (circle-builder-global-angle cb)
 		   (atan (- player-y y) (- player-x x)))
 		(circle-builder-global-angle cb)))
-  (define per-bullet-angle (/ (* 2.0 pi) per-layer))
+  (define per-bullet-angle (/ tau per-layer))
   (do [(layer 0 (add1 layer))] [(>= layer layers)]
 	(let ([speed (lerp min-speed max-speed (/ layer layers))]
 		  [layer-angle (+ initial-angle (* layer per-layer-angle))])
@@ -967,7 +970,13 @@
 			  ;; idk why I don't subtract the radius here but it works so :shrug:
 			  (make-rectangle render-x render-y
 							  (* 2.0 radius) (* 2.0 radius))
-			  #xffffffff)))
+			  #xffffffff))
+		   (draw-ring render-x render-y (mod (* frames -3.2) 360.0) 98.0 108.0 60
+					  (txbundle-boss textures)
+					  0.375 0.5 0.0 (/ 1.0 60.0) -1)
+		   (draw-ring render-x render-y (mod (* frames 3.2) 360.0) 108.0 120.0 60
+					  (txbundle-boss textures)
+					  0.625 0.75 0.0 (/ 1.0 60.0) -1))
 		 ;; TODO actual sprites lol
 		 (draw-sprite textures 'yellow-fairy2 render-x render-y -1))
 		([yellow-fairy red-fairy green-fairy blue-fairy]
@@ -1848,6 +1857,40 @@
 	   (lerp 2.0 1.0 progress)
 	   (lerp 2.5 1.5 progress)))]
    [else (values 0.5 1.0 1.5)]))
+
+(define (draw-ring x0 y0 theta0 rinner router steps
+				   texture u0 u1 v0 vstep rgba)
+  (define ang-per-step (/ tau steps))
+  (define theta-end (fl+ theta0 tau))
+  (define (loop theta xinner0 xouter0 yinner0 youter0 v)
+	(let* ([next-theta (fl+ theta ang-per-step)]
+		   [xinner1 (fl+ x0 (fl* rinner (flcos next-theta)))]
+		   [xouter1 (fl+ x0 (fl* router (flcos next-theta)))]
+		   [yinner1 (fl+ y0 (fl* rinner (flsin next-theta)))]
+		   [youter1 (fl+ y0 (fl* router (flsin next-theta)))]
+		   [next-v (fl+ v vstep)])
+	  (raylib:texcoord u0 v)
+	  (raylib:vertex2 xinner0 yinner0)
+	  (raylib:texcoord u0 next-v)
+	  (raylib:vertex2 xinner1 yinner1)
+	  (raylib:texcoord u1 next-v)
+	  (raylib:vertex2 xouter1 youter1)
+	  (raylib:texcoord u1 v)
+	  (raylib:vertex2 xouter0 youter0)
+	  (when (fl<= next-theta theta-end)
+		(loop next-theta xinner1 xouter1 yinner1 youter1 next-v))))
+
+  (raylib:set-texture texture)
+  (raylib:rlbegin 7) ;; quads
+  (raylib:color4f 1.0 1.0 1.0 1.0)
+  (let* ([theta (torad theta0)]
+		 [xinner0 (fl+ x0 (fl* rinner (flcos theta)))]
+		 [xouter0 (fl+ x0 (fl* router (flcos theta)))]
+		 [yinner0 (fl+ y0 (fl* rinner (flsin theta)))]
+		 [youter0 (fl+ y0 (fl* router (flsin theta)))])
+	(loop theta xinner0 xouter0 yinner0 youter0 v0))
+  (raylib:rlend)
+  (raylib:set-texture #f))
 
 (define background-draw-bounds
   ;; chosen to be integer multiple of the texture size
