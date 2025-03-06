@@ -1722,12 +1722,12 @@
    440 15 24.0 0.0 -1)
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
-   (format "Life")
+   "Life"
    440 45
    24.0 0.0 #xFF69FCFF)
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
-   (format "Bomb")
+   "Bomb"
    440 75
    24.0 0.0 #x72E57AFF)
   (raylib:draw-text-ex
@@ -1860,7 +1860,7 @@
 
 (define (draw-ring x0 y0 theta0 rinner router steps
 				   texture u0 u1 v0 vstep rgba)
-  (define ang-per-step (/ tau steps))
+  (define ang-per-step (fl/ tau (inexact steps)))
   (define theta-end (fl+ theta0 tau))
   (define (loop theta xinner0 xouter0 yinner0 youter0 v)
 	(let* ([next-theta (fl+ theta ang-per-step)]
