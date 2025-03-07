@@ -981,31 +981,32 @@
 		   ;; The compromise is to use Raylib's DrawRing, but only for a small sector (i.e. segments=1).
 		   ;; while having a loop on the Scheme side to continuously update the shape rect
 		   ;; TODO: Find a permanent solution for this clowntown
-		   (let ([boss-tex (txbundle-boss-flip textures)]
-				 [save-tex (raylib:get-shapes-texture)]
-				 [save-rect (raylib:get-shapes-texture-rectangle)])
-			 (raylib:push-matrix)
-			 (raylib:translatef render-x render-y 0.0)
-			 (raylib:rotatef (mod (* frames -5.2) 360.0) 0.0 0.0 1.0)
-			 (do [(u 0.0 (fl+ u 4.0)) ;; 128/32
-				  (ang 0.0 (fl+ ang 11.25))] ;; 360/32
-				 [(fl>= u 128.0)]
-			   (raylib:set-shapes-texture boss-tex (make-rectangle u 48.0 4.0 16.0))
-			   (raylib:draw-ring 0.0 0.0 98.0 108.0 ang (fl+ ang 11.25) 1 #xffffffd0))
-			 (raylib:pop-matrix)
+		   (when (bossinfo-active-spell-name (enm-extras enm))
+			 (let ([boss-tex (txbundle-boss-flip textures)]
+				   [save-tex (raylib:get-shapes-texture)]
+				   [save-rect (raylib:get-shapes-texture-rectangle)])
+			   (raylib:push-matrix)
+			   (raylib:translatef render-x render-y 0.0)
+			   (raylib:rotatef (mod (* frames -5.2) 360.0) 0.0 0.0 1.0)
+			   (do [(u 0.0 (fl+ u 4.0)) ;; 128/32
+					(ang 0.0 (fl+ ang 11.25))] ;; 360/32
+				   [(fl>= u 128.0)]
+				 (raylib:set-shapes-texture boss-tex (make-rectangle u 48.0 4.0 16.0))
+				 (raylib:draw-ring 0.0 0.0 98.0 108.0 ang (fl+ ang 11.25) 1 #xffffffd0))
+			   (raylib:pop-matrix)
 
-			 (raylib:push-matrix)
-			 (raylib:translatef render-x render-y 0.0)
-			 (raylib:rotatef (mod (* frames 5.2) 360.0) 0.0 0.0 1.0)
-			 (do [(u 0.0 (fl+ u 4.0))
-				  (ang 0.0 (fl+ ang 11.25))]
-				 [(fl>= u 128.0)]
-			   (raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
-			   (raylib:draw-ring 0.0 0.0 108.0 120.0
-								 ang (fl+ ang 11.25) 1 #xffffffd0))
-			 (raylib:pop-matrix)
-			 
-			 (raylib:set-shapes-texture save-tex save-rect)))
+			   (raylib:push-matrix)
+			   (raylib:translatef render-x render-y 0.0)
+			   (raylib:rotatef (mod (* frames 5.2) 360.0) 0.0 0.0 1.0)
+			   (do [(u 0.0 (fl+ u 4.0))
+					(ang 0.0 (fl+ ang 11.25))]
+				   [(fl>= u 128.0)]
+				 (raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
+				 (raylib:draw-ring 0.0 0.0 108.0 120.0
+								   ang (fl+ ang 11.25) 1 #xffffffd0))
+			   (raylib:pop-matrix)
+			   
+			   (raylib:set-shapes-texture save-tex save-rect))))
 		 ;; TODO actual sprites lol
 		 (draw-sprite textures 'yellow-fairy2 render-x render-y -1))
 		([yellow-fairy red-fairy green-fairy blue-fairy]
@@ -1378,6 +1379,13 @@
 	  (enm-y-set! enm y))
 	(yield)))
 
+(define (declare-spell boss spell-name duration-frames)
+  (define bossinfo (enm-extras boss))
+  (bossinfo-active-spell-name-set! bossinfo spell-name)
+  (bossinfo-active-spell-time-set! bossinfo duration-frames)
+  (bossinfo-active-spell-initial-time-set! bossinfo duration-frames)
+  (raylib:play-sound (sebundle-spelldeclare sounds)))
+
 (define (test-fairy-control2-ring1 enm)
   (define b (-> (cb)
 				(cbcount 10)
@@ -1428,6 +1436,7 @@
 				   (enm-y-set! enm (+ (enm-y enm) 0.5))
 				   (enm-x-set! enm (+ (enm-x enm) 0.5))
 				   (yield))
+				  (declare-spell enm "My Spell" 1800)
 				  (dotimes
 				   240
 				   (enm-y-set! enm (+ (enm-y enm) 0.5))
