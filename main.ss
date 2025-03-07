@@ -762,10 +762,11 @@
 (define-record-type bossinfo
   (fields
    name
+   name-color
    (mutable aura-active)
    (mutable active-spell-name)
-   (mutable active-spell-time)
-   (mutable active-spell-initial-time))
+   (mutable active-spell-time) ;; frames remaining of time on this spellcard
+   (mutable active-spell-initial-time)) ;; total frames allotted for this spellcard
   (sealed #t))
 
 (define-enumeration enmtype
@@ -1639,7 +1640,7 @@
    [(raylib:is-key-pressed key-space)
 	(let ([enm (spawn-enemy 'boss 0.0 100.0 200.0 test-fairy-control2
 							default-drop)])
-	  (enm-extras-set! enm (make-bossinfo "My Boss" #t #f #f #f)))]
+	  (enm-extras-set! enm (make-bossinfo "My Boss" #x98ff98ff #t #f #f #f)))]
    [(raylib:is-key-pressed key-y)
 	(spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
 							default-drop)
@@ -1737,6 +1738,13 @@
   (vector-for-each-truthy
    (lambda (enm)
 	 (when (eq? 'boss (enm-type enm))
+	   (let ([bossinfo (enm-extras enm)])
+		 ;; TODO(stack the names vertically if there's multiple bosses)
+		 (raylib:draw-text-ex (fontbundle-bubblegum fonts)
+							  (bossinfo-name bossinfo)
+							  (+ +playfield-render-offset-x+ +playfield-min-x+ 5)
+							  (+ +playfield-render-offset-y+ +playfield-min-y+ 5)
+							  12.0 0.0 #x98ff98ff))
 	   (draw-sprite textures 'enemy-indicator
 					(+ +playfield-render-offset-x+
 					   (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
