@@ -107,7 +107,7 @@
    bulletcancel hint
    bullet-ball-huge
    laser1 laser2 laser3 laser4
-   magicircle boss)
+   magicircle boss boss-flip)
   (sealed #t))
 (define (load-textures)
   (define (ltex file)
@@ -124,7 +124,7 @@
 					 "etbreak.png" "hint.png"
 					 "bullet_ball_huge.png"
 					 "laser1.png" "laser2.png" "laser3.png" "laser4.png"
-					 "eff_magicsquare.png" "boss.png"))))
+					 "eff_magicsquare.png" "boss.png" "boss_rot.png"))))
 
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
@@ -971,12 +971,40 @@
 			  (make-rectangle render-x render-y
 							  (* 2.0 radius) (* 2.0 radius))
 			  #xffffffff))
-		   (draw-ring render-x render-y (mod (* frames -3.2) 360.0) 98.0 108.0 60
-					  (txbundle-boss textures)
-					  0.375 0.5 0.0 (/ 1.0 60.0) -1)
-		   (draw-ring render-x render-y (mod (* frames 3.2) 360.0) 108.0 120.0 60
-					  (txbundle-boss textures)
-					  0.625 0.75 0.0 (/ 1.0 60.0) -1))
+		   
+		   ;; Okay, so raylib's draw-ring uses the ENTIRE shapes-texture for
+		   ;; every segment of the circle which is...not what we want.
+		   ;; However, I tried implementing ring drawing myself in the previous commit
+		   ;; and for some reason transparency is not working for it even though
+		   ;; my code looks exactly like what Raylib would do...
+		   ;; The compromise is to use Raylib's DrawRing, but only for a small sector (i.e. segments=1).
+		   ;; while having a loop on the Scheme side to continuously update the shape rect
+		   ;; TODO: Find a permanent solution for this clowntown
+		   (let ([boss-tex (txbundle-boss-flip textures)]
+				 [save-tex (raylib:get-shapes-texture)]
+				 [save-rect (raylib:get-shapes-texture-rectangle)])
+			 (raylib:push-matrix)
+			 (raylib:translatef render-x render-y 0.0)
+			 (raylib:rotatef (mod (* frames -5.2) 360.0) 0.0 0.0 1.0)
+			 (do [(u 0.0 (fl+ u 4.0)) ;; 128/32
+				  (ang 0.0 (fl+ ang 11.25))] ;; 360/32
+				 [(fl>= u 128.0)]
+			   (raylib:set-shapes-texture boss-tex (make-rectangle u 48.0 4.0 16.0))
+			   (raylib:draw-ring 0.0 0.0 98.0 108.0 ang (fl+ ang 11.25) 1 #xffffffd0))
+			 (raylib:pop-matrix)
+
+			 (raylib:push-matrix)
+			 (raylib:translatef render-x render-y 0.0)
+			 (raylib:rotatef (mod (* frames 5.2) 360.0) 0.0 0.0 1.0)
+			 (do [(u 0.0 (fl+ u 4.0))
+				  (ang 0.0 (fl+ ang 11.25))]
+				 [(fl>= u 128.0)]
+			   (raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
+			   (raylib:draw-ring 0.0 0.0 108.0 120.0
+								 ang (fl+ ang 11.25) 1 #xffffffd0))
+			 (raylib:pop-matrix)
+			 
+			 (raylib:set-shapes-texture save-tex save-rect)))
 		 ;; TODO actual sprites lol
 		 (draw-sprite textures 'yellow-fairy2 render-x render-y -1))
 		([yellow-fairy red-fairy green-fairy blue-fairy]
@@ -1882,7 +1910,7 @@
 
   (raylib:set-texture texture)
   (raylib:rlbegin 7) ;; quads
-  (raylib:color4f 1.0 1.0 1.0 1.0)
+  (raylib:color4ub 255 255 255 128)
   (let* ([theta (torad theta0)]
 		 [xinner0 (fl+ x0 (fl* rinner (flcos theta)))]
 		 [xouter0 (fl+ x0 (fl* router (flcos theta)))]

@@ -8,6 +8,7 @@
 		  draw-circle-lines-v
 		  draw-text draw-text-ex draw-fps draw-rectangle-rec draw-rectangle-pro
 		  draw-rectangle-gradient-h draw-rectangle-gradient-v
+		  draw-ring draw-ring-lines
 		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
@@ -17,7 +18,8 @@
 		  is-key-down get-key-pressed set-exit-key is-key-pressed is-key-released
 		  set-trace-log-level
 		  push-matrix pop-matrix translatef rotatef
-		  rlbegin rlend vertex2 texcoord color4f set-texture)
+		  rlbegin rlend vertex2 texcoord color4f color4ub normal3f set-texture
+		  set-shapes-texture get-shapes-texture get-shapes-texture-rectangle)
   (import (chezscheme) (geom))
 
   ;; just calling load-shared-object is not permitted here
@@ -89,6 +91,11 @@
 	(ftype-set! RayRect (y) dest (inexact y))
 	(ftype-set! RayRect (width) dest (inexact width))
 	(ftype-set! RayRect (height) dest (inexact height)))
+  (define (unload-global-rectangle src)
+	(make-rectangle (ftype-ref RayRect (x) src)
+					(ftype-ref RayRect (y) src)
+					(ftype-ref RayRect (width) src)
+					(ftype-ref RayRect (height) src)))
 
   (define init-window
 	(foreign-procedure "InitWindow" (int int string) void))
@@ -166,6 +173,23 @@
 	(load-global-color global-color rgba-left)
 	(load-global-color global-color2 rgba-right)
 	(draw-rectangle-gradient-h0 x y w h global-color global-color2))
+
+  (define draw-ring0
+	(foreign-procedure "DrawRing" ((& RayVector2) float float
+								   float float int (& Color)) void))
+  (define (draw-ring x y rinner router start-ang end-ang segments rgba)
+	(load-global-vector2 x y)
+	(load-global-color global-color rgba)
+	(draw-ring0 global-vector2 rinner router start-ang end-ang segments global-color))
+
+  (define draw-ring-lines0
+	(foreign-procedure "DrawRingLines" ((& RayVector2) float float
+										float float int (& Color)) void))
+  (define (draw-ring-lines x y rinner router start-ang end-ang segments rgba)
+	(load-global-vector2 x y)
+	(load-global-color global-color rgba)
+	(draw-ring-lines0 global-vector2 rinner router
+					  start-ang end-ang segments global-color))
 
   (define init-audio-device
 	(foreign-procedure "InitAudioDevice" () void))
@@ -414,4 +438,29 @@
 	(set-texture0 (if tex (ftype-ref Texture (id) tex) 0)))
   (define color4f
 	(foreign-procedure "rlColor4f" (float float float float) void))
+  (define color4ub
+	(foreign-procedure "rlColor4ub" (unsigned-8 unsigned-8 unsigned-8 unsigned-8) void))
+  (define normal3f
+	(foreign-procedure "rlNormal3f" (float float float) void))
+
+  (define set-shapes-texture0
+	(foreign-procedure "SetShapesTexture" ((& Texture) (& RayRect)) void))
+  (define (set-shapes-texture tex rect)
+	(load-global-rectangle global-rectangle
+						   (rectangle-x rect) (rectangle-y rect)
+						   (rectangle-width rect) (rectangle-height rect))
+	(set-shapes-texture0 tex global-rectangle))
+
+  (define global-texture
+	(make-ftype-pointer Texture (foreign-alloc (ftype-sizeof Texture))))
+  (define get-shapes-texture0
+	(foreign-procedure "GetShapesTexture" () (& Texture)))
+  (define (get-shapes-texture)
+	(get-shapes-texture0 global-texture)
+	global-texture)
+  (define get-shapes-texture-rectangle0
+	(foreign-procedure "GetShapesTextureRectangle" () (& RayRect)))
+  (define (get-shapes-texture-rectangle)
+	(get-shapes-texture-rectangle0 global-rectangle)
+	(unload-global-rectangle global-rectangle))
   )
