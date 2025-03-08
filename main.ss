@@ -765,8 +765,8 @@
    name-color
    (mutable aura-active)
    (mutable active-spell-name)
-   (mutable active-spell-time) ;; frames remaining of time on this spellcard
-   (mutable active-spell-initial-time)) ;; total frames allotted for this spellcard
+   (mutable remaining-timer) ;; frames remaining of time on this attack, 0 if none
+   (mutable total-timer)) ;; total frames for this attack, 0 if none
   (sealed #t))
 
 (define-enumeration enmtype
@@ -804,6 +804,11 @@
   (define (epsilon-equal a b)
 	(fl< (flabs (fl- a b)) 0.00000001))
   (define (each enm)
+	(when (eq? 'boss (enm-type enm))
+	  (let* ([bossinfo (enm-extras enm)]
+			 [timer (bossinfo-remaining-timer bossinfo)])
+		(unless (fxzero? timer)
+		  (bossinfo-remaining-timer-set! bossinfo (fx1- timer)))))
 	(let* ([ox (enm-ox enm)] [oy (enm-oy enm)]
 		   [x (enm-x enm)] [y (enm-y enm)]
 		   [stationary-x (epsilon-equal ox x)]
@@ -1382,8 +1387,8 @@
 (define (declare-spell boss spell-name duration-frames)
   (define bossinfo (enm-extras boss))
   (bossinfo-active-spell-name-set! bossinfo spell-name)
-  (bossinfo-active-spell-time-set! bossinfo duration-frames)
-  (bossinfo-active-spell-initial-time-set! bossinfo duration-frames)
+  (bossinfo-remaining-timer-set! bossinfo duration-frames)
+  (bossinfo-total-timer-set! bossinfo duration-frames)
   (raylib:play-sound (sebundle-spelldeclare sounds)))
 
 (define (test-fairy-control2-ring1 enm)
@@ -1436,7 +1441,7 @@
 				   (enm-y-set! enm (+ (enm-y enm) 0.5))
 				   (enm-x-set! enm (+ (enm-x enm) 0.5))
 				   (yield))
-				  (declare-spell enm "My Spell" 1800)
+				  (declare-spell enm "Spell Sign \"My Spell\"" 1800)
 				  (dotimes
 				   240
 				   (enm-y-set! enm (+ (enm-y enm) 0.5))
@@ -1649,7 +1654,7 @@
    [(raylib:is-key-pressed key-space)
 	(let ([enm (spawn-enemy 'boss 0.0 100.0 200.0 test-fairy-control2
 							default-drop)])
-	  (enm-extras-set! enm (make-bossinfo "My Boss" #x98ff98ff #t #f #f #f)))]
+	  (enm-extras-set! enm (make-bossinfo "My Boss" #x98ff98ff #t #f 0 0)))]
    [(raylib:is-key-pressed key-y)
 	(spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
 							default-drop)
@@ -1747,13 +1752,22 @@
   (vector-for-each-truthy
    (lambda (enm)
 	 (when (eq? 'boss (enm-type enm))
-	   (let ([bossinfo (enm-extras enm)])
+	   (let* ([bossinfo (enm-extras enm)]
+			  [remaining-timer (bossinfo-remaining-timer bossinfo)])
 		 ;; TODO(stack the names vertically if there's multiple bosses)
 		 (raylib:draw-text-ex (fontbundle-bubblegum fonts)
 							  (bossinfo-name bossinfo)
 							  (+ +playfield-render-offset-x+ +playfield-min-x+ 5)
 							  (+ +playfield-render-offset-y+ +playfield-min-y+ 5)
-							  12.0 0.0 #x98ff98ff))
+							  12.0 0.0 (bossinfo-name-color bossinfo))
+		 (unless (fxzero? remaining-timer)
+		   ;; todo use MeasureText to properly position this horizontally
+		   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
+								(format "~,2f"
+										(/ (bossinfo-remaining-timer bossinfo) 60.0))
+								(+ +playfield-render-offset-x+ -15)
+								(+ +playfield-render-offset-y+ +playfield-min-y+ 5)
+								20.0 0.0 -1)))
 	   (draw-sprite textures 'enemy-indicator
 					(+ +playfield-render-offset-x+
 					   (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
@@ -1998,7 +2012,7 @@
   (when (and paused (< (mod true-frames 60) 30))
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
-	 "~ Paused ~"
+	 "Paused"
 	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
   (draw-hud textures fonts)
   )
