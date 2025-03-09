@@ -766,10 +766,15 @@
 		(consume layer in-layer speed
 				 (+ layer-angle (* in-layer per-bullet-angle)))))))
 
+(define +boss-lazy-spellcircle-context+ 30)
 (define-record-type bossinfo
   (fields
    name
    name-color
+   ;; holds last +boss-lazy-spellcircle-context+ frames of positions
+   ;; from oldest to latest; used for the spell circle to trail behind the boss
+   (mutable old-xs)
+   (mutable old-ys)
    (mutable aura-active)
    (mutable active-spell-name)
    (mutable remaining-timer) ;; frames remaining of time on this attack, 0 if none
@@ -804,7 +809,17 @@
 (define (pretick-enemies)
   (define (each enm)
 	(enm-ox-set! enm (enm-x enm))
-	(enm-oy-set! enm (enm-y enm)))
+	(enm-oy-set! enm (enm-y enm))
+	(when (eq? 'boss (enm-type enm))
+	  (let* ([bossinfo (enm-extras enm)]
+			 [old-xs (bossinfo-old-xs bossinfo)]
+			 [old-ys (bossinfo-old-ys bossinfo)])
+		(do [(i 0 (fx1+ i))]
+			[(fx= i (fx1- +boss-lazy-spellcircle-context+))]
+		  (flvector-set! old-xs i (flvector-ref old-xs (fx1+ i)))
+		  (flvector-set! old-ys i (flvector-ref old-ys (fx1+ i))))
+		(flvector-set! old-xs (fx1- +boss-lazy-spellcircle-context+) (enm-x enm))
+		(flvector-set! old-ys (fx1- +boss-lazy-spellcircle-context+) (enm-y enm)))))
   (vector-for-each-truthy each live-enm))
 
 (define (posttick-enemies)
@@ -969,6 +984,10 @@
 
 (define (draw-boss textures enm render-x render-y)
   (define bossinfo (enm-extras enm))
+  (define lazy-render-x (+ +playfield-render-offset-x+
+						   (flvector-ref (bossinfo-old-xs bossinfo) 0)))
+  (define lazy-render-y (+ +playfield-render-offset-y+
+						   (flvector-ref (bossinfo-old-ys bossinfo) 0)))
   (when (bossinfo-aura-active bossinfo)
 	(let ([radius (fl+ 90.0 (fl* 10.0 (flsin (/ frames 12.0))))])
 	  (draw-sprite-pro-with-rotation
@@ -1009,7 +1028,7 @@
 												(lerp 160 235 progress-of-90)))
 										235)])
 		(raylib:push-matrix)
-		(raylib:translatef render-x render-y 0.0)
+		(raylib:translatef lazy-render-x lazy-render-y 0.0)
 		(raylib:rotatef (flmod (* frames -4.0) 360.0) 0.0 0.0 1.0)
 		(do [(u 0.0 (fl+ u 4.0)) ;; 128/32
 			 (ang 0.0 (fl+ ang 11.25))] ;; 360/32
@@ -1032,7 +1051,7 @@
 						   (/ (fx- elapsed-frames 80)
 							  (fx- (bossinfo-total-timer bossinfo) 80)))])])
 		(raylib:push-matrix)
-		(raylib:translatef render-x render-y 0.0)
+		(raylib:translatef lazy-render-x lazy-render-y 0.0)
 		(raylib:rotatef (flmod (* frames 5.2) 360.0) 0.0 0.0 1.0)
 		(do [(u 0.0 (fl+ u 4.0))
 			 (ang 0.0 (fl+ ang 11.25))]
@@ -1692,8 +1711,12 @@
 	  (set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
    [(raylib:is-key-pressed key-space)
 	(let ([enm (spawn-enemy 'boss 0.0 100.0 200 test-fairy-control2
-							default-drop)])
-	  (enm-extras-set! enm (make-bossinfo "My Boss" #x98ff98ff #t #f 0 0)))]
+							default-drop)]
+		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
+								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
+								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
+								   #t #f 0 0)])
+	  (enm-extras-set! enm bossinfo))]
    [(raylib:is-key-pressed key-y)
 	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
 							 live-enm)])
