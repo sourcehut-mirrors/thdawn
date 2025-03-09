@@ -2154,10 +2154,6 @@
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
 	;;(raylib:play-music-stream ojamajo-carnival)
-	;; clear these just in case they were left over from previous repl session
-	(set! iframes 180)
-	(set! frames 0)
-	(set! paused #f)
 	(dynamic-wind
 	  (thunk #f)
 	  (lambda ()
@@ -2186,5 +2182,17 @@
 		(unload-textures textures)
 		(unload-sfx)
 		(raylib:close-window)))))
+
+(define (debug-launch)
+  (set! iframes 180)
+  (set! frames 0)
+  (set! paused #f)
+  ;; Clear everything out because they may have obsolete data
+  (vector-fill! live-bullets #f)
+  (vector-fill! live-enm #f)
+  (vector-fill! live-misc-ents #f)
+  (vector-fill! live-particles #f)
+  (kill-all-tasks)
+  (fork-thread main))
 
 (scheme-start (lambda _ (main)))

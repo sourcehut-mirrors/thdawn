@@ -5,7 +5,7 @@
 (library (coro)
   (export wait wait-until yield spawn-task spawn-subtask
 		  task-dead
-		  kill-task run-tasks task-count)
+		  kill-task kill-all-tasks run-tasks task-count)
   (import (chezscheme))
 
   (define-record-type task
@@ -103,6 +103,12 @@
   ;; run-tasks call ends.
   (define (kill-task task)
 	(eq-hashtable-set! tasks-to-remove task #t))
+
+  (define (kill-all-tasks)
+	(assert (not loop-running?))
+	(set! task-queue '())
+	(set! tasks-to-add '())
+	(hashtable-clear! tasks-to-remove))
 
   (define (task-count)
 	(+ (length task-queue)
