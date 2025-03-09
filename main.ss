@@ -1721,7 +1721,7 @@
 	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
 							 live-enm)])
 	  (when boss
-		(declare-spell boss "My Spell" 1800)))
+		(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 1800)))
 	;; (spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
 	;; 						default-drop)
 	]))
@@ -1813,32 +1813,59 @@
 	(raylib:draw-circle-v render-player-x render-player-y hit-radius
 						  red)))
 
+(define (draw-boss-hud enm textures fonts)
+  (define bossinfo (enm-extras enm))
+  (define remaining-timer (bossinfo-remaining-timer bossinfo))
+  (define elapsed-frames (fx- (bossinfo-total-timer bossinfo)
+							  remaining-timer))
+  ;; TODO(stack the names vertically if there's multiple bosses)
+  (raylib:draw-text-ex (fontbundle-bubblegum fonts)
+					   (bossinfo-name bossinfo)
+					   (+ +playfield-render-offset-x+ +playfield-min-x+ 5)
+					   (+ +playfield-render-offset-y+ +playfield-min-y+ 5)
+					   12.0 0.0 (bossinfo-name-color bossinfo))
+  (unless (fxzero? remaining-timer)
+	(raylib:draw-text-ex (fontbundle-cabin fonts)
+						 (format "~,2f"
+								 (/ (bossinfo-remaining-timer bossinfo) 60.0))
+						 (+ +playfield-render-offset-x+ -15)
+						 (+ +playfield-render-offset-y+ +playfield-min-y+ 20)
+						 20.0 0.0 -1)
+	(let*-values ([(spname) (bossinfo-active-spell-name bossinfo)]
+				  [(width height) (raylib:measure-text-ex
+								   (fontbundle-cabin fonts)
+								   spname 18.0 0.5)])
+	  ;; TODO: scissor when outside of playfield
+	  (raylib:draw-text-ex
+	   (fontbundle-cabin fonts) spname
+	   (+ +playfield-render-offset-x+
+		  -5.0
+		  (if (fx<= elapsed-frames 30)
+			  (+ +playfield-max-x+ (lerp 0.0 (fl- width) (/ elapsed-frames 30)))
+			  (+ +playfield-max-x+ (fl- width))))
+	   (+ +playfield-render-offset-y+
+		  (cond
+		   [(fx<= elapsed-frames 45)
+			(- +playfield-max-y+ height 5.0)]
+		   [(fx<= 45 elapsed-frames 90)
+			(lerp
+			 (- +playfield-max-y+ height 5.0)
+			 (+ +playfield-min-y+ 5.0)
+			 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
+		   [else (+ +playfield-min-y+ 5.0)]))
+	   18.0 0.5 -1)))
+  (draw-sprite textures 'enemy-indicator
+			   (+ +playfield-render-offset-x+
+				  (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
+			   (inexact (+ +playfield-max-y+ +playfield-render-offset-y+))
+			   #xffffffc0))
+
 (define (draw-hud textures fonts)
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
   (vector-for-each-truthy
    (lambda (enm)
 	 (when (eq? 'boss (enm-type enm))
-	   (let* ([bossinfo (enm-extras enm)]
-			  [remaining-timer (bossinfo-remaining-timer bossinfo)])
-		 ;; TODO(stack the names vertically if there's multiple bosses)
-		 (raylib:draw-text-ex (fontbundle-bubblegum fonts)
-							  (bossinfo-name bossinfo)
-							  (+ +playfield-render-offset-x+ +playfield-min-x+ 5)
-							  (+ +playfield-render-offset-y+ +playfield-min-y+ 5)
-							  12.0 0.0 (bossinfo-name-color bossinfo))
-		 (unless (fxzero? remaining-timer)
-		   ;; todo use MeasureText to properly position this horizontally
-		   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
-								(format "~,2f"
-										(/ (bossinfo-remaining-timer bossinfo) 60.0))
-								(+ +playfield-render-offset-x+ -15)
-								(+ +playfield-render-offset-y+ +playfield-min-y+ 5)
-								20.0 0.0 -1)))
-	   (draw-sprite textures 'enemy-indicator
-					(+ +playfield-render-offset-x+
-					   (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
-					(inexact (+ +playfield-max-y+ +playfield-render-offset-y+))
-					#xffffffc0)))
+	   (draw-boss-hud enm textures fonts)))
    live-enm)
   ;; todo actually make this look good
   (raylib:draw-text-ex
