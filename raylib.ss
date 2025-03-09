@@ -6,7 +6,8 @@
 		  load-render-texture unload-render-texture render-texture-inner
 		  begin-drawing end-drawing clear-background draw-circle-v draw-line
 		  draw-circle-lines-v
-		  draw-text draw-text-ex draw-fps draw-rectangle-rec draw-rectangle-pro
+		  draw-text draw-text-ex measure-text-ex draw-fps
+		  draw-rectangle-rec draw-rectangle-pro
 		  draw-rectangle-gradient-h draw-rectangle-gradient-v
 		  draw-ring draw-ring-lines
 		  init-audio-device close-audio-device
@@ -285,6 +286,11 @@
 	(load-global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-text-ex0 font text global-vector2 size spacing global-color))
+  (define measure-text-ex0
+	(foreign-procedure "MeasureTextEx" ((& Font) string float float) (& RayVector2)))
+  (define (measure-text-ex font text size spacing)
+	(measure-text-ex0 global-vector2 font text size spacing)
+	(unload-global-vector2))
 
   (define draw-fps
 	(foreign-procedure "DrawFPS" (int int) void))
