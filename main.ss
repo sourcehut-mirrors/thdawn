@@ -830,7 +830,12 @@
 	  (let* ([bossinfo (enm-extras enm)]
 			 [timer (bossinfo-remaining-timer bossinfo)])
 		(unless (fxzero? timer)
-		  (bossinfo-remaining-timer-set! bossinfo (fx1- timer)))))
+		  (bossinfo-remaining-timer-set! bossinfo (fx1- timer))
+		  (when (and (fx<= timer 600)
+					 (fxzero? (fxmod timer 60)))
+			(if (fx<= timer 300)
+			  (raylib:play-sound (sebundle-timeoutwarn sounds))
+			  (raylib:play-sound (sebundle-timeout sounds)))))))
 	(let* ([ox (enm-ox enm)] [oy (enm-oy enm)]
 		   [x (enm-x enm)] [y (enm-y enm)]
 		   [stationary-x (epsilon-equal ox x)]
@@ -1721,7 +1726,7 @@
 	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
 							 live-enm)])
 	  (when boss
-		(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 1800)))
+		(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 900)))
 	;; (spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
 	;; 						default-drop)
 	]))
@@ -1830,7 +1835,11 @@
 								 (/ (bossinfo-remaining-timer bossinfo) 60.0))
 						 (+ +playfield-render-offset-x+ -15)
 						 (+ +playfield-render-offset-y+ +playfield-min-y+ 20)
-						 20.0 0.0 -1)
+						 20.0 0.0
+						 (cond
+						  [(fx<= remaining-timer 300) #xf08080ff]
+						  [(fx<= remaining-timer 600) #xffb6c1ff]
+						  [else -1]))
 	(let*-values ([(spname) (bossinfo-active-spell-name bossinfo)]
 				  [(width height) (raylib:measure-text-ex
 								   (fontbundle-cabin fonts)
@@ -1841,15 +1850,16 @@
 	   (+ +playfield-render-offset-x+
 		  -5.0
 		  (if (fx<= elapsed-frames 30)
-			  (+ +playfield-max-x+ (lerp 0.0 (fl- width) (/ elapsed-frames 30)))
+			  (+ +playfield-max-x+ (lerp 0.0 (fl- width)
+										 (ease-out-cubic (/ elapsed-frames 30))))
 			  (+ +playfield-max-x+ (fl- width))))
 	   (+ +playfield-render-offset-y+
 		  (cond
 		   [(fx<= elapsed-frames 45)
-			(- +playfield-max-y+ height 5.0)]
+			(- +playfield-max-y+ height 15.0)]
 		   [(fx<= 45 elapsed-frames 90)
 			(lerp
-			 (- +playfield-max-y+ height 5.0)
+			 (- +playfield-max-y+ height 15.0)
 			 (+ +playfield-min-y+ 5.0)
 			 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
 		   [else (+ +playfield-min-y+ 5.0)]))
