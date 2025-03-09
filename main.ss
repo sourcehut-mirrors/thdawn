@@ -16,12 +16,12 @@
 (define key-y 89)
 (define key-z 90)
 (define pi 3.141592)
-(define tau (* 2.0 pi))
+(define tau 6.28318)
 
 (define (torad x)
-  (* (/ pi 180.0) x))
+  (* (fl/ pi 180.0) x))
 (define (todeg x)
-  (* (/ 180.0 pi) x))
+  (* (fl/ 180.0 pi) x))
 
 (define (clamp v lower upper)
   (max (min v upper) lower))
@@ -421,7 +421,7 @@
 	 radius))
 
 (define (player-invincible?)
-  (positive? iframes))
+  (fxpositive? iframes))
 
 (define ojamajo-carnival #f)
 (define (load-audio)
@@ -600,10 +600,10 @@
 										render-x render-y -1))
 			;; spinny
 			([small-star big-star]
-			 (draw-sprite-with-rotation textures type (mod (* frames 5) 360)
+			 (draw-sprite-with-rotation textures type (fxmod (fx* frames 5) 360)
 										render-x render-y -1))
 			([bubble]
-			 (draw-sprite-with-rotation textures type (mod (* frames 8) 360)
+			 (draw-sprite-with-rotation textures type (fxmod (fx* frames 8) 360)
 										render-x render-y -1)))
 		  (when show-hitboxes
 			(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
@@ -888,7 +888,7 @@
   (do [(idx 0 (fx1+ idx))]
 	  [(fx>= idx length)]
 	  (let ([enemy (vector-ref live-enm idx)])
-		(when (and enemy (<= (enm-health enemy) 0))
+		(when (and enemy (fx<= (enm-health enemy) 0))
 		  (spawn-drops enemy)
 		  (raylib:play-sound (sebundle-enmdie sounds))
 		  (spawn-particle (make-particle
@@ -901,7 +901,7 @@
 
 (define (damage-player)
   ;; if player is already dying, don't reset this
-  (when (zero? death-timer)
+  (when (fxzero? death-timer)
 	(raylib:play-sound (sebundle-playerdie sounds))
 	(set! death-timer +deathbomb-time+)))
 
@@ -1675,7 +1675,7 @@
 	  (set! bomb-sweep-y-up (- player-y 50.0))
 	  (set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
    [(raylib:is-key-pressed key-space)
-	(let ([enm (spawn-enemy 'boss 0.0 100.0 200.0 test-fairy-control2
+	(let ([enm (spawn-enemy 'boss 0.0 100.0 200 test-fairy-control2
 							default-drop)])
 	  (enm-extras-set! enm (make-bossinfo "My Boss" #x98ff98ff #t #f 0 0)))]
    [(raylib:is-key-pressed key-y)
