@@ -23,6 +23,8 @@
 (define (todeg x)
   (* (/ 180.0 pi) x))
 
+(define (clamp v lower upper)
+  (max (min v upper) lower))
 (define (ease-out-cubic x)
   (- 1 (expt (- 1 x) 3.0)))
 (define (lerp a b progress)
@@ -34,12 +36,18 @@
 			  2))))
 (define (ease-in-quad x)
   (* x x))
+(define (ease-in-quart x)
+  (* x x x x))
 (define (ease-out-quart x)
   (- 1 (expt (- 1 x) 4)))
 (define (ease-out-expo x)
   (if (= 1 x)
 	  x
 	  (- 1 (expt 2 (* -10 x)))))
+(define (ease-in-circ x)
+  (- 1 (sqrt (- 1 (* x x)))))
+(define (ease-out-circ x)
+  (sqrt (- 1 (* (- x 1) (- x 1)))))
 
 (define-syntax interval-loop
   (syntax-rules ()
@@ -414,9 +422,6 @@
 
 (define (player-invincible?)
   (positive? iframes))
-
-(define (clamp v lower upper)
-  (max (min v upper) lower))
 
 (define ojamajo-carnival #f)
 (define (load-audio)
@@ -960,6 +965,71 @@
 			 (- (enm-y enm) 24)
 			 48 48))))
 
+(define (draw-boss textures enm render-x render-y)
+  (define bossinfo (enm-extras enm))
+  (when (bossinfo-aura-active bossinfo)
+	(let ([radius (fl+ 90.0 (fl* 7.0 (flsin (/ frames 18.0))))])
+	  (draw-sprite-pro-with-rotation
+	   textures 'magicircle
+	   (flmod (* frames 3.0) 360.0)
+	   ;; idk why I don't subtract the radius here but it works so :shrug:
+	   (make-rectangle render-x render-y
+					   (fl* 2.0 radius) (fl* 2.0 radius))
+	   #xffffffff)))
+	
+  ;; Okay, so raylib's draw-ring uses the ENTIRE shapes-texture for
+  ;; every segment of the circle which is...not what we want.
+  ;; However, I tried implementing ring drawing myself in the previous commit
+  ;; and for some reason transparency is not working for it even though
+  ;; my code looks exactly like what Raylib would do...
+  ;; The compromise is to use Raylib's DrawRing, but only for a small sector (i.e. segments=1).
+  ;; while having a loop on the Scheme side to continuously update the shape rect
+  ;; TODO: Find a permanent solution for this clowntown
+  (when (bossinfo-active-spell-name bossinfo)
+	(let* ([boss-tex (txbundle-boss-flip textures)]
+		   [save-tex (raylib:get-shapes-texture)]
+		   [save-rect (raylib:get-shapes-texture-rectangle)]
+		   [elapsed-frames (fx- (bossinfo-total-timer bossinfo)
+								(bossinfo-remaining-timer bossinfo))]
+		   [progress-of-90 (/ elapsed-frames 90.0)]
+		   [inner-ring-radius (if (fx< elapsed-frames 90)
+								  (lerp 1.0 98.0 (ease-out-circ progress-of-90))
+								  98.0)]
+		   [inner-ring-gap (if (fx< elapsed-frames 90)
+							   (fl+ 12.0 (lerp 20.0 0.0
+											   (ease-in-quart progress-of-90)))
+							   12.0)]
+		   [inner-ring-brightness (if (fx< elapsed-frames 90)
+									  (exact (round (lerp #xa0 #xf0 progress-of-90)))
+									  #xf0)])
+	  (raylib:push-matrix)
+	  (raylib:translatef render-x render-y 0.0)
+	  (raylib:rotatef (flmod (* frames -5.2) 360.0) 0.0 0.0 1.0)
+	  (do [(u 0.0 (fl+ u 4.0)) ;; 128/32
+		   (ang 0.0 (fl+ ang 11.25))] ;; 360/32
+		  [(fl>= u 128.0)]
+		(raylib:set-shapes-texture boss-tex (make-rectangle u 48.0 4.0 16.0))
+		(raylib:draw-ring 0.0 0.0 inner-ring-radius (fl+ inner-ring-radius
+														 inner-ring-gap)
+						  ang (fl+ ang 11.25) 1
+						  (bitwise-ior #xffffff00 inner-ring-brightness)))
+	  (raylib:pop-matrix)
+
+	  (raylib:push-matrix)
+	  (raylib:translatef render-x render-y 0.0)
+	  (raylib:rotatef (flmod (* frames 5.2) 360.0) 0.0 0.0 1.0)
+	  (do [(u 0.0 (fl+ u 4.0))
+		   (ang 0.0 (fl+ ang 11.25))]
+		  [(fl>= u 128.0)]
+		(raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
+		(raylib:draw-ring 0.0 0.0 108.0 120.0
+						  ang (fl+ ang 11.25) 1 #xffffffd0))
+	  (raylib:pop-matrix)
+	  
+	  (raylib:set-shapes-texture save-tex save-rect)))
+  ;; TODO actual sprites lol
+  (draw-sprite textures 'yellow-fairy2 render-x render-y -1))
+
 (define (draw-enemies textures)
   (define (each enm)
 	(let ([render-x (+ (enm-x enm) +playfield-render-offset-x+)]
@@ -967,53 +1037,7 @@
 		  [dx (enm-dx-render enm)]
 		  [type (enm-type enm)])
 	  (case type
-		([boss]
-		 (when (bossinfo-aura-active (enm-extras enm))
-		   (let ([radius (fl+ 90.0 (fl* 7.0 (sin (/ frames 18.0))))])
-			 (draw-sprite-pro-with-rotation
-			  textures 'magicircle
-			  (mod (* frames 3.0) 360.0)
-			  ;; idk why I don't subtract the radius here but it works so :shrug:
-			  (make-rectangle render-x render-y
-							  (* 2.0 radius) (* 2.0 radius))
-			  #xffffffff))
-		   
-		   ;; Okay, so raylib's draw-ring uses the ENTIRE shapes-texture for
-		   ;; every segment of the circle which is...not what we want.
-		   ;; However, I tried implementing ring drawing myself in the previous commit
-		   ;; and for some reason transparency is not working for it even though
-		   ;; my code looks exactly like what Raylib would do...
-		   ;; The compromise is to use Raylib's DrawRing, but only for a small sector (i.e. segments=1).
-		   ;; while having a loop on the Scheme side to continuously update the shape rect
-		   ;; TODO: Find a permanent solution for this clowntown
-		   (when (bossinfo-active-spell-name (enm-extras enm))
-			 (let ([boss-tex (txbundle-boss-flip textures)]
-				   [save-tex (raylib:get-shapes-texture)]
-				   [save-rect (raylib:get-shapes-texture-rectangle)])
-			   (raylib:push-matrix)
-			   (raylib:translatef render-x render-y 0.0)
-			   (raylib:rotatef (mod (* frames -5.2) 360.0) 0.0 0.0 1.0)
-			   (do [(u 0.0 (fl+ u 4.0)) ;; 128/32
-					(ang 0.0 (fl+ ang 11.25))] ;; 360/32
-				   [(fl>= u 128.0)]
-				 (raylib:set-shapes-texture boss-tex (make-rectangle u 48.0 4.0 16.0))
-				 (raylib:draw-ring 0.0 0.0 98.0 108.0 ang (fl+ ang 11.25) 1 #xffffffd0))
-			   (raylib:pop-matrix)
-
-			   (raylib:push-matrix)
-			   (raylib:translatef render-x render-y 0.0)
-			   (raylib:rotatef (mod (* frames 5.2) 360.0) 0.0 0.0 1.0)
-			   (do [(u 0.0 (fl+ u 4.0))
-					(ang 0.0 (fl+ ang 11.25))]
-				   [(fl>= u 128.0)]
-				 (raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
-				 (raylib:draw-ring 0.0 0.0 108.0 120.0
-								   ang (fl+ ang 11.25) 1 #xffffffd0))
-			   (raylib:pop-matrix)
-			   
-			   (raylib:set-shapes-texture save-tex save-rect))))
-		 ;; TODO actual sprites lol
-		 (draw-sprite textures 'yellow-fairy2 render-x render-y -1))
+		([boss] (draw-boss textures enm render-x render-y))
 		([yellow-fairy red-fairy green-fairy blue-fairy]
 		 (cond
 		  [(fl< (abs dx) 5.0)
@@ -1421,14 +1445,14 @@
 			   linear-step-forever)))))
 
 (define (test-fairy-control2 task enm)
-  (define sub1 (spawn-subtask
-				"ring1"
-				(lambda (_) (test-fairy-control2-ring1 enm))
-				(constantly #t) task))
-  (define sub2 (spawn-subtask
-				"ring2"
-				(lambda (_) (test-fairy-control2-ring2 enm))
-				(constantly #t) task))
+  ;; (define sub1 (spawn-subtask
+  ;; 				"ring1"
+  ;; 				(lambda (_) (test-fairy-control2-ring1 enm))
+  ;; 				(constantly #t) task))
+  ;; (define sub2 (spawn-subtask
+  ;; 				"ring2"
+  ;; 				(lambda (_) (test-fairy-control2-ring2 enm))
+  ;; 				(constantly #t) task))
   (define move (spawn-subtask
 				"move"
 				(lambda (_)
@@ -1441,7 +1465,6 @@
 				   (enm-y-set! enm (+ (enm-y enm) 0.5))
 				   (enm-x-set! enm (+ (enm-x enm) 0.5))
 				   (yield))
-				  (declare-spell enm "Spell Sign \"My Spell\"" 1800)
 				  (dotimes
 				   240
 				   (enm-y-set! enm (+ (enm-y enm) 0.5))
@@ -1656,8 +1679,12 @@
 							default-drop)])
 	  (enm-extras-set! enm (make-bossinfo "My Boss" #x98ff98ff #t #f 0 0)))]
    [(raylib:is-key-pressed key-y)
-	(spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
-							default-drop)
+	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
+							 live-enm)])
+	  (when boss
+		(declare-spell boss "My Spell" 1800)))
+	;; (spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
+	;; 						default-drop)
 	]))
 
 (define (handle-player-movement)

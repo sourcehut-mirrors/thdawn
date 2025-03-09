@@ -1,7 +1,7 @@
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
 		  dotimes
-		  vector-index vector-popcnt -> ->> thunk)
+		  vector-find vector-index vector-popcnt -> ->> thunk)
   (import (chezscheme))
 
   ;; threading macros from clojure
@@ -63,6 +63,16 @@
 			(if (eq? elem elemi)
 				i
 				(loop (add1 i)))))))
+
+  (define (vector-find proc v)
+	(define len (vector-length v))
+	(let loop ([i 0])
+	  (if (fx= i len)
+		  #f
+		  (let ([elem (vector-ref v i)])
+			(if (proc elem)
+				elem
+				(loop (fx1+ i)))))))
 
   (define (vector-popcnt v)
 	(define len (vector-length v))
