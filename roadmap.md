@@ -20,7 +20,6 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 * implement first chapter of stage to flesh out API's needed
   * and all bullet types needed for it
 * spell tracking and hud
-* boss spell circle
 * implement gameover
 * dialogue system
 * player and boss portraits

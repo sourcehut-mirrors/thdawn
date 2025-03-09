@@ -1,3 +1,15 @@
+* [2025-03-08 Sat]
+Oops, didn't update the devlog in forever. To be fair, not much has been happening either.
+
+Slowly been chipping away at some boss infra stuff. Most of it is in place now, except
+for rendering the spell name and the health bar.
+
+Still unclear how I'm going to represent health in the context of having multiple
+nons/spells, but it'll be an important thing to figure out before I continue on.
+
+Once I finish those three things and lasers, it'll /finally/ be time to actually start
+designing the stage danmaku.
+
 * [2024-11-23 Sat]
 Started this devlog to help track progress and motivate myself. A bit late since a lot of
 the core infra of the game has already been laid down, but late is better than never.
