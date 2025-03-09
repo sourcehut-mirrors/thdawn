@@ -970,7 +970,7 @@
 (define (draw-boss textures enm render-x render-y)
   (define bossinfo (enm-extras enm))
   (when (bossinfo-aura-active bossinfo)
-	(let ([radius (fl+ 90.0 (fl* 7.0 (flsin (/ frames 18.0))))])
+	(let ([radius (fl+ 90.0 (fl* 10.0 (flsin (/ frames 12.0))))])
 	  (draw-sprite-pro-with-rotation
 	   textures 'magicircle
 	   (flmod (* frames 3.0) 360.0)
@@ -1006,8 +1006,8 @@
 								 12.0)]
 			 [inner-ring-brightness (if (fx< elapsed-frames 90)
 										(exact (round
-												(lerp 160 240 progress-of-90)))
-										240)])
+												(lerp 160 235 progress-of-90)))
+										235)])
 		(raylib:push-matrix)
 		(raylib:translatef render-x render-y 0.0)
 		(raylib:rotatef (flmod (* frames -4.0) 360.0) 0.0 0.0 1.0)
@@ -1039,7 +1039,7 @@
 			[(fl>= u 128.0)]
 		  (raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
 		  (raylib:draw-ring 0.0 0.0 outer-ring-radius (fl+ outer-ring-radius 12.0)
-							ang (fl+ ang 11.25) 1 -1))
+							ang (fl+ ang 11.25) 1 #xffffffeb))
 		(raylib:pop-matrix))
 	  
 	  (raylib:set-shapes-texture save-tex save-rect)))
