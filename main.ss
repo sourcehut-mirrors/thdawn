@@ -996,7 +996,10 @@
 	  (let* ([progress-of-90 (/ elapsed-frames 90.0)]
 			 [inner-ring-radius (if (fx< elapsed-frames 90)
 									(lerp 1.0 98.0 (ease-out-circ progress-of-90))
-									98.0)]
+									(lerp
+									 98.0 10.0
+									 (/ (fx- elapsed-frames 90)
+										(fx- (bossinfo-total-timer bossinfo) 90))))]
 			 [inner-ring-gap (if (fx< elapsed-frames 90)
 								 (fl+ 12.0 (lerp 20.0 0.0
 												 (ease-in-quart progress-of-90)))
@@ -1025,7 +1028,9 @@
 			   [(fx< elapsed-frames 80)
 				(lerp 310.0 108.0
 					  (ease-in-quad (/ (fx- elapsed-frames 50) 30.0)))]
-			   [else 108.0])])
+			   [else (lerp 108.0 20.0
+						   (/ (fx- elapsed-frames 80)
+							  (fx- (bossinfo-total-timer bossinfo) 80)))])])
 		(raylib:push-matrix)
 		(raylib:translatef render-x render-y 0.0)
 		(raylib:rotatef (flmod (* frames 5.2) 360.0) 0.0 0.0 1.0)
