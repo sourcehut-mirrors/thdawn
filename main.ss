@@ -40,6 +40,8 @@
   (* x x x x))
 (define (ease-out-quart x)
   (- 1 (expt (- 1 x) 4)))
+(define (ease-out-quint x)
+  (- 1 (expt (- 1 x) 5)))
 (define (ease-out-expo x)
   (if (= 1 x)
 	  x
@@ -990,41 +992,50 @@
 		   [save-tex (raylib:get-shapes-texture)]
 		   [save-rect (raylib:get-shapes-texture-rectangle)]
 		   [elapsed-frames (fx- (bossinfo-total-timer bossinfo)
-								(bossinfo-remaining-timer bossinfo))]
-		   [progress-of-90 (/ elapsed-frames 90.0)]
-		   [inner-ring-radius (if (fx< elapsed-frames 90)
-								  (lerp 1.0 98.0 (ease-out-circ progress-of-90))
-								  98.0)]
-		   [inner-ring-gap (if (fx< elapsed-frames 90)
-							   (fl+ 12.0 (lerp 20.0 0.0
-											   (ease-in-quart progress-of-90)))
-							   12.0)]
-		   [inner-ring-brightness (if (fx< elapsed-frames 90)
-									  (exact (round (lerp #xa0 #xf0 progress-of-90)))
-									  #xf0)])
-	  (raylib:push-matrix)
-	  (raylib:translatef render-x render-y 0.0)
-	  (raylib:rotatef (flmod (* frames -5.2) 360.0) 0.0 0.0 1.0)
-	  (do [(u 0.0 (fl+ u 4.0)) ;; 128/32
-		   (ang 0.0 (fl+ ang 11.25))] ;; 360/32
-		  [(fl>= u 128.0)]
-		(raylib:set-shapes-texture boss-tex (make-rectangle u 48.0 4.0 16.0))
-		(raylib:draw-ring 0.0 0.0 inner-ring-radius (fl+ inner-ring-radius
-														 inner-ring-gap)
-						  ang (fl+ ang 11.25) 1
-						  (bitwise-ior #xffffff00 inner-ring-brightness)))
-	  (raylib:pop-matrix)
+								(bossinfo-remaining-timer bossinfo))])
+	  (let* ([progress-of-90 (/ elapsed-frames 90.0)]
+			 [inner-ring-radius (if (fx< elapsed-frames 90)
+									(lerp 1.0 98.0 (ease-out-circ progress-of-90))
+									98.0)]
+			 [inner-ring-gap (if (fx< elapsed-frames 90)
+								 (fl+ 12.0 (lerp 20.0 0.0
+												 (ease-in-quart progress-of-90)))
+								 12.0)]
+			 [inner-ring-brightness (if (fx< elapsed-frames 90)
+										(exact (round
+												(lerp 160 240 progress-of-90)))
+										240)])
+		(raylib:push-matrix)
+		(raylib:translatef render-x render-y 0.0)
+		(raylib:rotatef (flmod (* frames -4.0) 360.0) 0.0 0.0 1.0)
+		(do [(u 0.0 (fl+ u 4.0)) ;; 128/32
+			 (ang 0.0 (fl+ ang 11.25))] ;; 360/32
+			[(fl>= u 128.0)]
+		  (raylib:set-shapes-texture boss-tex (make-rectangle u 48.0 4.0 16.0))
+		  (raylib:draw-ring 0.0 0.0 inner-ring-radius (fl+ inner-ring-radius
+														   inner-ring-gap)
+							ang (fl+ ang 11.25) 1
+							(bitwise-ior #xffffff00 inner-ring-brightness)))
+		(raylib:pop-matrix))
 
-	  (raylib:push-matrix)
-	  (raylib:translatef render-x render-y 0.0)
-	  (raylib:rotatef (flmod (* frames 5.2) 360.0) 0.0 0.0 1.0)
-	  (do [(u 0.0 (fl+ u 4.0))
-		   (ang 0.0 (fl+ ang 11.25))]
-		  [(fl>= u 128.0)]
-		(raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
-		(raylib:draw-ring 0.0 0.0 108.0 120.0
-						  ang (fl+ ang 11.25) 1 #xffffffd0))
-	  (raylib:pop-matrix)
+	  (let* ([outer-ring-radius
+			  (cond
+			   [(fx< elapsed-frames 50)
+				(lerp 0.0 310.0 (ease-out-cubic (/ elapsed-frames 50.0)))]
+			   [(fx< elapsed-frames 80)
+				(lerp 310.0 108.0
+					  (ease-in-quad (/ (fx- elapsed-frames 50) 30.0)))]
+			   [else 108.0])])
+		(raylib:push-matrix)
+		(raylib:translatef render-x render-y 0.0)
+		(raylib:rotatef (flmod (* frames 5.2) 360.0) 0.0 0.0 1.0)
+		(do [(u 0.0 (fl+ u 4.0))
+			 (ang 0.0 (fl+ ang 11.25))]
+			[(fl>= u 128.0)]
+		  (raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
+		  (raylib:draw-ring 0.0 0.0 outer-ring-radius (fl+ outer-ring-radius 12.0)
+							ang (fl+ ang 11.25) 1 -1))
+		(raylib:pop-matrix))
 	  
 	  (raylib:set-shapes-texture save-tex save-rect)))
   ;; TODO actual sprites lol
