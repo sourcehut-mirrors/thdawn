@@ -38,9 +38,11 @@
 
   ;; Yields the specified number of times before returning
   (define (wait n)
-	(do [(i 0 (add1 i))]
-		[(>= i n)]
-	  (yield)))
+	(if (fx= n 1)
+		(yield)
+		(do [(i 0 (add1 i))]
+			[(>= i n)]
+		  (yield))))
 
   ;; Yields until (pred) becomes true.
   ;; If pred is already true when called, does not perform any yields.
