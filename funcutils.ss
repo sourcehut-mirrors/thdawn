@@ -50,19 +50,19 @@
 
   (define (for-each-indexed f l)
 	(do [(cur l (cdr cur))
-		 (i 0 (add1 i))]
+		 (i 0 (fx1+ i))]
 		[(null? cur)]
 	  (f i (car cur))))
 
   (define (vector-index elem v)
 	(define len (vector-length v))
 	(let loop ([i 0])
-	  (if (fx>= i len)
+	  (if (fx= i len)
 		  #f
 		  (let ([elemi (vector-ref v i)])
 			(if (eq? elem elemi)
 				i
-				(loop (add1 i)))))))
+				(loop (fx1+ i)))))))
 
   (define (vector-find proc v)
 	(define len (vector-length v))
@@ -82,5 +82,5 @@
 		  n
 		  (let ([elemi (vector-ref v i)])
 			(if elemi
-				(loop (add1 i) (add1 n))
-				(loop (add1 i) n)))))))
+				(loop (fx1+ i) (fx1+ n))
+				(loop (fx1+ i) n)))))))
