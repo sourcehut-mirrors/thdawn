@@ -22,6 +22,8 @@
   (* (fl/ pi 180.0) x))
 (define (todeg x)
   (* (fl/ 180.0 pi) x))
+(define (eround x)
+  (exact (round x)))
 
 (define (clamp v lower upper)
   (max (min v upper) lower))
@@ -621,7 +623,7 @@
 
 (define (draw-bomb textures)
   (raylib:draw-rectangle-gradient-h
-   (exact (round (+ +playfield-render-offset-x+ (- bomb-sweep-x-left 290))))
+   (eround (+ +playfield-render-offset-x+ (- bomb-sweep-x-left 290)))
    (+ +playfield-render-offset-y+ +playfield-min-y+)
    290
    +playfield-height+
@@ -629,13 +631,13 @@
    #x8a2be2be)
   (raylib:draw-rectangle-gradient-v
    (+ +playfield-render-offset-x+ +playfield-min-x+)
-   (exact (round (+ +playfield-render-offset-y+ (- bomb-sweep-y-up 365))))
+   (eround (+ +playfield-render-offset-y+ (- bomb-sweep-y-up 365)))
    +playfield-width+
    365
    #xdc143c00
    #xdc143cbe)
   (raylib:draw-rectangle-gradient-h
-   (exact (round (+ +playfield-render-offset-x+ bomb-sweep-x-right)))
+   (eround (+ +playfield-render-offset-x+ bomb-sweep-x-right))
    (+ +playfield-render-offset-y+ +playfield-min-y+)
    290
    +playfield-height+
@@ -643,7 +645,7 @@
    #x8a2be200)
   (raylib:draw-rectangle-gradient-v
    (+ +playfield-render-offset-x+ +playfield-min-x+)
-   (exact (round (+ +playfield-render-offset-y+ bomb-sweep-y-down)))
+   (eround (+ +playfield-render-offset-y+ bomb-sweep-y-down))
    +playfield-width+
    365
    #xdc143cbe
@@ -1029,8 +1031,7 @@
 												 (ease-in-quart progress-of-90)))
 								 12.0)]
 			 [inner-ring-brightness (if (fx< elapsed-frames 90)
-										(exact (round
-												(lerp 160 235 progress-of-90)))
+										(eround (lerp 160 235 progress-of-90))
 										235)])
 		(raylib:push-matrix)
 		(raylib:translatef lazy-render-x lazy-render-y 0.0)
@@ -1200,7 +1201,7 @@
 		  (inexact (lerp (cdr (assq 'start-radius extra-data))
 						 (cdr (assq 'end-radius extra-data))
 						 age))
-		  (packcolor 255 255 255 (exact (round (lerp 255 0 age)))))))
+		  (packcolor 255 255 255 (eround (lerp 255 0 age))))))
 	  ([cancel]
 	   (let* ([age (floor (/ (particle-age p) 3))]
 			  [v (if (fx< age 4) 0.0 64.0)]
@@ -1219,8 +1220,8 @@
 		 (raylib:draw-text-ex
 		  (fontbundle-cabin fonts)
 		  (number->string value)
-		  (exact (round (fl+ render-x 10.0)))
-		  (exact (round render-y))
+		  (eround (fl+ render-x 10.0))
+		  (eround render-y)
 		  16.0 0.0 (bitwise-ior color alpha))))))
   (vector-for-each-truthy each live-particles))
 
@@ -2106,7 +2107,7 @@
 	  (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
 	  (draw-sprite textures 'focus-sigil
 				   0.0 0.0 ;; manually translated to final position above
-				   (packcolor 255 255 255 (exact (round (* 255 focus-sigil-strength)))))
+				   (packcolor 255 255 255 (eround (* 255 focus-sigil-strength))))
 	  (raylib:pop-matrix)))
   
   (when (positive? bombing)
