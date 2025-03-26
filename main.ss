@@ -203,6 +203,10 @@
 						  (symbol->string elem))))
 	   (make type accessor x (+ y (* 2 i height)) width height shift))
 	 elems))
+  ;; lasers
+  (make-vertical-group-skip
+   'fixed-laser basic-colors
+   txbundle-laser4 0 0 256 16 v2zero)
   ;; bullets
   (make-vertical-group-skip
    'pellet basic-colors
@@ -297,6 +301,23 @@
   ret)
 
 (define sprite-data (make-sprite-data))
+
+(define (draw-laser-sprite textures sprite-id x y width height rotation color shine)
+  (define data (symbol-hashtable-ref sprite-data sprite-id #f))
+  (raylib:push-matrix)
+  (raylib:translatef x y 0.0)
+  (raylib:rotatef rotation 0.0 0.0 1.0)
+  ;; rotate about the left edge, halfway down
+  (raylib:translatef 0.0 (fl- (fl/ height 2.0)) 0.0)
+  (raylib:draw-texture-pro
+   ((sprite-descriptor-tx-accessor data) textures)
+   (sprite-descriptor-bounds data)
+   (make-rectangle 0.0 0.0 width height)
+   v2zero 0.0 -1)
+  (raylib:pop-matrix)
+  (when shine
+	(draw-sprite-with-rotation textures 'preimg-white
+							   (flmod (* frames 11.0) 360.0) x y -1)))
 
 (define (draw-sprite textures sprite-id x y color)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
@@ -2092,6 +2113,7 @@
   (draw-misc-ents textures)
   (draw-bullets textures)
   (draw-particles textures fonts)
+  (draw-laser-sprite textures 'fixed-laser-red 100.0 100.0 200.0 20.0 45.0 -1 #t)
 
   ;; focus sigil. Done here after the bullets because we want the player hitbox
   ;; to render on top of big bullets like bubbles, and ryannlib has the hitbox and
