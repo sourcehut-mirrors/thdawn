@@ -304,20 +304,19 @@
 
 (define (draw-laser-sprite textures sprite-id x y width height rotation color shine)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
-  (raylib:push-matrix)
-  (raylib:translatef x y 0.0)
-  (raylib:rotatef rotation 0.0 0.0 1.0)
-  ;; rotate about the left edge, halfway down
-  (raylib:translatef 0.0 (fl- (fl/ height 2.0)) 0.0)
-  (raylib:draw-texture-pro
-   ((sprite-descriptor-tx-accessor data) textures)
-   (sprite-descriptor-bounds data)
-   (make-rectangle 0.0 0.0 width height)
-   v2zero 0.0 -1)
-  (raylib:pop-matrix)
+  (raylib:with-matrix
+   (raylib:translatef x y 0.0)
+   (raylib:rotatef rotation 0.0 0.0 1.0)
+   ;; rotate about the left edge, halfway down
+   (raylib:translatef 0.0 (fl- (fl/ height 2.0)) 0.0)
+   (raylib:draw-texture-pro
+	((sprite-descriptor-tx-accessor data) textures)
+	(sprite-descriptor-bounds data)
+	(make-rectangle 0.0 0.0 width height)
+	v2zero 0.0 -1))
   (when shine
 	(draw-sprite-with-rotation textures 'preimg-white
-							   (flmod (* frames 11.0) 360.0) x y -1)))
+							   (mod (* frames 11.0) 360.0) x y -1)))
 
 (define (draw-sprite textures sprite-id x y color)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
@@ -348,16 +347,15 @@
 (define (draw-sprite-with-rotation textures sprite-id rotation x y color)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
   (define center-shift (sprite-descriptor-center-shift data))
-  (raylib:push-matrix)
-  (raylib:translatef x y 0.0)
-  (raylib:rotatef (inexact rotation) 0.0 0.0 1.0)
-  (raylib:translatef (+ (v2x center-shift)) (+ (v2y center-shift)) 0.0)
-  (raylib:draw-texture-rec
-   ((sprite-descriptor-tx-accessor data) textures)
-   (sprite-descriptor-bounds data)
-   v2zero
-   color)
-  (raylib:pop-matrix))
+  (raylib:with-matrix
+   (raylib:translatef x y 0.0)
+   (raylib:rotatef (inexact rotation) 0.0 0.0 1.0)
+   (raylib:translatef (+ (v2x center-shift)) (+ (v2y center-shift)) 0.0)
+   (raylib:draw-texture-rec
+	((sprite-descriptor-tx-accessor data) textures)
+	(sprite-descriptor-bounds data)
+	v2zero
+	color)))
 
 (define (draw-sprite-pro-with-rotation textures sprite-id rotation dest color)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
@@ -1054,18 +1052,17 @@
 			 [inner-ring-brightness (if (fx< elapsed-frames 90)
 										(eround (lerp 160 235 progress-of-90))
 										235)])
-		(raylib:push-matrix)
-		(raylib:translatef lazy-render-x lazy-render-y 0.0)
-		(raylib:rotatef (flmod (* frames -4.0) 360.0) 0.0 0.0 1.0)
-		(do [(u 0.0 (fl+ u 4.0)) ;; 128/32
-			 (ang 0.0 (fl+ ang 11.25))] ;; 360/32
-			[(fl>= u 128.0)]
-		  (raylib:set-shapes-texture boss-tex (make-rectangle u 48.0 4.0 16.0))
-		  (raylib:draw-ring 0.0 0.0 inner-ring-radius (fl+ inner-ring-radius
-														   inner-ring-gap)
-							ang (fl+ ang 11.25) 1
-							(bitwise-ior #xffffff00 inner-ring-brightness)))
-		(raylib:pop-matrix))
+		(raylib:with-matrix
+		 (raylib:translatef lazy-render-x lazy-render-y 0.0)
+		 (raylib:rotatef (flmod (* frames -4.0) 360.0) 0.0 0.0 1.0)
+		 (do [(u 0.0 (fl+ u 4.0)) ;; 128/32
+			  (ang 0.0 (fl+ ang 11.25))] ;; 360/32
+			 [(fl>= u 128.0)]
+		   (raylib:set-shapes-texture boss-tex (make-rectangle u 48.0 4.0 16.0))
+		   (raylib:draw-ring 0.0 0.0 inner-ring-radius (fl+ inner-ring-radius
+															inner-ring-gap)
+							 ang (fl+ ang 11.25) 1
+							 (bitwise-ior #xffffff00 inner-ring-brightness)))))
 
 	  (let* ([outer-ring-radius
 			  (cond
@@ -1077,16 +1074,15 @@
 			   [else (lerp 108.0 20.0
 						   (/ (fx- elapsed-frames 80)
 							  (fx- (bossinfo-total-timer bossinfo) 80)))])])
-		(raylib:push-matrix)
-		(raylib:translatef lazy-render-x lazy-render-y 0.0)
-		(raylib:rotatef (flmod (* frames 5.2) 360.0) 0.0 0.0 1.0)
-		(do [(u 0.0 (fl+ u 4.0))
-			 (ang 0.0 (fl+ ang 11.25))]
-			[(fl>= u 128.0)]
-		  (raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
-		  (raylib:draw-ring 0.0 0.0 outer-ring-radius (fl+ outer-ring-radius 12.0)
-							ang (fl+ ang 11.25) 1 #xffffffeb))
-		(raylib:pop-matrix))
+		(raylib:with-matrix
+		 (raylib:translatef lazy-render-x lazy-render-y 0.0)
+		 (raylib:rotatef (flmod (* frames 5.2) 360.0) 0.0 0.0 1.0)
+		 (do [(u 0.0 (fl+ u 4.0))
+			  (ang 0.0 (fl+ ang 11.25))]
+			 [(fl>= u 128.0)]
+		   (raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
+		   (raylib:draw-ring 0.0 0.0 outer-ring-radius (fl+ outer-ring-radius 12.0)
+							 ang (fl+ ang 11.25) 1 #xffffffeb))))
 	  
 	  (raylib:set-shapes-texture save-tex save-rect)))
   ;; TODO actual sprites lol
@@ -2124,13 +2120,12 @@
 				(get-player-render-pos)]
 			   [(focus-sigil-strength) (/ focus-frames +max-focus-frames+)])
 	(when (> focus-sigil-strength 0)
-	  (raylib:push-matrix)
-	  (raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
-	  (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
-	  (draw-sprite textures 'focus-sigil
-				   0.0 0.0 ;; manually translated to final position above
-				   (packcolor 255 255 255 (eround (* 255 focus-sigil-strength))))
-	  (raylib:pop-matrix)))
+	  (raylib:with-matrix
+	   (raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
+	   (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
+	   (draw-sprite textures 'focus-sigil
+					0.0 0.0 ;; manually translated to final position above
+					(packcolor 255 255 255 (eround (* 255 focus-sigil-strength)))))))
   
   (when (positive? bombing)
 	(draw-bomb textures))
