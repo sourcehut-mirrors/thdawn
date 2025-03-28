@@ -302,20 +302,21 @@
 
 (define sprite-data (make-sprite-data))
 
-(define (draw-laser-sprite textures sprite-id x y width height rotation color shine)
+(define (draw-laser-sprite textures sprite-id x y length radius
+						   rotation shine-sprite)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
   (raylib:with-matrix
    (raylib:translatef x y 0.0)
-   (raylib:rotatef rotation 0.0 0.0 1.0)
+   (raylib:rotatef (todeg rotation) 0.0 0.0 1.0)
    ;; rotate about the left edge, halfway down
-   (raylib:translatef 0.0 (fl- (fl/ height 2.0)) 0.0)
+   (raylib:translatef 0.0 (fl- radius) 0.0)
    (raylib:draw-texture-pro
 	((sprite-descriptor-tx-accessor data) textures)
 	(sprite-descriptor-bounds data)
-	(make-rectangle 0.0 0.0 width height)
+	(make-rectangle 0.0 0.0 length (fl* radius 2.0))
 	v2zero 0.0 -1))
-  (when shine
-	(draw-sprite-with-rotation textures 'preimg-white
+  (when shine-sprite
+	(draw-sprite-with-rotation textures shine-sprite
 							   (mod (* frames 11.0) 360.0) x y -1)))
 
 (define (draw-sprite textures sprite-id x y color)
@@ -473,15 +474,23 @@
    ;; how many frames we've been alive. If < 0, then bullet is in "prespawn"
    ;; and does not participate in gameplay, only renders a preimg sprite
    (mutable livetime)
-   initial-livetime
-   ;; alist of extra scratch pad data
-   (mutable extras)))
+   initial-livetime))
+
+(define-record-type laser
+  (parent bullet)
+  (fields
+   length
+   ;; aka half-thickness
+   radius
+   (mutable last-grazed-at)))
 
 (define-record-type blttype
   (fields
    id
    family
    preimg-sprite
+   ;; NB: lasers have custom preimg rendering, and their hit radius is adjustable
+   ;; per-laser, so these three fields are unused for lasers.
    preimg-begin-size preimg-end-size
    hit-radius)
   (sealed #t))
@@ -522,6 +531,7 @@
 	(make-family 'small-ball basic-colors 3.0)
 	(make-family 'medium-ball basic-colors 9.0)
 	(make-family 'ice-shard basic-colors 2.5)
+	(make-family 'fixed-laser basic-colors 0.0)
 	(for-each (lambda (color)
 				(define type
 				  (string->symbol (string-append
@@ -545,7 +555,25 @@
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
 	(let ([blt (make-bullet (get-next-bullet-id)
-							type x y facing speed #f (- delay) (- delay) '())])
+							type x y facing speed #f (- delay) (- delay))])
+	  (vector-set! live-bullets idx blt)
+	  (spawn-task "bullet"
+				  (lambda (task)
+					(do [(i 0 (add1 i))]
+						[(>= i delay)]
+					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
+					  (yield))
+					(control-function blt))
+				  (thunk (eq? blt (vector-ref live-bullets idx))))
+	  blt)))
+
+(define (spawn-laser type x y facing length radius delay control-function)
+  (let ([idx (vector-index #f live-bullets)])
+	(unless idx
+	  (error 'spawn-bullet "No more open bullet slots"))
+	(let ([blt (make-laser (get-next-bullet-id)
+						   type x y facing 0.0 #f (- delay) (- delay)
+						   length radius -1)])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda (task)
@@ -569,11 +597,14 @@
 				   23 0 #f))
   (delete-bullet bullet))
 
-(define (cancel-bullet-with-drop bullet drop)
-  (define ent (spawn-misc-ent drop (bullet-x bullet) (bullet-y bullet) -3.0 0.1))
+(define (spawn-drop-with-autocollect x y drop)
+  (define ent (spawn-misc-ent drop x y -3.0 0.1))
   (spawn-task "delayed autocollect"
 			  (lambda (task) (wait 45) (miscent-autocollect-set! ent #t))
-			  (constantly #t))
+			  (constantly #t)))
+
+(define (cancel-bullet-with-drop bullet drop)
+  (spawn-drop-with-autocollect (bullet-x bullet) (bullet-y bullet) drop)
   (cancel-bullet bullet))
 
 (define (despawn-out-of-bound-bullet bullet)
@@ -600,7 +631,7 @@
 		   [type (bullet-type bullet)]
 		   [bt (symbol-hashtable-ref bullet-types type #f)]
 		   [livetime (bullet-livetime bullet)])
-	  (if (fxnegative? livetime)
+	  (if (and (not (eq? 'fixed-laser type)) (fxnegative? livetime))
 		  (let* ([preimg-begin (blttype-preimg-begin-size bt)]
 				 [preimg-end (blttype-preimg-end-size bt)]
 				 ;; reversed because the factor is negative
@@ -627,7 +658,14 @@
 										render-x render-y -1))
 			([bubble]
 			 (draw-sprite-with-rotation textures type (fxmod (fx* frames 8) 360)
-										render-x render-y -1)))
+										render-x render-y -1))
+			([fixed-laser]
+			 (let* ([length (laser-length bullet)]
+					;; todo: grow to full during delay
+					[radius (laser-radius bullet)])
+			   (draw-laser-sprite textures type render-x render-y
+								  length radius (bullet-facing bullet)
+								  (blttype-preimg-sprite bt)))))
 		  (when show-hitboxes
 			(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
 								  red))))))
@@ -959,14 +997,14 @@
   (set! player-x 0.0)
   (set! player-y +initial-player-y+))
 
-(define (check-laser-collision lx ly rotation-deg lradius length
+(define (check-laser-collision lx ly rotation lradius length
 							   px py pradius)
   ;; the strategy is to invert reference frame so that the laser is at
   ;; position 0, 0 with rotation 0
   ;; Then we just use axis-aligned collision testing
-  (let* ([neg-rotation-rad (fl- (torad rotation-deg))]
-		 [cos-neg-theta (flcos neg-rotation-rad)]
-		 [sin-neg-theta (flsin neg-rotation-rad)]
+  (let* ([neg-rotation (fl- rotation)]
+		 [cos-neg-theta (flcos neg-rotation)]
+		 [sin-neg-theta (flsin neg-rotation)]
 		 [pxt (fl- px lx)]
 		 [pyt (fl- py ly)]
 		 [pxr (fl- (fl* pxt cos-neg-theta) (fl* pyt sin-neg-theta))]
@@ -977,18 +1015,33 @@
 	 pxr pyr pradius
 	 0.0 (fl- lradius) length (fl* 2.0 lradius))))
 
+(define (check-player-collision bullet player-radius)
+  (define is-laser (eq? 'fixed-laser (bullet-family (bullet-type bullet))))
+  (if is-laser
+	  (check-laser-collision (bullet-x bullet) (bullet-y bullet)
+							 (bullet-facing bullet)
+							 (laser-radius bullet)
+							 (laser-length bullet)
+							 player-x player-y player-radius)
+	  (check-collision-circles
+	   player-x player-y player-radius
+	   (bullet-x bullet) (bullet-y bullet)
+	   (bullet-hit-radius (bullet-type bullet)))))
+
 (define (process-collisions)
   (define (each bullet)
+	(define is-laser (eq? 'fixed-laser (bullet-family (bullet-type bullet))))
 	(when (bullet-active? bullet)
-	  (when (and (not (bullet-grazed bullet))
-				 (check-collision-circles
-				  player-x player-y graze-radius
-				  (bullet-x bullet) (bullet-y bullet)
-				  (bullet-hit-radius (bullet-type bullet))))
+	  (when (and (if is-laser
+					 (fx>= (fx- frames (laser-last-grazed-at bullet)) 4)
+					 (not (bullet-grazed bullet)))
+				 (check-player-collision bullet graze-radius))
 		(set! graze (fx1+ graze))
 		(when (fxzero? (mod graze 10))
 		  (set! item-value (fx+ 10 item-value)))
-		(bullet-grazed-set! bullet #t)
+		(if is-laser
+			(laser-last-grazed-at-set! bullet frames)
+			(bullet-grazed-set! bullet #t))
 		(spawn-particle (make-particle
 						 (particletype graze)
 						 player-x player-y
@@ -1005,11 +1058,9 @@
 							   (cons 'rot (* (roll visual-rng) 360.0)))))
 		(raylib:play-sound (sebundle-graze sounds)))
 
-	  (when (check-collision-circles
-			 player-x player-y hit-radius
-			 (bullet-x bullet) (bullet-y bullet)
-			 (bullet-hit-radius (bullet-type bullet)))
-		(cancel-bullet bullet)
+	  (when (check-player-collision bullet hit-radius)
+		(unless is-laser
+		  (cancel-bullet bullet))
 		(when (not (player-invincible?))
 		  (damage-player)))))
   (vector-for-each-truthy each live-bullets))
@@ -1632,15 +1683,19 @@
 	   (when (bullet-active? blt)
 		 (let ([x (bullet-x blt)]
 			   [y (bullet-y blt)]
-			   [hit-radius (bullet-hit-radius (bullet-type blt))])
-		   (when (or (check-collision-circle-rec x y hit-radius
-												 xlx xly xlw xlh)
-					 (check-collision-circle-rec x y hit-radius
-												 xrx xry xrw xrh)
-					 (check-collision-circle-rec x y hit-radius
-												 yux yuy yuw yuh)
-					 (check-collision-circle-rec x y hit-radius
-												 ydx ydy ydw ydh))
+			   [hit-radius (bullet-hit-radius (bullet-type blt))]
+			   [is-laser (eq? 'fixed-laser
+							  (bullet-family (bullet-type blt)))])
+		   (when (and
+				  (not is-laser)
+				  (or (check-collision-circle-rec x y hit-radius
+												  xlx xly xlw xlh)
+					  (check-collision-circle-rec x y hit-radius
+												  xrx xry xrw xrh)
+					  (check-collision-circle-rec x y hit-radius
+												  yux yuy yuw yuh)
+					  (check-collision-circle-rec x y hit-radius
+												  ydx ydy ydw ydh)))
 			 (cancel-bullet-with-drop blt 'small-piv)))))
 	 live-bullets)
 	(vector-for-each-truthy
@@ -1739,7 +1794,8 @@
 	  (raylib:play-sound (sebundle-spelldeclare sounds))
 	  (vector-for-each-truthy
 	   (lambda (blt)
-		 (when (bullet-active? blt)
+		 (when (and (bullet-active? blt)
+					(not (eq? 'fixed-laser (bullet-family (bullet-type blt)))))
 		   (cancel-bullet-with-drop blt 'small-piv)))
 	   live-bullets)
 	  (set! bomb-sweep-x-left (- player-x 50.0))
@@ -1759,6 +1815,8 @@
 								   #t #f 0 0)])
 	  (enm-extras-set! enm bossinfo))]
    [(raylib:is-key-pressed key-y)
+	(spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 5.0 0
+				  (lambda (blt) (loop-forever (void))))
 	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
 							 live-enm)])
 	  (when boss
@@ -2127,10 +2185,6 @@
   (draw-misc-ents textures)
   (draw-bullets textures)
   (draw-particles textures fonts)
-  (draw-laser-sprite textures 'fixed-laser-red
-					 (+ +playfield-render-offset-x+ 100.0)
-					 (+ +playfield-render-offset-y+ 100.0)
-					 200.0 20.0 45.0 -1 #t)
 
   ;; focus sigil. Done here after the bullets because we want the player hitbox
   ;; to render on top of big bullets like bubbles, and ryannlib has the hitbox and
@@ -2156,15 +2210,7 @@
 	 (fontbundle-bubblegum fonts)
 	 "Paused"
 	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
-  (draw-hud textures fonts)
-  (raylib:draw-text "hit?"
-					440 250
-					18
-					(if (check-laser-collision 100.0 100.0 45.0 1.0 200.0
-											   player-x player-y graze-radius)
-						green
-						red))
-  )
+  (draw-hud textures fonts))
 
 (define (render-all render-texture render-texture-inner textures fonts)
   (raylib:begin-texture-mode render-texture)
