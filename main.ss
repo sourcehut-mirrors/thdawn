@@ -959,6 +959,24 @@
   (set! player-x 0.0)
   (set! player-y +initial-player-y+))
 
+(define (check-laser-collision lx ly rotation-deg lradius length
+							   px py pradius)
+  ;; the strategy is to invert reference frame so that the laser is at
+  ;; position 0, 0 with rotation 0
+  ;; Then we just use axis-aligned collision testing
+  (let* ([neg-rotation-rad (fl- (torad rotation-deg))]
+		 [cos-neg-theta (flcos neg-rotation-rad)]
+		 [sin-neg-theta (flsin neg-rotation-rad)]
+		 [pxt (fl- px lx)]
+		 [pyt (fl- py ly)]
+		 [pxr (fl- (fl* pxt cos-neg-theta) (fl* pyt sin-neg-theta))]
+		 [pyr (fl+ (fl* pxt sin-neg-theta) (fl* pyt cos-neg-theta))])
+	;; now in this reference frame, the laser point is at 0, 0.
+	;; its hitbox extends `lradius` above and below and `length` to the right
+	(check-collision-circle-rec
+	 pxr pyr pradius
+	 0.0 (fl- lradius) length (fl* 2.0 lradius))))
+
 (define (process-collisions)
   (define (each bullet)
 	(when (bullet-active? bullet)
@@ -2109,7 +2127,10 @@
   (draw-misc-ents textures)
   (draw-bullets textures)
   (draw-particles textures fonts)
-  (draw-laser-sprite textures 'fixed-laser-red 100.0 100.0 200.0 20.0 45.0 -1 #t)
+  (draw-laser-sprite textures 'fixed-laser-red
+					 (+ +playfield-render-offset-x+ 100.0)
+					 (+ +playfield-render-offset-y+ 100.0)
+					 200.0 20.0 45.0 -1 #t)
 
   ;; focus sigil. Done here after the bullets because we want the player hitbox
   ;; to render on top of big bullets like bubbles, and ryannlib has the hitbox and
@@ -2136,6 +2157,13 @@
 	 "Paused"
 	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
   (draw-hud textures fonts)
+  (raylib:draw-text "hit?"
+					440 250
+					18
+					(if (check-laser-collision 100.0 100.0 45.0 1.0 200.0
+											   player-x player-y graze-radius)
+						green
+						red))
   )
 
 (define (render-all render-texture render-texture-inner textures fonts)
