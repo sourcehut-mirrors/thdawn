@@ -481,8 +481,9 @@
   (fields
    length
    radius ;; aka half-thickness
+   despawn-time ;; how long the laser despawn animation takes
    (mutable last-grazed-at)
-   (mutable despawning)))
+   (mutable start-despawning-at)))
 
 (define-record-type blttype
   (fields
@@ -546,7 +547,9 @@
 
 (define (bullet-active? blt)
   ;; whether the bullet participates in gameplay
-  (fxnonnegative? (bullet-livetime blt)))
+  (and (fxnonnegative? (bullet-livetime blt))
+	   (or (not (laser? blt))
+		   (not (laser-start-despawning-at blt)))))
 
 (define live-bullets (make-vector 4096 #f))
 
@@ -559,29 +562,33 @@
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda (task)
-					(do [(i 0 (add1 i))]
-						[(>= i delay)]
+					(do [(i 0 (fx1+ i))]
+						[(fx> i delay)]
 					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
 					  (yield))
 					(control-function blt))
 				  (thunk (eq? blt (vector-ref live-bullets idx))))
 	  blt)))
 
-(define (spawn-laser type x y facing length radius delay control-function)
+(define (spawn-laser type x y facing length radius despawn-time
+					 delay control-function)
   (let ([idx (vector-index #f live-bullets)])
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
 	(let ([blt (make-laser (get-next-bullet-id)
 						   type x y facing 0.0 #f (- delay) (- delay)
-						   length radius -1 #f)])
+						   length radius despawn-time -1 #f)])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "laser"
 				  (lambda (task)
-					(do [(i 0 (add1 i))]
-						[(>= i delay)]
+					(do [(i 0 (fx1+ i))]
+						[(fx> i delay)]
 					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
 					  (yield))
-					(control-function blt))
+					(control-function blt)
+					(laser-start-despawning-at-set! blt frames)
+					(wait despawn-time)
+					(delete-bullet blt))
 				  (thunk (eq? blt (vector-ref live-bullets idx))))
 	  blt)))
 
@@ -663,10 +670,16 @@
 			([fixed-laser]
 			 (let* ([length (laser-length bullet)]
 					[full-radius (laser-radius bullet)]
+					[start-despawning-at (laser-start-despawning-at bullet)]
 					[radius (cond
 							 [(fx<= livetime -10) 2.0]
-							 [(fx<= livetime 0) (lerp 2.0 full-radius
-													  (- 1 (/ livetime -10)))]
+							 [(fx<= livetime 0)
+							  (lerp 2.0 full-radius
+									(- 1 (/ livetime -10)))]
+							 [start-despawning-at
+							  (lerp full-radius 0.0
+									(/ (- frames start-despawning-at)
+									   (laser-despawn-time bullet)))]
 							 [else full-radius])])
 			   (draw-laser-sprite textures type render-x render-y
 								  length radius (bullet-facing bullet)
@@ -1795,8 +1808,7 @@
 	  (raylib:play-sound (sebundle-spelldeclare sounds))
 	  (vector-for-each-truthy
 	   (lambda (blt)
-		 (when (and (bullet-active? blt)
-					(not (eq? 'fixed-laser (bullet-family (bullet-type blt)))))
+		 (when (bullet-active? blt)
 		   (cancel-bullet-with-drop blt 'small-piv)))
 	   live-bullets)
 	  (set! bomb-sweep-x-left (- player-x 50.0))
@@ -1816,11 +1828,8 @@
 								   #t #f 0 0)])
 	  (enm-extras-set! enm bossinfo))]
    [(raylib:is-key-pressed key-y)
-	(spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 60
-				 (lambda (blt)
-				   (wait 240)
-				   (laser-despawning-set! blt #t)
-				   (wait 30)))
+	(spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 30 60
+				 (lambda (_blt) (wait 240)))
 	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
 							 live-enm)])
 	  (when boss
