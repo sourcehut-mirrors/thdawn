@@ -206,7 +206,7 @@
   ;; lasers
   (make-vertical-group-skip
    'fixed-laser basic-colors
-   txbundle-laser4 0 0 256 16 v2zero)
+   txbundle-laser4 0 3 256 10 v2zero)
   ;; bullets
   (make-vertical-group-skip
    'pellet basic-colors
@@ -480,9 +480,9 @@
   (parent bullet)
   (fields
    length
-   ;; aka half-thickness
-   radius
-   (mutable last-grazed-at)))
+   radius ;; aka half-thickness
+   (mutable last-grazed-at)
+   (mutable despawning)))
 
 (define-record-type blttype
   (fields
@@ -573,9 +573,9 @@
 	  (error 'spawn-bullet "No more open bullet slots"))
 	(let ([blt (make-laser (get-next-bullet-id)
 						   type x y facing 0.0 #f (- delay) (- delay)
-						   length radius -1)])
+						   length radius -1 #f)])
 	  (vector-set! live-bullets idx blt)
-	  (spawn-task "bullet"
+	  (spawn-task "laser"
 				  (lambda (task)
 					(do [(i 0 (add1 i))]
 						[(>= i delay)]
@@ -631,7 +631,8 @@
 		   [type (bullet-type bullet)]
 		   [bt (symbol-hashtable-ref bullet-types type #f)]
 		   [livetime (bullet-livetime bullet)])
-	  (if (and (not (eq? 'fixed-laser type)) (fxnegative? livetime))
+	  (if (and (not (eq? 'fixed-laser (bullet-family type)))
+			   (fxnegative? livetime))
 		  (let* ([preimg-begin (blttype-preimg-begin-size bt)]
 				 [preimg-end (blttype-preimg-end-size bt)]
 				 ;; reversed because the factor is negative
@@ -661,8 +662,12 @@
 										render-x render-y -1))
 			([fixed-laser]
 			 (let* ([length (laser-length bullet)]
-					;; todo: grow to full during delay
-					[radius (laser-radius bullet)])
+					[full-radius (laser-radius bullet)]
+					[radius (cond
+							 [(fx<= livetime -10) 2.0]
+							 [(fx<= livetime 0) (lerp 2.0 full-radius
+													  (- 1 (/ livetime -10)))]
+							 [else full-radius])])
 			   (draw-laser-sprite textures type render-x render-y
 								  length radius (bullet-facing bullet)
 								  (blttype-preimg-sprite bt)))))
@@ -1683,19 +1688,15 @@
 	   (when (bullet-active? blt)
 		 (let ([x (bullet-x blt)]
 			   [y (bullet-y blt)]
-			   [hit-radius (bullet-hit-radius (bullet-type blt))]
-			   [is-laser (eq? 'fixed-laser
-							  (bullet-family (bullet-type blt)))])
-		   (when (and
-				  (not is-laser)
-				  (or (check-collision-circle-rec x y hit-radius
-												  xlx xly xlw xlh)
-					  (check-collision-circle-rec x y hit-radius
-												  xrx xry xrw xrh)
-					  (check-collision-circle-rec x y hit-radius
-												  yux yuy yuw yuh)
-					  (check-collision-circle-rec x y hit-radius
-												  ydx ydy ydw ydh)))
+			   [hit-radius (bullet-hit-radius (bullet-type blt))])
+		   (when (or (check-collision-circle-rec x y hit-radius
+												 xlx xly xlw xlh)
+					 (check-collision-circle-rec x y hit-radius
+												 xrx xry xrw xrh)
+					 (check-collision-circle-rec x y hit-radius
+												 yux yuy yuw yuh)
+					 (check-collision-circle-rec x y hit-radius
+												 ydx ydy ydw ydh))
 			 (cancel-bullet-with-drop blt 'small-piv)))))
 	 live-bullets)
 	(vector-for-each-truthy
@@ -1815,8 +1816,11 @@
 								   #t #f 0 0)])
 	  (enm-extras-set! enm bossinfo))]
    [(raylib:is-key-pressed key-y)
-	(spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 5.0 0
-				  (lambda (blt) (loop-forever (void))))
+	(spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 60
+				 (lambda (blt)
+				   (wait 240)
+				   (laser-despawning-set! blt #t)
+				   (wait 30)))
 	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
 							 live-enm)])
 	  (when boss
