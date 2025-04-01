@@ -12,6 +12,9 @@
 (define key-left 263)
 (define key-down 264)
 (define key-up 265)
+(define key-comma 44)
+(define key-period 46)
+(define key-r 82)
 (define key-x 88)
 (define key-y 89)
 (define key-z 90)
@@ -443,6 +446,7 @@
 (define (centered-roll rng radius)
   (- (* (roll rng) 2 radius)
 	 radius))
+(define chapter-select 0)
 
 (define (player-invincible?)
   (fxpositive? iframes))
@@ -1827,6 +1831,10 @@
 								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
 								   #t #f 0 0)])
 	  (enm-extras-set! enm bossinfo))]
+   [(raylib:is-key-pressed key-period)
+	(set! chapter-select (add1 chapter-select))]
+   [(raylib:is-key-pressed key-comma)
+	(set! chapter-select (max (sub1 chapter-select) 0))]
    [(raylib:is-key-pressed key-y)
 	(spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 30 60
 				 (lambda (_blt) (wait 240)))
@@ -2043,6 +2051,9 @@
 				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
   ;; todo: for prod release, hide this behind f3
+  (raylib:draw-text (format "GOTO: ~d" chapter-select)
+					440 250
+					18 -1)
   (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
 					440 275
 					18 -1)
