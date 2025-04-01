@@ -1787,55 +1787,56 @@
 		  (spawn-misc-ent (miscenttype mainshot) (+ player-x 10) y
 						  -10 0)
 		  (raylib:play-sound (sebundle-playershoot sounds))))))
-  (cond
-   [(raylib:is-key-released key-z)
-	(set! start-shot-frames -1)]
-   [(raylib:is-key-pressed key-f3)
-	(set! show-hitboxes (not show-hitboxes))]
-   [(raylib:is-key-pressed key-escape)
+  
+  (when (raylib:is-key-released key-z)
+	(set! start-shot-frames -1))
+  (when (raylib:is-key-pressed key-f3)
+	(set! show-hitboxes (not show-hitboxes)))
+  (when (raylib:is-key-pressed key-escape)
 	(set! paused (not paused))
 	(if paused
 		(let ()
 		  (raylib:play-sound (sebundle-pause sounds))
 		  (raylib:pause-music-stream ojamajo-carnival))
-		(raylib:resume-music-stream ojamajo-carnival))]
-   [(raylib:is-key-pressed key-x)
-	(when (and (not paused)
-			   (zero? bombing)
-			   (zero? respawning)
-			   (>= bomb-stock 1))
-	  (set! death-timer 0)
-	  (set! bombing +bombing-max+)
-	  (set! iframes 180)
-	  (set! bomb-stock (sub1 bomb-stock))
-	  (autocollect-all-items)
-	  (raylib:play-sound (sebundle-spelldeclare sounds))
-	  (vector-for-each-truthy
-	   (lambda (blt)
-		 (when (bullet-active? blt)
-		   (cancel-bullet-with-drop blt 'small-piv)))
-	   live-bullets)
-	  (set! bomb-sweep-x-left (- player-x 50.0))
-	  (set! initial-bomb-sweep-x-left bomb-sweep-x-left)
-	  (set! bomb-sweep-x-right (+ player-x 50.0))
-	  (set! initial-bomb-sweep-x-right bomb-sweep-x-right)
-	  (set! bomb-sweep-y-down (+ player-y 50.0))
-	  (set! initial-bomb-sweep-y-down bomb-sweep-y-down)
-	  (set! bomb-sweep-y-up (- player-y 50.0))
-	  (set! initial-bomb-sweep-y-up bomb-sweep-y-up))]
-   [(raylib:is-key-pressed key-space)
+		(raylib:resume-music-stream ojamajo-carnival)))
+  (when (and
+		 (raylib:is-key-pressed key-x)
+		 (not paused)
+		 (zero? bombing)
+		 (zero? respawning)
+		 (>= bomb-stock 1))
+	(set! death-timer 0)
+	(set! bombing +bombing-max+)
+	(set! iframes 180)
+	(set! bomb-stock (sub1 bomb-stock))
+	(autocollect-all-items)
+	(raylib:play-sound (sebundle-spelldeclare sounds))
+	(vector-for-each-truthy
+	 (lambda (blt)
+	   (when (bullet-active? blt)
+		 (cancel-bullet-with-drop blt 'small-piv)))
+	 live-bullets)
+	(set! bomb-sweep-x-left (- player-x 50.0))
+	(set! initial-bomb-sweep-x-left bomb-sweep-x-left)
+	(set! bomb-sweep-x-right (+ player-x 50.0))
+	(set! initial-bomb-sweep-x-right bomb-sweep-x-right)
+	(set! bomb-sweep-y-down (+ player-y 50.0))
+	(set! initial-bomb-sweep-y-down bomb-sweep-y-down)
+	(set! bomb-sweep-y-up (- player-y 50.0))
+	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
+  (when (raylib:is-key-pressed key-space)
 	(let ([enm (spawn-enemy 'boss 0.0 100.0 200 test-fairy-control2
 							default-drop)]
 		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
 								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
 								   #t #f 0 0)])
-	  (enm-extras-set! enm bossinfo))]
-   [(raylib:is-key-pressed key-period)
-	(set! chapter-select (add1 chapter-select))]
-   [(raylib:is-key-pressed key-comma)
-	(set! chapter-select (max (sub1 chapter-select) 0))]
-   [(raylib:is-key-pressed key-y)
+	  (enm-extras-set! enm bossinfo)))
+  (when (raylib:is-key-pressed key-period)
+	(set! chapter-select (add1 chapter-select)))
+  (when (raylib:is-key-pressed key-comma)
+	(set! chapter-select (max (sub1 chapter-select) 0)))
+  (when (raylib:is-key-pressed key-y)
 	(spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 30 60
 				 (lambda (_blt) (wait 240)))
 	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
@@ -1844,7 +1845,7 @@
 		(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 900)))
 	;; (spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
 	;; 						default-drop)
-	]))
+	))
 
 (define (handle-player-movement)
   (define left-pressed (raylib:is-key-down key-left))
