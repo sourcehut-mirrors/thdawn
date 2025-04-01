@@ -395,6 +395,9 @@
 
 ;; Number of frames the current stage has been running. Does not increment when paused
 (define frames 0)
+(define frame-save 0)
+(define frame-save-diff 0)
+(define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
 (define true-frames 0)
 ;; The value of frames when the shot button was pressed down.
@@ -1833,9 +1836,14 @@
 								   #t #f 0 0)])
 	  (enm-extras-set! enm bossinfo)))
   (when (raylib:is-key-pressed key-period)
-	(set! chapter-select (add1 chapter-select)))
+	(set! chapter-select (min (add1 chapter-select) 13)))
   (when (raylib:is-key-pressed key-comma)
 	(set! chapter-select (max (sub1 chapter-select) 0)))
+  (when (raylib:is-key-pressed key-r)
+	(reset-to chapter-select)
+	;; (set! frame-save-diff (- frames frame-save))
+	;; (set! frame-save frames)
+	)
   (when (raylib:is-key-pressed key-y)
 	(spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 30 60
 				 (lambda (_blt) (wait 240)))
@@ -2052,6 +2060,12 @@
 				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
   ;; todo: for prod release, hide this behind f3
+  (raylib:draw-text (format "FRSAV: ~d (~d)" frame-save frame-save-diff)
+					440 200
+					18 -1)
+  (raylib:draw-text (format "CHAP: ~d" current-chapter)
+					440 225
+					18 -1)
   (raylib:draw-text (format "GOTO: ~d" chapter-select)
 					440 250
 					18 -1)
@@ -2258,6 +2272,84 @@
    (make-rectangle 0.0 0.0 1280.0 960.0) v2zero 0.0 -1)
   (raylib:end-drawing))
 
+(define (chapter0 task)
+  (wait 870)
+  (chapter1 task))
+(define (chapter1 task)
+  (set! current-chapter 1)
+  (wait 775)
+  (chapter2 task))
+(define (chapter2 task)
+  (set! current-chapter 2)
+  (wait 780)
+  (chapter3 task))
+(define (chapter3 task)
+  (set! current-chapter 3)
+  (wait 1095)
+  (chapter4 task))
+(define (chapter4 task)
+  (set! current-chapter 4)
+  (wait 1680)
+  (chapter5 task))
+(define (chapter5 task)
+  (set! current-chapter 5)
+  (wait 1139)
+  (chapter6 task))
+(define (chapter6 task)
+  (set! current-chapter 6)
+  (wait 386)
+  (chapter7 task))
+(define (chapter7 task)
+  (set! current-chapter 7)
+  (wait 772)
+  (chapter8 task))
+(define (chapter8 task)
+  (set! current-chapter 8)
+  (wait 787)
+  (chapter9 task))
+(define (chapter9 task)
+  (raylib:play-sound (sebundle-spellcapture sounds))
+  (set! current-chapter 9)
+  (wait 1108)
+  (chapter10 task))
+(define (chapter10 task)
+  (set! current-chapter 10)
+  (wait 1627)
+  (chapter11 task))
+(define (chapter11 task)
+  (set! current-chapter 11)
+  (wait 766)
+  (chapter12 task))
+(define (chapter12 task)
+  (set! current-chapter 12)
+  (wait 1215)
+  (chapter13 task))
+(define (chapter13 task)
+  (set! current-chapter 13)
+  (loop-forever))
+
+(define debug-chapters
+  `#((,chapter0 . 0) (,chapter1 . 870) (,chapter2 . 1645)
+	 (,chapter3 . 2425) (,chapter4 . 3520)
+	 (,chapter5 . 5200) (,chapter6 . 6339)
+	 (,chapter7 . 6725) (,chapter8 . 7497)
+	 (,chapter9 . 8284) (,chapter10 . 9392)
+	 (,chapter11 . 11019) (,chapter12 . 11785)
+	 (,chapter13 . 13000)))
+
+(define stage-driver-task #f)
+
+(define (reset-to chapter)
+  (define info (vector-ref debug-chapters chapter))
+  (vector-fill! live-bullets #f)
+  (vector-fill! live-enm #f)
+  (vector-fill! live-misc-ents #f)
+  (vector-fill! live-particles #f)
+  (kill-all-tasks)
+  (set! stage-driver-task (spawn-task "stage driver" (car info) (constantly #t)))
+  (set! frames (cdr info))
+  (raylib:seek-music-stream ojamajo-carnival (inexact (/ frames 60.0))))
+
 (define (main)
   (raylib:set-trace-log-level 4) ;; WARNING or above
   (raylib:init-window 1280 960 "thdawn")
@@ -2270,7 +2362,9 @@
 		 [fonts (load-fonts)]
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
-	;;(raylib:play-music-stream ojamajo-carnival)
+	(raylib:play-music-stream ojamajo-carnival)
+	(set! stage-driver-task
+		  (spawn-task "stage driver" chapter0 (constantly #t)))
 	(dynamic-wind
 	  (thunk #f)
 	  (lambda ()
