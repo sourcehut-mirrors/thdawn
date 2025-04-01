@@ -58,22 +58,22 @@
 
 (define-syntax interval-loop
   (syntax-rules ()
-	[(_ intvl b1 b2 ...)
+	[(_ intvl b ...)
 	 (let loop ()
-	   b1 b2 ...
+	   b ...
 	   (wait intvl)
 	   (loop))]))
 (define-syntax interval-loop-waitfirst
   (syntax-rules ()
-	[(_ intvl b1 b2 ...)
+	[(_ intvl b ...)
 	 (let loop ()
 	   (wait intvl)
-	   b1 b2 ...
+	   b ...
 	   (loop))]))
 (define-syntax loop-forever
   (syntax-rules ()
-	[(_ b1 b2 ...)
-	 (interval-loop 1 b1 b2 ...)]))
+	[(_ b ...)
+	 (interval-loop 1 b ...)]))
 
 (define-record-type sebundle
   (fields
