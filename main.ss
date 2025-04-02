@@ -801,6 +801,16 @@
 		(consume row col speed
  				 (+ base-angle starting-angle-offset
 					(* col local-angle)))))))
+;; helper for the common case of shooting a fanbuilder from the enemy position
+;; with a fixed type and linear bullet motion
+(define (fbshootez fb enm type delay sound)
+  (define x (enm-x enm))
+  (define y (enm-y enm))
+  (fbshoot fb x y
+		   (lambda (row col speed facing)
+			 (when sound
+			   (raylib:play-sound sound))
+			 (spawn-bullet type x y facing speed delay linear-step-forever))))
 
 (define-record-type circle-builder
   (fields
@@ -2298,11 +2308,7 @@
 	   (-> (fb)
 		   (fbcounts 1 7)
 		   (fbspeed 5.0 7.0)
-		   (fbshoot (enm-x enm) (enm-y enm)
-					(lambda (row col speed facing)
-					  (raylib:play-sound (sebundle-shoot0 sounds))
-					  (spawn-bullet 'small-ball-red (enm-x enm) (enm-y enm)
-									facing speed 5 linear-step-forever)))))))
+		   (fbshootez enm 'small-ball-red 5 (sebundle-shoot0 sounds))))))
   (spawn-subtask "movement" movement (constantly #t) task)
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (wait-until (constantly #f))
@@ -2350,7 +2356,6 @@
   (wait-until (thunk (>= frames 8284)))
   (chapter9 task))
 (define (chapter9 task)
-  (raylib:play-sound (sebundle-spellcapture sounds))
   (set! current-chapter 9)
   (wait-until (thunk (>= frames 9392)))
   (chapter10 task))
