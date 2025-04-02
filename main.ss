@@ -2311,16 +2311,48 @@
 		   (fbshootez enm 'small-ball-red 5 (sebundle-shoot0 sounds))))))
   (spawn-subtask "movement" movement (constantly #t) task)
   (spawn-subtask "shoot" shoot (constantly #t) task)
-  (wait-until (constantly #f))
-  )
+  (wait-until (constantly #f)))
+
+(define (ch0-w2-fairy task enm)
+  (define (movement task)
+	(loop-until
+	 (> (enm-y enm) 200.0)
+	 (enm-y-set! enm (+ (enm-y enm) 2.2)))
+	(loop-until
+	 (> (enm-y enm) (+ +playfield-max-y+ 20))
+	 (enm-y-set! enm (- (enm-y enm) 1.7))
+	 (enm-x-set! enm (- (enm-x enm) 1.7)))
+	(delete-enemy enm))
+  (define (shoot task)
+	(wait 30)
+	(interval-loop
+	 50
+	 (when (< 0 (enm-y enm) 360)
+	   (-> (fb)
+		   (fbcounts 1 7)
+		   (fbspeed 5.0 7.0)
+		   (fbshootez enm 'small-ball-red 5 (sebundle-shoot0 sounds))))))
+  (spawn-subtask "movement" movement (constantly #t) task)
+  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (wait-until (constantly #f)))
 
 (define (chapter0 task)
+  (set! current-chapter 0)
   (wait 120)
+  ;; wave1
   (spawn-enemy (enmtype red-fairy) -150.0 -90.0 100 ch0-w1-fairy default-drop)
   (spawn-enemy (enmtype red-fairy) -150.0 -70.0 100 ch0-w1-fairy default-drop)
   (spawn-enemy (enmtype red-fairy) -150.0 -50.0 100 ch0-w1-fairy default-drop)
   (spawn-enemy (enmtype red-fairy) -150.0 -30.0 100 ch0-w1-fairy default-drop)
   (spawn-enemy (enmtype red-fairy) -150.0 -10.0 100 ch0-w1-fairy default-drop)
+  
+  ;; wave 2
+  (wait 200)
+  (spawn-enemy (enmtype red-fairy) 150.0 -90.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype red-fairy) 150.0 -70.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype red-fairy) 150.0 -50.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype red-fairy) 150.0 -30.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype red-fairy) 150.0 -10.0 100 ch0-w2-fairy default-drop)
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
 (define (chapter1 task)
