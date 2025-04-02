@@ -74,6 +74,14 @@
   (syntax-rules ()
 	[(_ b ...)
 	 (interval-loop 1 b ...)]))
+(define-syntax loop-until
+  (syntax-rules ()
+	[(_ condition b ...)
+	 (let loop ()
+	   (unless condition
+		 b ...
+		 (yield)
+		 (loop)))]))
 
 (define-record-type sebundle
   (fields
@@ -1429,7 +1437,7 @@
 					  (- (miscent-y ent) 10)
 					  12 16)
 				 (delete-misc-ent ent)
-				 (damage-enemy enm 50)
+				 (damage-enemy enm 25)
 				 (return))))
 		   live-enm)
 		  (when (< (miscent-y ent) +playfield-min-y+)
@@ -1447,7 +1455,7 @@
 					  (- (miscent-y ent) 6)
 					  10 52)
 				 (delete-misc-ent ent)
-				 (damage-enemy enm 20)
+				 (damage-enemy enm 10)
 				 (return))))
 		   live-enm)
 		  (when (< (miscent-y ent) (- +playfield-min-y+ 50)) ;; extra fuzz for length
@@ -1726,7 +1734,7 @@
 				   (check-collision-recs x y w h xrx xry xrw xrh)
 				   (check-collision-recs x y w h yux yuy yuw yuh)
 				   (check-collision-recs x y w h ydx ydy ydw ydh))
-		   (damage-enemy enm 70))))
+		   (damage-enemy enm 35))))
 	 live-enm))
   (set! bombing (sub1 bombing)))
 
@@ -2272,7 +2280,41 @@
    (make-rectangle 0.0 0.0 1280.0 960.0) v2zero 0.0 -1)
   (raylib:end-drawing))
 
+(define (ch0-w1-fairy task enm)
+  (define (movement task)
+	(loop-until
+	 (> (enm-y enm) 200.0)
+	 (enm-y-set! enm (+ (enm-y enm) 2.2)))
+	(loop-until
+	 (> (enm-y enm) (+ +playfield-max-y+ 20))
+	 (enm-y-set! enm (+ (enm-y enm) 1.7))
+	 (enm-x-set! enm (+ (enm-x enm) 1.7)))
+	(delete-enemy enm))
+  (define (shoot task)
+	(wait 30)
+	(interval-loop
+	 50
+	 (when (< 0 (enm-y enm) 360)
+	   (-> (fb)
+		   (fbcounts 1 7)
+		   (fbspeed 5.0 7.0)
+		   (fbshoot (enm-x enm) (enm-y enm)
+					(lambda (row col speed facing)
+					  (raylib:play-sound (sebundle-shoot0 sounds))
+					  (spawn-bullet 'small-ball-red (enm-x enm) (enm-y enm)
+									facing speed 5 linear-step-forever)))))))
+  (spawn-subtask "movement" movement (constantly #t) task)
+  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (wait-until (constantly #f))
+  )
+
 (define (chapter0 task)
+  (wait 120)
+  (spawn-enemy (enmtype red-fairy) -150.0 -90.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype red-fairy) -150.0 -70.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype red-fairy) -150.0 -50.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype red-fairy) -150.0 -30.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype red-fairy) -150.0 -10.0 100 ch0-w1-fairy default-drop)
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
 (define (chapter1 task)
@@ -2328,26 +2370,27 @@
   (set! current-chapter 13)
   (loop-forever))
 
-(define debug-chapters
-  `#((,chapter0 . 0) (,chapter1 . 870) (,chapter2 . 1645)
-	 (,chapter3 . 2425) (,chapter4 . 3520)
-	 (,chapter5 . 5200) (,chapter6 . 6339)
-	 (,chapter7 . 6725) (,chapter8 . 7497)
-	 (,chapter9 . 8284) (,chapter10 . 9392)
-	 (,chapter11 . 11019) (,chapter12 . 11785)
-	 (,chapter13 . 13000)))
-
 (define stage-driver-task #f)
 
 (define (reset-to chapter)
-  (define info (vector-ref debug-chapters chapter))
+  ;; we do it like this instead of putting the functions directly in an
+  ;; alist/vector because otherwise we don't pick up live reloads
+  (define-values (func timestamp)
+	(case chapter
+	  [(0) (values chapter0 0)] [(1) (values chapter1 870)]
+	  [(2) (values chapter2 1645)] [(3) (values chapter3 2425)]
+	  [(4) (values chapter4 3520)] [(5) (values chapter5 5200)]
+	  [(6) (values chapter6 6339)] [(7) (values chapter7 6725)]
+	  [(8) (values chapter8 7497)] [(9) (values chapter9 8284)]
+	  [(10) (values chapter10 9392)] [(11) (values chapter11 11019)]
+	  [(12) (values chapter12 11785)] [(13) (values chapter13 13000)]))
   (vector-fill! live-bullets #f)
   (vector-fill! live-enm #f)
   (vector-fill! live-misc-ents #f)
   (vector-fill! live-particles #f)
   (kill-all-tasks)
-  (set! stage-driver-task (spawn-task "stage driver" (car info) (constantly #t)))
-  (set! frames (cdr info))
+  (set! stage-driver-task (spawn-task "stage driver" func (constantly #t)))
+  (set! frames timestamp)
   (raylib:seek-music-stream ojamajo-carnival (inexact (/ frames 60.0))))
 
 (define (main)
