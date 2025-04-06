@@ -305,6 +305,18 @@
    '(("medium-red-fairy" 320 0)
 	 ("medium-blue-fairy" 320 144)))
 
+  (do [(i 0 (add1 i))]
+	  [(>= i 12)]
+	;; likewise gross
+	(let-values ([(name) (->> (number->string i)
+							  (string-append "big-fairy")
+							  string->symbol)]
+				 [(row col) (div-and-mod i 4)])
+	  (make name txbundle-enemy1
+			(* 64 col)
+			(+ 192 (* 64 row))
+			64 64 shift32)))
+
 
   ;; items
   (make 'life-frag txbundle-item 0 32 32 32 shift16)
@@ -1141,7 +1153,7 @@
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))
-	([medium-blue-fairy medium-red-fairy]
+	([medium-blue-fairy medium-red-fairy big-fairy]
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))))
@@ -1235,7 +1247,7 @@
 	  (case type
 		([boss] (draw-boss textures enm render-x render-y))
 		([yellow-fairy red-fairy green-fairy blue-fairy
-					   medium-red-fairy medium-blue-fairy]
+					   medium-red-fairy medium-blue-fairy big-fairy]
 		 (cond
 		  [(fl< (abs dx) 5.0)
 		   (let* ([fwd-sprites
@@ -1246,7 +1258,8 @@
 					 ([green-fairy] '#(green-fairy1 green-fairy2 green-fairy3 green-fairy4))
 					 ([blue-fairy] '#(blue-fairy1 blue-fairy2 blue-fairy3 blue-fairy4))
 					 ([medium-blue-fairy] '#(medium-blue-fairy0 medium-blue-fairy1 medium-blue-fairy2 medium-blue-fairy3))
-					 ([medium-red-fairy] '#(medium-red-fairy0 medium-red-fairy1 medium-red-fairy2 medium-red-fairy3)))]
+					 ([medium-red-fairy] '#(medium-red-fairy0 medium-red-fairy1 medium-red-fairy2 medium-red-fairy3))
+					 ([big-fairy] '#(big-fairy0 big-fairy1 big-fairy2 big-fairy3)))]
 				  [sprite (vector-ref fwd-sprites
 									  (truncate (mod (/ frames 5)
 													 (vector-length fwd-sprites))))])
@@ -1259,7 +1272,8 @@
 					 ([green-fairy] '#(green-fairy5))
 					 ([blue-fairy] '#(blue-fairy5))
 					 ([medium-blue-fairy] '#(medium-blue-fairy4 medium-blue-fairy5 medium-blue-fairy6 medium-blue-fairy7))
-					 ([medium-red-fairy] '#(medium-red-fairy4 medium-red-fairy5 medium-red-fairy6 medium-red-fairy7)))]
+					 ([medium-red-fairy] '#(medium-red-fairy4 medium-red-fairy5 medium-red-fairy6 medium-red-fairy7))
+					 ([big-fairy] '#(big-fairy4 big-fairy5 big-fairy6 big-fairy7)))]
 				  [sprite (vector-ref transition-sprites
 									  (truncate (mod (/ frames 7)
 													 (vector-length
@@ -1283,7 +1297,8 @@
 					  '#(blue-fairy6 blue-fairy7 blue-fairy8
 									 blue-fairy9 blue-fairy10 blue-fairy11))
 					 ([medium-blue-fairy] '#(medium-blue-fairy8 medium-blue-fairy9 medium-blue-fairy10 medium-blue-fairy11))
-					 ([medium-red-fairy] '#(medium-red-fairy8 medium-red-fairy9 medium-red-fairy10 medium-red-fairy11)))]
+					 ([medium-red-fairy] '#(medium-red-fairy8 medium-red-fairy9 medium-red-fairy10 medium-red-fairy11))
+					 ([big-fairy] '#(big-fairy8 big-fairy9 big-fairy10 big-fairy11)))]
 				  [sprite (vector-ref side-sprites
 									  (truncate (mod (/ frames 7)
 													 (vector-length side-sprites))))])
@@ -2377,19 +2392,19 @@
   (set! current-chapter 0)
   (wait 120)
   ;; wave1
-  (spawn-enemy (enmtype medium-red-fairy) -150.0 -90.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype medium-red-fairy) -150.0 -70.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype medium-red-fairy) -150.0 -50.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype medium-red-fairy) -150.0 -30.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype medium-red-fairy) -150.0 -10.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) -150.0 -90.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) -150.0 -70.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) -150.0 -50.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) -150.0 -30.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) -150.0 -10.0 100 ch0-w1-fairy default-drop)
   
   ;; wave 2
   (wait 200)
-  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -90.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -70.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -50.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -30.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -10.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) 150.0 -90.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) 150.0 -70.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) 150.0 -50.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) 150.0 -30.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) 150.0 -10.0 100 ch0-w2-fairy default-drop)
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
 (define (chapter1 task)
