@@ -5,7 +5,8 @@
 (library (coro)
   (export wait wait-until yield spawn-task spawn-subtask
 		  task-dead
-		  kill-task kill-all-tasks run-tasks task-count)
+		  kill-task kill-all-tasks run-tasks task-count
+		  live-task-names)
   (import (chezscheme))
 
   (define-record-type task
@@ -115,6 +116,11 @@
   (define (task-count)
 	(+ (length task-queue)
 	   (length tasks-to-add)))
+
+  ;; for debugging stale tasks/enemies that hang around
+  (define (live-task-names)
+	(append (map task-name task-queue)
+			(map task-name tasks-to-add)))
 
   ;; Run one iteration of the task loop
   (define (run-tasks)

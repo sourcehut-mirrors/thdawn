@@ -183,6 +183,7 @@
   (define ret (make-hashtable symbol-hash eq?))
   (define shift8 (vec2 -8.0 -8.0))
   (define shift16 (vec2 -16.0 -16.0))
+  (define shift24 (vec2 -24.0 -24.0))
   (define shift32 (vec2 -32.0 -32.0))
   (define basic-colors '(red magenta blue cyan green yellow orange white))
   (define (make type accessor x y width height shift)
@@ -262,7 +263,7 @@
   (make 'bubble-cyan txbundle-bullet-ball-huge 192 0 64 64 shift32)
   (make 'bubble-white txbundle-bullet-ball-huge 192 64 64 64 shift32)  
 
-  ;; enemies
+  ;; small fairies
   (do [(i 0 (add1 i))]
 	  [(>= i 12)]
 	;; this is gross but not sure what names would be less bad than
@@ -284,6 +285,25 @@
 	  (make green txbundle-enemy1 (* 32 i) 416 32 32 shift16)
 	  (make blue txbundle-enemy1 (* 32 i) 448 32 32 shift16)
 	  (make yellow txbundle-enemy1 (* 32 i) 480 32 32 shift16)))
+
+  (for-each
+   (lambda (l)
+	 (define type (car l))
+	 (define start-x (cadr l))
+	 (define start-y (caddr l))
+	 (do [(i 0 (add1 i))]
+		 [(>= i 12)]
+	   ;; likewise gross
+	   (let-values ([(name) (->> (number->string i)
+								 (string-append type)
+								 string->symbol)]
+					[(row col) (div-and-mod i 4)])
+		 (make name txbundle-enemy1
+			   (+ start-x (* 48 col))
+			   (+ start-y (* 48 row))
+			   48 48 shift24))))
+   '(("medium-red-fairy" 320 0)
+	 ("medium-blue-fairy" 320 144)))
 
 
   ;; items
@@ -884,7 +904,9 @@
   (sealed #t))
 
 (define-enumeration enmtype
-  (red-fairy green-fairy blue-fairy yellow-fairy boss)
+  (red-fairy green-fairy blue-fairy yellow-fairy
+			 medium-red-fairy medium-blue-fairy
+			 big-fairy boss)
   make-enmtype-set)
 (define-record-type enm
   (fields
@@ -1110,12 +1132,16 @@
 
 
 (define (enm-hurtbox enm)
-  (case (and enm (enm-type enm))
+  (case (enm-type enm)
 	([red-fairy green-fairy blue-fairy yellow-fairy]
 	 (values (- (enm-x enm) 16)
 			 (- (enm-y enm) 16)
 			 32 32))
 	([boss]
+	 (values (- (enm-x enm) 24)
+			 (- (enm-y enm) 24)
+			 48 48))
+	([medium-blue-fairy medium-red-fairy]
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))))
@@ -1208,26 +1234,36 @@
 		  [type (enm-type enm)])
 	  (case type
 		([boss] (draw-boss textures enm render-x render-y))
-		([yellow-fairy red-fairy green-fairy blue-fairy]
+		([yellow-fairy red-fairy green-fairy blue-fairy
+					   medium-red-fairy medium-blue-fairy]
 		 (cond
 		  [(fl< (abs dx) 5.0)
 		   (let* ([fwd-sprites
 				   (case type
-					 ([yellow-fairy] '#(yellow-fairy2 yellow-fairy3 yellow-fairy4))
-					 ([red-fairy] '#(red-fairy2 red-fairy3 red-fairy4))
-					 ([green-fairy] '#(green-fairy2 green-fairy3 green-fairy4))
-					 ([blue-fairy] '#(blue-fairy2 blue-fairy3 blue-fairy4)))]
+					 ([yellow-fairy] '#(yellow-fairy1 yellow-fairy2
+													  yellow-fairy3 yellow-fairy4))
+					 ([red-fairy] '#(red-fairy1 red-fairy2 red-fairy3 red-fairy4))
+					 ([green-fairy] '#(green-fairy1 green-fairy2 green-fairy3 green-fairy4))
+					 ([blue-fairy] '#(blue-fairy1 blue-fairy2 blue-fairy3 blue-fairy4))
+					 ([medium-blue-fairy] '#(medium-blue-fairy0 medium-blue-fairy1 medium-blue-fairy2 medium-blue-fairy3))
+					 ([medium-red-fairy] '#(medium-red-fairy0 medium-red-fairy1 medium-red-fairy2 medium-red-fairy3)))]
 				  [sprite (vector-ref fwd-sprites
 									  (truncate (mod (/ frames 5)
 													 (vector-length fwd-sprites))))])
 			 (draw-sprite textures sprite render-x render-y -1))]
 		  [(fl< (abs dx) 10.0)
-		   (let ([sprite
-				  (case type
-					([yellow-fairy] 'yellow-fairy5)
-					([red-fairy] 'red-fairy5)
-					([green-fairy] 'green-fairy5)
-					([blue-fairy] 'blue-fairy5))])
+		   (let* ([transition-sprites
+				   (case type
+					 ([yellow-fairy] '#(yellow-fairy5))
+					 ([red-fairy] '#(red-fairy5))
+					 ([green-fairy] '#(green-fairy5))
+					 ([blue-fairy] '#(blue-fairy5))
+					 ([medium-blue-fairy] '#(medium-blue-fairy4 medium-blue-fairy5 medium-blue-fairy6 medium-blue-fairy7))
+					 ([medium-red-fairy] '#(medium-red-fairy4 medium-red-fairy5 medium-red-fairy6 medium-red-fairy7)))]
+				  [sprite (vector-ref transition-sprites
+									  (truncate (mod (/ frames 7)
+													 (vector-length
+													  transition-sprites))))])
 			 (if (flnegative? dx)
 				 (draw-sprite-mirror-x textures sprite render-x render-y -1)
 				 (draw-sprite textures sprite render-x render-y -1)))]
@@ -1245,7 +1281,9 @@
 									  green-fairy9 green-fairy10 green-fairy11))
 					 ([blue-fairy]
 					  '#(blue-fairy6 blue-fairy7 blue-fairy8
-									 blue-fairy9 blue-fairy10 blue-fairy11)))]
+									 blue-fairy9 blue-fairy10 blue-fairy11))
+					 ([medium-blue-fairy] '#(medium-blue-fairy8 medium-blue-fairy9 medium-blue-fairy10 medium-blue-fairy11))
+					 ([medium-red-fairy] '#(medium-red-fairy8 medium-red-fairy9 medium-red-fairy10 medium-red-fairy11)))]
 				  [sprite (vector-ref side-sprites
 									  (truncate (mod (/ frames 7)
 													 (vector-length side-sprites))))])
@@ -2019,7 +2057,6 @@
 	 (when (eq? 'boss (enm-type enm))
 	   (draw-boss-hud enm textures fonts)))
    live-enm)
-  ;; todo actually make this look good
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
    (format "Score: ~:d" current-score)
@@ -2319,7 +2356,7 @@
 	 (> (enm-y enm) 200.0)
 	 (enm-y-set! enm (+ (enm-y enm) 2.2)))
 	(loop-until
-	 (> (enm-y enm) (+ +playfield-max-y+ 20))
+	 (< (enm-y enm) (- +playfield-min-y+ 20))
 	 (enm-y-set! enm (- (enm-y enm) 1.7))
 	 (enm-x-set! enm (- (enm-x enm) 1.7)))
 	(delete-enemy enm))
@@ -2340,19 +2377,19 @@
   (set! current-chapter 0)
   (wait 120)
   ;; wave1
-  (spawn-enemy (enmtype red-fairy) -150.0 -90.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype red-fairy) -150.0 -70.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype red-fairy) -150.0 -50.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype red-fairy) -150.0 -30.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype red-fairy) -150.0 -10.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype medium-red-fairy) -150.0 -90.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype medium-red-fairy) -150.0 -70.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype medium-red-fairy) -150.0 -50.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype medium-red-fairy) -150.0 -30.0 100 ch0-w1-fairy default-drop)
+  (spawn-enemy (enmtype medium-red-fairy) -150.0 -10.0 100 ch0-w1-fairy default-drop)
   
   ;; wave 2
   (wait 200)
-  (spawn-enemy (enmtype red-fairy) 150.0 -90.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype red-fairy) 150.0 -70.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype red-fairy) 150.0 -50.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype red-fairy) 150.0 -30.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype red-fairy) 150.0 -10.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -90.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -70.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -50.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -30.0 100 ch0-w2-fairy default-drop)
+  (spawn-enemy (enmtype medium-blue-fairy) 150.0 -10.0 100 ch0-w2-fairy default-drop)
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
 (define (chapter1 task)
