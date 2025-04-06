@@ -376,13 +376,13 @@
 
   (define-ftype Font
 	(struct
-	  (baseSize int)
-	  (glyphCount int)
-	  (glyphPadding int)
-	  (texture Texture)
-	  (recs void*)
-	  (glyphs void*)
-	  (frame-count unsigned-int)))
+	  (_ int)
+	  (_ int)
+	  (_ int)
+	  (_ Texture)
+	  (_ void*)
+	  (_ void*)
+	  (_ unsigned-int)))
   (define load-font0
 	(foreign-procedure "LoadFont" (string) (& Font)))
   (define (load-font file)
