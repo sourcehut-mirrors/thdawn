@@ -126,6 +126,7 @@
    hud
    misc item
    bullet1 bullet2 bullet3 bullet4 bullet5 bullet6
+   bullet-music
    bg1 bg2 bg3 bg4
    bulletcancel hint
    bullet-ball-huge
@@ -142,6 +143,7 @@
 					 "misc.png" "item.png"
 					 "bullet1.png" "bullet2.png" "bullet3.png"
 					 "bullet4.png" "bullet5.png" "bullet6.png"
+					 "bullet_music.png"
 					 "background_1.png" "background_2.png"
 					 "background_3.png" "background_4.png"
 					 "etbreak.png" "hint.png"
@@ -265,7 +267,17 @@
   (make 'bubble-blue txbundle-bullet-ball-huge 128 0 64 64 shift32)
   (make 'bubble-orange txbundle-bullet-ball-huge 128 64 64 64 shift32)
   (make 'bubble-cyan txbundle-bullet-ball-huge 192 0 64 64 shift32)
-  (make 'bubble-white txbundle-bullet-ball-huge 192 64 64 64 shift32)  
+  (make 'bubble-white txbundle-bullet-ball-huge 192 64 64 64 shift32)
+
+  (for-each-indexed
+   (lambda (i color)
+	 (define shift (vec2 -30.0 -16.0))
+	 (do [(j 0 (add1 j))]
+		 [(> j 2)]
+	   (make (string->symbol
+			  (string-append "music-" (symbol->string color) (number->string j)))
+		 txbundle-bullet-music (* 60 i) (* 32 j) 60 32 shift)))
+   basic-colors)
 
   ;; small fairies
   (do [(i 0 (add1 i))]
@@ -583,6 +595,7 @@
 	(make-family 'ice-shard basic-colors 2.5)
 	(make-family 'fixed-laser basic-colors 0.0)
 	(make-family 'rest basic-colors 3.0)
+	(make-family 'music basic-colors 3.0)
 	(for-each (lambda (color)
 				(define type
 				  (string->symbol (string-append
@@ -717,6 +730,13 @@
 			([bubble]
 			 (draw-sprite-with-rotation textures type (fxmod (fx* frames 8) 360)
 										render-x render-y -1))
+			([music]
+			 (let ([sprite
+					(string->symbol (string-append (symbol->string type)
+												   (number->string
+													(fxmod (fx/ frames 10) 3))))])
+			   (draw-sprite-with-rotation textures sprite 90.0
+										  render-x render-y -1)))
 			([fixed-laser]
 			 (let* ([length (laser-length bullet)]
 					[full-radius (laser-radius bullet)]
@@ -1644,7 +1664,7 @@
 (define (test-fairy-control2-ring1 enm)
   (define b (-> (cb)
 				(cbcount 10)
-				(cbspeed 4.0)
+				(cbspeed 1.0)
 				(cbang (torad 20.0) (torad 0.0))))
   (interval-loop
    90
@@ -1652,7 +1672,7 @@
    (cbshoot b (enm-x enm) (enm-y enm)
 			(lambda (row col speed facing)
 			  (spawn-bullet
-			   'rest-red (enm-x enm) (enm-y enm)
+			   'music-green (enm-x enm) (enm-y enm)
 			   facing speed 5
 			   linear-step-forever)))))
 
