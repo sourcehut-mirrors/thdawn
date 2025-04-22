@@ -179,7 +179,8 @@
    center-shift)
   (sealed #t))
 
-(define (make-sprite-data)
+(define sprite-data
+  (let ()
   (define ret (make-hashtable symbol-hash eq?))
   (define shift8 (vec2 -8.0 -8.0))
   (define shift16 (vec2 -16.0 -16.0))
@@ -253,6 +254,9 @@
   (make-vertical-group
    'ice-shard basic-colors
    txbundle-bullet2 128 0 16 16 shift8)
+  (make-vertical-group
+   'rest basic-colors
+   txbundle-bullet6 192 0 32 32 shift16)
 
   (make 'bubble-red txbundle-bullet-ball-huge 0 0 64 64 shift32)
   (make 'bubble-green txbundle-bullet-ball-huge 0 64 64 64 shift32)
@@ -341,9 +345,7 @@
   (make 'bomb-full txbundle-hint 336 0 16 16 v2zero)
   (make 'magicircle txbundle-magicircle 0 0 256 256 (vec2 -128.0 -128.0))
   (make 'enemy-indicator txbundle-misc 128 72 48 16 (vec2 -24.0 0.0))
-  ret)
-
-(define sprite-data (make-sprite-data))
+  ret))
 
 (define (draw-laser-sprite textures sprite-id x y length radius
 						   rotation shine-sprite)
@@ -580,6 +582,7 @@
 	(make-family 'medium-ball basic-colors 9.0)
 	(make-family 'ice-shard basic-colors 2.5)
 	(make-family 'fixed-laser basic-colors 0.0)
+	(make-family 'rest basic-colors 3.0)
 	(for-each (lambda (color)
 				(define type
 				  (string->symbol (string-append
@@ -703,7 +706,7 @@
 			([pellet small-ball medium-ball]
 			 (draw-sprite textures type render-x render-y #xffffffff))
 			;; aimed in direction of movement
-			([butterfly ellipse arrow amulet ice-shard]
+			([butterfly ellipse arrow amulet ice-shard rest]
 			 (draw-sprite-with-rotation textures type
 										(todeg (bullet-facing bullet))
 										render-x render-y -1))
@@ -1649,7 +1652,7 @@
    (cbshoot b (enm-x enm) (enm-y enm)
 			(lambda (row col speed facing)
 			  (spawn-bullet
-			   'medium-ball-red (enm-x enm) (enm-y enm)
+			   'rest-red (enm-x enm) (enm-y enm)
 			   facing speed 5
 			   linear-step-forever)))))
 
@@ -1668,14 +1671,14 @@
 			   linear-step-forever)))))
 
 (define (test-fairy-control2 task enm)
-  ;; (define sub1 (spawn-subtask
-  ;; 				"ring1"
-  ;; 				(lambda (_) (test-fairy-control2-ring1 enm))
-  ;; 				(constantly #t) task))
-  ;; (define sub2 (spawn-subtask
-  ;; 				"ring2"
-  ;; 				(lambda (_) (test-fairy-control2-ring2 enm))
-  ;; 				(constantly #t) task))
+  (define sub1 (spawn-subtask
+				"ring1"
+				(lambda (_) (test-fairy-control2-ring1 enm))
+				(constantly #t) task))
+  (define sub2 (spawn-subtask
+				"ring2"
+				(lambda (_) (test-fairy-control2-ring2 enm))
+				(constantly #t) task))
   (define move (spawn-subtask
 				"move"
 				(lambda (_)
