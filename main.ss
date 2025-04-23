@@ -2542,6 +2542,7 @@
 		 [fonts (load-fonts)]
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
+	(raylib:set-texture-filter render-texture-inner 1) ;; TEXTURE_FILTER_BILINEAR
 	(raylib:play-music-stream ojamajo-carnival)
 	(set! stage-driver-task
 		  (spawn-task "stage driver" chapter0 (constantly #t)))

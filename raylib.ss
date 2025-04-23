@@ -20,6 +20,7 @@
 		  set-trace-log-level
 		  push-matrix pop-matrix with-matrix translatef rotatef
 		  rlbegin rlend vertex2 texcoord color4f color4ub normal3f set-texture
+		  set-texture-filter
 		  set-shapes-texture get-shapes-texture get-shapes-texture-rectangle)
   (import (chezscheme) (geom))
 
@@ -476,4 +477,7 @@
   (define (get-shapes-texture-rectangle)
 	(get-shapes-texture-rectangle0 global-rectangle)
 	(unload-global-rectangle global-rectangle))
+
+  (define set-texture-filter
+	(foreign-procedure "SetTextureFilter" ((& Texture) int) void))
   )
