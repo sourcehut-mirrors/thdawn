@@ -1087,8 +1087,8 @@
 	   ;; drop, it doesn't awkwardly get spawned away from the enemy
 	   (let* ([skip-fuzz (and (fxzero? i)
 							  (eq? drop (car drops)))]
-			  [fuzz-x (if skip-fuzz 0.0 (- (roll game-rng 18) 9.0))]
-			  [fuzz-y (if skip-fuzz 0.0 (- (roll game-rng 8) 4.0))])
+			  [fuzz-x (if skip-fuzz 0.0 (- (roll game-rng 24) 12.0))]
+			  [fuzz-y (if skip-fuzz 0.0 (- (roll game-rng 10) 5.0))])
 		 (let ([ent (spawn-misc-ent
 					 type
 					 (+ x fuzz-x) (+ y fuzz-y)
@@ -2401,7 +2401,7 @@
    (make-rectangle 0.0 0.0 1280.0 960.0) v2zero 0.0 -1)
   (raylib:end-drawing))
 
-(define (ch0-w1-fairy task enm)
+(define (ch0-w12-fairy bullet xvel task enm)
   (define (movement task)
 	(loop-until
 	 (> (enm-y enm) 200.0)
@@ -2409,61 +2409,54 @@
 	(loop-until
 	 (> (enm-y enm) (+ +playfield-max-y+ 20))
 	 (enm-y-set! enm (+ (enm-y enm) 1.7))
-	 (enm-x-set! enm (+ (enm-x enm) 1.7)))
+	 (enm-x-set! enm (+ (enm-x enm) xvel)))
 	(delete-enemy enm))
   (define (shoot task)
 	(wait 30)
-	(interval-loop
-	 50
-	 (when (< 0 (enm-y enm) 360)
-	   (-> (fb)
-		   (fbcounts 1 7)
-		   (fbspeed 5.0 7.0)
-		   (fbshootez enm 'small-ball-red 5 (sebundle-shoot0 sounds))))))
+	(dotimes 4
+	  (-> (fb)
+		  (fbcounts 1 5)
+		  (fbspeed 4.0 6.0)
+		  (fbshootez enm bullet 5 (sebundle-shoot0 sounds)))
+	  (wait 50)))
   (spawn-subtask "movement" movement (constantly #t) task)
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (wait-until (constantly #f)))
 
-(define (ch0-w2-fairy task enm)
+(define (ch0-big-fairy task enm)
   (define (movement task)
 	(loop-until
-	 (> (enm-y enm) 200.0)
-	 (enm-y-set! enm (+ (enm-y enm) 2.2)))
-	(loop-until
-	 (< (enm-y enm) (- +playfield-min-y+ 20))
-	 (enm-y-set! enm (- (enm-y enm) 1.7))
-	 (enm-x-set! enm (- (enm-x enm) 1.7)))
-	(delete-enemy enm))
-  (define (shoot task)
-	(wait 30)
-	(interval-loop
-	 50
-	 (when (< 0 (enm-y enm) 360)
-	   (-> (fb)
-		   (fbcounts 1 7)
-		   (fbspeed 5.0 7.0)
-		   (fbshootez enm 'small-ball-red 5 (sebundle-shoot0 sounds))))))
+	 (> (enm-y enm) 160.0)
+	 (enm-y-set! enm (+ (enm-y enm) 1.2))))
   (spawn-subtask "movement" movement (constantly #t) task)
-  (spawn-subtask "shoot" shoot (constantly #t) task)
   (wait-until (constantly #f)))
 
 (define (chapter0 task)
   (set! current-chapter 0)
   (wait 120)
   ;; wave1
-  (spawn-enemy (enmtype big-fairy) -150.0 -90.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype big-fairy) -150.0 -70.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype big-fairy) -150.0 -50.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype big-fairy) -150.0 -30.0 100 ch0-w1-fairy default-drop)
-  (spawn-enemy (enmtype big-fairy) -150.0 -10.0 100 ch0-w1-fairy default-drop)
+  (let ([w1 (curry ch0-w12-fairy 'music-red 1.95)])
+	(spawn-enemy (enmtype red-fairy) -150.0 -130.0 100 w1 default-drop)
+	(spawn-enemy (enmtype red-fairy) -150.0 -100.0 100 w1 default-drop)
+	(spawn-enemy (enmtype red-fairy) -150.0 -70.0 100 w1 default-drop)
+	(spawn-enemy (enmtype red-fairy) -150.0 -40.0 100 w1 default-drop)
+	(spawn-enemy (enmtype red-fairy) -150.0 -10.0 100 w1 default-drop))
   
   ;; wave 2
   (wait 200)
-  (spawn-enemy (enmtype big-fairy) 150.0 -90.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype big-fairy) 150.0 -70.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype big-fairy) 150.0 -50.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype big-fairy) 150.0 -30.0 100 ch0-w2-fairy default-drop)
-  (spawn-enemy (enmtype big-fairy) 150.0 -10.0 100 ch0-w2-fairy default-drop)
+  (let ([w2 (curry ch0-w12-fairy 'music-orange -1.95)])
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -130.0 100 w2 default-drop)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -100.0 100 w2 default-drop)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -70.0 100 w2 default-drop)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -40.0 100 w2 default-drop)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -10.0 100 w2 default-drop))
+
+  (wait 200)
+  ;; TODO give the fairy armor until it fires the treble clef,
+  ;; instead of lots of health
+  (spawn-enemy (enmtype big-fairy) 0.0 -10.0 3000 ch0-big-fairy
+			   `((point . 5)))
+  
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
 (define (chapter1 task)

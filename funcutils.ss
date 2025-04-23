@@ -1,8 +1,11 @@
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
-		  dotimes
+		  dotimes curry
 		  vector-find vector-index vector-popcnt -> ->> thunk)
   (import (chezscheme))
+
+  (define (curry proc . curry-args)
+	(lambda rest (apply proc (append curry-args rest))))
 
   ;; threading macros from clojure
   (define-syntax ->
