@@ -242,7 +242,7 @@
    'ellipse basic-colors
    txbundle-bullet1 224 0 32 32 shift16)
   (make-vertical-group-skip
-   'arrow basic-colors
+   'arrowhead basic-colors
    txbundle-bullet1 0 0 16 16 shift8)
   (make-vertical-group-skip
    'amulet basic-colors
@@ -588,7 +588,7 @@
 	(make-family 'pellet basic-colors 2.0)
 	(make-family 'butterfly basic-colors 3.7)
 	(make-family 'ellipse basic-colors 4.0)
-	(make-family 'arrow basic-colors 3.0)
+	(make-family 'arrowhead basic-colors 3.0)
 	(make-family 'amulet basic-colors 3.1)
 	(make-family 'small-ball basic-colors 3.0)
 	(make-family 'medium-ball basic-colors 9.0)
@@ -719,7 +719,7 @@
 			([pellet small-ball medium-ball]
 			 (draw-sprite textures type render-x render-y #xffffffff))
 			;; aimed in direction of movement
-			([butterfly ellipse arrow amulet ice-shard rest]
+			([butterfly ellipse arrowhead amulet ice-shard rest]
 			 (draw-sprite-with-rotation textures type
 										(todeg (bullet-facing bullet))
 										render-x render-y -1))
@@ -1672,7 +1672,7 @@
    (cbshoot b (enm-x enm) (enm-y enm)
 			(lambda (row col speed facing)
 			  (spawn-bullet
-			   'music-green (enm-x enm) (enm-y enm)
+			   'arrowhead-green (enm-x enm) (enm-y enm)
 			   facing speed 5
 			   linear-step-forever)))))
 
