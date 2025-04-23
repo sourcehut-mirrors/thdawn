@@ -9,14 +9,6 @@ Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 
 ## Immediate TODOs
-* design multi-task abstractions so that an enemy can e.g. move and shoot independently
-* design how chapters and stage flow will work in both a prod build and in-dev
-  * ability to find and kill individual tasks in coro.ss
-  * chapters are individual functions that tail call each other, driven by a single task.
-	As opposed to a main task that calls the chapters sequentially.
-	This will allow starting at individual chapters for debugging.
-	Debug will need ability to kill current "stage driver" task (or maybe just all tasks),
-	reset the music, and start the right chapter.
 * implement first chapter of stage to flesh out API's needed
   * and all bullet types needed for it
 * spell tracking and hud

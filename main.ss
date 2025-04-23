@@ -2316,8 +2316,9 @@
   (raylib:set-texture #f))
 
 (define background-draw-bounds
-  ;; chosen to be integer multiple of the texture size
-  (make-rectangle 0.0 0.0 512.0 448.0))
+  ;; x is integer multiple of texture width to prevent stretching
+  ;; y isn't but the stretching isn't too noticeable so it's ok
+  (make-rectangle 0.0 0.0 512.0 480.0))
 (define (do-render-all textures fonts)
   (raylib:clear-background #x000000ff) ;;#x42024aff) ;; todo: some variability :D
   (unless paused
