@@ -257,6 +257,24 @@
    'ice-shard basic-colors
    txbundle-bullet2 128 0 16 16 shift8)
   (make-vertical-group
+   'knife basic-colors
+   txbundle-bullet3 0 0 32 32 (vec2 -15.0 -16.0))
+  (make-vertical-group-skip
+   'bacteria basic-colors
+   txbundle-bullet3 48 0 16 16 shift8)
+  (make-vertical-group
+   'kunai basic-colors
+   txbundle-bullet3 80 0 16 16 shift8)
+  (make-vertical-group
+   'droplet basic-colors
+   txbundle-bullet3 112 0 16 16 shift8)
+  (make-vertical-group
+   'heart basic-colors
+   txbundle-bullet4 128 0 32 32 shift16) ;; TODO this is too big, needs scaling
+  (make-vertical-group
+   'arrow basic-colors
+   txbundle-bullet4 96 0 32 32 (vec2 -24.0 -16.0)) ;; also too big
+  (make-vertical-group
    'rest basic-colors
    txbundle-bullet6 192 0 32 32 shift16)
 
@@ -596,6 +614,12 @@
 	(make-family 'fixed-laser basic-colors 0.0)
 	(make-family 'rest basic-colors 3.0)
 	(make-family 'music basic-colors 3.0)
+	(make-family 'knife basic-colors 4.0)
+	(make-family 'bacteria basic-colors 2.0)
+	(make-family 'kunai basic-colors 2.5)
+	(make-family 'droplet basic-colors 2.0)
+	(make-family 'heart basic-colors 6.0)
+	(make-family 'arrow basic-colors 3.0)
 	(for-each (lambda (color)
 				(define type
 				  (string->symbol (string-append
@@ -719,7 +743,8 @@
 			([pellet small-ball medium-ball]
 			 (draw-sprite textures type render-x render-y #xffffffff))
 			;; aimed in direction of movement
-			([butterfly ellipse arrowhead amulet ice-shard rest]
+			([butterfly ellipse arrowhead amulet ice-shard
+						rest knife bacteria kunai droplet heart arrow]
 			 (draw-sprite-with-rotation textures type
 										(todeg (bullet-facing bullet))
 										render-x render-y -1))
@@ -1663,16 +1688,16 @@
 
 (define (test-fairy-control2-ring1 enm)
   (define b (-> (cb)
-				(cbcount 10)
+				(cbcount 50)
 				(cbspeed 1.0)
-				(cbang (torad 20.0) (torad 0.0))))
+				(cbang (torad 40.0) (torad 0.0))))
   (interval-loop
    90
    (raylib:play-sound (sebundle-shoot0 sounds))
    (cbshoot b (enm-x enm) (enm-y enm)
 			(lambda (row col speed facing)
 			  (spawn-bullet
-			   'arrowhead-green (enm-x enm) (enm-y enm)
+			   'arrow-orange (enm-x enm) (enm-y enm)
 			   facing speed 5
 			   linear-step-forever)))))
 
@@ -1695,10 +1720,10 @@
 				"ring1"
 				(lambda (_) (test-fairy-control2-ring1 enm))
 				(constantly #t) task))
-  (define sub2 (spawn-subtask
-				"ring2"
-				(lambda (_) (test-fairy-control2-ring2 enm))
-				(constantly #t) task))
+  ;; (define sub2 (spawn-subtask
+  ;; 				"ring2"
+  ;; 				(lambda (_) (test-fairy-control2-ring2 enm))
+  ;; 				(constantly #t) task))
   (define move (spawn-subtask
 				"move"
 				(lambda (_)
