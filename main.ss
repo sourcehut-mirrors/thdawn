@@ -1707,7 +1707,7 @@
    (cbshoot b (enm-x enm) (enm-y enm)
 			(lambda (row col speed facing)
 			  (spawn-bullet
-			   'glow-orb-green (enm-x enm) (enm-y enm)
+			   'arrow-green (enm-x enm) (enm-y enm)
 			   facing speed 5
 			   linear-step-forever)))))
 

@@ -36,12 +36,17 @@
 	 (fl* scalar (vector2-x v))
 	 (fl* scalar (vector2-y v))))
 
+  ;; NB: Collides when the two circles are orthogonal,
+  ;; Not when they have any intersection.
+  ;; This is what the original games use and allow for a fuzz factor of 2r_1r_2.
+  ;; Refs https://mathworld.wolfram.com/OrthogonalCircles.html
+  ;; https://thwiki.cc/%E6%B8%B8%E6%88%8F%E6%94%BB%E7%95%A5/STG%E5%88%A4%E5%AE%9A%E6%95%B0%E6%8D%AE
   (define (check-collision-circles x1 y1 radius1 x2 y2 radius2)
 	(define dx (fl- x2 x1))
 	(define dy (fl- y2 y1))
 	(define dist-sq (fl+ (fl* dx dx) (fl* dy dy)))
 	(define radius-sum (fl+ radius1 radius2))
-	(fl<= dist-sq (fl* radius-sum radius-sum)))
+	(fl<= dist-sq (fl+ (fl* radius1 radius1) (fl* radius2 radius2))))
 
   (define (check-collision-recs x1 y1 w1 h1 x2 y2 w2 h2)
 	(and (< x1 (+ x2 w2))
