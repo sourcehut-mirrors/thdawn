@@ -93,7 +93,8 @@
    extend graze bell
    oldvwoopfast oldvwoopslow
    pause menuselect
-   timeout timeoutwarn item damage0 damage1)
+   timeout timeoutwarn item damage0 damage1
+   laser)
   (sealed #t))
 (define sounds #f)
 (define (load-sfx)
@@ -110,7 +111,8 @@
 				"se_power1.wav" "se_power2.wav"
 				"se_pause.wav" "se_select00.wav"
 				"se_timeout.wav" "se_timeout2.wav"
-				"se_item00.wav" "se_damage00.wav" "se_damage01.wav")))))
+				"se_item00.wav" "se_damage00.wav" "se_damage01.wav"
+				"se_old_lazer01.wav")))))
 (define (unload-sfx)
   (define rtd (record-type-descriptor sebundle))
   (define num-sounds (vector-length (record-type-field-names rtd)))
@@ -219,9 +221,14 @@
 	   (make type accessor x (+ y (* 2 i height)) width height shift))
 	 elems))
   ;; lasers
-  (make-vertical-group-skip
-   'fixed-laser basic-colors
-   txbundle-laser4 0 3 256 10 v2zero)
+  (for-each-indexed
+   (lambda (i color)
+	 (define type
+	   (string->symbol (string-append
+						"fixed-laser-"
+						(symbol->string color))))
+	 (make type txbundle-laser4 0 (+ (* 2 i 16) 3) 256 10 v2zero))
+   basic-colors)
   ;; bullets
   (make-vertical-group-skip
    'pellet basic-colors
@@ -533,7 +540,9 @@
 (define chapter-select 0)
 
 (define (player-invincible?)
-  (fxpositive? iframes))
+  
+  (fxpositive? iframes)
+  #t)
 
 (define ojamajo-carnival #f)
 (define (load-audio)
@@ -865,6 +874,7 @@
 	 (fan-builder-min-speed-set! fb min)
 	 (fan-builder-max-speed-set! fb max)
 	 fb]))
+;; takes radians
 (define (fbang fb global local)
   (fan-builder-global-angle-set! fb global)
   (fan-builder-local-angle-set! fb local)
@@ -959,6 +969,16 @@
 	  (do [(in-layer 0 (add1 in-layer))] [(>= in-layer per-layer)]
 		(consume layer in-layer speed
 				 (+ layer-angle (* in-layer per-bullet-angle)))))))
+;; helper for the common case of shooting a circlebuilder from the enemy position
+;; with a fixed type and linear bullet motion
+(define (cbshootez cb enm type delay sound)
+  (define x (enm-x enm))
+  (define y (enm-y enm))
+  (cbshoot cb x y
+		   (lambda (row col speed facing)
+			 (when sound
+			   (raylib:play-sound sound))
+			 (spawn-bullet type x y delay (curry linear-step-forever facing speed)))))
 
 (define +boss-lazy-spellcircle-context+ 30)
 (define-record-type bossinfo
@@ -1383,6 +1403,23 @@
   (bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
   (bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing)))))
 
+(define (linear-step-separate vx vy blt)
+  (define ox (bullet-x blt))
+  (define oy (bullet-y blt))
+  (define nx (fl+ ox vx))
+  (define ny (fl+ oy vy))
+  (bullet-x-set! blt nx)
+  (bullet-y-set! blt ny)
+  (bullet-facing-set! blt (atan (fl- ny oy) (fl- nx ox))))
+(define (linear-step-gravity-forever facing speed ay blt)
+  (define vx (* speed (cos facing)))
+  (define vy (* speed (sin facing)))
+  (bullet-facing-set! blt facing)
+  (let loop ([vy vy])
+	(linear-step-separate vx vy blt)
+	(yield)
+	(loop (+ vy ay))))
+
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze)
   make-particletype-set)
@@ -1677,18 +1714,22 @@
 		  red)))))
   (vector-for-each-truthy each live-misc-ents))
 
-(define (ease-cubic-to x y duration enm)
+(define (ease-to easer x y duration enm)
   (define x0 (enm-x enm))
   (define y0 (enm-y enm))
   (do ([i 0 (fx1+ i)])
 	  ((fx> i duration))
 	(let* ([progress (/ i duration)]
-		   [eased (ease-out-cubic (clamp progress 0.0 1.0))]
+		   [eased (easer (clamp progress 0.0 1.0))]
 		   [x (+ x0 (* eased (- x x0)))]
 		   [y (+ y0 (* eased (- y y0)))])
 	  (enm-x-set! enm x)
 	  (enm-y-set! enm y))
 	(yield)))
+(define (ease-linear-to x y duration enm)
+  (ease-to values x y duration enm))
+(define (ease-cubic-to x y duration enm)
+  (ease-to ease-out-cubic x y duration enm))
 
 (define (declare-spell boss spell-name duration-frames)
   (define bossinfo (enm-extras boss))
@@ -2416,7 +2457,7 @@
 	(wait 30)
 	(dotimes 4
 	  (-> (fb)
-		  (fbcounts 1 5)
+		  (fbcounts 1 3)
 		  (fbspeed 4.0 6.0)
 		  (fbshootez enm bullet 5 (sebundle-shoot0 sounds)))
 	  (wait 50)))
@@ -2429,8 +2470,51 @@
 	(loop-until
 	 (> (enm-y enm) 160.0)
 	 (enm-y-set! enm (+ (enm-y enm) 1.2))))
+  (define (rain task)
+	(define pat
+	  (-> (fb)
+		  (fbcounts 10 1)
+		  (fbspeed 4.0 6.0)
+		  (fbabsolute-aim)
+		  (fbang (torad 270.0) (torad 6.0))))
+	(define types '#(small-ball-red small-ball-orange small-ball-blue
+									small-ball-magenta small-ball-yellow
+									small-ball-white))
+	(let loop ([i 0])
+	  (fbshoot pat
+			   (enm-x enm) (enm-y enm)
+			   (lambda (row col speed facing)
+				 (spawn-bullet (vector-ref types i) (enm-x enm) (enm-y enm) 5
+							   (curry linear-step-gravity-forever
+									  (fl+ facing
+										   (centered-roll game-rng (torad 10.0)))
+									  speed 0.1))))
+	  (wait 20)
+	  (loop (mod (add1 i) (vector-length types)))))
+  (define (ring task)
+	(interval-loop 50
+	  (-> (cb)
+		  (cbcount 15)
+		  (cbang (torad 15.0) 0.0)
+		  (cbspeed 3.0 3.0)
+		  (cbshootez enm 'music-green 5 (sebundle-bell sounds)))))
   (spawn-subtask "movement" movement (constantly #t) task)
+  (spawn-subtask "rain" rain (constantly #t) task)
+  (spawn-subtask "ring" ring (constantly #t) task)
   (wait-until (constantly #f)))
+
+(define (ch0-w3-fairy type task enm)
+  (define x0 (enm-x enm))
+  (define y0 (enm-y enm))
+  (ease-linear-to (+ x0 40.0) y0 10 enm)
+  (spawn-laser type (+ (enm-x enm) 20.0) (enm-y enm)
+			   0.0 (inexact +playfield-width+)
+			   5.0
+			   40 20 (lambda (_blt) (wait-until (thunk (>= frames 900)))))
+  (raylib:play-sound (sebundle-laser sounds))
+  (wait-until (thunk (>= frames 880)))
+  (ease-linear-to x0 y0 20 enm)
+  (delete-enemy enm))
 
 (define (chapter0 task)
   (set! current-chapter 0)
@@ -2445,7 +2529,7 @@
   
   ;; wave 2
   (wait 200)
-  (let ([w2 (curry ch0-w12-fairy 'knife-orange -1.95)])
+  (let ([w2 (curry ch0-w12-fairy 'music-orange -1.95)])
 	(spawn-enemy (enmtype yellow-fairy) 150.0 -130.0 100 w2 default-drop)
 	(spawn-enemy (enmtype yellow-fairy) 150.0 -100.0 100 w2 default-drop)
 	(spawn-enemy (enmtype yellow-fairy) 150.0 -70.0 100 w2 default-drop)
@@ -2457,7 +2541,22 @@
   ;; instead of lots of health
   (spawn-enemy (enmtype big-fairy) 0.0 -10.0 3000 ch0-big-fairy
 			   `((point . 5)))
-  
+
+  (wait 190)
+  (spawn-enemy (enmtype red-fairy) -220.0 115.0 100
+			   (curry ch0-w3-fairy 'fixed-laser-red) default-drop)
+  (wait 25)
+  (spawn-enemy (enmtype green-fairy) -220.0 130.0 100
+			   (curry ch0-w3-fairy 'fixed-laser-orange) default-drop)
+  (wait 25)
+  (spawn-enemy (enmtype blue-fairy) -220.0 145.0 100
+			   (curry ch0-w3-fairy 'fixed-laser-blue) default-drop)
+  (wait 25)
+  (spawn-enemy (enmtype yellow-fairy) -220.0 160.0 100
+			   (curry ch0-w3-fairy 'fixed-laser-magenta) default-drop)
+  (wait 25)
+  (spawn-enemy (enmtype red-fairy) -220.0 175.0 100
+			   (curry ch0-w3-fairy 'fixed-laser-yellow) default-drop)
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
 (define (chapter1 task)
