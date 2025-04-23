@@ -556,7 +556,10 @@
    type
    (mutable x)
    (mutable y)
-   (mutable facing) ;; radians
+   ;; radians. This is used ONLY for rendering, not for movement!
+   ;; Bullet control functions should initialize this,
+   ;; and also update it every frame if it's supposed to follow along with movement
+   (mutable facing)
    (mutable grazed)
    ;; how many frames we've been alive. If < 0, then bullet is in "prespawn"
    ;; and does not participate in gameplay, only renders a preimg sprite
@@ -649,12 +652,12 @@
 
 (define live-bullets (make-vector 4096 #f))
 
-(define (spawn-bullet type x y facing delay control-function)
+(define (spawn-bullet type x y delay control-function)
   (let ([idx (vector-index #f live-bullets)])
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
 	(let ([blt (make-bullet (get-next-bullet-id)
-							type x y facing #f (- delay) (- delay))])
+							type x y 0.0 #f (- delay) (- delay))])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda (task)
@@ -672,7 +675,7 @@
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
 	(let ([blt (make-laser (get-next-bullet-id)
-						   type x y facing 0.0 #f (- delay) (- delay)
+						   type x y facing #f (- delay) (- delay)
 						   length radius despawn-time -1 #f)])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "laser"
@@ -899,7 +902,7 @@
 		   (lambda (row col speed facing)
 			 (when sound
 			   (raylib:play-sound sound))
-			 (spawn-bullet type x y facing delay (curry linear-step-forever speed)))))
+			 (spawn-bullet type x y delay (curry linear-step-forever facing speed)))))
 
 (define-record-type circle-builder
   (fields
@@ -1372,13 +1375,13 @@
 						  10 -1))))
   (vector-for-each-truthy each live-enm))
 
-(define (linear-step-forever speed blt)
-  (loop-forever (linear-step speed blt)))
+(define (linear-step-forever facing speed blt)
+  (bullet-facing-set! blt facing)
+  (loop-forever (linear-step facing speed blt)))
 
-(define (linear-step speed blt)
-  (let ([facing (bullet-facing blt)])
-	(bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
-	(bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing))))))
+(define (linear-step facing speed blt)
+  (bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
+  (bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing)))))
 
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze)
@@ -1706,8 +1709,8 @@
 			(lambda (row col speed facing)
 			  (spawn-bullet
 			   'arrow-green (enm-x enm) (enm-y enm)
-			   facing 5
-			   (curry linear-step-forever speed))))))
+			   5
+			   (curry linear-step-forever facing speed))))))
 
 (define (test-fairy-control2-ring2 enm)
   (define b (-> (cb)
@@ -1720,8 +1723,8 @@
 			(lambda (row col speed facing)
 			  (spawn-bullet
 			   'small-ball-blue (enm-x enm) (enm-y enm)
-			   facing 10
-			   (curry linear-step-forever speed))))))
+			   10
+			   (curry linear-step-forever facing speed))))))
 
 (define (test-fairy-control2 task enm)
   (define sub1 (spawn-subtask
@@ -1778,7 +1781,7 @@
    (fbshoot builder (enm-x enm) (enm-y enm)
 			(lambda (row col speed facing)
 			  (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
-							facing 5 (curry linear-step-forever speed))))))
+							5 (curry linear-step-forever facing speed))))))
 
 (define (tick-bomb)
   (define (bomb-sweep-x-left-hitbox)
@@ -2442,7 +2445,7 @@
   
   ;; wave 2
   (wait 200)
-  (let ([w2 (curry ch0-w12-fairy 'music-orange -1.95)])
+  (let ([w2 (curry ch0-w12-fairy 'knife-orange -1.95)])
 	(spawn-enemy (enmtype yellow-fairy) 150.0 -130.0 100 w2 default-drop)
 	(spawn-enemy (enmtype yellow-fairy) 150.0 -100.0 100 w2 default-drop)
 	(spawn-enemy (enmtype yellow-fairy) 150.0 -70.0 100 w2 default-drop)
