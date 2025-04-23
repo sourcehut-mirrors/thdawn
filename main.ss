@@ -278,6 +278,15 @@
    'rest basic-colors
    txbundle-bullet6 192 0 32 32 shift16)
 
+  (make 'glow-orb-red txbundle-bullet5 0 0 64 64 shift32)
+  (make 'glow-orb-green txbundle-bullet5 0 64 64 64 shift32)
+  (make 'glow-orb-magenta txbundle-bullet5 64 0 64 64 shift32)
+  (make 'glow-orb-yellow txbundle-bullet5 64 64 64 64 shift32)
+  (make 'glow-orb-blue txbundle-bullet5 0 128 0 64 shift32)
+  (make 'glow-orb-orange txbundle-bullet5 128 64 64 64 shift32)
+  (make 'glow-orb-cyan txbundle-bullet5 192 0 64 64 shift32)
+  (make 'glow-orb-white txbundle-bullet5 192 64 64 64 shift32)
+
   (make 'bubble-red txbundle-bullet-ball-huge 0 0 64 64 shift32)
   (make 'bubble-green txbundle-bullet-ball-huge 0 64 64 64 shift32)
   (make 'bubble-magenta txbundle-bullet-ball-huge 64 0 64 64 shift32)
@@ -620,6 +629,7 @@
 	(make-family 'droplet basic-colors 2.0)
 	(make-family 'heart basic-colors 6.0)
 	(make-family 'arrow basic-colors 3.0)
+	(make-family 'glow-orb basic-colors 9.0)
 	(for-each (lambda (color)
 				(define type
 				  (string->symbol (string-append
@@ -740,7 +750,7 @@
 		(let ()
 		  (case (bullet-family type)
 			;; basic
-			([pellet small-ball medium-ball]
+			([pellet small-ball medium-ball glow-orb]
 			 (draw-sprite textures type render-x render-y #xffffffff))
 			;; aimed in direction of movement
 			([butterfly ellipse arrowhead amulet ice-shard
@@ -1697,7 +1707,7 @@
    (cbshoot b (enm-x enm) (enm-y enm)
 			(lambda (row col speed facing)
 			  (spawn-bullet
-			   'arrow-orange (enm-x enm) (enm-y enm)
+			   'glow-orb-green (enm-x enm) (enm-y enm)
 			   facing speed 5
 			   linear-step-forever)))))
 
