@@ -557,7 +557,6 @@
    (mutable x)
    (mutable y)
    (mutable facing) ;; radians
-   (mutable speed)
    (mutable grazed)
    ;; how many frames we've been alive. If < 0, then bullet is in "prespawn"
    ;; and does not participate in gameplay, only renders a preimg sprite
@@ -650,12 +649,12 @@
 
 (define live-bullets (make-vector 4096 #f))
 
-(define (spawn-bullet type x y facing speed delay control-function)
+(define (spawn-bullet type x y facing delay control-function)
   (let ([idx (vector-index #f live-bullets)])
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
 	(let ([blt (make-bullet (get-next-bullet-id)
-							type x y facing speed #f (- delay) (- delay))])
+							type x y facing #f (- delay) (- delay))])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda (task)
@@ -900,7 +899,7 @@
 		   (lambda (row col speed facing)
 			 (when sound
 			   (raylib:play-sound sound))
-			 (spawn-bullet type x y facing speed delay linear-step-forever))))
+			 (spawn-bullet type x y facing delay (curry linear-step-forever speed)))))
 
 (define-record-type circle-builder
   (fields
@@ -1373,12 +1372,11 @@
 						  10 -1))))
   (vector-for-each-truthy each live-enm))
 
-(define (linear-step-forever blt)
-  (loop-forever (linear-step blt)))
+(define (linear-step-forever speed blt)
+  (loop-forever (linear-step speed blt)))
 
-(define (linear-step blt)
-  (let ([facing (bullet-facing blt)]
-		[speed (bullet-speed blt)])
+(define (linear-step speed blt)
+  (let ([facing (bullet-facing blt)])
 	(bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
 	(bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing))))))
 
@@ -1708,8 +1706,8 @@
 			(lambda (row col speed facing)
 			  (spawn-bullet
 			   'arrow-green (enm-x enm) (enm-y enm)
-			   facing speed 5
-			   linear-step-forever)))))
+			   facing 5
+			   (curry linear-step-forever speed))))))
 
 (define (test-fairy-control2-ring2 enm)
   (define b (-> (cb)
@@ -1722,8 +1720,8 @@
 			(lambda (row col speed facing)
 			  (spawn-bullet
 			   'small-ball-blue (enm-x enm) (enm-y enm)
-			   facing speed 10
-			   linear-step-forever)))))
+			   facing 10
+			   (curry linear-step-forever speed))))))
 
 (define (test-fairy-control2 task enm)
   (define sub1 (spawn-subtask
@@ -1780,7 +1778,7 @@
    (fbshoot builder (enm-x enm) (enm-y enm)
 			(lambda (row col speed facing)
 			  (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
-							facing speed 5 linear-step-forever)))))
+							facing 5 (curry linear-step-forever speed))))))
 
 (define (tick-bomb)
   (define (bomb-sweep-x-left-hitbox)
