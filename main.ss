@@ -1109,8 +1109,8 @@
 	   ;; drop, it doesn't awkwardly get spawned away from the enemy
 	   (let* ([skip-fuzz (and (fxzero? i)
 							  (eq? drop (car drops)))]
-			  [fuzz-x (if skip-fuzz 0.0 (- (roll game-rng 24) 12.0))]
-			  [fuzz-y (if skip-fuzz 0.0 (- (roll game-rng 10) 5.0))])
+			  [fuzz-x (if skip-fuzz 0.0 (- (roll game-rng 100) 50.0))]
+			  [fuzz-y (if skip-fuzz 0.0 (- (roll game-rng 30) 15.0))])
 		 (let ([ent (spawn-misc-ent
 					 type
 					 (+ x fuzz-x) (+ y fuzz-y)
