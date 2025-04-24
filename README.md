@@ -5,6 +5,13 @@ being worked on peacemeal.
 
 See roadmap.md for design and todos.
 
+## Created by a human
+![Banner with a white heart outline imposed on a rainbow background that reads "created by
+a human with a heart"](./created-by-a-human-with-a-heart-3x.png)
+
+This project was created without any AI-generated assets or code. Icon from
+https://cadence.moe/blog/2024-10-05-created-by-a-human-badges.
+
 ## License
 Copyright (C) 2025 Vincent Lee
 
