@@ -739,7 +739,35 @@
   (define bt (symbol-hashtable-ref bullet-types type #f))
   (blttype-hit-radius bt))
 
-(define (draw-bullets textures)
+(define (draw-lasers textures sorted-bullets)
+  (define (each bullet)
+	(let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
+		   [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
+		   [type (bullet-type bullet)]
+		   [bt (symbol-hashtable-ref bullet-types type #f)]
+		   [livetime (bullet-livetime bullet)])
+	  (case (bullet-family type)
+		([fixed-laser]
+		 (let* ([length (laser-length bullet)]
+				[full-radius (laser-radius bullet)]
+				[start-despawning-at (laser-start-despawning-at bullet)]
+				[radius (cond
+						 [(fx<= livetime -10) 2.0]
+						 [(fx<= livetime 0)
+						  (lerp 2.0 full-radius
+								(- 1 (/ livetime -10)))]
+						 [start-despawning-at
+						  (lerp full-radius 0.0
+								(/ (- frames start-despawning-at)
+								   (laser-despawn-time bullet)))]
+						 [else full-radius])])
+		   (draw-laser-sprite textures type render-x render-y
+							  length radius (bullet-facing bullet)
+							  (blttype-preimg-sprite bt)))))))
+  (vector-for-each-truthy each sorted-bullets))
+  
+
+(define (draw-bullets textures sorted-bullets)
   (define (each bullet)
 	(let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
 		   [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
@@ -782,35 +810,11 @@
 												   (number->string
 													(fxmod (fx/ frames 10) 3))))])
 			   (draw-sprite-with-rotation textures sprite 90.0
-										  render-x render-y -1)))
-			([fixed-laser]
-			 (let* ([length (laser-length bullet)]
-					[full-radius (laser-radius bullet)]
-					[start-despawning-at (laser-start-despawning-at bullet)]
-					[radius (cond
-							 [(fx<= livetime -10) 2.0]
-							 [(fx<= livetime 0)
-							  (lerp 2.0 full-radius
-									(- 1 (/ livetime -10)))]
-							 [start-despawning-at
-							  (lerp full-radius 0.0
-									(/ (- frames start-despawning-at)
-									   (laser-despawn-time bullet)))]
-							 [else full-radius])])
-			   (draw-laser-sprite textures type render-x render-y
-								  length radius (bullet-facing bullet)
-								  (blttype-preimg-sprite bt)))))
+										  render-x render-y -1))))
 		  (when show-hitboxes
 			(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
 								  red))))))
-  (->> live-bullets
-	   (vector-sort
-		(lambda (a b)
-		  (cond
-		   [(not a) #t]
-		   [(not b) #f]
-		   [else (fx< (bullet-id a) (bullet-id b))])))
-	   (vector-for-each-truthy each)))
+  (vector-for-each-truthy each sorted-bullets))
 
 (define (draw-bomb textures)
   (raylib:draw-rectangle-gradient-h
@@ -2390,10 +2394,20 @@
 					  (+ +playfield-render-offset-x+ +playfield-max-x+)
 					  (+ +playfield-render-offset-y+ +poc-y+)
 					  -1))
-  (draw-enemies textures)
-  (draw-player textures)
-  (draw-misc-ents textures)
-  (draw-bullets textures)
+
+  (let ([sorted-bullets (vector-sort
+						 (lambda (a b)
+						   (cond
+							[(not a) #t]
+							[(not b) #f]
+							[else (fx< (bullet-id a) (bullet-id b))]))
+						 live-bullets)])
+	;; layers go under enemies, all other bullets on top
+	(draw-lasers textures sorted-bullets)
+	(draw-enemies textures)
+	(draw-player textures)
+	(draw-misc-ents textures)
+	(draw-bullets textures sorted-bullets))
   (draw-particles textures fonts)
 
   ;; focus sigil. Done here after the bullets because we want the player hitbox
