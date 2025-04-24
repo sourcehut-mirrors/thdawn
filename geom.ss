@@ -1,3 +1,4 @@
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 ;; userland geometry library to avoid having to use the raylib ftypes, which
 ;; require manually managing memory
 (library (geom)

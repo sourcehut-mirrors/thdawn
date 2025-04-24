@@ -1,4 +1,5 @@
 #!chezscheme
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 ;; this is needed separately to bring add-prefix into scope when treating this
 ;; file as a r6rs Program
 (import (chezscheme))

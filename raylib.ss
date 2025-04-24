@@ -1,3 +1,4 @@
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 (library (raylib)
   (export init-window close-window window-should-close set-target-fps get-frame-time
 		  toggle-borderless-windowed toggle-fullscreen

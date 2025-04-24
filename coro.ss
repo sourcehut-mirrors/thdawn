@@ -1,3 +1,4 @@
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 ;; Every Scheme 101 course's "implement coroutines with continuations" assignment
 ;; Assumptions:
 ;; - Only one thread interacts with this system at all times

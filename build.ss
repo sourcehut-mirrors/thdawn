@@ -1,4 +1,5 @@
 #!/usr/bin/chez --program
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 (import (chezscheme))
 
 ;; Automatically compile all dependency libraries

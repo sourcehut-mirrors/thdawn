@@ -1,15 +1,30 @@
 # thdawn
 
-A Touhou-like STG made for the Autumn Lisp Game Jam 2023.
+A Touhou-like STG originally started during the Autumn Lisp Game Jam 2023 but is only
+being worked on peacemeal.
 
 See roadmap.md for design and todos.
 
+## License
+Copyright (C) 2025 Vincent Lee
+
+This program is free software: you can redistribute it and/or modify it under the terms of
+the GNU General Public License as published by the Free Software Foundation, either
+version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this
+program. If not, see <https://www.gnu.org/licenses/>.
+
 ## Dev/Build Dependencies
 * Chez Scheme
-* Raylib dynamic library (from your package manager) and its recursive deps
+* Raylib dynamic library
 
 ## Runtime Dependencies
-* Linux/macOS: Raylib dynamic library (from your package manager) and its recursive deps
+* Linux/macOS: Raylib dynamic library (from your package manager)
 * Windows: None (all deps to be packaged in distribution archive)
 
 ## Setup
@@ -22,7 +37,7 @@ All these steps are one time
 1. Install geiser and geiser-chez in emacs
 1. C-c C-z to start a REPL
 1. C-c C-b to eval the main.ss buffer
-1. Spawn a game window in a thread by evaluating in the REPL `(fork-thread main)`.
+1. Spawn a game window in a thread by evaluating in the REPL `(debug-launch)`.
    XXX: this won't work on macOS which requires first thread to be the one that does GUI stuff.
 
 ## Distribution Build
