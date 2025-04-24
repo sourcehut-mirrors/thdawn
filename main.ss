@@ -2480,10 +2480,14 @@
   (wait-until (constantly #f)))
 
 (define (ch0-big-fairy task enm)
+  (define start-time frames)
   (define (movement task)
 	(loop-until
-	 (> (enm-y enm) 160.0)
-	 (enm-y-set! enm (+ (enm-y enm) 1.2))))
+	 (> (enm-y enm) 140.0)
+	 (enm-y-set! enm (+ (enm-y enm) 1.2)))
+	(wait 300)
+	(ease-to values 250.0 160.0 180 enm)
+	(delete-enemy enm))
   (define (rain task)
 	(define pat
 	  (-> (fb)
@@ -2504,17 +2508,47 @@
 										   (centered-roll game-rng (torad 10.0)))
 									  speed 0.1))))
 	  (wait 20)
-	  (loop (mod (add1 i) (vector-length types)))))
+	  (when (< (- frames start-time) 200)
+		(loop (mod (add1 i) (vector-length types))))))
   (define (ring task)
-	(interval-loop 50
+	(let loop ()
 	  (-> (cb)
 		  (cbcount 15)
 		  (cbang (torad 15.0) 0.0)
 		  (cbspeed 3.0 3.0)
-		  (cbshootez enm 'music-green 5 (sebundle-bell sounds)))))
+		  (cbshootez enm 'music-blue 5 (sebundle-bell sounds)))
+	  (wait 50)
+	  (when (< (- frames start-time) 250)
+		(loop))))
+  (define (note task)
+	(wait 200)
+	(for-each
+	 (lambda (xoff yoff)
+	   (dotimes 15
+		 (spawn-bullet 'pellet-blue (- (enm-x enm) 40.0) (+ yoff (enm-y enm)) 5
+					   (lambda (blt)
+						 (wait-until (thunk (>= (- frames start-time) 322)))
+						 (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
+	   (unless (flzero? xoff)
+		 (dotimes 15
+		   (spawn-bullet 'pellet-blue (+ xoff (enm-x enm) -40.0)
+						 (+ yoff (enm-y enm)) 5
+					   (lambda (blt)
+						 (wait-until (thunk (>= (- frames start-time) 322)))
+						 (linear-step-forever (* tau (roll game-rng)) 2.0 blt)))))
+	   (wait 3))
+	 '(5.0 10.0 12.0 15.0 15.0 17.0 17.0 12.0 11.0 0.0 0.0 0.0 0.0 0.0)
+	 '(-40.0 -35.0 -30.0 -25.0 -20.0 -15.0 -10.0 -5.0 0.0 5.0 10.0 15.0 20.0
+			 25.0))
+	(spawn-bullet 'big-star-blue (- (enm-x enm) 50.0) (+ 28.0 (enm-y enm))
+				  5 (lambda (blt)
+					  (wait-until (thunk (>= (- frames start-time) 322)))
+					  (raylib:play-sound (sebundle-bell sounds))
+					  (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
   (spawn-subtask "movement" movement (constantly #t) task)
   (spawn-subtask "rain" rain (constantly #t) task)
   (spawn-subtask "ring" ring (constantly #t) task)
+  (spawn-subtask "note" note (constantly #t) task)
   (wait-until (constantly #f)))
 
 (define (ch0-w3-fairy type task enm)
@@ -2535,26 +2569,24 @@
   (wait 120)
   ;; wave1
   (let ([w1 (curry ch0-w12-fairy 'music-red 1.95)])
-	(spawn-enemy (enmtype red-fairy) -150.0 -130.0 100 w1 default-drop)
-	(spawn-enemy (enmtype red-fairy) -150.0 -100.0 100 w1 default-drop)
-	(spawn-enemy (enmtype red-fairy) -150.0 -70.0 100 w1 default-drop)
-	(spawn-enemy (enmtype red-fairy) -150.0 -40.0 100 w1 default-drop)
-	(spawn-enemy (enmtype red-fairy) -150.0 -10.0 100 w1 default-drop))
+	(spawn-enemy (enmtype red-fairy) -150.0 -130.0 80 w1 default-drop)
+	(spawn-enemy (enmtype red-fairy) -150.0 -100.0 80 w1 default-drop)
+	(spawn-enemy (enmtype red-fairy) -150.0 -70.0 80 w1 default-drop)
+	(spawn-enemy (enmtype red-fairy) -150.0 -40.0 80 w1 default-drop)
+	(spawn-enemy (enmtype red-fairy) -150.0 -10.0 80 w1 default-drop))
   
   ;; wave 2
   (wait 200)
   (let ([w2 (curry ch0-w12-fairy 'music-orange -1.95)])
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -130.0 100 w2 default-drop)
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -100.0 100 w2 default-drop)
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -70.0 100 w2 default-drop)
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -40.0 100 w2 default-drop)
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -10.0 100 w2 default-drop))
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -130.0 80 w2 default-drop)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -100.0 80 w2 default-drop)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -70.0 80 w2 default-drop)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -40.0 80 w2 default-drop)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -10.0 80 w2 default-drop))
 
   (wait 200)
-  ;; TODO give the fairy armor until it fires the treble clef,
-  ;; instead of lots of health
   (spawn-enemy (enmtype big-fairy) 0.0 -10.0 3000 ch0-big-fairy
-			   `((point . 5)))
+			   `((point . 20)))
 
   (wait 190)
   (spawn-enemy (enmtype red-fairy) -220.0 115.0 100
