@@ -5,8 +5,12 @@
   (export rectangle-x rectangle-y rectangle-width rectangle-height make-rectangle
 		  (rename (make-vector2 vec2) (vector2-x v2x) (vector2-y v2y))
 		  v2+ v2- v2* v2zero v2unit
-		  check-collision-circles check-collision-recs check-collision-circle-rec)
+		  check-collision-circles check-collision-recs check-collision-circle-rec
+		  lerp eval-bezier-quad)
   (import (chezscheme))
+
+  (define (lerp a b progress)
+	(+ a (* progress (- b a))))
 
   (define-record-type rectangle
 	(fields
@@ -76,4 +80,19 @@
 			 (+ (* (- dx half-w) (- dx half-w))
 				(* (- dy half-h) (- dy half-h)))])
 		(<= corner-distance-sq (* r r)))]))
-  )
+
+  (define (eval-bezier-quad p0 p1 p2 t)
+	(define p0x (vector2-x p0))
+	(define p0y (vector2-y p0))
+	(define p1x (vector2-x p1))
+	(define p1y (vector2-y p1))
+	(define p2x (vector2-x p2))
+	(define p2y (vector2-y p2))
+	
+	(define x (lerp (lerp p0x p1x t)
+					(lerp p1x p2x t)
+					t))
+	(define y (lerp (lerp p0y p1y t)
+					(lerp p1y p2y t)
+					t))
+	(values x y)))

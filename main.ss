@@ -33,8 +33,6 @@
   (max (min v upper) lower))
 (define (ease-out-cubic x)
   (- 1 (expt (- 1 x) 3.0)))
-(define (lerp a b progress)
-  (+ a (* progress (- b a))))
 (define (ease-in-out-quart x)
   (if (< x 0.5)
 	  (* 8 x x x x)
@@ -2021,12 +2019,19 @@
 	;; (set! frame-save frames)
 	)
   (when (raylib:is-key-pressed key-y)
-	(spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 30 60
-				 (lambda (_blt) (wait 240)))
-	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
-							 live-enm)])
-	  (when boss
-		(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 900)))
+	(do [(t 0.0 (+ t 0.05))]
+		[(>= t 1.0)]
+	  (let-values ([(x y) (eval-bezier-quad (vec2 100.0 100.0)
+											(vec2 200.0 200.0)
+											(vec2 player-x player-y)
+											t)])
+		(spawn-bullet 'pellet-white x y 5 (lambda (_blt) (loop-forever)))))
+	;; (spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 30 60
+	;; 			 (lambda (_blt) (wait 240)))
+	;; (let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
+	;; 						 live-enm)])
+	;;   (when boss
+	;; 	(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 900)))
 	;; (spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
 	;; 						default-drop)
 	))
@@ -2435,7 +2440,17 @@
 	 (fontbundle-bubblegum fonts)
 	 "Paused"
 	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
-  (draw-hud textures fonts))
+  (draw-hud textures fonts)
+
+  (raylib:draw-spline-bezier-quadratic
+   (vector (vec2 (+ +playfield-render-offset-x+ 100.0)
+				 (+ +playfield-render-offset-y+ 100.0))
+		   (vec2 (+ +playfield-render-offset-x+ 200.0)
+				 (+ +playfield-render-offset-y+ 200.0))
+		   (vec2 (+ player-x +playfield-render-offset-x+)
+				 (+ player-y +playfield-render-offset-y+)))
+   5.0 red)
+  )
 
 (define (render-all render-texture render-texture-inner textures fonts)
   (raylib:begin-texture-mode render-texture)

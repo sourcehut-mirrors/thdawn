@@ -22,7 +22,8 @@
 		  push-matrix pop-matrix with-matrix translatef rotatef
 		  rlbegin rlend vertex2 texcoord color4f color4ub normal3f set-texture
 		  set-texture-filter
-		  set-shapes-texture get-shapes-texture get-shapes-texture-rectangle)
+		  set-shapes-texture get-shapes-texture get-shapes-texture-rectangle
+		  draw-spline-bezier-quadratic)
   (import (chezscheme) (geom))
 
   ;; just calling load-shared-object is not permitted here
@@ -481,4 +482,23 @@
 
   (define set-texture-filter
 	(foreign-procedure "SetTextureFilter" ((& Texture) int) void))
+
+  ;; room for 32 vec2s
+  (define spline-draw-buf (make-bytevector (* 64 (ftype-sizeof float))))
+  (define draw-spline-bezier-quadratic0
+	(foreign-procedure "DrawSplineBezierQuadratic" (u8* int float (& Color)) void))
+  (define (draw-spline-bezier-quadratic points thick rgba)
+	(define num-points (vector-length points))
+	(assert (<= num-points 32))
+	(let loop ([points-idx 0]
+			   [buf-idx 0])
+	  (unless (>= points-idx num-points)
+		(let ([point (vector-ref points points-idx)])
+		  (bytevector-ieee-single-native-set! spline-draw-buf buf-idx (v2x point))
+		  (bytevector-ieee-single-native-set! spline-draw-buf
+											  (+ buf-idx (ftype-sizeof float))
+											  (v2y point)))
+		(loop (add1 points-idx) (+ buf-idx (* 2 (ftype-sizeof float))))))
+	(load-global-color global-color rgba)
+	(draw-spline-bezier-quadratic0 spline-draw-buf num-points thick global-color))
   )
