@@ -1500,7 +1500,7 @@
 			 [value (cdr extra-data)])
 		 (raylib:draw-text-ex
 		  (fontbundle-cabin fonts)
-		  (number->string value)
+		  value
 		  (eround (fl+ render-x 10.0))
 		  (eround render-y)
 		  16.0 0.0 (bitwise-ior color alpha))))))
@@ -1657,7 +1657,7 @@
 											   (< player-y +poc-y+))
 										   #xffd70000
 										   #xf5f5f500)
-									   item-value))))
+									   (number->string item-value)))))
 		   ([life-frag] (add-lives 1/3))
 		   ([life] (add-lives 1))
 		   ([bomb-frag] (add-bombs 1/3))
