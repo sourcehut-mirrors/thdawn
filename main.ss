@@ -879,10 +879,9 @@
 	 (fan-builder-min-speed-set! fb min)
 	 (fan-builder-max-speed-set! fb max)
 	 fb]))
-;; takes radians
 (define (fbang fb global local)
-  (fan-builder-global-angle-set! fb global)
-  (fan-builder-local-angle-set! fb local)
+  (fan-builder-global-angle-set! fb (torad global))
+  (fan-builder-local-angle-set! fb (torad local))
   fb)
 (define (fbshoot fb x y consume)
   (define rows (fan-builder-rows fb))
@@ -953,8 +952,8 @@
 	 (circle-builder-max-speed-set! cb max-speed)
 	 cb]))
 (define (cbang cb global per-layer)
-  (circle-builder-global-angle-set! cb global)
-  (circle-builder-per-layer-angle-set! cb per-layer)
+  (circle-builder-global-angle-set! cb (torad global))
+  (circle-builder-per-layer-angle-set! cb (torad per-layer))
   cb)
 (define (cbshoot cb x y consume)
   (define layers (circle-builder-layers cb))
@@ -1512,6 +1511,9 @@
 		   (raylib:draw-text-ex
 			(fontbundle-cabin fonts)
 			value
+			;; display to the left if we wouldn't have room on the right
+			;; this is done here instead of when the particle is spawned so that
+			;; we don't have to pass the fonts to the game logic
 			(if (> (+ render-x width) +playfield-max-render-x+)
 				(eround (- render-x width 20.0))
 				(eround render-x))
@@ -1665,7 +1667,7 @@
 			(set! current-score (+ current-score item-value))
 			(spawn-particle
 			 (make-particle (particletype itemvalue)
-							(miscent-x ent) (miscent-y ent)
+							(miscent-x ent) (- (miscent-y ent) 10.0)
 							60 0 (cons (if (or (miscent-autocollect ent)
 											   (< player-y +poc-y+))
 										   #xffd70000
@@ -1758,7 +1760,7 @@
   (define b (-> (cb)
 				(cbcount 50)
 				(cbspeed 1.0)
-				(cbang (torad 40.0) (torad 0.0))))
+				(cbang 40.0 0.0)))
   (interval-loop
    90
    (raylib:play-sound (sebundle-shoot0 sounds))
@@ -2523,7 +2525,7 @@
 		  (fbcounts 10 1)
 		  (fbspeed 4.0 6.0)
 		  (fbabsolute-aim)
-		  (fbang (torad 270.0) (torad 6.0))))
+		  (fbang 270.0 6.0)))
 	(define types '#(small-ball-red small-ball-orange small-ball-blue
 									small-ball-magenta small-ball-yellow
 									small-ball-white))
@@ -2543,7 +2545,7 @@
 	(let loop ()
 	  (-> (cb)
 		  (cbcount 15)
-		  (cbang (torad 15.0) 0.0)
+		  (cbang 15.0 0.0)
 		  (cbspeed 3.0 3.0)
 		  (cbshootez enm 'music-blue 5 (sebundle-bell sounds)))
 	  (wait 50)
