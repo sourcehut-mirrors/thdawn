@@ -475,6 +475,8 @@
 (define +playfield-min-y+ 0)
 (define +playfield-max-x+ 192)
 (define +playfield-max-y+ 448)
+(define +playfield-min-render-x+ (+ +playfield-min-x+ +playfield-render-offset-x+))
+(define +playfield-max-render-x+ (+ +playfield-max-x+ +playfield-render-offset-x+))
 (define +playfield-width+ (- +playfield-max-x+ +playfield-min-x+))
 (define +playfield-height+ (- +playfield-max-y+ +playfield-min-y+))
 (define +poc-y+ 120)
@@ -1497,13 +1499,19 @@
 								 (ease-in-quad
 								  (/ (particle-age p) (particle-max-age p)))))]
 			 [color (car extra-data)]
-			 [value (cdr extra-data)])
-		 (raylib:draw-text-ex
-		  (fontbundle-cabin fonts)
-		  value
-		  (eround (fl+ render-x 10.0))
-		  (eround render-y)
-		  16.0 0.0 (bitwise-ior color alpha))))))
+			 [value (cdr extra-data)]
+			 [render-x (fl+ render-x 10.0)])
+		 (let-values ([(width _) (raylib:measure-text-ex
+								  (fontbundle-cabin fonts)
+								  value 16.0 0.0)])
+		   (raylib:draw-text-ex
+			(fontbundle-cabin fonts)
+			value
+			(if (> (+ render-x width) +playfield-max-render-x+)
+				(eround (- render-x width 20.0))
+				(eround render-x))
+			(eround render-y)
+			16.0 0.0 (bitwise-ior color alpha)))))))
   (vector-for-each-truthy each live-particles))
 
 (define-enumeration miscenttype
