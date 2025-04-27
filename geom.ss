@@ -3,8 +3,8 @@
 ;; require manually managing memory
 (library (geom)
   (export rectangle-x rectangle-y rectangle-width rectangle-height make-rectangle
-		  (rename (make-vector2 vec2) (vector2-x v2x) (vector2-y v2y))
-		  v2+ v2- v2* v2zero v2unit
+		  (rename (vector2-x v2x) (vector2-y v2y))
+		  vec2 v2+ v2- v2* v2zero v2unit
 		  check-collision-circles check-collision-recs check-collision-circle-rec
 		  lerp eval-bezier-quad)
   (import (chezscheme))
@@ -18,26 +18,31 @@
 
   (define-record-type vector2
 	(fields x y))
-  (define v2zero (make-vector2 0.0 0.0))
+
+  (define (vec2 x y)
+	;; will assert in dev, but be optimized away in prod
+	(make-vector2 (fl+ x) (fl+ y)))
+  
+  (define v2zero (vec2 0.0 0.0))
 
   (define (v2unit v)
 	(define x (vector2-x v))
 	(define y (vector2-y v))
 	(define norm (flsqrt (fl+ (fl* x x) (fl* y y))))
-	(make-vector2 (fl/ x norm) (fl/ y norm)))
+	(vec2 (fl/ x norm) (fl/ y norm)))
 
   (define (v2+ a b)
-	(make-vector2
+	(vec2
 	 (fl+ (vector2-x a) (vector2-x b))
 	 (fl+ (vector2-y a) (vector2-y b))))
 
   (define (v2- a b)
-	(make-vector2
+	(vec2
 	 (fl- (vector2-x a) (vector2-x b))
 	 (fl- (vector2-y a) (vector2-y b))))
 
   (define (v2* v scalar)
-	(make-vector2
+	(vec2
 	 (fl* scalar (vector2-x v))
 	 (fl* scalar (vector2-y v))))
 
