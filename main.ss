@@ -2558,14 +2558,14 @@
 	   (dotimes 15
 		 (spawn-bullet 'pellet-blue (- (enm-x enm) 40.0) (+ yoff (enm-y enm)) 5
 					   (lambda (blt)
-						 (wait-until (thunk (>= (- frames start-time) 322)))
+						 (wait-until (thunk (>= (- frames start-time) 350)))
 						 (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
 	   (unless (flzero? xoff)
 		 (dotimes 15
 		   (spawn-bullet 'pellet-blue (+ xoff (enm-x enm) -40.0)
 						 (+ yoff (enm-y enm)) 5
 					   (lambda (blt)
-						 (wait-until (thunk (>= (- frames start-time) 322)))
+						 (wait-until (thunk (>= (- frames start-time) 350)))
 						 (linear-step-forever (* tau (roll game-rng)) 2.0 blt)))))
 	   (wait 3))
 	 '(5.0 10.0 12.0 15.0 15.0 17.0 17.0 12.0 11.0 0.0 0.0 0.0 0.0 0.0)
@@ -2573,7 +2573,7 @@
 			 25.0))
 	(spawn-bullet 'big-star-blue (- (enm-x enm) 50.0) (+ 28.0 (enm-y enm))
 				  5 (lambda (blt)
-					  (wait-until (thunk (>= (- frames start-time) 322)))
+					  (wait-until (thunk (>= (- frames start-time) 350)))
 					  (raylib:play-sound (sebundle-bell sounds))
 					  (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
   (spawn-subtask "movement" movement (constantly #t) task)
