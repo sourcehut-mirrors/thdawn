@@ -515,6 +515,8 @@
 (define paused #f)
 (define graze-radius 22.0)
 (define hit-radius 3.0)
+(define vacuum-radius-unfocused 40.0)
+(define vacuum-radius-focused 80.0)
 (define player-x 0.0)
 ;; Increments away from 0 whenever horizontal movement happens, returns to 0 otherwise
 (define player-dx-render 0)
@@ -1646,16 +1648,15 @@
 											(- player-y (miscent-y ent))))])
 		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 8)))
 		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 8))))]
-		[(and
-			focused-immediate
-			(check-collision-circle-rec
-			 player-x player-y graze-radius
-			 (- (miscent-x ent) 8) (- (miscent-y ent) 8)
-			 16 16))
+		[(check-collision-circle-rec
+		  player-x player-y (if focused-immediate vacuum-radius-focused
+								vacuum-radius-unfocused)
+		  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
+		  16 16)
 		 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
 											(- player-y (miscent-y ent))))])
-		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 3)))
-		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 3))))]
+		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 6)))
+		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 6))))]
 		[else (do-standard-movement)])
 	   (when (check-collision-circle-rec
 			  player-x player-y hit-radius
@@ -2131,6 +2132,12 @@
 	  textures 'option (mod (* frames 4) 360)
 	  render-x render-y -1))
    option-xs option-ys)
+
+  (raylib:draw-circle-lines-v
+   render-player-x render-player-y
+   (lerp vacuum-radius-unfocused vacuum-radius-focused
+		 (/ focus-frames +max-focus-frames+))
+   #xffffff80)
 
   (when show-hitboxes
 	(raylib:draw-circle-v render-player-x render-player-y graze-radius
