@@ -1095,10 +1095,15 @@
 	(when idx
 	  (vector-set! live-enm idx #f))))
 
-(define (damage-enemy enm amount)
-  (raylib:play-sound (sebundle-damage0 sounds))
-  (enm-health-set! enm (- (enm-health enm) amount))
-  (set! current-score (+ current-score amount)))
+(define damage-enemy
+  (case-lambda
+	[(enm amount)
+	 (damage-enemy enm amount #t)]
+	[(enm amount playsound)
+	 (when playsound
+	   (raylib:play-sound (sebundle-damage0 sounds)))
+	 (enm-health-set! enm (- (enm-health enm) amount))
+	 (set! current-score (+ current-score amount))]))
 
 (define (spawn-drops enm)
   (define drops (enm-drops enm))
@@ -1908,7 +1913,7 @@
 				   (check-collision-recs x y w h xrx xry xrw xrh)
 				   (check-collision-recs x y w h yux yuy yuw yuh)
 				   (check-collision-recs x y w h ydx ydy ydw ydh))
-		   (damage-enemy enm 35))))
+		   (damage-enemy enm 35 #f))))
 	 live-enm))
   (set! bombing (sub1 bombing)))
 
