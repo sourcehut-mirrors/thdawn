@@ -26,6 +26,7 @@
 (define key-z 90)
 (define pi 3.141592)
 (define tau 6.28318)
+(alias vnth vector-ref)
 
 (define (torad x)
   (* (fl/ pi 180.0) x))
@@ -550,6 +551,12 @@
 (define chapter-select 0)
 (define spline-editor-positions (make-vector 4 #f))
 (define spline-editor-selected-position 0)
+;; for use for adhoc evaluations on the repl
+(define (set-spline-editor-positions p0 p1 p2 p3)
+  (vector-set! spline-editor-positions 0 p0)
+  (vector-set! spline-editor-positions 1 p1)
+  (vector-set! spline-editor-positions 2 p2)
+  (vector-set! spline-editor-positions 3 p3))
 
 (define (player-invincible?)
   
@@ -1758,6 +1765,20 @@
   (ease-to values x y duration enm))
 (define (ease-cubic-to x y duration enm)
   (ease-to ease-out-cubic x y duration enm))
+(define (move-on-bezier easer p0 p1 p2 p3 duration enm)
+  (define x0 (enm-x enm))
+  (define y0 (enm-y enm))
+  ;; NB: I know that movement along a curve actually isn't trivial, and doing steps
+  ;; like this isn't going to give me exact results, but it works well enough
+  ;; for what we're doing in this game
+  (do ([i 0 (fx1+ i)])
+	  ((fx> i duration))
+	(let* ([progress (/ i duration)]
+		   [eased (easer (clamp progress 0.0 1.0))]
+		   [p (eval-bezier-cubic p0 p1 p2 p3 eased)])
+	  (enm-x-set! enm (v2x p))
+	  (enm-y-set! enm (v2y p)))
+	(yield)))
 
 (define (declare-spell boss spell-name duration-frames)
   (define bossinfo (enm-extras boss))
@@ -2491,6 +2512,10 @@
   (let ([render-positions (vector-map
 						   (lambda (p) (and p (v2+ p +playfield-render-offset+)))
 						   spline-editor-positions)])
+	(when (vector-for-all values spline-editor-positions)
+	  (raylib:draw-spline-bezier-cubic
+	   render-positions
+	   5.0 red))
 	(vector-for-each-indexed
 	 (lambda (i p)
 	   (when p
@@ -2499,13 +2524,11 @@
 								   #x006400ff
 								   green))
 		 (raylib:draw-text
-		  (format "~d ~d" (eround (v2x p)) (eround (v2y p)))
+		  (format "~d ~d"
+				  (eround (v2x (vector-ref spline-editor-positions i)))
+				  (eround (v2y (vector-ref spline-editor-positions i))))
 		  (eround (v2x p)) (eround (v2y p)) 10 -1)))
-	 render-positions)
-	(when (vector-for-all values spline-editor-positions)
-	  (raylib:draw-spline-bezier-cubic
-	   render-positions
-	   5.0 red)))
+	 render-positions))
 
   )
 
@@ -2678,8 +2701,19 @@
 			   (curry ch0-w3-fairy 'fixed-laser-yellow) default-drop)
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
+
+(define (ch1-big-fairy task enm)
+  (move-on-bezier
+   values
+   (vnth spline-editor-positions 0)
+   (vnth spline-editor-positions 1)
+   (vnth spline-editor-positions 2)
+   (vnth spline-editor-positions 3)
+   120 enm))
 (define (chapter1 task)
   (set! current-chapter 1)
+  (wait 50)
+  (spawn-enemy (enmtype big-fairy) -141.0 0.0 200 ch1-big-fairy default-drop)
   (wait-until (thunk (>= frames 1645)))
   (chapter2 task))
 (define (chapter2 task)
