@@ -15,7 +15,12 @@
 (define key-up 265)
 (define key-comma 44)
 (define key-period 46)
+(define key-a 65)
+(define key-d 68)
+(define key-f 70)
+(define key-g 71)
 (define key-r 82)
+(define key-s 83)
 (define key-x 88)
 (define key-y 89)
 (define key-z 90)
@@ -471,6 +476,8 @@
 ;; offset logical coords by 223, 15 to get to GL coords for render
 (define +playfield-render-offset-x+ 223)
 (define +playfield-render-offset-y+ 15)
+(define +playfield-render-offset+ (vec2 (inexact +playfield-render-offset-x+)
+										(inexact +playfield-render-offset-y+)))
 (define +playfield-min-x+ -192)
 (define +playfield-min-y+ 0)
 (define +playfield-max-x+ 192)
@@ -541,6 +548,8 @@
   (- (* (roll rng) 2 radius)
 	 radius))
 (define chapter-select 0)
+(define spline-editor-positions (make-vector 4 #f))
+(define spline-editor-selected-position 0)
 
 (define (player-invincible?)
   
@@ -2034,14 +2043,16 @@
 	;; (set! frame-save-diff (- frames frame-save))
 	;; (set! frame-save frames)
 	)
-  (when (raylib:is-key-pressed key-y)
+  (when (and (raylib:is-key-pressed key-y) (vector-for-all values
+														   spline-editor-positions))
 	(do [(t 0.0 (+ t 0.05))]
 		[(>= t 1.0)]
-	  (let-values ([(x y) (eval-bezier-quad (vec2 100.0 100.0)
-											(vec2 200.0 200.0)
-											(vec2 player-x player-y)
-											t)])
-		(spawn-bullet 'pellet-white x y 5 (lambda (_blt) (loop-forever)))))
+	  (let ([p (eval-bezier-cubic
+						   (vector-ref spline-editor-positions 0)
+						   (vector-ref spline-editor-positions 1)
+						   (vector-ref spline-editor-positions 2)
+						   (vector-ref spline-editor-positions 3) t)])
+		(spawn-bullet 'pellet-white (v2x p) (v2y p) 5 (lambda (_blt) (loop-forever)))))
 	;; (spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 30 60
 	;; 			 (lambda (_blt) (wait 240)))
 	;; (let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
@@ -2050,7 +2061,20 @@
 	;; 	(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 900)))
 	;; (spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
 	;; 						default-drop)
-	))
+	)
+
+  (when (raylib:is-key-pressed key-a)
+	(when (> spline-editor-selected-position 0)
+	  (set! spline-editor-selected-position (sub1 spline-editor-selected-position))))
+  (when (raylib:is-key-pressed key-d)
+	(when (< spline-editor-selected-position
+			 (sub1 (vector-length spline-editor-positions)))
+	  (set! spline-editor-selected-position (add1 spline-editor-selected-position))))
+  (when (raylib:is-key-pressed key-s)
+	(vector-set! spline-editor-positions spline-editor-selected-position (vec2 player-x player-y)))
+  (when (raylib:is-key-pressed key-f)
+	(vector-set! spline-editor-positions spline-editor-selected-position #f))
+  )
 
 (define (handle-player-movement)
   (define left-pressed (raylib:is-key-down key-left))
@@ -2262,13 +2286,13 @@
 				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
   ;; todo: for prod release, hide this behind f3
-  (raylib:draw-text (format "FRSAV: ~d (~d)" frame-save frame-save-diff)
+  (raylib:draw-text (format "SPLED: ~d" spline-editor-selected-position)
 					440 200
 					18 -1)
-  (raylib:draw-text (format "CHAP: ~d" current-chapter)
+  (raylib:draw-text (format "FRSAV: ~d (~d)" frame-save frame-save-diff)
 					440 225
 					18 -1)
-  (raylib:draw-text (format "GOTO: ~d" chapter-select)
+  (raylib:draw-text (format "CHAP: ~d / GOTO: ~d" current-chapter chapter-select)
 					440 250
 					18 -1)
   (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
@@ -2290,7 +2314,7 @@
   (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
 					440 375
 					18 -1)
-  (raylib:draw-text (format "BLT: ~d (LFT ~d)"
+  (raylib:draw-text (format "BLT: ~d / LFT: ~d"
 							(vector-popcnt live-bullets)
 							(fx1- next-bullet-id))
 					440 400
@@ -2464,14 +2488,25 @@
 	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
   (draw-hud textures fonts)
 
-  (raylib:draw-spline-bezier-quadratic
-   (vector (vec2 (+ +playfield-render-offset-x+ 100.0)
-				 (+ +playfield-render-offset-y+ 100.0))
-		   (vec2 (+ +playfield-render-offset-x+ 200.0)
-				 (+ +playfield-render-offset-y+ 200.0))
-		   (vec2 (+ player-x +playfield-render-offset-x+)
-				 (+ player-y +playfield-render-offset-y+)))
-   5.0 red)
+  (let ([render-positions (vector-map
+						   (lambda (p) (and p (v2+ p +playfield-render-offset+)))
+						   spline-editor-positions)])
+	(vector-for-each-indexed
+	 (lambda (i p)
+	   (when p
+		 (raylib:draw-circle-v (v2x p) (v2y p) 10.0
+							   (if (= i spline-editor-selected-position)
+								   #x006400ff
+								   green))
+		 (raylib:draw-text
+		  (format "~d ~d" (eround (v2x p)) (eround (v2y p)))
+		  (eround (v2x p)) (eround (v2y p)) 10 -1)))
+	 render-positions)
+	(when (vector-for-all values spline-editor-positions)
+	  (raylib:draw-spline-bezier-cubic
+	   render-positions
+	   5.0 red)))
+
   )
 
 (define (render-all render-texture render-texture-inner textures fonts)

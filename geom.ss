@@ -6,7 +6,7 @@
 		  (rename (vector2-x v2x) (vector2-y v2y))
 		  vec2 v2+ v2- v2* v2zero v2unit
 		  check-collision-circles check-collision-recs check-collision-circle-rec
-		  lerp eval-bezier-quad)
+		  lerp eval-bezier-quad eval-bezier-cubic)
   (import (chezscheme))
 
   (define (lerp a b progress)
@@ -31,10 +31,20 @@
 	(define norm (flsqrt (fl+ (fl* x x) (fl* y y))))
 	(vec2 (fl/ x norm) (fl/ y norm)))
 
-  (define (v2+ a b)
-	(vec2
-	 (fl+ (vector2-x a) (vector2-x b))
-	 (fl+ (vector2-y a) (vector2-y b))))
+  (define v2+
+	(case-lambda
+	  [(a b)
+	   (vec2
+		(fl+ (vector2-x a) (vector2-x b))
+		(fl+ (vector2-y a) (vector2-y b)))]
+	  [(a b . rest)
+	   (vec2
+		(fold-left (lambda (acc v) (fl+ acc (vector2-x v)))
+				   (fl+ (vector2-x a) (vector2-x b))
+				   rest)
+		(fold-left (lambda (acc v) (fl+ acc (vector2-y v)))
+				   (fl+ (vector2-y a) (vector2-y b))
+				   rest))]))
 
   (define (v2- a b)
 	(vec2
@@ -100,4 +110,14 @@
 	(define y (lerp (lerp p0y p1y t)
 					(lerp p1y p2y t)
 					t))
-	(values x y)))
+	(values x y))
+
+  (define (eval-bezier-cubic p0 p1 p2 p3 t)
+	(define invt (- 1 t))
+	(v2+
+	 (v2* p0 (* invt invt invt))
+	 (v2* p1 (* 3 invt invt t))
+	 (v2* p2 (* 3 invt t t))
+	 (v2* p3 (* t t t))))
+
+  )

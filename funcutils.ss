@@ -1,12 +1,19 @@
 ;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
-		  dotimes curry
+		  dotimes curry vector-for-all vector-for-each-indexed
 		  vector-find vector-index vector-popcnt -> ->> thunk)
   (import (chezscheme))
 
   (define (curry proc . curry-args)
 	(lambda rest (apply proc (append curry-args rest))))
+
+  (define (vector-for-all proc v)
+	(define n (vector-length v))
+	(let loop ([i 0])
+	  (or (fx= i n)
+		  (and (proc (vector-ref v i))
+			   (loop (fx1+ i))))))
 
   ;; threading macros from clojure
   (define-syntax ->
@@ -51,6 +58,12 @@
 	(vector-for-each
 	 (lambda (e) (when e (f e)))
 	 v))
+
+  (define (vector-for-each-indexed f v)
+	(define n (vector-length v))
+	(do [(i 0 (fx1+ i))]
+		[(fx= i n)]
+	  (f i (vector-ref v i))))
 
   (define (for-each-indexed f l)
 	(do [(cur l (cdr cur))

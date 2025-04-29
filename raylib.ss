@@ -23,7 +23,7 @@
 		  rlbegin rlend vertex2 texcoord color4f color4ub normal3f set-texture
 		  set-texture-filter
 		  set-shapes-texture get-shapes-texture get-shapes-texture-rectangle
-		  draw-spline-bezier-quadratic)
+		  draw-spline-bezier-quadratic draw-spline-bezier-cubic)
   (import (chezscheme) (geom))
 
   ;; just calling load-shared-object is not permitted here
@@ -484,12 +484,11 @@
 	(foreign-procedure "SetTextureFilter" ((& Texture) int) void))
 
   ;; room for 32 vec2s
-  (define spline-draw-buf (make-bytevector (* 64 (ftype-sizeof float))))
-  (define draw-spline-bezier-quadratic0
-	(foreign-procedure "DrawSplineBezierQuadratic" (u8* int float (& Color)) void))
-  (define (draw-spline-bezier-quadratic points thick rgba)
+  (define spline-buf-length 32)
+  (define spline-draw-buf (make-bytevector (* 2 spline-buf-length (ftype-sizeof float))))
+  (define (load-spline-buf points)
 	(define num-points (vector-length points))
-	(assert (<= num-points 32))
+	(assert (<= num-points spline-buf-length))
 	(let loop ([points-idx 0]
 			   [buf-idx 0])
 	  (unless (>= points-idx num-points)
@@ -498,7 +497,19 @@
 		  (bytevector-ieee-single-native-set! spline-draw-buf
 											  (+ buf-idx (ftype-sizeof float))
 											  (v2y point)))
-		(loop (add1 points-idx) (+ buf-idx (* 2 (ftype-sizeof float))))))
+		(loop (add1 points-idx) (+ buf-idx (* 2 (ftype-sizeof float)))))))
+  
+  (define draw-spline-bezier-quadratic0
+	(foreign-procedure "DrawSplineBezierQuadratic" (u8* int float (& Color)) void))
+  (define (draw-spline-bezier-quadratic points thick rgba)
+	(load-spline-buf points)
 	(load-global-color global-color rgba)
-	(draw-spline-bezier-quadratic0 spline-draw-buf num-points thick global-color))
+	(draw-spline-bezier-quadratic0 spline-draw-buf (vector-length points) thick global-color))
+
+  (define draw-spline-bezier-cubic0
+	(foreign-procedure "DrawSplineBezierCubic" (u8* int float (& Color)) void))
+  (define (draw-spline-bezier-cubic points thick rgba)
+	(load-spline-buf points)
+	(load-global-color global-color rgba)
+	(draw-spline-bezier-cubic0 spline-draw-buf (vector-length points) thick global-color))
   )
