@@ -1681,15 +1681,20 @@
 		 (case type
 		   ([point]
 			(raylib:play-sound (sebundle-item sounds))
-			(set! current-score (+ current-score item-value))
-			(spawn-particle
-			 (make-particle (particletype itemvalue)
-							(miscent-x ent) (- (miscent-y ent) 10.0)
-							60 0 (cons (if (or (miscent-autocollect ent)
-											   (< player-y +poc-y+))
-										   #xffd70000
-										   #xf5f5f500)
-									   (number->string item-value)))))
+			(let* ([value-multiplier (if (or (miscent-autocollect ent) (< player-y +poc-y+))
+										 1.0
+										 (max 0.25
+											  (- 1.0 (/ (- player-y +poc-y+)
+														(- +playfield-max-y+ +poc-y+)))))]
+				   [value (eround (* item-value value-multiplier))])
+			  (set! current-score (+ current-score value))
+			  (spawn-particle
+			   (make-particle (particletype itemvalue)
+							  (miscent-x ent) (- (miscent-y ent) 10.0)
+							  60 0 (cons (if (= 1 value-multiplier)
+											 #xffd70000
+											 #xf5f5f500)
+										 (number->string value))))))
 		   ([life-frag] (add-lives 1/3))
 		   ([life] (add-lives 1))
 		   ([bomb-frag] (add-bombs 1/3))
