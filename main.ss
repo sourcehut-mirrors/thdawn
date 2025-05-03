@@ -694,7 +694,7 @@
 					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
 					  (yield))
 					(control-function blt))
-				  (thunk (eq? blt (vector-ref live-bullets idx))))
+				  (thunk (eq? blt (vnth live-bullets idx))))
 	  blt)))
 
 (define (spawn-laser type x y facing length radius despawn-time
@@ -716,7 +716,7 @@
 					(laser-start-despawning-at-set! blt frames)
 					(wait despawn-time)
 					(delete-bullet blt))
-				  (thunk (eq? blt (vector-ref live-bullets idx))))
+				  (thunk (eq? blt (vnth live-bullets idx))))
 	  blt)))
 
 (define (delete-bullet bullet)
@@ -1104,7 +1104,7 @@
 	  (spawn-task
 	   (symbol->string type)
 	   (lambda (task) (control-function task enemy))
-	   (thunk (eq? enemy (vector-ref live-enm idx))))
+	   (thunk (eq? enemy (vnth live-enm idx))))
 	  enemy)))
 
 (define (delete-enemy enm)
@@ -1152,7 +1152,7 @@
   (define length (vector-length live-enm))
   (do [(idx 0 (fx1+ idx))]
 	  [(fx>= idx length)]
-	  (let ([enemy (vector-ref live-enm idx)])
+	  (let ([enemy (vnth live-enm idx)])
 		(when (and enemy (fx<= (enm-health enemy) 0))
 		  (spawn-drops enemy)
 		  (raylib:play-sound (sebundle-enmdie sounds))
@@ -1367,9 +1367,9 @@
 					 ([medium-blue-fairy] '#(medium-blue-fairy0 medium-blue-fairy1 medium-blue-fairy2 medium-blue-fairy3))
 					 ([medium-red-fairy] '#(medium-red-fairy0 medium-red-fairy1 medium-red-fairy2 medium-red-fairy3))
 					 ([big-fairy] '#(big-fairy0 big-fairy1 big-fairy2 big-fairy3)))]
-				  [sprite (vector-ref fwd-sprites
-									  (truncate (mod (/ frames 5)
-													 (vector-length fwd-sprites))))])
+				  [sprite (vnth fwd-sprites
+								(truncate (mod (/ frames 5)
+											   (vector-length fwd-sprites))))])
 			 (draw-sprite textures sprite render-x render-y -1))]
 		  [(fl< (abs dx) 10.0)
 		   (let* ([transition-sprites
@@ -1381,10 +1381,10 @@
 					 ([medium-blue-fairy] '#(medium-blue-fairy4 medium-blue-fairy5 medium-blue-fairy6 medium-blue-fairy7))
 					 ([medium-red-fairy] '#(medium-red-fairy4 medium-red-fairy5 medium-red-fairy6 medium-red-fairy7))
 					 ([big-fairy] '#(big-fairy4 big-fairy5 big-fairy6 big-fairy7)))]
-				  [sprite (vector-ref transition-sprites
-									  (truncate (mod (/ frames 7)
-													 (vector-length
-													  transition-sprites))))])
+				  [sprite (vnth transition-sprites
+								(truncate (mod (/ frames 7)
+											   (vector-length
+												transition-sprites))))])
 			 (if (flnegative? dx)
 				 (draw-sprite-mirror-x textures sprite render-x render-y -1)
 				 (draw-sprite textures sprite render-x render-y -1)))]
@@ -1406,9 +1406,9 @@
 					 ([medium-blue-fairy] '#(medium-blue-fairy8 medium-blue-fairy9 medium-blue-fairy10 medium-blue-fairy11))
 					 ([medium-red-fairy] '#(medium-red-fairy8 medium-red-fairy9 medium-red-fairy10 medium-red-fairy11))
 					 ([big-fairy] '#(big-fairy8 big-fairy9 big-fairy10 big-fairy11)))]
-				  [sprite (vector-ref side-sprites
-									  (truncate (mod (/ frames 7)
-													 (vector-length side-sprites))))])
+				  [sprite (vnth side-sprites
+								(truncate (mod (/ frames 7)
+											   (vector-length side-sprites))))])
 			 (if (flnegative? dx)
 				 (draw-sprite-mirror-x textures sprite render-x render-y -1)
 				 (draw-sprite textures sprite render-x render-y -1)))])))
@@ -2074,10 +2074,10 @@
 	(do [(t 0.0 (+ t 0.05))]
 		[(>= t 1.0)]
 	  (let ([p (eval-bezier-cubic
-						   (vector-ref spline-editor-positions 0)
-						   (vector-ref spline-editor-positions 1)
-						   (vector-ref spline-editor-positions 2)
-						   (vector-ref spline-editor-positions 3) t)])
+						   (vnth spline-editor-positions 0)
+						   (vnth spline-editor-positions 1)
+						   (vnth spline-editor-positions 2)
+						   (vnth spline-editor-positions 3) t)])
 		(spawn-bullet 'pellet-white (v2x p) (v2y p) 5 (lambda (_blt) (loop-forever)))))
 	;; (spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 30 60
 	;; 			 (lambda (_blt) (wait 240)))
@@ -2530,8 +2530,8 @@
 								   green))
 		 (raylib:draw-text
 		  (format "~d ~d"
-				  (eround (v2x (vector-ref spline-editor-positions i)))
-				  (eround (v2y (vector-ref spline-editor-positions i))))
+				  (eround (v2x (vnth spline-editor-positions i)))
+				  (eround (v2y (vnth spline-editor-positions i))))
 		  (eround (v2x p)) (eround (v2y p)) 10 -1)))
 	 render-positions))
 
@@ -2603,7 +2603,7 @@
 	  (fbshoot pat
 			   (enm-x enm) (enm-y enm)
 			   (lambda (row col speed facing)
-				 (spawn-bullet (vector-ref types i) (enm-x enm) (enm-y enm) 5
+				 (spawn-bullet (vnth types i) (enm-x enm) (enm-y enm) 5
 							   (curry linear-step-gravity-forever
 									  (fl+ facing
 										   (centered-roll game-rng (torad 10.0)))
