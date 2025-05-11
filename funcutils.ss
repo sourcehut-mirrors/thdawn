@@ -2,7 +2,8 @@
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
 		  dotimes curry vector-for-all vector-for-each-indexed
-		  vector-find vector-index vector-popcnt -> ->> thunk)
+		  vector-find vector-index vector-popcnt -> ->> thunk
+		  vector-add vector-pop vector-truncate)
   (import (chezscheme))
 
   (define (curry proc . curry-args)
@@ -100,4 +101,33 @@
 		  (let ([elemi (vector-ref v i)])
 			(if elemi
 				(loop (fx1+ i) (fx1+ n))
-				(loop (fx1+ i) n)))))))
+				(loop (fx1+ i) n))))))
+
+  (define (vector-add v elem)
+	(define length (vector-length v))
+	(define result (make-vector (add1 length)))
+	;; TODO: replace manual loop with vector-copy! when moving to Chez 10.3.0
+	(do [(i 0 (add1 i))]
+		[(= i length)]
+	  (vector-set! result i (vector-ref v i)))
+	(vector-set! result length elem)
+	result)
+
+  (define (vector-pop v)
+	(define length (vector-length v))
+	(define result (make-vector (sub1 length)))
+	;; TODO: replace manual loop with vector-copy! when moving to Chez 10.3.0
+	(do [(i 0 (add1 i))]
+		[(= i (sub1 length))]
+	  (vector-set! result i (vector-ref v i)))
+	result)
+
+  (define (vector-truncate v new-length)
+	(define length (vector-length v))
+	(define result (make-vector new-length))
+	;; TODO: replace manual loop with vector-copy! when moving to Chez 10.3.0
+	(do [(i 0 (add1 i))]
+		[(= i new-length)]
+	  (vector-set! result i (vector-ref v i)))
+	result)
+  )

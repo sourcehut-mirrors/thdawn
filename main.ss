@@ -27,6 +27,7 @@
 (define pi 3.141592)
 (define tau 6.28318)
 (alias vnth vector-ref)
+(alias vlen vector-length)
 
 (define (torad x)
   (* (fl/ pi 180.0) x))
@@ -549,14 +550,8 @@
   (- (* (roll rng) 2 radius)
 	 radius))
 (define chapter-select 0)
-(define spline-editor-positions (make-vector 4 #f))
+(define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
-;; for use for adhoc evaluations on the repl
-(define (set-spline-editor-positions p0 p1 p2 p3)
-  (vector-set! spline-editor-positions 0 p0)
-  (vector-set! spline-editor-positions 1 p1)
-  (vector-set! spline-editor-positions 2 p2)
-  (vector-set! spline-editor-positions 3 p3))
 
 (define (player-invincible?)
   
@@ -2093,13 +2088,16 @@
 	(when (> spline-editor-selected-position 0)
 	  (set! spline-editor-selected-position (sub1 spline-editor-selected-position))))
   (when (raylib:is-key-pressed key-d)
-	(when (< spline-editor-selected-position
-			 (sub1 (vector-length spline-editor-positions)))
-	  (set! spline-editor-selected-position (add1 spline-editor-selected-position))))
+	(set! spline-editor-selected-position (add1 spline-editor-selected-position)))
   (when (raylib:is-key-pressed key-s)
-	(vector-set! spline-editor-positions spline-editor-selected-position (vec2 player-x player-y)))
-  (when (raylib:is-key-pressed key-f)
-	(vector-set! spline-editor-positions spline-editor-selected-position #f))
+	(if (<= 0 spline-editor-selected-position (sub1 (vlen spline-editor-positions)))
+		(vector-set! spline-editor-positions spline-editor-selected-position
+					 (vec2 player-x player-y))
+		(set! spline-editor-positions (vector-add spline-editor-positions
+												  (vec2 player-x player-y)))))
+  (when (and (raylib:is-key-pressed key-f)
+			 (not (zero? (vector-length spline-editor-positions))))
+	(set! spline-editor-positions (vector-pop spline-editor-positions)))
   )
 
 (define (handle-player-movement)
@@ -2312,7 +2310,8 @@
 				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
   ;; todo: for prod release, hide this behind f3
-  (raylib:draw-text (format "SPLED: ~d" spline-editor-selected-position)
+  (raylib:draw-text (format "SPLED: ~d of [0, ~d]" spline-editor-selected-position
+							(sub1 (vlen spline-editor-positions)))
 					440 200
 					18 -1)
   (raylib:draw-text (format "FRSAV: ~d (~d)" frame-save frame-save-diff)
@@ -2515,12 +2514,17 @@
   (draw-hud textures fonts)
 
   (let ([render-positions (vector-map
-						   (lambda (p) (and p (v2+ p +playfield-render-offset+)))
+						   (lambda (p) (v2+ p +playfield-render-offset+))
 						   spline-editor-positions)])
-	(when (vector-for-all values spline-editor-positions)
-	  (raylib:draw-spline-bezier-cubic
-	   render-positions
-	   5.0 red))
+	(when (not (zero? (vlen render-positions)))
+	  ;; compute mod with the "index of the final element", conceptually simpler
+	  (let*-values ([(quot rem) (div-and-mod (sub1 (vlen render-positions)) 3)])
+		(if (fxzero? rem)
+			;; can directly pass
+			(raylib:draw-spline-bezier-cubic render-positions 5.0 red)
+			;; need to truncate it to the nearest complete segment
+			(let ([trunc (vector-truncate render-positions (add1 (* 3 quot)))])
+			  (raylib:draw-spline-bezier-cubic trunc 5.0 red)))))
 	(vector-for-each-indexed
 	 (lambda (i p)
 	   (when p
@@ -2529,13 +2533,12 @@
 								   #x006400ff
 								   green))
 		 (raylib:draw-text
-		  (format "~d ~d"
+		  (format "~d: ~d ~d"
+				  i
 				  (eround (v2x (vnth spline-editor-positions i)))
 				  (eround (v2y (vnth spline-editor-positions i))))
 		  (eround (v2x p)) (eround (v2y p)) 10 -1)))
-	 render-positions))
-
-  )
+	 render-positions)))
 
 (define (render-all render-texture render-texture-inner textures fonts)
   (raylib:begin-texture-mode render-texture)
@@ -2708,13 +2711,15 @@
   (chapter1 task))
 
 (define (ch1-big-fairy task enm)
-  (move-on-bezier
-   values
-   (vnth spline-editor-positions 0)
-   (vnth spline-editor-positions 1)
-   (vnth spline-editor-positions 2)
-   (vnth spline-editor-positions 3)
-   120 enm))
+  ;; (move-on-bezier
+  ;;  values
+  ;;  (vnth spline-editor-positions 0)
+  ;;  (vnth spline-editor-positions 1)
+  ;;  (vnth spline-editor-positions 2)
+  ;;  (vnth spline-editor-positions 3)
+  ;;  120 enm)
+  (values)
+  )
 (define (chapter1 task)
   (set! current-chapter 1)
   (wait 50)
