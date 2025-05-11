@@ -121,7 +121,7 @@
 				"se_old_lazer01.wav")))))
 (define (unload-sfx)
   (define rtd (record-type-descriptor sebundle))
-  (define num-sounds (vector-length (record-type-field-names rtd)))
+  (define num-sounds (vlen (record-type-field-names rtd)))
   (do [(i 0 (1+ i))]
 	  [(>= i num-sounds)]
 	(raylib:unload-sound ((record-accessor rtd i) sounds)))
@@ -161,7 +161,7 @@
 
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
-  (define num-textures (vector-length (record-type-field-names rtd)))
+  (define num-textures (vlen (record-type-field-names rtd)))
   (do [(i 0 (1+ i))]
 	  [(>= i num-textures)]
 	(raylib:unload-texture ((record-accessor rtd i) textures))))
@@ -177,7 +177,7 @@
    (raylib:load-font "assets/font/Cabin-Regular.ttf")))
 (define (unload-fonts fonts)
   (define rtd (record-type-descriptor fontbundle))
-  (define num-fonts (vector-length (record-type-field-names rtd)))
+  (define num-fonts (vlen (record-type-field-names rtd)))
   (do [(i 0 (1+ i))]
 	  [(>= i num-fonts)]
 	(raylib:unload-font ((record-accessor rtd i) fonts))))
@@ -1144,7 +1144,7 @@
    drops))
 
 (define (prune-dead-enemies)
-  (define length (vector-length live-enm))
+  (define length (vlen live-enm))
   (do [(idx 0 (fx1+ idx))]
 	  [(fx>= idx length)]
 	  (let ([enemy (vnth live-enm idx)])
@@ -1364,7 +1364,7 @@
 					 ([big-fairy] '#(big-fairy0 big-fairy1 big-fairy2 big-fairy3)))]
 				  [sprite (vnth fwd-sprites
 								(truncate (mod (/ frames 5)
-											   (vector-length fwd-sprites))))])
+											   (vlen fwd-sprites))))])
 			 (draw-sprite textures sprite render-x render-y -1))]
 		  [(fl< (abs dx) 10.0)
 		   (let* ([transition-sprites
@@ -1378,7 +1378,7 @@
 					 ([big-fairy] '#(big-fairy4 big-fairy5 big-fairy6 big-fairy7)))]
 				  [sprite (vnth transition-sprites
 								(truncate (mod (/ frames 7)
-											   (vector-length
+											   (vlen
 												transition-sprites))))])
 			 (if (flnegative? dx)
 				 (draw-sprite-mirror-x textures sprite render-x render-y -1)
@@ -1403,7 +1403,7 @@
 					 ([big-fairy] '#(big-fairy8 big-fairy9 big-fairy10 big-fairy11)))]
 				  [sprite (vnth side-sprites
 								(truncate (mod (/ frames 7)
-											   (vector-length side-sprites))))])
+											   (vlen side-sprites))))])
 			 (if (flnegative? dx)
 				 (draw-sprite-mirror-x textures sprite render-x render-y -1)
 				 (draw-sprite textures sprite render-x render-y -1)))])))
@@ -2096,7 +2096,7 @@
 		(set! spline-editor-positions (vector-add spline-editor-positions
 												  (vec2 player-x player-y)))))
   (when (and (raylib:is-key-pressed key-f)
-			 (not (zero? (vector-length spline-editor-positions))))
+			 (not (zero? (vlen spline-editor-positions))))
 	(set! spline-editor-positions (vector-pop spline-editor-positions)))
   )
 
@@ -2613,7 +2613,7 @@
 									  speed 0.1))))
 	  (wait 20)
 	  (when (< (- frames start-time) 200)
-		(loop (mod (add1 i) (vector-length types))))))
+		(loop (mod (add1 i) (vlen types))))))
   (define (ring task)
 	(let loop ()
 	  (-> (cb)
