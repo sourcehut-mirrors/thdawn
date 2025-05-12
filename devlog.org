@@ -1,3 +1,8 @@
+* [2025-05-10 Sat]
+Now mostly at a point where I should just be banging out the stage patterns, though I've
+instead been faffing about, mostly with splines and how I can more cleanly represent enemy
+movement that isn't purely aligned with the cardinal/ordinal axes.
+
 * [2025-03-08 Sat]
 Oops, didn't update the devlog in forever. To be fair, not much has been happening either.
 

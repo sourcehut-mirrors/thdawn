@@ -553,6 +553,14 @@
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
 
+(define (truncate-to-whole-spline v)
+  (let*-values ([(quot rem) (div-and-mod (sub1 (vlen v)) 3)])
+	(if (fxzero? rem)
+		;; can directly pass
+		v
+		;; need to truncate it to the nearest complete segment
+		(vector-truncate v (add1 (* 3 quot))))))
+
 (define (player-invincible?)
   
   (fxpositive? iframes)
@@ -1765,20 +1773,28 @@
   (ease-to values x y duration enm))
 (define (ease-cubic-to x y duration enm)
   (ease-to ease-out-cubic x y duration enm))
-(define (move-on-bezier easer p0 p1 p2 p3 duration enm)
-  (define x0 (enm-x enm))
-  (define y0 (enm-y enm))
-  ;; NB: I know that movement along a curve actually isn't trivial, and doing steps
-  ;; like this isn't going to give me exact results, but it works well enough
-  ;; for what we're doing in this game
-  (do ([i 0 (fx1+ i)])
-	  ((fx> i duration))
-	(let* ([progress (/ i duration)]
-		   [eased (easer (clamp progress 0.0 1.0))]
-		   [p (eval-bezier-cubic p0 p1 p2 p3 eased)])
-	  (enm-x-set! enm (v2x p))
-	  (enm-y-set! enm (v2y p)))
-	(yield)))
+
+;; points must be a whole spline (see truncate-to-whole-spline)
+(define (move-on-spline points segment->config enm)
+  (do [(segment 0 (add1 segment))
+	   (i 0 (+ i 3))]
+	  [(= i (sub1 (vlen points)))]
+	(let-values ([(easer duration) (segment->config segment)]
+				 [(p0) (vnth points i)]
+				 [(p1) (vnth points (+ 1 i))]
+				 [(p2) (vnth points (+ 2 i))]
+				 [(p3) (vnth points (+ 3 i))])
+	  ;; NB: I know that movement along a curve actually isn't trivial,
+	  ;; and doing steps like this isn't going to give me exact results,
+	  ;; but it works well enough for what we're doing in this game
+	  (do [(j 0 (fx1+ j))]
+		  [(fx> j duration)]
+		(let* ([progress (/ j duration)]
+			   [eased (easer (clamp progress 0.0 1.0))]
+			   [p (eval-bezier-cubic p0 p1 p2 p3 eased)])
+		  (enm-x-set! enm (v2x p))
+		  (enm-y-set! enm (v2y p)))
+		(yield)))))
 
 (define (declare-spell boss spell-name duration-frames)
   (define bossinfo (enm-extras boss))
@@ -2517,14 +2533,8 @@
 						   (lambda (p) (v2+ p +playfield-render-offset+))
 						   spline-editor-positions)])
 	(when (not (zero? (vlen render-positions)))
-	  ;; compute mod with the "index of the final element", conceptually simpler
-	  (let*-values ([(quot rem) (div-and-mod (sub1 (vlen render-positions)) 3)])
-		(if (fxzero? rem)
-			;; can directly pass
-			(raylib:draw-spline-bezier-cubic render-positions 5.0 red)
-			;; need to truncate it to the nearest complete segment
-			(let ([trunc (vector-truncate render-positions (add1 (* 3 quot)))])
-			  (raylib:draw-spline-bezier-cubic trunc 5.0 red)))))
+	  (raylib:draw-spline-bezier-cubic
+	   (truncate-to-whole-spline render-positions) 5.0 red))
 	(vector-for-each-indexed
 	 (lambda (i p)
 	   (when p
@@ -2711,14 +2721,9 @@
   (chapter1 task))
 
 (define (ch1-big-fairy task enm)
-  ;; (move-on-bezier
-  ;;  values
-  ;;  (vnth spline-editor-positions 0)
-  ;;  (vnth spline-editor-positions 1)
-  ;;  (vnth spline-editor-positions 2)
-  ;;  (vnth spline-editor-positions 3)
-  ;;  120 enm)
-  (values)
+  (move-on-spline (truncate-to-whole-spline spline-editor-positions)
+				  (lambda (_) (values values 120))
+				  enm)
   )
 (define (chapter1 task)
   (set! current-chapter 1)
