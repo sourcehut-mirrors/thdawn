@@ -30,7 +30,12 @@
   ;; as r6rs requires all definitions to precede any expressions
   ;; r6rs does guarantee the library body executes top to bottom though,
   ;; so this is the right place to do it
-  (define _dummy (load-shared-object "libraylib.so")) ;; todo windows and macos
+  (define _dummy
+	(case (machine-type)
+	  [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt)
+	   (load-shared-object "raylib.dll")]
+	  ;; todo macos
+	  [else (load-shared-object "libraylib.so")]))
 
   ;; WARNING: Chez's FFI treats the boolean ftype as C `int`,
   ;; NOT as C99 _Bool/bool. Raylib, on all the target platforms we care about,

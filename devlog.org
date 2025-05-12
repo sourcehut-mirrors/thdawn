@@ -1,3 +1,15 @@
+* [2025-05-11 Sun]
+Some chapter 1 hacking, but I also took some time to figure out the Windows build process.
+It's actually super simple, everything basically just works. The build.ss script runs
+directly under WINE and with raylib.dll in the working directory the game starts and runs
+just as expected.
+
+Distribution for Windows will just be zipping up the Chez Scheme install folder alongside
+thdawn.boot and raylib.dll, and maybe a bat script to start the game.
+
+The statically-linked/dependency-bundled distribution for Linux will be similar, if I choose
+to make one.
+
 * [2025-05-10 Sat]
 Now mostly at a point where I should just be banging out the stage patterns, though I've
 instead been faffing about, mostly with splines and how I can more cleanly represent enemy
