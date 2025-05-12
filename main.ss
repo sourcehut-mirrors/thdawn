@@ -7,6 +7,7 @@
 		(coro) (geom) (funcutils))
 (define key-space 32)
 (define key-escape 256)
+(define key-f1 290)
 (define key-f3 292)
 (define key-left-shift 340)
 (define key-right 262)
@@ -523,6 +524,7 @@
 (define +deathbomb-time+ 10)
 ;; If positive, player is going to be killed in N frames, unless a bomb is used.
 (define death-timer 0)
+(define force-invincible #f)
 (define graze 0)
 (define paused #f)
 (define graze-radius 22.0)
@@ -565,9 +567,7 @@
 		(vector-truncate v (add1 (* 3 quot))))))
 
 (define (player-invincible?)
-  
-  (fxpositive? iframes)
-  #t)
+  (fxpositive? iframes))
 
 (define ojamajo-carnival #f)
 (define (load-audio)
@@ -1177,15 +1177,17 @@
 	(set! death-timer +deathbomb-time+)))
 
 (define (kill-player)
-  (raylib:play-sound (sebundle-shoot0 sounds))
-  (when (>= life-stock 1)
-	(set! life-stock (sub1 life-stock))) ;; todo gameovering
-  (when (< bomb-stock 3)
-	(set! bomb-stock 3))
   (set! iframes 180)
-  (set! respawning +respawning-max+)
-  (set! player-x 0.0)
-  (set! player-y +initial-player-y+))
+  (unless force-invincible
+	(raylib:play-sound (sebundle-shoot0 sounds))
+	(when (>= life-stock 1)
+	  (set! life-stock (sub1 life-stock))) ;; todo gameovering
+	(when (< bomb-stock 3)
+	  (set! bomb-stock 3))
+
+	(set! respawning +respawning-max+)
+	(set! player-x 0.0)
+	(set! player-y +initial-player-y+)))
 
 (define (check-laser-collision lx ly rotation lradius length
 							   px py pradius)
@@ -2032,6 +2034,8 @@
   
   (when (raylib:is-key-released key-z)
 	(set! start-shot-frames -1))
+  (when (raylib:is-key-pressed key-f1)
+	(set! force-invincible (not force-invincible)))
   (when (raylib:is-key-pressed key-f3)
 	(set! show-hitboxes (not show-hitboxes)))
   (when (raylib:is-key-pressed key-escape)
