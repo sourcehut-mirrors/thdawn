@@ -34,7 +34,8 @@
 	(case (machine-type)
 	  [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt)
 	   (load-shared-object "raylib.dll")]
-	  ;; todo macos
+	  [(i3osx ti3osx a6osx ta6osx arm64osx tarm64osx ppc32osx tppc32osx)
+	   (load-shared-object "libraylib.dylib")]
 	  [else (load-shared-object "libraylib.so")]))
 
   ;; WARNING: Chez's FFI treats the boolean ftype as C `int`,
