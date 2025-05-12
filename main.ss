@@ -29,6 +29,12 @@
 (define tau 6.28318)
 (alias vnth vector-ref)
 (alias vlen vector-length)
+(define-enumeration miscenttype
+  (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb)
+  make-miscent-type-set)
+(define-enumeration particletype
+  (cancel itemvalue enmdeath graze)
+  make-particletype-set)
 
 (define (torad x)
   (* (fl/ pi 180.0) x))
@@ -1455,9 +1461,6 @@
 	(yield)
 	(loop (+ vy ay))))
 
-(define-enumeration particletype
-  (cancel itemvalue enmdeath graze)
-  make-particletype-set)
 (define-record-type particle
   (fields
    type
@@ -1547,9 +1550,6 @@
 			16.0 0.0 (bitwise-ior color alpha)))))))
   (vector-for-each-truthy each live-particles))
 
-(define-enumeration miscenttype
-  (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb)
-  make-miscent-type-set)
 (define-record-type miscent
   (fields
    type
