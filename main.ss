@@ -79,6 +79,14 @@
 	   b ...
 	   (wait intvl)
 	   (loop))]))
+(define-syntax interval-loop-while
+  (syntax-rules ()
+	[(_ intvl cond b ...)
+	 (let loop ()
+	   b ...
+	   (wait intvl)
+	   (when cond
+		 (loop)))]))
 (define-syntax interval-loop-waitfirst
   (syntax-rules ()
 	[(_ intvl b ...)
@@ -572,6 +580,9 @@
 		;; need to truncate it to the nearest complete segment
 		(vector-truncate v (add1 (* 3 quot))))))
 
+(define (facing-player x y)
+  (flatan (fl- player-y y) (fl- player-x x)))
+
 (define (player-invincible?)
   (fxpositive? iframes))
 
@@ -921,7 +932,7 @@
   (define base-angle
 	(if (fan-builder-aimed-at-player fb)
 		(+ (fan-builder-global-angle fb)
-		   (atan (- player-y y) (- player-x x)))
+		   (facing-player x y))
 		(fan-builder-global-angle fb)))
   (define local-angle (fan-builder-local-angle fb))
   (define starting-angle-offset
@@ -994,7 +1005,7 @@
   (define initial-angle
 	(if (circle-builder-aimed-at-player cb)
 		(+ (circle-builder-global-angle cb)
-		   (atan (- player-y y) (- player-x x)))
+		   (facing-player x y))
 		(circle-builder-global-angle cb)))
   (define per-bullet-angle (/ tau per-layer))
   (do [(layer 0 (add1 layer))] [(>= layer layers)]
@@ -1443,6 +1454,13 @@
 (define (linear-step facing speed blt)
   (bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
   (bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing)))))
+
+(define (linear-step-enm-forever facing speed enm)
+  (loop-forever (linear-step-enm facing speed enm)))
+
+(define (linear-step-enm facing speed enm)
+  (enm-x-set! enm (+ (enm-x enm) (* speed (cos facing))))
+  (enm-y-set! enm (+ (enm-y enm) (* speed (sin facing)))))
 
 (define (linear-step-separate vx vy blt)
   (define ox (bullet-x blt))
@@ -2632,15 +2650,12 @@
 	  (when (< (- frames start-time) 200)
 		(loop (mod (add1 i) (vlen types))))))
   (define (ring task)
-	(let loop ()
+	(interval-loop 50
 	  (-> (cb)
 		  (cbcount 15)
 		  (cbang 15.0 0.0)
 		  (cbspeed 3.0 3.0)
-		  (cbshootez enm 'music-blue 5 (sebundle-bell sounds)))
-	  (wait 50)
-	  (when (< (- frames start-time) 250)
-		(loop))))
+		  (cbshootez enm 'music-blue 5 (sebundle-bell sounds)))))
   (define (note task)
 	(wait 200)
 	(for-each
@@ -2668,7 +2683,7 @@
 					  (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
   (spawn-subtask "movement" movement (constantly #t) task)
   (spawn-subtask "rain" rain (constantly #t) task)
-  (spawn-subtask "ring" ring (constantly #t) task)
+  (spawn-subtask "ring" ring (thunk (fx< (fx- frames start-time) 250)) task)
   (spawn-subtask "note" note (constantly #t) task)
   (wait-until (constantly #f)))
 
@@ -2727,16 +2742,15 @@
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
 
-(define (ch1-big-fairy task enm)
+(define (ch1-big-fairy flip task enm)
   (define (shoot task)
 	(wait 10)
 	(do [(i 0 (fx1+ i))]
 		[(fx= i 35)]
 	  (let ([facing (torad (fl* (fl/ 360.0 20.0) (inexact i)))]
 			[cfun (lambda (blt)
-					(linear-step-forever (flatan (fl- player-y (bullet-y blt))
-												 (fl- player-x (bullet-x blt)))
-										 5.0 blt))])
+					(linear-step-forever (facing-player (bullet-x blt) (bullet-y blt))
+										 7.0 blt))])
 		(-> (spawn-bullet 'ellipse-magenta
 						  (fl+ (enm-x enm) (fl* 40.0 (flcos facing)))
 						  (fl+ (enm-y enm) (fl* 40.0 (flsin facing)))
@@ -2748,18 +2762,50 @@
 						  10 cfun)
 			(bullet-facing-set! facing)))
 	  (wait 3)))
+  (define points (vector (vec2 -141.0 0.0)
+						 (vec2 -151.0 285.0)
+						 (vec2 134.0 276.0)
+						 (vec2 220.0 214.0)))
   (spawn-subtask "shoot" shoot (constantly #t) task)
-  (move-on-spline (vector (vec2 -141.0 0.0)
-						  (vec2 -151.0 285.0)
-						  (vec2 134.0 276.0)
-						  (vec2 194.0 214.0))
-				  (lambda (_) (values ease-out-quad 180))
+  (move-on-spline (if flip (vector-map (lambda (p) (vec2 (fl- (v2x p)) (v2y p)))
+									   points)
+					  points)
+				  (lambda (_) (values values 180))
 				  enm)
-  )
+  (delete-enemy enm))
+
+(define (ch1-small-fairy task enm)
+  (define (shoot task)
+	(interval-loop 20
+	  (-> (fb)
+		  (fbcounts 4 3)
+		  (fbang 0.0 25.0)
+		  (fbspeed 6.0 7.0)
+		  (fbshootez enm 'small-ball-red 5 (sebundle-shoot0 sounds)))))
+  (define facing (facing-player (enm-x enm) (enm-y enm)))
+  (define (move task)
+	(interval-loop-while 1 (< (enm-y enm) 470.0)
+	  (linear-step-enm facing 5.0 enm)))
+  (spawn-subtask "shoot" shoot (thunk (fl< (enm-y enm) 350.0)) task)
+  (move task)
+  (delete-enemy enm))
+
 (define (chapter1 task)
   (set! current-chapter 1)
   (wait 50)
-  (spawn-enemy (enmtype big-fairy) -141.0 0.0 400 ch1-big-fairy default-drop)
+  (spawn-enemy (enmtype big-fairy) -141.0 0.0 600 (curry ch1-big-fairy #f)
+			   default-drop)
+  (wait 220)
+  (dotimes 10
+	(spawn-enemy (enmtype red-fairy) -141.0 0.0 50 ch1-small-fairy default-drop)
+	(wait 7))
+  (wait 70)
+  (spawn-enemy (enmtype big-fairy) 141.0 0.0 600 (curry ch1-big-fairy #t)
+			   default-drop)
+  (wait 220)
+  (dotimes 10
+	(spawn-enemy (enmtype red-fairy) 141.0 0.0 50 ch1-small-fairy default-drop)
+	(wait 7))
   (wait-until (thunk (>= frames 1645)))
   (chapter2 task))
 (define (chapter2 task)
