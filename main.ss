@@ -2885,8 +2885,47 @@
   (spawn-enemy (enmtype big-fairy) 220.0 380.0 50 ch2-w3-fairy five-point-items)
   (wait-until (thunk (>= frames 2425)))
   (chapter3 task))
+
+(define (ch3-fairy-sin-move flip task enm)
+  (define start-x (enm-x enm))
+  (define start-y (enm-y enm))
+  (do [(i 0 (add1 i))]
+	  [(if flip
+		   (<= (enm-x enm) (- +playfield-min-x+ 50))
+		   (>= (enm-x enm) (+ +playfield-max-x+ 50)))]
+	(let ([x ((if flip fl- fl+) start-x (fl* (inexact i) 1.7))]
+		  [y (fl+ start-y (fl* 30.0 (flsin (fl/ (inexact i) 18.0))))])
+	  (enm-x-set! enm x)
+	  (enm-y-set! enm y))
+	(yield))
+  (delete-enemy enm))
+(define (ch3-w1-leader-fairy flip task enm)1
+  ;; todo: kill all the followers when we die
+  (spawn-subtask "move" (lambda (task) (ch3-fairy-sin-move flip task enm))
+				 (constantly #t) task)
+  (loop-forever))
+(define (ch3-w1-follower-fairy delay flip task enm)
+  (wait delay)
+  (spawn-subtask "move" (lambda (task) (ch3-fairy-sin-move flip task enm))
+				 (constantly #t) task))
+
+
 (define (chapter3 task)
   (set! current-chapter 3)
+  (wait 20)
+  (spawn-enemy (enmtype big-fairy) -210.0 150.0 500
+			   (curry ch3-w1-leader-fairy #f) five-point-items)
+  (do [(i 0 (add1 i))] [(= i 6)]
+	(spawn-enemy (enmtype red-fairy) -210.0 150.0 50
+				 (curry ch3-w1-follower-fairy (* 20 (add1 i)) #f) default-drop))
+
+  (wait 400)
+  (spawn-enemy (enmtype big-fairy) 220.0 180.0 500
+			   (curry ch3-w1-leader-fairy #t) five-point-items)
+  (do [(i 0 (add1 i))] [(= i 6)]
+	(spawn-enemy (enmtype yellow-fairy) 220.0 180.0 50
+				 (curry ch3-w1-follower-fairy (* 20 (add1 i)) #t) default-drop))
+  
   (wait-until (thunk (>= frames 3520)))
   (chapter4 task))
 (define (chapter4 task)
