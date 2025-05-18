@@ -906,7 +906,7 @@
 (define fbcounts
   (case-lambda
 	[(fb row-width)
-	 (fbcounts row-width 1)]
+	 (fbcounts fb row-width 1)]
 	[(fb row-width rows)
 	 (assert (and (positive? rows) (positive? row-width)))
 	 (fan-builder-rows-set! fb rows)
@@ -1054,7 +1054,8 @@
    (mutable oy)
    (mutable health)
    ;; alist of (miscent type . count) to drop on death.
-   drops
+   (mutable drops)
+   on-death ;; optional nullary function to be called when the enemy dies
    ;; "x momentum" of the enemy.
    ;; every frame the enemy is moving right, this increments (resp. left/decrement).
    ;; if the enemy does not move on the X axis, this moves back towards zero.
@@ -1122,17 +1123,24 @@
 		(enm-dx-render-set! enm (clamp (fl+ dx (fl- x ox)) -10.0 10.0))])))
   (vector-for-each-truthy each live-enm))
 
-(define (spawn-enemy type x y health control-function drops)
-  (let ((idx (vector-index #f live-enm)))
-	(unless idx
-	  (error 'spawn-enemy "No more open enemy slots!"))
-	(let ([enemy (make-enm type x y x y health drops 0.0 #f)])
-	  (vector-set! live-enm idx enemy)
-	  (spawn-task
-	   (symbol->string type)
-	   (lambda (task) (control-function task enemy))
-	   (thunk (eq? enemy (vnth live-enm idx))))
-	  enemy)))
+;; TODO put the optional args in an alist or something?
+(define spawn-enemy
+  (case-lambda
+	[(type x y health control-function)
+	 (spawn-enemy type x y health control-function default-drop)]
+	[(type x y health control-function drops)
+	 (spawn-enemy type x y health control-function drops #f)]
+	[(type x y health control-function drops on-death)
+	 (let ((idx (vector-index #f live-enm)))
+	   (unless idx
+		 (error 'spawn-enemy "No more open enemy slots!"))
+	   (let ([enemy (make-enm type x y x y health drops on-death 0.0 #f)])
+		 (vector-set! live-enm idx enemy)
+		 (spawn-task
+		  (symbol->string type)
+		  (lambda (task) (control-function task enemy))
+		  (thunk (eq? enemy (vnth live-enm idx))))
+		 enemy))]))
 
 (define (delete-enemy enm)
   (let ([idx (vector-index enm live-enm)])
@@ -1181,6 +1189,8 @@
 	  [(fx>= idx length)]
 	  (let ([enemy (vnth live-enm idx)])
 		(when (and enemy (fx<= (enm-health enemy) 0))
+		  (when (enm-on-death enemy)
+			((enm-on-death enemy)))
 		  (spawn-drops enemy)
 		  (raylib:play-sound (sebundle-enmdie sounds))
 		  (spawn-particle (make-particle
@@ -2788,6 +2798,7 @@
 		  (fbshootez enm 'small-ball-red 5 (sebundle-shoot0 sounds)))))
   (define facing (facing-player (enm-x enm) (enm-y enm)))
   (define (move task)
+	;; FIXME: this breaks at shallow angles
 	(interval-loop-while 1 (< (enm-y enm) 470.0)
 	  (linear-step-enm facing 5.0 enm)))
   (spawn-subtask "shoot" shoot (thunk (fl< (enm-y enm) 350.0)) task)
@@ -2894,37 +2905,82 @@
 		   (<= (enm-x enm) (- +playfield-min-x+ 50))
 		   (>= (enm-x enm) (+ +playfield-max-x+ 50)))]
 	(let ([x ((if flip fl- fl+) start-x (fl* (inexact i) 1.7))]
-		  [y (fl+ start-y (fl* 30.0 (flsin (fl/ (inexact i) 18.0))))])
+		  [y (fl+ start-y (fl* 20.0 (flsin (fl/ (inexact i) 18.0))))])
 	  (enm-x-set! enm x)
 	  (enm-y-set! enm y))
 	(yield))
   (delete-enemy enm))
-(define (ch3-w1-leader-fairy flip task enm)1
-  ;; todo: kill all the followers when we die
-  (spawn-subtask "move" (lambda (task) (ch3-fairy-sin-move flip task enm))
-				 (constantly #t) task)
-  (loop-forever))
+(define (ch3-w1-leader-fairy flip task enm)
+  (define (shoot task)
+	(interval-loop 60
+	  (-> (cb)
+		  (cbcount 12)
+		  (cbspeed 4.0)
+		  (cbshootez enm 'medium-ball-cyan 5 (sebundle-bell sounds)))))
+  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (ch3-fairy-sin-move flip task enm))
+(define (ch3-w1-leader-on-death followers)
+  (for-each
+   (lambda (f)
+	 (when (> (enm-health f) 0)
+	   (enm-drops-set! f default-drop)
+	   (enm-health-set! f 0)
+	   (-> (cb)
+		   (cbabsolute-aim)
+		   (cbcount 12 2)
+		   (cbspeed 2.0 3.0)
+		   (cbshootez f 'small-ball-white 2
+					  (sebundle-bell sounds)))))
+   followers))
+
 (define (ch3-w1-follower-fairy delay flip task enm)
+  (define (shoot task)
+	(interval-loop 30
+	  (dotimes 3
+		(-> (fb)
+			(fbabsolute-aim)
+			(fbcounts 3)
+			(fbspeed 4.0 4.0)
+			(fbang (if flip 265.0 275.0) 10.0)
+			(fbshoot (enm-x enm) (enm-y enm)
+					 (lambda (row col speed facing)
+					   (spawn-bullet
+						(if flip 'small-ball-yellow 'small-ball-red)
+						(enm-x enm) (enm-y enm) 5
+						(lambda (blt)
+						  (linear-step-gravity-forever facing speed 0.1 blt))))))
+		(wait 2))))
   (wait delay)
-  (spawn-subtask "move" (lambda (task) (ch3-fairy-sin-move flip task enm))
-				 (constantly #t) task))
+  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (ch3-fairy-sin-move flip task enm))
 
 
 (define (chapter3 task)
   (set! current-chapter 3)
   (wait 20)
-  (spawn-enemy (enmtype big-fairy) -210.0 150.0 500
-			   (curry ch3-w1-leader-fairy #f) five-point-items)
-  (do [(i 0 (add1 i))] [(= i 6)]
-	(spawn-enemy (enmtype red-fairy) -210.0 150.0 50
-				 (curry ch3-w1-follower-fairy (* 20 (add1 i)) #f) default-drop))
 
+  ;; technically map can and does evaluate the lambda out of order, but here it
+  ;; doesn't really matter as long as it remains the same impl in chez scheme,
+  ;; which is likely the case.
+  (let ([followers (map (lambda (i)
+						  (spawn-enemy
+						   (enmtype red-fairy) -210.0 150.0 50
+						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #f)
+						   five-point-items))
+						(iota 6))])
+	(spawn-enemy (enmtype big-fairy) -210.0 150.0 500
+				 (curry ch3-w1-leader-fairy #f) five-point-items
+				 (lambda () (ch3-w1-leader-on-death followers))))
   (wait 400)
-  (spawn-enemy (enmtype big-fairy) 220.0 180.0 500
-			   (curry ch3-w1-leader-fairy #t) five-point-items)
-  (do [(i 0 (add1 i))] [(= i 6)]
-	(spawn-enemy (enmtype yellow-fairy) 220.0 180.0 50
-				 (curry ch3-w1-follower-fairy (* 20 (add1 i)) #t) default-drop))
+  (let ([followers (map (lambda (i)
+						  (spawn-enemy
+						   (enmtype red-fairy) 220.0 180.0 50
+						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #t)
+						   five-point-items))
+						(iota 6))])
+	(spawn-enemy (enmtype big-fairy) 220.0 180.0 500
+				 (curry ch3-w1-leader-fairy #t) five-point-items
+				 (lambda () (ch3-w1-leader-on-death followers))))
   
   (wait-until (thunk (>= frames 3520)))
   (chapter4 task))
