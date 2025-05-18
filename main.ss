@@ -1651,12 +1651,16 @@
 (define (tick-misc-ents)
   (define (each ent)
 	(define type (miscent-type ent))
+	(define terminal-velocity
+	  (case type
+		([point life-frag big-piv life bomb-frag small-piv bomb] 20.0)
+		(else +inf.0)))
 	(define (do-standard-movement)
 	  (let ([vy (miscent-vy ent)]
 			[ay (miscent-ay ent)])
 		(when (not (zero? vy))
 	  	  (miscent-y-set! ent (+ (miscent-y ent) vy)))
-		(when (not (zero? ay))
+		(when (and (not (zero? ay)) (< vy terminal-velocity))
 		  (miscent-vy-set! ent (+ vy ay)))))
 	(case type
 	  ((mainshot)
