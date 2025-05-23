@@ -35,6 +35,11 @@
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze)
   make-particletype-set)
+(define-enumeration bltflag
+  (uncancelable ;; cannot be cancelled by bombs or other standard cancels
+   )
+  bltflags)
+(define empty-bltflags (bltflags))
 
 (define (torad x)
   (* (fl/ pi 180.0) x))
@@ -615,7 +620,8 @@
    ;; how many frames we've been alive. If < 0, then bullet is in "prespawn"
    ;; and does not participate in gameplay, only renders a preimg sprite
    (mutable livetime)
-   initial-livetime))
+   initial-livetime
+   (mutable flags)))
 
 (define-record-type laser
   (parent bullet)
@@ -701,6 +707,12 @@
 	   (or (not (laser? blt))
 		   (not (laser-start-despawning-at blt)))))
 
+(define (bullet-hasflag? blt flag)
+  (enum-set-member? flag (bullet-flags blt)))
+
+(define (bullet-addflags blt flags)
+  (bullet-flags-set! blt (enum-set-union (bullet-flags blt) flags)))
+
 (define live-bullets (make-vector 4096 #f))
 
 (define (spawn-bullet type x y delay control-function)
@@ -708,7 +720,8 @@
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
 	(let ([blt (make-bullet (get-next-bullet-id)
-							type x y 0.0 #f (- delay) (- delay))])
+							type x y 0.0 #f (- delay) (- delay)
+							empty-bltflags)])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
 				  (lambda (task)
@@ -727,6 +740,7 @@
 	  (error 'spawn-bullet "No more open bullet slots"))
 	(let ([blt (make-laser (get-next-bullet-id)
 						   type x y facing #f (- delay) (- delay)
+						   empty-bltflags
 						   length radius despawn-time -1 #f)])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "laser"
@@ -748,11 +762,12 @@
 	  (vector-set! live-bullets idx #f))))
 
 (define (cancel-bullet bullet)
-  (spawn-particle (make-particle
-				   (particletype cancel)
-				   (bullet-x bullet) (bullet-y bullet)
-				   23 0 #f))
-  (delete-bullet bullet))
+  (and (not (bullet-hasflag? bullet (bltflag uncancelable)))
+	   (spawn-particle (make-particle
+						(particletype cancel)
+						(bullet-x bullet) (bullet-y bullet)
+						23 0 #f))
+	   (delete-bullet bullet)))
 
 (define (spawn-drop-with-autocollect x y drop)
   (define ent (spawn-misc-ent drop x y -3.0 0.1))
@@ -761,8 +776,8 @@
 			  (constantly #t)))
 
 (define (cancel-bullet-with-drop bullet drop)
-  (spawn-drop-with-autocollect (bullet-x bullet) (bullet-y bullet) drop)
-  (cancel-bullet bullet))
+  (when (cancel-bullet bullet)
+	(spawn-drop-with-autocollect (bullet-x bullet) (bullet-y bullet) drop)))
 
 (define (despawn-out-of-bound-bullet bullet)
   (let ([x (bullet-x bullet)]
@@ -2709,10 +2724,11 @@
   (define x0 (enm-x enm))
   (define y0 (enm-y enm))
   (ease-linear-to (+ x0 40.0) y0 10 enm)
-  (spawn-laser type (+ (enm-x enm) 20.0) (enm-y enm)
+  (let ([l (spawn-laser type (+ (enm-x enm) 20.0) (enm-y enm)
 			   0.0 (inexact +playfield-width+)
 			   5.0
-			   40 20 (lambda (_blt) (wait-until (thunk (>= frames 900)))))
+			   40 20 (lambda (_blt) (wait-until (thunk (>= frames 900)))))])
+	(bullet-addflags l (bltflags uncancelable)))
   (raylib:play-sound (sebundle-laser sounds))
   (wait-until (thunk (>= frames 880)))
   (ease-linear-to x0 y0 20 enm)
@@ -2957,7 +2973,6 @@
   (wait delay)
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ch3-fairy-sin-move flip task enm))
-
 
 (define (chapter3 task)
   (set! current-chapter 3)
