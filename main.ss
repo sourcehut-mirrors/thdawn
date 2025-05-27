@@ -2553,7 +2553,7 @@
 							[(not b) #f]
 							[else (fx< (bullet-id a) (bullet-id b))]))
 						 live-bullets)])
-	;; layers go under enemies, all other bullets on top
+	;; lasers go under enemies, all other bullets on top
 	(draw-lasers textures sorted-bullets)
 	(draw-enemies textures)
 	(draw-player textures)
@@ -2974,55 +2974,71 @@
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ch3-fairy-sin-move flip task enm))
 
-(define (ch3-w2-fairy cx cy task enm)
-  (define dir-to-center (atan (- cy (enm-y enm))
-							  (- cx (enm-x enm))))
-  (define laser-dir (+ dir-to-center (torad 18.0)))
-  (spawn-laser 'fixed-laser-red (enm-x enm) (enm-y enm) laser-dir
-			   380.0 5.0 40 30
-			   (lambda (blt) (interval-loop 1
-							   (bullet-x-set! blt (enm-x enm))
-							   (bullet-y-set! blt (enm-y enm)))))
-  (ease-to values 0.0 200.0 60 enm)
-  )
+(define (ch3-w2-fairy delay init-ang init-dist cx cy task enm)
+  (define laser-dir (+ (- init-ang pi) (torad 18.0)))
+  (define laser (spawn-laser 'fixed-laser-red (enm-x enm) (enm-y enm) laser-dir
+							 420.0 5.0 40 delay
+							 (lambda (blt)
+							   ;; keep the laser alive until fairy dies
+							   ;; TODO this is a bit weird, can we improve?
+							   (loop-until (not (vector-index enm live-enm))))))
+  (bullet-addflags laser (bltflags uncancelable))
+  (raylib:play-sound (sebundle-laser sounds))
+  (wait delay)
+  (do [(angvel (torad 0.05) (if (fl< angvel (torad 4.0))
+							   (fl+ angvel (torad 0.05))
+							   angvel))
+	   (ang init-ang (+ ang angvel))
+	   (i 0 (add1 i))]
+	  [(= i 600)]
+	(enm-x-set! enm (+ cx (* init-dist (cos ang))))
+	(enm-y-set! enm (+ cy (* init-dist (sin ang))))
+	(bullet-x-set! laser (enm-x enm))
+	(bullet-y-set! laser (enm-y enm))
+	(bullet-facing-set! laser (+ (- ang pi) (torad 18.0)))
+	(yield)))
 
 (define (chapter3 task)
   (set! current-chapter 3)
-  ;; (wait 20)
+  (wait 20)
 
   ;; ;; technically map can and does evaluate the lambda out of order, but here it
   ;; ;; doesn't really matter as long as it remains the same impl in chez scheme,
   ;; ;; which is likely the case.
-  ;; (let ([followers (map (lambda (i)
-  ;; 						  (spawn-enemy
-  ;; 						   (enmtype red-fairy) -210.0 150.0 50
-  ;; 						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #f)
-  ;; 						   five-point-items))
-  ;; 						(iota 6))])
-  ;; 	(spawn-enemy (enmtype big-fairy) -210.0 150.0 500
-  ;; 				 (curry ch3-w1-leader-fairy #f) five-point-items
-  ;; 				 (lambda () (ch3-w1-leader-on-death followers))))
-  ;; (wait 400)
-  ;; (let ([followers (map (lambda (i)
-  ;; 						  (spawn-enemy
-  ;; 						   (enmtype red-fairy) 220.0 180.0 50
-  ;; 						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #t)
-  ;; 						   five-point-items))
-  ;; 						(iota 6))])
-  ;; 	(spawn-enemy (enmtype big-fairy) 220.0 180.0 500
-  ;; 				 (curry ch3-w1-leader-fairy #t) five-point-items
-  ;; 				 (lambda () (ch3-w1-leader-on-death followers))))
-  ;; (wait 400)
+  (let ([followers (map (lambda (i)
+						  (spawn-enemy
+						   (enmtype red-fairy) -210.0 150.0 50
+						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #f)
+						   five-point-items))
+						(iota 6))])
+	(spawn-enemy (enmtype big-fairy) -210.0 150.0 500
+				 (curry ch3-w1-leader-fairy #f) five-point-items
+				 (lambda () (ch3-w1-leader-on-death followers))))
+  (wait 400)
+  (let ([followers (map (lambda (i)
+						  (spawn-enemy
+						   (enmtype red-fairy) 220.0 180.0 50
+						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #t)
+						   five-point-items))
+						(iota 6))])
+	(spawn-enemy (enmtype big-fairy) 220.0 180.0 500
+				 (curry ch3-w1-leader-fairy #t) five-point-items
+				 (lambda () (ch3-w1-leader-on-death followers))))
+  (wait 400)
+  ;; TODO: hint particle telling player to get in middle of screen?
   (let ([cx 0.0]
 		[cy 224.0]
-		[nop (constantly 1)])
-	(do [(i 0 (add1 i))]
+		[delay-per 27]
+		[initial-dist 225.0])
+	(do [(i 0 (add1 i))
+		 (delay (* 4 delay-per) (- delay delay-per))]
 		[(= i 5)]
-	  (spawn-enemy (enmtype red-fairy)
-				   (+ cx (* 200.0 (cos (torad (- (* 72.0 (inexact i)) 18.0)))))
-				   (+ cy (* 200.0 (sin (torad (- (* 72.0 (inexact i)) 18.0)))))
-				   50000 (curry ch3-w2-fairy cx cy))
-	  (wait 10)))
+	  (let ([ang (torad (- (* 72.0 (inexact i)) 18.0))])
+		(spawn-enemy (enmtype red-fairy)
+					 (+ cx (* initial-dist (cos ang)))
+					 (+ cy (* initial-dist (sin ang)))
+					 50000 (curry ch3-w2-fairy delay ang initial-dist cx cy)))
+	  (wait delay-per)))
   (wait-until (thunk (>= frames 3520)))
   (chapter4 task))
 (define (chapter4 task)
