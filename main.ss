@@ -3017,13 +3017,12 @@
 	(set-box! despawn-lasers #t)
 	(spawn-subtask "exit shoot"
 				   (lambda (task)
-					 (dotimes 40
+					 (loop-forever
 					   (-> (fb)
 						   (fbcounts 2)
 						   (fbspeed 6.0)
-						   (fbang 0.0 20.0)
-						   (fbshootez enm 'small-star-red 2 #f))
-					   (yield)))
+						   (fbang 0.0 12.0)
+						   (fbshootez enm 'small-star-red 2 #f))))
 				   (constantly #t)
 				   task)
 	(ease-to values
