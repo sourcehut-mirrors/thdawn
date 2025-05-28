@@ -2987,12 +2987,12 @@
   (ch3-fairy-sin-move flip task enm))
 
 (define (ch3-w2-fairy delay init-ang init-dist cx cy task enm)
-  (define despawn-lasers (box #f))
+  (define stop-spinning (box #f))
   (define sin72 (flsin (torad 72.0)))
   (define laser-dir (+ (- init-ang pi) (torad 18.0)))
   (define laser (spawn-laser 'fixed-laser-orange (enm-x enm) (enm-y enm) laser-dir
 							 (fl* 2.0 init-dist sin72) 5.0 40 delay
-							 (lambda (blt) (loop-until (unbox despawn-lasers)))))
+							 (lambda (blt) (loop-until (unbox stop-spinning)))))
   (define (do-spin)
 	(do [(angvel (torad 0.05) (if (fl< angvel (torad 4.0))
 								  (fl+ angvel (torad 0.1))
@@ -3013,8 +3013,20 @@
   (bullet-addflags laser (bltflags uncancelable))
   (raylib:play-sound (sebundle-laser sounds))
   (wait delay)
+  (spawn-subtask "spin shoot"
+	(lambda (task)
+	  (interval-loop 2
+		(let ([ang (todeg (atan (- (enm-y enm) cy) (- (enm-x enm) cx)))])
+		  (-> (fb)
+			  (fbcounts 1)
+			  (fbspeed 9.0)
+			  (fbang (- ang 90.0) 5.0)
+			  (fbabsolute-aim)
+			  (fbshootez enm 'music-blue 5 #f)))))
+	(thunk (not (unbox stop-spinning)))
+	task)
   (let ([final-ang (do-spin)])
-	(set-box! despawn-lasers #t)
+	(set-box! stop-spinning #t)
 	(spawn-subtask "exit shoot"
 				   (lambda (task)
 					 (loop-forever
