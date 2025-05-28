@@ -123,7 +123,7 @@
    oldvwoopfast oldvwoopslow
    pause menuselect
    timeout timeoutwarn item damage0 damage1
-   laser)
+   laser damageresist)
   (sealed #t))
 (define sounds #f)
 (define (load-sfx)
@@ -141,7 +141,7 @@
 				"se_pause.wav" "se_select00.wav"
 				"se_timeout.wav" "se_timeout2.wav"
 				"se_item00.wav" "se_damage00.wav" "se_damage01.wav"
-				"se_old_lazer01.wav")))))
+				"se_old_lazer01.wav" "se_nodamage.wav")))))
 (define (unload-sfx)
   (define rtd (record-type-descriptor sebundle))
   (define num-sounds (vlen (record-type-field-names rtd)))
@@ -1071,6 +1071,8 @@
    ;; alist of (miscent type . count) to drop on death.
    (mutable drops)
    on-death ;; optional nullary function to be called when the enemy dies
+   ;; when positive, enemy has super armor. decreases automatically every frame.
+   (mutable superarmor)
    ;; "x momentum" of the enemy.
    ;; every frame the enemy is moving right, this increments (resp. left/decrement).
    ;; if the enemy does not move on the X axis, this moves back towards zero.
@@ -1117,6 +1119,8 @@
 			(if (fx<= timer 300)
 			  (raylib:play-sound (sebundle-timeoutwarn sounds))
 			  (raylib:play-sound (sebundle-timeout sounds)))))))
+	(when (positive? (enm-superarmor enm))
+	  (enm-superarmor-set! enm (sub1 (enm-superarmor enm))))
 	(let* ([ox (enm-ox enm)] [oy (enm-oy enm)]
 		   [x (enm-x enm)] [y (enm-y enm)]
 		   [stationary-x (epsilon-equal ox x)]
@@ -1149,7 +1153,7 @@
 	 (let ((idx (vector-index #f live-enm)))
 	   (unless idx
 		 (error 'spawn-enemy "No more open enemy slots!"))
-	   (let ([enemy (make-enm type x y x y health drops on-death 0.0 #f)])
+	   (let ([enemy (make-enm type x y x y health drops on-death 0 0.0 #f)])
 		 (vector-set! live-enm idx enemy)
 		 (spawn-task
 		  (symbol->string type)
@@ -1167,10 +1171,16 @@
 	[(enm amount)
 	 (damage-enemy enm amount #t)]
 	[(enm amount playsound)
-	 (when playsound
-	   (raylib:play-sound (sebundle-damage0 sounds)))
-	 (enm-health-set! enm (- (enm-health enm) amount))
-	 (set! current-score (+ current-score amount))]))
+	 (let* ([superarmor (positive? (enm-superarmor enm))]
+			[amount (if superarmor
+						(max 1 (eround (* 0.1 amount)))
+						amount)])
+	   (when playsound
+		 (raylib:play-sound (if superarmor
+								(sebundle-damageresist sounds)
+								(sebundle-damage0 sounds))))
+	   (enm-health-set! enm (- (enm-health enm) amount))
+	   (set! current-score (+ current-score amount)))]))
 
 (define (spawn-drops enm)
   (define drops (enm-drops enm))
@@ -1471,7 +1481,7 @@
 		  (raylib:draw-rectangle-rec
 		   (+ x +playfield-render-offset-x+)
 		   (+ y +playfield-render-offset-y+) w h red))
-		(raylib:draw-text (format "~,4f" (enm-dx-render enm))
+		(raylib:draw-text (format "~d" (enm-superarmor enm))
 						  (exact (floor render-x)) (exact (floor render-y))
 						  10 -1))))
   (vector-for-each-truthy each live-enm))
@@ -2937,6 +2947,7 @@
 		  (cbcount 12)
 		  (cbspeed 4.0)
 		  (cbshootez enm 'medium-ball-cyan 5 (sebundle-bell sounds)))))
+  (enm-superarmor-set! enm 90)
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ch3-fairy-sin-move flip task enm))
 (define (ch3-w1-leader-on-death followers)
@@ -2970,6 +2981,7 @@
 						(lambda (blt)
 						  (linear-step-gravity-forever facing speed 0.1 blt))))))
 		(wait 2))))
+  (enm-superarmor-set! enm (+ delay 100))
   (wait delay)
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ch3-fairy-sin-move flip task enm))
@@ -3028,7 +3040,7 @@
   ;; ;; which is likely the case.
   (let ([followers (map (lambda (i)
 						  (spawn-enemy
-						   (enmtype red-fairy) -210.0 150.0 50
+						   (enmtype red-fairy) -210.0 150.0 100
 						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #f)
 						   five-point-items))
 						(iota 6))])
@@ -3038,7 +3050,7 @@
   (wait 400)
   (let ([followers (map (lambda (i)
 						  (spawn-enemy
-						   (enmtype red-fairy) 220.0 180.0 50
+						   (enmtype red-fairy) 220.0 180.0 100
 						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #t)
 						   five-point-items))
 						(iota 6))])
