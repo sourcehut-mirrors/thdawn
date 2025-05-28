@@ -626,7 +626,7 @@
 (define-record-type laser
   (parent bullet)
   (fields
-   length
+   (mutable length)
    radius ;; aka half-thickness
    despawn-time ;; how long the laser despawn animation takes
    (mutable last-grazed-at)
@@ -2975,28 +2975,49 @@
   (ch3-fairy-sin-move flip task enm))
 
 (define (ch3-w2-fairy delay init-ang init-dist cx cy task enm)
+  (define despawn-lasers (box #f))
+  (define sin72 (flsin (torad 72.0)))
   (define laser-dir (+ (- init-ang pi) (torad 18.0)))
-  (define laser (spawn-laser 'fixed-laser-red (enm-x enm) (enm-y enm) laser-dir
-							 420.0 5.0 40 delay
-							 (lambda (blt)
-							   ;; keep the laser alive until fairy dies
-							   ;; TODO this is a bit weird, can we improve?
-							   (loop-until (not (vector-index enm live-enm))))))
+  (define laser (spawn-laser 'fixed-laser-orange (enm-x enm) (enm-y enm) laser-dir
+							 (fl* 2.0 init-dist sin72) 5.0 40 delay
+							 (lambda (blt) (loop-until (unbox despawn-lasers)))))
+  (define (do-spin)
+	(do [(angvel (torad 0.05) (if (fl< angvel (torad 4.0))
+								  (fl+ angvel (torad 0.1))
+								  angvel))
+		 (ang init-ang (+ ang angvel))
+		 (i 0 (add1 i))]
+		[(= i 200) ang]
+	  (let ([dist (lerp init-dist 80.0 (ease-out-quad (/ i 200)))])
+		(enm-x-set! enm (+ cx (* dist (cos ang))))
+		(enm-y-set! enm (+ cy (* dist (sin ang))))
+		(bullet-x-set! laser (enm-x enm))
+		(bullet-y-set! laser (enm-y enm))
+		(bullet-facing-set! laser (+ (- ang pi) (torad 18.0)))
+		;; The angle formed by the two points and the center is 144 degrees
+		;; bisecting and using trig gives us this result
+		(laser-length-set! laser (fl* 2.0 dist sin72)))
+	  (yield)))
   (bullet-addflags laser (bltflags uncancelable))
   (raylib:play-sound (sebundle-laser sounds))
   (wait delay)
-  (do [(angvel (torad 0.05) (if (fl< angvel (torad 4.0))
-							   (fl+ angvel (torad 0.05))
-							   angvel))
-	   (ang init-ang (+ ang angvel))
-	   (i 0 (add1 i))]
-	  [(= i 600)]
-	(enm-x-set! enm (+ cx (* init-dist (cos ang))))
-	(enm-y-set! enm (+ cy (* init-dist (sin ang))))
-	(bullet-x-set! laser (enm-x enm))
-	(bullet-y-set! laser (enm-y enm))
-	(bullet-facing-set! laser (+ (- ang pi) (torad 18.0)))
-	(yield)))
+  (let ([final-ang (do-spin)])
+	(set-box! despawn-lasers #t)
+	(spawn-subtask "exit shoot"
+				   (lambda (task)
+					 (dotimes 40
+					   (-> (fb)
+						   (fbcounts 2)
+						   (fbspeed 6.0)
+						   (fbang 0.0 20.0)
+						   (fbshootez enm 'small-star-red 2 #f))
+					   (yield)))
+				   (constantly #t)
+				   task)
+	(ease-to values
+			 (+ cx (* 300.0 (cos final-ang))) (+ cy (* 300.0 (sin final-ang)))
+			 40 enm)
+	(delete-enemy enm)))
 
 (define (chapter3 task)
   (set! current-chapter 3)
