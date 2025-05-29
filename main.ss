@@ -1180,7 +1180,22 @@
 								(sebundle-damageresist sounds)
 								(sebundle-damage0 sounds))))
 	   (enm-health-set! enm (- (enm-health enm) amount))
-	   (set! current-score (+ current-score amount)))]))
+	   (set! current-score (+ current-score amount))
+
+	   (when (fx<= (enm-health enm) 0)
+		 (when (enm-on-death enm)
+		   ((enm-on-death enm)))
+		 (spawn-drops enm)
+		 (raylib:play-sound (sebundle-enmdie sounds))
+		 (spawn-particle (make-particle
+						  (particletype enmdeath)
+						  (+ (enm-x enm) (centered-roll visual-rng 20.0))
+						  (+ (enm-y enm) (centered-roll visual-rng 20.0))
+						  30 0 '((start-radius . 2)
+								 (end-radius . 85))))
+		 (let ([idx (vector-index enm live-enm)])
+		   (when idx
+			 (vector-set! live-enm idx #f)))))]))
 
 (define (spawn-drops enm)
   (define drops (enm-drops enm))
@@ -1207,24 +1222,6 @@
 						 (lambda (task) (wait 45) (miscent-autocollect-set! ent #t))
 						 (constantly #t)))))))
    drops))
-
-(define (prune-dead-enemies)
-  (define length (vlen live-enm))
-  (do [(idx 0 (fx1+ idx))]
-	  [(fx>= idx length)]
-	  (let ([enemy (vnth live-enm idx)])
-		(when (and enemy (fx<= (enm-health enemy) 0))
-		  (when (enm-on-death enemy)
-			((enm-on-death enemy)))
-		  (spawn-drops enemy)
-		  (raylib:play-sound (sebundle-enmdie sounds))
-		  (spawn-particle (make-particle
-						   (particletype enmdeath)
-						   (+ (enm-x enemy) (centered-roll visual-rng 20.0))
-						   (+ (enm-y enemy) (centered-roll visual-rng 20.0))
-						   30 0 '((start-radius . 2)
-								  (end-radius . 85))))
-		  (vector-set! live-enm idx #f)))))
 
 (define (damage-player)
   ;; if player is already dying, don't reset this
@@ -2148,25 +2145,11 @@
 	;; (set! frame-save-diff (- frames frame-save))
 	;; (set! frame-save frames)
 	)
-  (when (and (raylib:is-key-pressed key-y) (vector-for-all values
-														   spline-editor-positions))
-	(do [(t 0.0 (+ t 0.05))]
-		[(>= t 1.0)]
-	  (let ([p (eval-bezier-cubic
-						   (vnth spline-editor-positions 0)
-						   (vnth spline-editor-positions 1)
-						   (vnth spline-editor-positions 2)
-						   (vnth spline-editor-positions 3) t)])
-		(spawn-bullet 'pellet-white (v2x p) (v2y p) 5 (lambda (_blt) (loop-forever)))))
-	;; (spawn-laser 'fixed-laser-red 100.0 100.0 (torad 45.0) 200.0 6.0 30 60
-	;; 			 (lambda (_blt) (wait 240)))
-	;; (let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
-	;; 						 live-enm)])
-	;;   (when boss
-	;; 	(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 900)))
-	;; (spawn-enemy 'blue-fairy 0.0 100.0 200.0 direct-shoot-forever
-	;; 						default-drop)
-	)
+  (when (raylib:is-key-pressed key-y)
+	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
+							 live-enm)])
+	  (when boss
+		(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 900))))
 
   (when (raylib:is-key-pressed key-a)
 	(when (> spline-editor-selected-position 0)
@@ -2288,6 +2271,13 @@
 					   (+ +playfield-render-offset-x+ +playfield-min-x+ 5)
 					   (+ +playfield-render-offset-y+ +playfield-min-y+ 5)
 					   12.0 0.0 (bossinfo-name-color bossinfo))
+  (raylib:draw-rectangle-gradient-v
+   (+ +playfield-render-offset-x+ +playfield-min-x+ 20)
+   (+ +playfield-render-offset-y+ +playfield-min-y+)
+   +playfield-width+
+   5
+   #xf5f5f5ff
+   #x808080ff)
   (unless (fxzero? remaining-timer)
 	(raylib:draw-text-ex (fontbundle-cabin fonts)
 						 (format "~,2f"
@@ -3175,7 +3165,6 @@
 			(vector-for-each-truthy
 			 despawn-out-of-bound-bullet
 			 live-bullets)
-			(prune-dead-enemies)
 			(pretick-enemies)
 			(run-tasks)
 			(posttick-enemies)
