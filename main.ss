@@ -1052,8 +1052,21 @@
    (mutable aura-active)
    (mutable active-spell-name)
    (mutable remaining-timer) ;; frames remaining of time on this attack, 0 if none
-   (mutable total-timer)) ;; total frames for this attack, 0 if none
+   ;; total frames for this attack, 0 if none
+   (mutable total-timer)
+   ;; of the current attack, 0 if none
+   (mutable max-health)
+   ;; immutable vector of dummy healthbars represented not-yet-declared attacks
+   ;; used only for rendering
+   (mutable dummy-healthbars))
   (sealed #t))
+(define-record-type dummy-healthbar
+  (fields
+   width
+   ;; if 0, a notch is automatically rendered
+   post-padding
+   top-color
+   bottom-color))
 
 (define-enumeration enmtype
   (red-fairy green-fairy blue-fairy yellow-fairy
@@ -2129,12 +2142,18 @@
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
   (when (raylib:is-key-pressed key-space)
-	(let ([enm (spawn-enemy 'boss 0.0 100.0 200 test-fairy-control2
+	(let ([enm (spawn-enemy 'boss 0.0 100.0 10000 test-fairy-control2
 							default-drop)]
 		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
 								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								   #t #f 0 0)])
+								   #t #f 0 0 10000 (immutable-vector
+													(make-dummy-healthbar
+													 10 2 -1 -1)
+													(make-dummy-healthbar
+													 10 2 red green)
+													(make-dummy-healthbar
+													 10 0 -1 -1)))])
 	  (enm-extras-set! enm bossinfo)))
   (when (raylib:is-key-pressed key-period)
 	(set! chapter-select (min (add1 chapter-select) 13)))
@@ -2265,19 +2284,42 @@
   (define remaining-timer (bossinfo-remaining-timer bossinfo))
   (define elapsed-frames (fx- (bossinfo-total-timer bossinfo)
 							  remaining-timer))
+  (define (render-dummy-healthbars)
+	(define healthbars (bossinfo-dummy-healthbars bossinfo))
+	(let loop ([x (+ +playfield-render-offset-x+ +playfield-min-x+ 5)]
+			   [i 0])
+	  (if (= i (vlen healthbars))
+		  x
+		  (let ([hb (vnth healthbars i)])
+			(raylib:draw-rectangle-gradient-v
+			 x
+			 (+ +playfield-render-offset-y+ +playfield-min-y+)
+			 (dummy-healthbar-width hb) 5
+			 (dummy-healthbar-top-color hb)
+			 (dummy-healthbar-bottom-color hb))
+			(when (zero? (dummy-healthbar-post-padding hb))
+			  ;; TODO: these need to be rendered after all of the bars
+			  (raylib:draw-rectangle-rec
+			   (inexact (+ x (dummy-healthbar-width hb) -1))
+			   (inexact (+ +playfield-render-offset-y+ +playfield-min-y+))
+			   2 10 #x0000ffff))
+			(loop (+ x (dummy-healthbar-width hb) (dummy-healthbar-post-padding hb))
+				  (add1 i))))))
   ;; TODO(stack the names vertically if there's multiple bosses)
   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
 					   (bossinfo-name bossinfo)
 					   (+ +playfield-render-offset-x+ +playfield-min-x+ 5)
-					   (+ +playfield-render-offset-y+ +playfield-min-y+ 5)
+					   (+ +playfield-render-offset-y+ +playfield-min-y+ 10)
 					   12.0 0.0 (bossinfo-name-color bossinfo))
-  (raylib:draw-rectangle-gradient-v
-   (+ +playfield-render-offset-x+ +playfield-min-x+ 20)
-   (+ +playfield-render-offset-y+ +playfield-min-y+)
-   +playfield-width+
-   5
-   #xf5f5f5ff
-   #x808080ff)
+  (let ([dummy-healthbars-end (render-dummy-healthbars)])
+	(raylib:draw-rectangle-gradient-v
+	 dummy-healthbars-end
+	 (+ +playfield-render-offset-y+ +playfield-min-y+)
+	 (eround (* (- +playfield-max-render-x+ dummy-healthbars-end)
+				(/ (enm-health enm) (bossinfo-max-health bossinfo))))
+	 5
+	 #xf5f5f5ff
+	 #x808080ff))
   (unless (fxzero? remaining-timer)
 	(raylib:draw-text-ex (fontbundle-cabin fonts)
 						 (format "~,2f"
