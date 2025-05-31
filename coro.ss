@@ -4,7 +4,7 @@
 ;; - Only one thread interacts with this system at all times
 ;; - No nonlocal jumps into or out of run-tasks
 (library (coro)
-  (export wait wait-until yield spawn-task spawn-subtask
+  (export wait wait-until wait-while yield spawn-task spawn-subtask
 		  task-dead
 		  kill-task kill-all-tasks run-tasks task-count
 		  live-task-names)
@@ -51,6 +51,14 @@
   (define (wait-until pred)
 	(let loop ([satisfied (pred)])
 	  (unless satisfied
+		(yield)
+		(loop (pred)))))
+
+  ;; Yields until (pred) becomes false.
+  ;; If pred is already false when called, does not perform any yields.
+  (define (wait-while pred)
+	(let loop ([satisfied (pred)])
+	  (when satisfied
 		(yield)
 		(loop (pred)))))
 

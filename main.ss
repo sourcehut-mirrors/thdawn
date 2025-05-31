@@ -1063,7 +1063,6 @@
 (define-record-type dummy-healthbar
   (fields
    width
-   ;; if 0, a notch is automatically rendered
    post-padding
    top-color
    bottom-color))
@@ -1083,7 +1082,9 @@
    (mutable health)
    ;; alist of (miscent type . count) to drop on death.
    (mutable drops)
-   on-death ;; optional nullary function to be called when the enemy dies
+   ;; optional nullary function to be called when the enemy health reaches zero
+   ;; if this returns #f, then the standard death logic is suppressed
+   on-death
    ;; when positive, enemy has super armor. decreases automatically every frame.
    (mutable superarmor)
    ;; "x momentum" of the enemy.
@@ -1196,19 +1197,20 @@
 	   (set! current-score (+ current-score amount))
 
 	   (when (fx<= (enm-health enm) 0)
-		 (when (enm-on-death enm)
-		   ((enm-on-death enm)))
-		 (spawn-drops enm)
-		 (raylib:play-sound (sebundle-enmdie sounds))
-		 (spawn-particle (make-particle
-						  (particletype enmdeath)
-						  (+ (enm-x enm) (centered-roll visual-rng 20.0))
-						  (+ (enm-y enm) (centered-roll visual-rng 20.0))
-						  30 0 '((start-radius . 2)
-								 (end-radius . 85))))
-		 (let ([idx (vector-index enm live-enm)])
-		   (when idx
-			 (vector-set! live-enm idx #f)))))]))
+		 (let ([do-standard-logic (or (not (enm-on-death enm))
+									  ((enm-on-death enm)))])
+		   (when do-standard-logic
+			 (spawn-drops enm)
+			 (raylib:play-sound (sebundle-enmdie sounds))
+			 (spawn-particle (make-particle
+							  (particletype enmdeath)
+							  (+ (enm-x enm) (centered-roll visual-rng 20.0))
+							  (+ (enm-y enm) (centered-roll visual-rng 20.0))
+							  30 0 '((start-radius . 2)
+									 (end-radius . 85))))
+			 (let ([idx (vector-index enm live-enm)])
+			   (when idx
+				 (vector-set! live-enm idx #f)))))))]))
 
 (define (spawn-drops enm)
   (define drops (enm-drops enm))
@@ -1872,12 +1874,21 @@
 		  (enm-y-set! enm (v2y p)))
 		(yield)))))
 
-(define (declare-spell boss spell-name duration-frames)
+(define (declare-spell boss spell-name duration-frames health)
   (define bossinfo (enm-extras boss))
   (bossinfo-active-spell-name-set! bossinfo spell-name)
   (bossinfo-remaining-timer-set! bossinfo duration-frames)
   (bossinfo-total-timer-set! bossinfo duration-frames)
+  (bossinfo-max-health-set! bossinfo health)
+  (enm-health-set! boss health)
   (raylib:play-sound (sebundle-spelldeclare sounds)))
+
+(define (declare-nonspell boss duration-frames health)
+  (define bossinfo (enm-extras boss))
+  (bossinfo-remaining-timer-set! bossinfo duration-frames)
+  (bossinfo-total-timer-set! bossinfo duration-frames)
+  (bossinfo-max-health-set! bossinfo health)
+  (enm-health-set! boss health))
 
 (define (test-fairy-control2-ring1 enm)
   (define b (-> (cb)
@@ -1909,61 +1920,46 @@
 			   (curry linear-step-forever facing speed))))))
 
 (define (test-fairy-control2 task enm)
-  (define sub1 (spawn-subtask
-				"ring1"
-				(lambda (_) (test-fairy-control2-ring1 enm))
-				(constantly #t) task))
-  ;; (define sub2 (spawn-subtask
-  ;; 				"ring2"
-  ;; 				(lambda (_) (test-fairy-control2-ring2 enm))
-  ;; 				(constantly #t) task))
-  (define move (spawn-subtask
-				"move"
-				(lambda (_)
-				  (dotimes
-				   120
-				   (enm-y-set! enm (+ (enm-y enm) 0.5))
-				   (yield))
-				  (dotimes
-				   120
-				   (enm-y-set! enm (+ (enm-y enm) 0.5))
-				   (enm-x-set! enm (+ (enm-x enm) 0.5))
-				   (yield))
-				  (dotimes
-				   240
-				   (enm-y-set! enm (+ (enm-y enm) 0.5))
-				   (enm-x-set! enm (- (enm-x enm) 0.5))
-				   (yield))
-				  (dotimes
-				   120
-				   (enm-y-set! enm (- (enm-y enm) 0.5))
-				   (yield))
-				  ;; (interval-loop-waitfirst
-				  ;;  50
-				  ;;  (let* ([x (enm-x enm)]
-				  ;; 		  [y (enm-y enm)]
-				  ;; 		  [angle (* (roll game-rng) (* 2 pi))]
-				  ;; 		  [magnitude 50.0]
-				  ;; 		  [dx (* magnitude (cos angle))]
-				  ;; 		  [dy (* magnitude (sin angle))]
-				  ;; 		  [nx (clamp (+ x dx) +playfield-min-x+ +playfield-max-x+)]
-				  ;; 		  [ny (clamp (+ y dy) +playfield-min-y+ +playfield-max-y+)])
-				  ;; 	 (ease-cubic-to nx ny 90 enm)))
-				  )
-				(constantly #t) task))
-  ;; loop forever running the subtasks until the enemy dies
-  (wait-until (constantly #f)))
+  (test-fairy-non1 task enm)
+  (delete-enemy enm))
+(define (test-fairy-non1 task enm)
+  (define bossinfo (enm-extras enm))
+  (define keep-running
+	(lambda () (and (positive? (enm-health enm))
+					(positive? (bossinfo-remaining-timer bossinfo)))))
+  (bossinfo-dummy-healthbars-set! bossinfo
+								  (vector (make-dummy-healthbar
+										   10 0
+										   #xf50000ff
+										   #x800000ff)))
+  (declare-nonspell enm 1200 1000)
+  (spawn-subtask
+	  "non1-ring1"
+	(lambda (_) (test-fairy-control2-ring1 enm))
+	keep-running task)
+  (wait-while keep-running)
+  (test-fairy-sp1 task enm)
+  )
 
-(define (direct-shoot-forever task enm)
-  (define builder
-	(-> (fb)
-		(fbcounts 1 5)
-		(fbspeed 2.0 5.0)))
-  (interval-loop 10
-   (fbshoot builder (enm-x enm) (enm-y enm)
-			(lambda (row col speed facing)
-			  (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
-							5 (curry linear-step-forever facing speed))))))
+(define (test-fairy-sp1 task enm)
+  (define bossinfo (enm-extras enm))
+  (define keep-running
+	(lambda () (and (positive? (enm-health enm))
+					(positive? (bossinfo-remaining-timer bossinfo)))))
+  (declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000)
+  (bossinfo-dummy-healthbars-set! bossinfo (immutable-vector))
+  (wait 60)
+  (spawn-subtask "spam"
+	(lambda (_task)
+	  (loop-forever
+	   (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
+					 5
+					 (curry linear-step-forever (centered-roll game-rng pi)
+							5.0))))
+	keep-running task)
+  (wait-while keep-running)
+  (spawn-drops enm)
+  )
 
 (define (tick-bomb)
   (define (bomb-sweep-x-left-hitbox)
@@ -2142,18 +2138,13 @@
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
   (when (raylib:is-key-pressed key-space)
-	(let ([enm (spawn-enemy 'boss 0.0 100.0 10000 test-fairy-control2
-							default-drop)]
+	(let ([enm (spawn-enemy 'boss 0.0 100.0 500 test-fairy-control2
+							default-drop
+							(thunk #f))]
 		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
 								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								   #t #f 0 0 10000 (immutable-vector
-													(make-dummy-healthbar
-													 10 2 -1 -1)
-													(make-dummy-healthbar
-													 10 2 red green)
-													(make-dummy-healthbar
-													 10 0 -1 -1)))])
+								   #t #f 0 0 0 (immutable-vector))])
 	  (enm-extras-set! enm bossinfo)))
   (when (raylib:is-key-pressed key-period)
 	(set! chapter-select (min (add1 chapter-select) 13)))
@@ -2164,11 +2155,6 @@
 	;; (set! frame-save-diff (- frames frame-save))
 	;; (set! frame-save frames)
 	)
-  (when (raylib:is-key-pressed key-y)
-	(let ([boss (vector-find (lambda (enm) (and enm (eq? 'boss (enm-type enm))))
-							 live-enm)])
-	  (when boss
-		(declare-spell boss "\"My Ultra Long Spell Name Lmao\"" 900))))
 
   (when (raylib:is-key-pressed key-a)
 	(when (> spline-editor-selected-position 0)
@@ -2297,12 +2283,6 @@
 			 (dummy-healthbar-width hb) 5
 			 (dummy-healthbar-top-color hb)
 			 (dummy-healthbar-bottom-color hb))
-			(when (zero? (dummy-healthbar-post-padding hb))
-			  ;; TODO: these need to be rendered after all of the bars
-			  (raylib:draw-rectangle-rec
-			   (inexact (+ x (dummy-healthbar-width hb) -1))
-			   (inexact (+ +playfield-render-offset-y+ +playfield-min-y+))
-			   2 10 #x0000ffff))
 			(loop (+ x (dummy-healthbar-width hb) (dummy-healthbar-post-padding hb))
 				  (add1 i))))))
   ;; TODO(stack the names vertically if there's multiple bosses)
@@ -2311,15 +2291,17 @@
 					   (+ +playfield-render-offset-x+ +playfield-min-x+ 5)
 					   (+ +playfield-render-offset-y+ +playfield-min-y+ 10)
 					   12.0 0.0 (bossinfo-name-color bossinfo))
-  (let ([dummy-healthbars-end (render-dummy-healthbars)])
-	(raylib:draw-rectangle-gradient-v
-	 dummy-healthbars-end
-	 (+ +playfield-render-offset-y+ +playfield-min-y+)
-	 (eround (* (- +playfield-max-render-x+ dummy-healthbars-end)
-				(/ (enm-health enm) (bossinfo-max-health bossinfo))))
-	 5
-	 #xf5f5f5ff
-	 #x808080ff))
+  (let ([dummy-healthbars-end (render-dummy-healthbars)]
+		[cur-atk-max-health (bossinfo-max-health bossinfo)])
+	(when (> cur-atk-max-health 0)
+	  (raylib:draw-rectangle-gradient-v
+	   dummy-healthbars-end
+	   (+ +playfield-render-offset-y+ +playfield-min-y+)
+	   (eround (* (- +playfield-max-render-x+ dummy-healthbars-end)
+				  (/ (enm-health enm) cur-atk-max-health)))
+	   5
+	   #xf5f5f5ff
+	   #x808080ff)))
   (unless (fxzero? remaining-timer)
 	(raylib:draw-text-ex (fontbundle-cabin fonts)
 						 (format "~,2f"
