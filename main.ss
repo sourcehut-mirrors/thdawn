@@ -1835,7 +1835,8 @@
 			 (draw-sprite-with-rotation
 			  textures type (* 45.0 (floor (/ livetime 3)))
 			  render-x render-y -1)
-			 (draw-sprite textures type render-x render-y -1)))
+			 (draw-sprite textures type render-x render-y
+						  (if (member type '(big-piv small-piv)) #xffffffc0 -1))))
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
 		  (- render-x 8) (- render-y 8) 16 16
