@@ -779,6 +779,13 @@
   (when (cancel-bullet bullet)
 	(spawn-drop-with-autocollect (bullet-x bullet) (bullet-y bullet) drop)))
 
+(define (cancel-all)
+  (vector-for-each-truthy
+   (lambda (blt)
+	 (when (bullet-active? blt)
+	   (cancel-bullet-with-drop blt 'small-piv)))
+   live-bullets))
+
 (define (despawn-out-of-bound-bullet bullet)
   (let ([x (bullet-x bullet)]
 		[y (bullet-y bullet)])
@@ -1938,6 +1945,9 @@
 	(lambda (_) (test-fairy-control2-ring1 enm))
 	keep-running task)
   (wait-while keep-running)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (cancel-all)
+  (wait 60)
   (test-fairy-sp1 task enm)
   )
 
@@ -1946,9 +1956,9 @@
   (define keep-running
 	(lambda () (and (positive? (enm-health enm))
 					(positive? (bossinfo-remaining-timer bossinfo)))))
-  (declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000)
   (bossinfo-dummy-healthbars-set! bossinfo (immutable-vector))
-  (wait 60)
+  (declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000)
+  (wait 120)
   (spawn-subtask "spam"
 	(lambda (_task)
 	  (loop-forever
@@ -2124,11 +2134,7 @@
 	(set! bomb-stock (sub1 bomb-stock))
 	(autocollect-all-items)
 	(raylib:play-sound (sebundle-spelldeclare sounds))
-	(vector-for-each-truthy
-	 (lambda (blt)
-	   (when (bullet-active? blt)
-		 (cancel-bullet-with-drop blt 'small-piv)))
-	 live-bullets)
+	(cancel-all)
 	(set! bomb-sweep-x-left (- player-x 50.0))
 	(set! initial-bomb-sweep-x-left bomb-sweep-x-left)
 	(set! bomb-sweep-x-right (+ player-x 50.0))
