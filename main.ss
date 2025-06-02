@@ -162,7 +162,7 @@
    bulletcancel hint
    bullet-ball-huge
    laser1 laser2 laser3 laser4
-   magicircle boss boss-flip)
+   magicircle boss boss-flip boss-ui)
   (sealed #t))
 (define (load-textures)
   (define (ltex file)
@@ -180,7 +180,8 @@
 					 "etbreak.png" "hint.png"
 					 "bullet_ball_huge.png"
 					 "laser1.png" "laser2.png" "laser3.png" "laser4.png"
-					 "eff_magicsquare.png" "boss.png" "boss_rot.png"))))
+					 "eff_magicsquare.png" "boss.png" "boss_rot.png"
+					 "boss_ui.png"))))
 
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
@@ -192,12 +193,14 @@
 (define-record-type fontbundle
   (fields
    bubblegum
-   cabin)
+   cabin
+   sharetechmono)
   (sealed #t))
 (define (load-fonts)
   (make-fontbundle
    (raylib:load-font "assets/font/BubblegumSans-Regular.ttf")
-   (raylib:load-font "assets/font/Cabin-Regular.ttf")))
+   (raylib:load-font "assets/font/Cabin-Regular.ttf")
+   (raylib:load-font "assets/font/ShareTechMono-Regular.ttf")))
 (define (unload-fonts fonts)
   (define rtd (record-type-descriptor fontbundle))
   (define num-fonts (vlen (record-type-field-names rtd)))
@@ -509,6 +512,8 @@
 (define +playfield-max-y+ 448)
 (define +playfield-min-render-x+ (+ +playfield-min-x+ +playfield-render-offset-x+))
 (define +playfield-max-render-x+ (+ +playfield-max-x+ +playfield-render-offset-x+))
+(define +playfield-min-render-y+ (+ +playfield-min-y+ +playfield-render-offset-y+))
+(define +playfield-max-render-y+ (+ +playfield-max-y+ +playfield-render-offset-y+))
 (define +playfield-width+ (- +playfield-max-x+ +playfield-min-x+))
 (define +playfield-height+ (- +playfield-max-y+ +playfield-min-y+))
 (define +poc-y+ 120)
@@ -1888,6 +1893,7 @@
   (bossinfo-remaining-timer-set! bossinfo duration-frames)
   (bossinfo-total-timer-set! bossinfo duration-frames)
   (bossinfo-max-health-set! bossinfo health)
+  (enm-superarmor-set! boss 120)
   (enm-health-set! boss health)
   (raylib:play-sound (sebundle-spelldeclare sounds)))
 
@@ -1948,6 +1954,7 @@
   (wait-while keep-running)
   (raylib:play-sound (sebundle-shoot0 sounds))
   (cancel-all)
+  (bossinfo-active-spell-name-set! bossinfo #f)
   (wait 60)
   (test-fairy-sp1 task enm)
   )
@@ -2277,6 +2284,7 @@
   (define remaining-timer (bossinfo-remaining-timer bossinfo))
   (define elapsed-frames (fx- (bossinfo-total-timer bossinfo)
 							  remaining-timer))
+  (define spname (bossinfo-active-spell-name bossinfo))
   (define (render-dummy-healthbars)
 	(define healthbars (bossinfo-dummy-healthbars bossinfo))
 	(let loop ([x (+ +playfield-render-offset-x+ +playfield-min-x+ 5)]
@@ -2295,8 +2303,8 @@
   ;; TODO(stack the names vertically if there's multiple bosses)
   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
 					   (bossinfo-name bossinfo)
-					   (+ +playfield-render-offset-x+ +playfield-min-x+ 5)
-					   (+ +playfield-render-offset-y+ +playfield-min-y+ 10)
+					   (+ +playfield-min-render-x+ 5)
+					   (+ +playfield-min-render-y+ 5)
 					   12.0 0.0 (bossinfo-name-color bossinfo))
   (let ([dummy-healthbars-end (render-dummy-healthbars)]
 		[cur-atk-max-health (bossinfo-max-health bossinfo)])
@@ -2304,46 +2312,54 @@
 	  (raylib:draw-rectangle-gradient-v
 	   dummy-healthbars-end
 	   (+ +playfield-render-offset-y+ +playfield-min-y+)
-	   (eround (* (- +playfield-max-render-x+ dummy-healthbars-end)
+	   (eround (* (- (- +playfield-max-render-x+ 20.0) dummy-healthbars-end)
 				  (/ (enm-health enm) cur-atk-max-health)))
 	   5
 	   #xf5f5f5ff
 	   #x808080ff)))
   (unless (fxzero? remaining-timer)
-	(raylib:draw-text-ex (fontbundle-cabin fonts)
-						 (format "~,2f"
-								 (/ (bossinfo-remaining-timer bossinfo) 60.0))
-						 (+ +playfield-render-offset-x+ -15)
-						 (+ +playfield-render-offset-y+ +playfield-min-y+ 20)
+	(raylib:draw-text-ex (fontbundle-sharetechmono fonts)
+						 (format "~2,'0d"
+								 (exact (ceiling
+								  (/ (bossinfo-remaining-timer bossinfo) 60.0))))
+						 (- +playfield-max-render-x+ 18)
+						 (- +playfield-min-render-y+ 0)
 						 20.0 0.0
 						 (cond
 						  [(fx<= remaining-timer 300) #xf08080ff]
 						  [(fx<= remaining-timer 600) #xffb6c1ff]
 						  [else -1]))
-	(let*-values ([(spname) (bossinfo-active-spell-name bossinfo)]
-				  [(width height) (raylib:measure-text-ex
-								   (fontbundle-cabin fonts)
-								   spname 18.0 0.5)])
-	  ;; TODO: scissor when outside of playfield
-	  (raylib:draw-text-ex
-	   (fontbundle-cabin fonts) spname
-	   (+ +playfield-render-offset-x+
-		  -5.0
-		  (if (fx<= elapsed-frames 30)
-			  (+ +playfield-max-x+ (lerp 0.0 (fl- width)
-										 (ease-out-cubic (/ elapsed-frames 30))))
-			  (+ +playfield-max-x+ (fl- width))))
-	   (+ +playfield-render-offset-y+
-		  (cond
-		   [(fx<= elapsed-frames 45)
-			(- +playfield-max-y+ height 15.0)]
-		   [(fx<= 45 elapsed-frames 90)
-			(lerp
-			 (- +playfield-max-y+ height 15.0)
-			 (+ +playfield-min-y+ 5.0)
-			 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
-		   [else (+ +playfield-min-y+ 5.0)]))
-	   18.0 0.5 -1)))
+	(when spname
+	  (let*-values ([(width height) (raylib:measure-text-ex
+									 (fontbundle-cabin fonts)
+									 spname 18.0 0.5)]
+					[(spx) (+ +playfield-render-offset-x+
+							  -5.0
+							  (if (fx<= elapsed-frames 30)
+								  (+ +playfield-max-x+
+									 (lerp 0.0 (fl- width)
+										   (ease-out-cubic (/ elapsed-frames 30))))
+								  (+ +playfield-max-x+ (fl- width))))]
+					[(spy) (+ +playfield-render-offset-y+
+							  (cond
+							   [(fx<= elapsed-frames 45)
+								(- +playfield-max-y+ height 15.0)]
+							   [(fx<= 45 elapsed-frames 90)
+								(lerp
+								 (- +playfield-max-y+ height 15.0)
+								 (+ +playfield-min-y+ 15.0)
+								 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
+							   [else (+ +playfield-min-y+ 15.0)]))])
+		;; TODO: scissor when outside of playfield
+		(raylib:draw-texture-pro
+		 (txbundle-boss-ui textures)
+		 (make-rectangle 0.0 0.0 256.0 36.0)
+		 (make-rectangle (- +playfield-max-render-x+ 256.0) (- spy 5.0) 256.0 36.0)
+		 v2zero 0.0 -1)
+		(raylib:draw-text-ex
+		 (fontbundle-cabin fonts) spname
+		 spx spy
+		 18.0 0.5 -1))))
   (draw-sprite textures 'enemy-indicator
 			   (+ +playfield-render-offset-x+
 				  (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
