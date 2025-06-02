@@ -33,7 +33,7 @@
   (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb)
   make-miscent-type-set)
 (define-enumeration particletype
-  (cancel itemvalue enmdeath graze)
+  (cancel itemvalue enmdeath graze spellbonus)
   make-particletype-set)
 (define-enumeration bltflag
   (uncancelable ;; cannot be cancelled by bombs or other standard cancels
@@ -1637,7 +1637,17 @@
 				(eround (- render-x width 20.0))
 				(eround render-x))
 			(eround render-y)
-			16.0 0.0 (bitwise-ior color alpha)))))))
+			16.0 0.0 (bitwise-ior color alpha)))))
+	  ([spellbonus]	   
+	   (let*-values ([(width _) (raylib:measure-text-ex
+								 (fontbundle-cabin fonts)
+								 extra-data 24.0 0.0)])
+		 (raylib:draw-text-ex
+		  (fontbundle-cabin fonts)
+		  extra-data
+		  (+ +playfield-render-offset-x+ (/ width -2.0))
+		  75.0
+		  24.0 0.0 -1)))))
   (vector-for-each-truthy each live-particles))
 
 (define-record-type miscent
@@ -1989,8 +1999,17 @@
   (spawn-drops enm)
   (raylib:play-sound (sebundle-shoot0 sounds))
   (unless (bossinfo-active-attack-failed bossinfo)
-	(raylib:play-sound (sebundle-spellcapture sounds)))
-  )
+	(raylib:play-sound (sebundle-spellcapture sounds))
+	(set! current-score (+ current-score 1234567)))
+  (spawn-particle
+   (make-particle (particletype spellbonus)
+				  ;; Position dynamically calculated at render to avoid
+				  ;; the enemy tasks needing to access the fonts
+				  0.0 0.0
+				  150 0
+				  (if (bossinfo-active-attack-failed bossinfo)
+					  "Bonus Failed..."
+					  "GET Spell Card! 1,234,567"))))
 
 (define (tick-bomb)
   (define (bomb-sweep-x-left-hitbox)
