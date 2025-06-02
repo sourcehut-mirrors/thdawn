@@ -1063,6 +1063,8 @@
    (mutable old-ys)
    (mutable aura-active)
    (mutable active-spell-name)
+   ;; #t if the player bombed or died on the current attack
+   (mutable active-attack-failed)
    (mutable remaining-timer) ;; frames remaining of time on this attack, 0 if none
    ;; total frames for this attack, 0 if none
    (mutable total-timer)
@@ -1114,6 +1116,12 @@
 (define default-drop (point-items 1))
 (define five-point-items (point-items 5))
 
+(define (fail-current-attack)
+  (define (each enm)
+	(define extras (enm-extras enm))
+	(when (bossinfo? extras)
+	  (bossinfo-active-attack-failed-set! extras #t)))
+  (vector-for-each-truthy each live-enm))
 
 (define (pretick-enemies)
   (define (each enm)
@@ -1258,6 +1266,7 @@
 
 (define (kill-player)
   (set! iframes 180)
+  (fail-current-attack)
   (unless force-invincible
 	(raylib:play-sound (sebundle-shoot0 sounds))
 	(when (>= life-stock 1)
@@ -1955,6 +1964,7 @@
   (raylib:play-sound (sebundle-shoot0 sounds))
   (cancel-all)
   (bossinfo-active-spell-name-set! bossinfo #f)
+  (bossinfo-active-attack-failed-set! bossinfo #f)
   (wait 60)
   (test-fairy-sp1 task enm)
   )
@@ -1977,6 +1987,9 @@
 	keep-running task)
   (wait-while keep-running)
   (spawn-drops enm)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (unless (bossinfo-active-attack-failed bossinfo)
+	(raylib:play-sound (sebundle-spellcapture sounds)))
   )
 
 (define (tick-bomb)
@@ -2136,6 +2149,7 @@
 		 (zero? bombing)
 		 (zero? respawning)
 		 (>= bomb-stock 1))
+	(fail-current-attack)
 	(set! death-timer 0)
 	(set! bombing +bombing-max+)
 	(set! iframes 180)
@@ -2158,7 +2172,7 @@
 		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
 								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								   #t #f 0 0 0 (immutable-vector))])
+								   #t #f #f 0 0 0 (immutable-vector))])
 	  (enm-extras-set! enm bossinfo)))
   (when (raylib:is-key-pressed key-period)
 	(set! chapter-select (min (add1 chapter-select) 13)))
