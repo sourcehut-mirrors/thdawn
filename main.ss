@@ -2978,7 +2978,6 @@
 	   (enm-drops-set! f default-drop)
 	   (enm-health-set! f 0)
 	   (-> (cb)
-		   (cbabsolute-aim)
 		   (cbcount 12 2)
 		   (cbspeed 2.0 3.0)
 		   (cbshootez f 'small-ball-white 2
