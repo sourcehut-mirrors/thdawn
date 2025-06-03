@@ -3241,10 +3241,10 @@
 			(set! frames (fx1+ frames)))
 		  (set! true-frames (fx1+ true-frames))))
 	  (lambda ()
-		(unload-audio)
 		(unload-fonts fonts)
 		(unload-textures textures)
 		(unload-sfx)
+		(unload-audio)
 		(raylib:close-window)))))
 
 (define (debug-launch)
