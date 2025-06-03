@@ -2577,40 +2577,6 @@
 	   (lerp 2.5 1.5 progress)))]
    [else (values 0.5 1.0 1.5)]))
 
-(define (draw-ring x0 y0 theta0 rinner router steps
-				   texture u0 u1 v0 vstep rgba)
-  (define ang-per-step (fl/ tau (inexact steps)))
-  (define theta-end (fl+ theta0 tau))
-  (define (loop theta xinner0 xouter0 yinner0 youter0 v)
-	(let* ([next-theta (fl+ theta ang-per-step)]
-		   [xinner1 (fl+ x0 (fl* rinner (flcos next-theta)))]
-		   [xouter1 (fl+ x0 (fl* router (flcos next-theta)))]
-		   [yinner1 (fl+ y0 (fl* rinner (flsin next-theta)))]
-		   [youter1 (fl+ y0 (fl* router (flsin next-theta)))]
-		   [next-v (fl+ v vstep)])
-	  (raylib:texcoord u0 v)
-	  (raylib:vertex2 xinner0 yinner0)
-	  (raylib:texcoord u0 next-v)
-	  (raylib:vertex2 xinner1 yinner1)
-	  (raylib:texcoord u1 next-v)
-	  (raylib:vertex2 xouter1 youter1)
-	  (raylib:texcoord u1 v)
-	  (raylib:vertex2 xouter0 youter0)
-	  (when (fl<= next-theta theta-end)
-		(loop next-theta xinner1 xouter1 yinner1 youter1 next-v))))
-
-  (raylib:set-texture texture)
-  (raylib:rlbegin 7) ;; quads
-  (raylib:color4ub 255 255 255 128)
-  (let* ([theta (torad theta0)]
-		 [xinner0 (fl+ x0 (fl* rinner (flcos theta)))]
-		 [xouter0 (fl+ x0 (fl* router (flcos theta)))]
-		 [yinner0 (fl+ y0 (fl* rinner (flsin theta)))]
-		 [youter0 (fl+ y0 (fl* router (flsin theta)))])
-	(loop theta xinner0 xouter0 yinner0 youter0 v0))
-  (raylib:rlend)
-  (raylib:set-texture #f))
-
 (define background-draw-bounds
   ;; x is integer multiple of texture width to prevent stretching
   ;; y isn't but the stretching isn't too noticeable so it's ok
@@ -3044,6 +3010,7 @@
    (lambda (f)
 	 (when (> (enm-health f) 0)
 	   (enm-drops-set! f default-drop)
+	   ;; TODO fix this!
 	   (enm-health-set! f 0)
 	   (-> (cb)
 		   (cbcount 12 2)
