@@ -766,13 +766,17 @@
 	(when idx
 	  (vector-set! live-bullets idx #f))))
 
-(define (cancel-bullet bullet)
-  (and (not (bullet-hasflag? bullet (bltflag uncancelable)))
-	   (spawn-particle (make-particle
-						(particletype cancel)
-						(bullet-x bullet) (bullet-y bullet)
-						23 0 #f))
-	   (delete-bullet bullet)))
+(define cancel-bullet
+  (case-lambda
+	([bullet] (cancel-bullet bullet #f))
+	([bullet force]
+	 (and (or force (not (bullet-hasflag? bullet (bltflag uncancelable))))
+		  (or force (bullet-active? bullet))
+		  (spawn-particle (make-particle
+						   (particletype cancel)
+						   (bullet-x bullet) (bullet-y bullet)
+						   23 0 #f))
+		  (delete-bullet bullet)))))
 
 (define (spawn-drop-with-autocollect x y drop)
   (define ent (spawn-misc-ent drop x y -3.0 0.1))
@@ -780,15 +784,17 @@
 			  (lambda (task) (wait 45) (miscent-autocollect-set! ent #t))
 			  (constantly #t)))
 
-(define (cancel-bullet-with-drop bullet drop)
-  (when (cancel-bullet bullet)
-	(spawn-drop-with-autocollect (bullet-x bullet) (bullet-y bullet) drop)))
+(define cancel-bullet-with-drop
+  (case-lambda
+	([bullet drop] (cancel-bullet-with-drop bullet drop #f))
+	([bullet drop force]
+	 (when (cancel-bullet bullet force)
+	   (spawn-drop-with-autocollect (bullet-x bullet) (bullet-y bullet) drop)))))
 
-(define (cancel-all)
+(define (cancel-all force)
   (vector-for-each-truthy
    (lambda (blt)
-	 ;; no active check here, we want to cancel even stuff in the prespawn phases
-	 (cancel-bullet-with-drop blt 'small-piv))
+	 (cancel-bullet-with-drop blt 'small-piv force))
    live-bullets))
 
 (define (despawn-out-of-bound-bullet bullet)
@@ -1971,7 +1977,7 @@
 	(if failed
 		"Bonus Failed..."
 		"GET Spell Card! 1,234,567")))
-  (cancel-all)
+  (cancel-all #t)
   (bossinfo-active-spell-name-set! bossinfo #f)
   (bossinfo-active-attack-failed-set! bossinfo #f)
   )
@@ -1997,7 +2003,7 @@
 	keep-running task)
   (wait-while keep-running)
   (raylib:play-sound (sebundle-shoot0 sounds))
-  (cancel-all)
+  (cancel-all #t)
   (bossinfo-active-spell-name-set! bossinfo #f)
   (bossinfo-active-attack-failed-set! bossinfo #f)
   (wait 60)
@@ -2188,7 +2194,7 @@
 	(set! bomb-stock (sub1 bomb-stock))
 	(autocollect-all-items)
 	(raylib:play-sound (sebundle-spelldeclare sounds))
-	(cancel-all)
+	(cancel-all #f)
 	(set! bomb-sweep-x-left (- player-x 50.0))
 	(set! initial-bomb-sweep-x-left bomb-sweep-x-left)
 	(set! bomb-sweep-x-right (+ player-x 50.0))
