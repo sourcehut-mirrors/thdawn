@@ -787,8 +787,8 @@
 (define (cancel-all)
   (vector-for-each-truthy
    (lambda (blt)
-	 (when (bullet-active? blt)
-	   (cancel-bullet-with-drop blt 'small-piv)))
+	 ;; no active check here, we want to cancel even stuff in the prespawn phases
+	 (cancel-bullet-with-drop blt 'small-piv))
    live-bullets))
 
 (define (despawn-out-of-bound-bullet bullet)
@@ -1068,7 +1068,7 @@
    (mutable remaining-timer) ;; frames remaining of time on this attack, 0 if none
    ;; total frames for this attack, 0 if none
    (mutable total-timer)
-   ;; of the current attack, 0 if none
+   ;; of the current attack, 0 if none, -1 if survival
    (mutable max-health)
    ;; immutable vector of dummy healthbars represented not-yet-declared attacks
    ;; used only for rendering
@@ -1220,7 +1220,7 @@
 		 (let ([do-standard-logic (or (not (enm-on-death enm))
 									  ((enm-on-death enm)))])
 		   (when do-standard-logic
-			 (spawn-drops enm)
+			 (spawn-enm-drops enm)
 			 (raylib:play-sound (sebundle-enmdie sounds))
 			 (spawn-particle (make-particle
 							  (particletype enmdeath)
@@ -1232,10 +1232,7 @@
 			   (when idx
 				 (vector-set! live-enm idx #f)))))))]))
 
-(define (spawn-drops enm)
-  (define drops (enm-drops enm))
-  (define x (enm-x enm))
-  (define y (enm-y enm))
+(define (spawn-drops drops x y)
   (for-each
    (lambda (drop)
 	 (define type (car drop))
@@ -1257,6 +1254,9 @@
 						 (lambda (task) (wait 45) (miscent-autocollect-set! ent #t))
 						 (constantly #t)))))))
    drops))
+
+(define (spawn-enm-drops enm)
+  (spawn-drops (enm-drops enm) (enm-x enm) (enm-y enm)))
 
 (define (damage-player)
   ;; if player is already dying, don't reset this
@@ -1952,9 +1952,34 @@
 			   10
 			   (curry linear-step-forever facing speed))))))
 
+(define (common-spell-postlude bossinfo enm)
+  (define failed (or (bossinfo-active-attack-failed bossinfo)
+					 ;; ran out of time and not a survival
+					 (and (not (= -1 (bossinfo-max-health bossinfo)))
+						  (positive? (enm-health enm)))))
+  (spawn-enm-drops enm)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (unless failed
+	(raylib:play-sound (sebundle-spellcapture sounds))
+	(set! current-score (+ current-score 1234567)))
+  (spawn-particle
+   (make-particle
+	(particletype spellbonus)
+	;; Position dynamically calculated at render to avoid
+	;; the enemy tasks needing to access the fonts
+	0.0 0.0 150 0
+	(if failed
+		"Bonus Failed..."
+		"GET Spell Card! 1,234,567")))
+  (cancel-all)
+  (bossinfo-active-spell-name-set! bossinfo #f)
+  (bossinfo-active-attack-failed-set! bossinfo #f)
+  )
+
 (define (test-fairy-control2 task enm)
   (test-fairy-non1 task enm)
   (delete-enemy enm))
+
 (define (test-fairy-non1 task enm)
   (define bossinfo (enm-extras enm))
   (define keep-running
@@ -1990,26 +2015,14 @@
   (spawn-subtask "spam"
 	(lambda (_task)
 	  (loop-forever
-	   (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
-					 5
-					 (curry linear-step-forever (centered-roll game-rng pi)
-							5.0))))
+	   (dotimes 5
+		 (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
+					   5
+					   (curry linear-step-forever (centered-roll game-rng pi)
+							  5.0)))))
 	keep-running task)
   (wait-while keep-running)
-  (spawn-drops enm)
-  (raylib:play-sound (sebundle-shoot0 sounds))
-  (unless (bossinfo-active-attack-failed bossinfo)
-	(raylib:play-sound (sebundle-spellcapture sounds))
-	(set! current-score (+ current-score 1234567)))
-  (spawn-particle
-   (make-particle (particletype spellbonus)
-				  ;; Position dynamically calculated at render to avoid
-				  ;; the enemy tasks needing to access the fonts
-				  0.0 0.0
-				  150 0
-				  (if (bossinfo-active-attack-failed bossinfo)
-					  "Bonus Failed..."
-					  "GET Spell Card! 1,234,567"))))
+  (common-spell-postlude bossinfo enm))
 
 (define (tick-bomb)
   (define (bomb-sweep-x-left-hitbox)
