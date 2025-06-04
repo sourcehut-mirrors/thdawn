@@ -23,7 +23,7 @@
 		  rlbegin rlend vertex2 texcoord color4f color4ub normal3f set-texture
 		  set-texture-filter
 		  set-shapes-texture get-shapes-texture get-shapes-texture-rectangle
-		  draw-spline-bezier-quadratic draw-spline-bezier-cubic)
+		  draw-spline-bezier-quadratic draw-spline-bezier-cubic take-screenshot)
   (import (chezscheme) (geom))
 
   ;; just calling load-shared-object is not permitted here
@@ -518,4 +518,7 @@
 	(load-spline-buf points)
 	(load-global-color global-color rgba)
 	(draw-spline-bezier-cubic0 spline-draw-buf (vector-length points) thick global-color))
+
+  (define take-screenshot
+	(foreign-procedure "TakeScreenshot" (string) void))
   )

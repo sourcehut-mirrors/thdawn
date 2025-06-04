@@ -3,7 +3,7 @@
   (export constantly vector-for-each-truthy for-each-indexed
 		  dotimes curry vector-for-all vector-for-each-indexed
 		  vector-find vector-index vector-popcnt -> ->> thunk
-		  vector-add vector-pop vector-truncate)
+		  vector-add vector-pop vector-truncate when-let)
   (import (chezscheme))
 
   (define (curry proc . curry-args)
@@ -44,6 +44,13 @@
 	   (do [(i 0 (fx1+ i))]
 		   [(fx= i times)]
 		 e1 e2 ...)]))
+
+  (define-syntax when-let
+	(syntax-rules ()
+	  [(_ ([var expr]) b1 b2 ...)
+	   (let ([var expr])
+		 (when var
+		   b1 b2 ...))]))
   
   (define constantly
 	;; some common stuff to avoid gc spamming

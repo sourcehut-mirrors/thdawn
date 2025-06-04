@@ -8,6 +8,7 @@
 (define key-space 32)
 (define key-escape 256)
 (define key-f1 290)
+(define key-f2 291)
 (define key-f3 292)
 (define key-left-shift 340)
 (define key-right 262)
@@ -1069,6 +1070,7 @@
    (mutable old-ys)
    (mutable aura-active)
    (mutable active-spell-name)
+   (mutable active-spell-bonus)
    ;; #t if the player bombed or died on the current attack
    (mutable active-attack-failed)
    (mutable remaining-timer) ;; frames remaining of time on this attack, 0 if none
@@ -1122,18 +1124,38 @@
 (define default-drop (point-items 1))
 (define five-point-items (point-items 5))
 
+(define (is-boss? enm)
+  (eq? 'boss (enm-type enm)))
+(define (first-boss)
+  (vector-find
+   (lambda (e) (and e (is-boss? e)))
+   live-enm))
+
+(define (calculate-spell-bonus bossinfo)
+  (define grace-period 180)
+  (define remaining-time (bossinfo-remaining-timer bossinfo))
+  (define total-time (bossinfo-total-timer bossinfo))
+  (define max-bonus (bossinfo-active-spell-bonus bossinfo))
+  (cond
+   [(bossinfo-active-attack-failed bossinfo)
+	0]
+   [(fx<= (fx- total-time remaining-time) 180)
+	max-bonus]
+   [else
+	(eround (lerp (eround (/ max-bonus 2)) max-bonus
+				  (/ remaining-time (- total-time grace-period))))]))
+
 (define (fail-current-attack)
   (define (each enm)
-	(define extras (enm-extras enm))
-	(when (bossinfo? extras)
-	  (bossinfo-active-attack-failed-set! extras #t)))
+	(when (is-boss? enm)
+	  (bossinfo-active-attack-failed-set! (enm-extras enm) #t)))
   (vector-for-each-truthy each live-enm))
 
 (define (pretick-enemies)
   (define (each enm)
 	(enm-ox-set! enm (enm-x enm))
 	(enm-oy-set! enm (enm-y enm))
-	(when (eq? 'boss (enm-type enm))
+	(when (is-boss? enm)
 	  (let* ([bossinfo (enm-extras enm)]
 			 [old-xs (bossinfo-old-xs bossinfo)]
 			 [old-ys (bossinfo-old-ys bossinfo)])
@@ -1149,7 +1171,7 @@
   (define (epsilon-equal a b)
 	(fl< (flabs (fl- a b)) 0.00000001))
   (define (each enm)
-	(when (eq? 'boss (enm-type enm))
+	(when (is-boss? enm)
 	  (let* ([bossinfo (enm-extras enm)]
 			 [timer (bossinfo-remaining-timer bossinfo)])
 		(unless (fxzero? timer)
@@ -1912,9 +1934,10 @@
 		  (enm-y-set! enm (v2y p)))
 		(yield)))))
 
-(define (declare-spell boss spell-name duration-frames health)
+(define (declare-spell boss spell-name duration-frames health bonus)
   (define bossinfo (enm-extras boss))
   (bossinfo-active-spell-name-set! bossinfo spell-name)
+  (bossinfo-active-spell-bonus-set! bossinfo bonus)
   (bossinfo-remaining-timer-set! bossinfo duration-frames)
   (bossinfo-total-timer-set! bossinfo duration-frames)
   (bossinfo-max-health-set! bossinfo health)
@@ -1963,11 +1986,12 @@
 					 ;; ran out of time and not a survival
 					 (and (not (= -1 (bossinfo-max-health bossinfo)))
 						  (positive? (enm-health enm)))))
+  (define bonus (and (not failed) (calculate-spell-bonus bossinfo)))
   (spawn-enm-drops enm)
   (raylib:play-sound (sebundle-shoot0 sounds))
   (unless failed
 	(raylib:play-sound (sebundle-spellcapture sounds))
-	(set! current-score (+ current-score 1234567)))
+	(set! current-score (+ current-score bonus)))
   (spawn-particle
    (make-particle
 	(particletype spellbonus)
@@ -1976,11 +2000,11 @@
 	0.0 0.0 150 0
 	(if failed
 		"Bonus Failed..."
-		"GET Spell Card! 1,234,567")))
+		(format "GET Spell Bonus!! ~:d" bonus))))
   (cancel-all #t)
   (bossinfo-active-spell-name-set! bossinfo #f)
-  (bossinfo-active-attack-failed-set! bossinfo #f)
-  )
+  (bossinfo-active-spell-bonus-set! bossinfo #f)
+  (bossinfo-active-attack-failed-set! bossinfo #f))
 
 (define (test-fairy-control2 task enm)
   (test-fairy-non1 task enm)
@@ -2004,7 +2028,6 @@
   (wait-while keep-running)
   (raylib:play-sound (sebundle-shoot0 sounds))
   (cancel-all #t)
-  (bossinfo-active-spell-name-set! bossinfo #f)
   (bossinfo-active-attack-failed-set! bossinfo #f)
   (wait 60)
   (test-fairy-sp1 task enm)
@@ -2016,7 +2039,7 @@
 	(lambda () (and (positive? (enm-health enm))
 					(positive? (bossinfo-remaining-timer bossinfo)))))
   (bossinfo-dummy-healthbars-set! bossinfo (immutable-vector))
-  (declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000)
+  (declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000 2000000)
   (wait 120)
   (spawn-subtask "spam"
 	(lambda (_task)
@@ -2172,6 +2195,9 @@
 	(set! start-shot-frames -1))
   (when (raylib:is-key-pressed key-f1)
 	(set! force-invincible (not force-invincible)))
+  (when (raylib:is-key-pressed key-f2)
+	(raylib:take-screenshot (string-append "screenshot-" (date-and-time)
+										   ".png")))
   (when (raylib:is-key-pressed key-f3)
 	(set! show-hitboxes (not show-hitboxes)))
   (when (raylib:is-key-pressed key-escape)
@@ -2210,7 +2236,7 @@
 		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
 								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								   #t #f #f 0 0 0 (immutable-vector))])
+								   #t #f #f #f 0 0 0 (immutable-vector))])
 	  (enm-extras-set! enm bossinfo)))
   (when (raylib:is-key-pressed key-period)
 	(set! chapter-select (min (add1 chapter-select) 13)))
@@ -2401,7 +2427,8 @@
 								 (- +playfield-max-y+ height 15.0)
 								 (+ +playfield-min-y+ 15.0)
 								 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
-							   [else (+ +playfield-min-y+ 15.0)]))])
+							   [else (+ +playfield-min-y+ 15.0)]))]
+					[(bonus) (calculate-spell-bonus bossinfo)])
 		;; TODO: scissor when outside of playfield
 		(raylib:draw-texture-pro
 		 (txbundle-boss-ui textures)
@@ -2411,7 +2438,11 @@
 		(raylib:draw-text-ex
 		 (fontbundle-cabin fonts) spname
 		 spx spy
-		 18.0 0.5 -1))))
+		 18.0 0.5 -1)
+		(raylib:draw-text-ex
+		 (fontbundle-sharetechmono fonts) (format "Bonus: ~:d" bonus)
+		 spx (+ spy height 5.0)
+		 15.0 0.0 -1))))
   (draw-sprite textures 'enemy-indicator
 			   (+ +playfield-render-offset-x+
 				  (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
@@ -2420,11 +2451,6 @@
 
 (define (draw-hud textures fonts)
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
-  (vector-for-each-truthy
-   (lambda (enm)
-	 (when (eq? 'boss (enm-type enm))
-	   (draw-boss-hud enm textures fonts)))
-   live-enm)
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
    (format "Score: ~:d" current-score)
@@ -2449,6 +2475,8 @@
    (format "Value: ~:d" item-value)
    440 135
    24.0 0.0 #x49D0FFFF)
+  (when-let ([boss (first-boss)])
+	(draw-boss-hud boss textures fonts))
 
   (let* ([start-x 490.0]
 		 [y 48.0]
