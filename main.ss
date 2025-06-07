@@ -1228,6 +1228,22 @@
 	(when idx
 	  (vector-set! live-enm idx #f))))
 
+(define (kill-enemy enm)
+  (let ([do-standard-logic (or (not (enm-on-death enm))
+							   ((enm-on-death enm)))])
+	(when do-standard-logic
+	  (spawn-enm-drops enm)
+	  (raylib:play-sound (sebundle-enmdie sounds))
+	  (spawn-particle (make-particle
+					   (particletype enmdeath)
+					   (+ (enm-x enm) (centered-roll visual-rng 20.0))
+					   (+ (enm-y enm) (centered-roll visual-rng 20.0))
+					   30 0 '((start-radius . 2)
+							  (end-radius . 85))))
+	  (let ([idx (vector-index enm live-enm)])
+		(when idx
+		  (vector-set! live-enm idx #f))))))
+
 (define damage-enemy
   (case-lambda
 	[(enm amount)
@@ -1245,20 +1261,7 @@
 	   (set! current-score (+ current-score amount))
 
 	   (when (fx<= (enm-health enm) 0)
-		 (let ([do-standard-logic (or (not (enm-on-death enm))
-									  ((enm-on-death enm)))])
-		   (when do-standard-logic
-			 (spawn-enm-drops enm)
-			 (raylib:play-sound (sebundle-enmdie sounds))
-			 (spawn-particle (make-particle
-							  (particletype enmdeath)
-							  (+ (enm-x enm) (centered-roll visual-rng 20.0))
-							  (+ (enm-y enm) (centered-roll visual-rng 20.0))
-							  30 0 '((start-radius . 2)
-									 (end-radius . 85))))
-			 (let ([idx (vector-index enm live-enm)])
-			   (when idx
-				 (vector-set! live-enm idx #f)))))))]))
+		 (kill-enemy enm)))]))
 
 (define (spawn-drops drops x y)
   (for-each
@@ -3038,8 +3041,7 @@
    (lambda (f)
 	 (when (> (enm-health f) 0)
 	   (enm-drops-set! f default-drop)
-	   ;; TODO fix this!
-	   (enm-health-set! f 0)
+	   (kill-enemy f)
 	   (-> (cb)
 		   (cbcount 12 2)
 		   (cbspeed 2.0 3.0)
