@@ -41,6 +41,10 @@
    )
   bltflags)
 (define empty-bltflags (bltflags))
+(define-enumeration enmflag
+  (invincible)
+  enmflags)
+(define empty-enmflags (enmflags))
 
 (define (torad x)
   (* (fl/ pi 180.0) x))
@@ -1073,6 +1077,8 @@
    (mutable active-spell-bonus)
    ;; #t if the player bombed or died on the current attack
    (mutable active-attack-failed)
+   ;; whether the current active spell is a survival spell
+   (mutable is-survival)
    (mutable remaining-timer) ;; frames remaining of time on this attack, 0 if none
    ;; total frames for this attack, 0 if none
    (mutable total-timer)
@@ -1092,7 +1098,7 @@
 (define-enumeration enmtype
   (red-fairy green-fairy blue-fairy yellow-fairy
 			 medium-red-fairy medium-blue-fairy
-			 big-fairy boss)
+			 big-fairy boss-doremi boss-hazuki boss-aiko boss-onpu)
   make-enmtype-set)
 (define-record-type enm
   (fields
@@ -1102,6 +1108,7 @@
    (mutable ox)
    (mutable oy)
    (mutable health)
+   (mutable flags)
    ;; alist of (miscent type . count) to drop on death.
    (mutable drops)
    ;; optional nullary function to be called when the enemy health reaches zero
@@ -1125,7 +1132,7 @@
 (define five-point-items (point-items 5))
 
 (define (is-boss? enm)
-  (eq? 'boss (enm-type enm)))
+  (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko boss-onpu)))
 (define (first-boss)
   (vector-find
    (lambda (e) (and e (is-boss? e)))
@@ -1215,7 +1222,8 @@
 	 (let ((idx (vector-index #f live-enm)))
 	   (unless idx
 		 (error 'spawn-enemy "No more open enemy slots!"))
-	   (let ([enemy (make-enm type x y x y health drops on-death 0 0.0 #f)])
+	   (let ([enemy (make-enm type x y x y health empty-enmflags
+							  drops on-death 0 0.0 #f)])
 		 (vector-set! live-enm idx enemy)
 		 (spawn-task
 		  (symbol->string type)
@@ -1384,7 +1392,7 @@
 	 (values (- (enm-x enm) 16)
 			 (- (enm-y enm) 16)
 			 32 32))
-	([boss]
+	([boss-doremi boss-hazuki boss-aiko boss-onpu]
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))
@@ -1480,7 +1488,8 @@
 		  [dx (enm-dx-render enm)]
 		  [type (enm-type enm)])
 	  (case type
-		([boss] (draw-boss textures enm render-x render-y))
+		([boss-doremi boss-hazuki boss-aiko boss-onpu]
+		 (draw-boss textures enm render-x render-y))
 		([yellow-fairy red-fairy green-fairy blue-fairy
 					   medium-red-fairy medium-blue-fairy big-fairy]
 		 (cond
@@ -2239,7 +2248,7 @@
 		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
 								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								   #t #f #f #f 0 0 0 (immutable-vector))])
+								   #t #f #f #f #f 0 0 0 (immutable-vector))])
 	  (enm-extras-set! enm bossinfo)))
   (when (raylib:is-key-pressed key-period)
 	(set! chapter-select (min (add1 chapter-select) 13)))
@@ -3168,12 +3177,48 @@
 					 (+ cy (* initial-dist (sin ang)))
 					 50000 (curry ch3-w2-fairy delay ang initial-dist cx cy)))
 	  (wait delay-per)))
-  (wait-until (thunk (>= frames 3520)))
+  (wait-until (thunk (>= frames 3500)))
   (chapter4 task))
+
+(define (midboss-control task enm)
+  (define bossinfo (enm-extras enm))
+  (define keep-running
+	(lambda () (and (positive? (enm-health enm))
+					(positive? (bossinfo-remaining-timer bossinfo)))))
+  (ease-to values 0.0 100.0 20 enm)
+  (raylib:play-sound (sebundle-longcharge sounds))
+  (wait 40)
+  
+  (declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000 2000000)
+  (wait 80)
+  (raylib:play-sound (sebundle-shortcharge sounds))
+  (wait 60)
+  (spawn-subtask "spam"
+	(lambda (_task)
+	  (loop-forever
+	   (dotimes 5
+		 (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
+					   5
+					   (curry linear-step-forever (centered-roll game-rng pi)
+							  5.0)))))
+	keep-running task)
+  (wait-while keep-running)
+  (common-spell-postlude bossinfo enm)
+  )
+
 (define (chapter4 task)
   (set! current-chapter 4)
+  (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500 midboss-control
+						  default-drop (thunk #f))]
+		[bossinfo (make-bossinfo "Harukaze Doremi" #xff7fbcff
+								 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
+								 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
+								 #t #f #f #f #f 0 0 0 (immutable-vector))])
+	(enm-extras-set! enm bossinfo))
   (wait-until (thunk (>= frames 5200)))
   (chapter5 task))
+
+
 (define (chapter5 task)
   (set! current-chapter 5)
   (wait-until (thunk (>= frames 6339)))
@@ -3219,7 +3264,7 @@
 	(case chapter
 	  [(0) (values chapter0 0)] [(1) (values chapter1 870)]
 	  [(2) (values chapter2 1645)] [(3) (values chapter3 2425)]
-	  [(4) (values chapter4 3520)] [(5) (values chapter5 5200)]
+	  [(4) (values chapter4 3500)] [(5) (values chapter5 5200)]
 	  [(6) (values chapter6 6339)] [(7) (values chapter7 6725)]
 	  [(8) (values chapter8 7497)] [(9) (values chapter9 8284)]
 	  [(10) (values chapter10 9392)] [(11) (values chapter11 11019)]
