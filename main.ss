@@ -2038,17 +2038,24 @@
 
 (define (common-boss-postlude bossinfo enm)
   (raylib:play-sound (sebundle-bossdie sounds))
-  (dotimes 90
-	(spawn-particle
-	 (make-particle
-	  (particletype maple)
-	  (fl+ (enm-x enm) (centered-roll visual-rng 5.0))
-	  (fl+ (enm-y enm) (centered-roll visual-rng 5.0))
-	  60 0 `((speed . ,(fl+ (centered-roll visual-rng 0.75) 1.5))
-			 (dir . ,(centered-roll visual-rng pi))
-			 (rot . ,(fl* (roll visual-rng) 360.0))
-			 (initsz . 55))))
-    (yield))
+  (spawn-task "particles"
+			  (lambda (task)
+				(dotimes 90
+				  (spawn-particle
+				   (make-particle
+					(particletype maple)
+					(fl+ (enm-x enm) (centered-roll visual-rng 5.0))
+					(fl+ (enm-y enm) (centered-roll visual-rng 5.0))
+					60 0 `((speed . ,(fl+ (centered-roll visual-rng 0.75) 1.5))
+						   (dir . ,(centered-roll visual-rng pi))
+						   (rot . ,(fl* (roll visual-rng) 360.0))
+						   (initsz . 55))))
+				  (yield)))
+			  (constantly #t))
+  (ease-to values
+		   (fl+ (enm-x enm) (centered-roll game-rng 40.0))
+		   (fl+ (enm-y enm) (centered-roll game-rng 30.0))
+		   90 enm)
   (raylib:play-sound (sebundle-bossdie sounds))
   (dotimes 90
 	(spawn-particle
