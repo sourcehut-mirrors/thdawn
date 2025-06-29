@@ -1165,10 +1165,14 @@
 	  (let* ([bossinfo (enm-extras enm)]
 			 [old-xs (bossinfo-old-xs bossinfo)]
 			 [old-ys (bossinfo-old-ys bossinfo)])
-		(do [(i 0 (fx1+ i))]
-			[(fx= i (fx1- +boss-lazy-spellcircle-context+))]
-		  (flvector-set! old-xs i (flvector-ref old-xs (fx1+ i)))
-		  (flvector-set! old-ys i (flvector-ref old-ys (fx1+ i))))
+		;; shift left by one
+		(flvector-copy! old-xs 1
+						old-xs 0
+						(fx1- +boss-lazy-spellcircle-context+))
+		(flvector-copy! old-ys 1
+						old-ys 0
+						(fx1- +boss-lazy-spellcircle-context+))
+		;; add the new positions at end
 		(flvector-set! old-xs (fx1- +boss-lazy-spellcircle-context+) (enm-x enm))
 		(flvector-set! old-ys (fx1- +boss-lazy-spellcircle-context+) (enm-y enm)))))
   (vector-for-each-truthy each live-enm))
