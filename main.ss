@@ -1077,8 +1077,6 @@
    (mutable active-spell-bonus)
    ;; #t if the player bombed or died on the current attack
    (mutable active-attack-failed)
-   ;; whether the current active spell is a survival spell
-   (mutable is-survival)
    (mutable remaining-timer) ;; frames remaining of time on this attack, 0 if none
    ;; total frames for this attack, 0 if none
    (mutable total-timer)
@@ -1146,7 +1144,8 @@
   (cond
    [(bossinfo-active-attack-failed bossinfo)
 	0]
-   [(fx<= (fx- total-time remaining-time) 180)
+   [(or (= -1 (bossinfo-max-health bossinfo))
+		(fx<= (fx- total-time remaining-time) 180))
 	max-bonus]
    [else
 	(eround (lerp (eround (/ max-bonus 2)) max-bonus
@@ -1258,10 +1257,14 @@
 	 (damage-enemy enm amount #t)]
 	[(enm amount playsound)
 	 (let* ([superarmor (positive? (enm-superarmor enm))]
-			[amount (if superarmor
-						(max 1 (eround (* 0.1 amount)))
-						amount)])
-	   (when playsound
+			[amount (cond
+					 [(and (is-boss? enm)
+						   (= -1 (bossinfo-max-health (enm-extras enm))))
+					  0]
+					 [superarmor
+					  (max 1 (eround (* 0.1 amount)))]
+					 [else amount])])
+	   (when (and playsound (> amount 0))
 		 (raylib:play-sound (if superarmor
 								(sebundle-damageresist sounds)
 								(sebundle-damage0 sounds))))
@@ -2248,7 +2251,7 @@
 		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
 								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								   #t #f #f #f #f 0 0 0 (immutable-vector))])
+								   #t #f #f #f 0 0 0 (immutable-vector))])
 	  (enm-extras-set! enm bossinfo)))
   (when (raylib:is-key-pressed key-period)
 	(set! chapter-select (min (add1 chapter-select) 13)))
@@ -3183,13 +3186,12 @@
 (define (midboss-control task enm)
   (define bossinfo (enm-extras enm))
   (define keep-running
-	(lambda () (and (positive? (enm-health enm))
-					(positive? (bossinfo-remaining-timer bossinfo)))))
+	(lambda () (positive? (bossinfo-remaining-timer bossinfo))))
   (ease-to values 0.0 100.0 20 enm)
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 40)
   
-  (declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000 2000000)
+  (declare-spell enm "Conjuring \"Eternal Meek\"" 1540 -1 2000000)
   (cancel-all #f)
   (wait 80)
   (raylib:play-sound (sebundle-shortcharge sounds))
@@ -3197,7 +3199,7 @@
   (spawn-subtask "spam"
 	(lambda (_task)
 	  (loop-forever
-	   (dotimes 5
+	   (dotimes 3
 		 (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
 					   5
 					   (curry linear-step-forever (centered-roll game-rng pi)
@@ -3205,7 +3207,10 @@
 	keep-running task)
   (wait-while keep-running)
   (common-spell-postlude bossinfo enm)
-  )
+  (raylib:play-sound (sebundle-bossdie sounds))
+  (wait 90)
+  (raylib:play-sound (sebundle-bossdie sounds))
+  (delete-enemy enm))
 
 (define (chapter4 task)
   (set! current-chapter 4)
@@ -3214,7 +3219,7 @@
 		[bossinfo (make-bossinfo "Harukaze Doremi" #xff7fbcff
 								 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								 #t #f #f #f #f 0 0 0 (immutable-vector))])
+								 #t #f #f #f 0 0 0 (immutable-vector))])
 	(enm-extras-set! enm bossinfo))
   (wait-until (thunk (>= frames 5200)))
   (chapter5 task))
