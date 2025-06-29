@@ -3093,7 +3093,7 @@
 								  angvel))
 		 (ang init-ang (+ ang angvel))
 		 (i 0 (add1 i))]
-		[(= i 200) ang]
+		[(= i 150) ang]
 	  (let ([dist (lerp init-dist 80.0 (ease-out-quad (/ i 200)))])
 		(enm-x-set! enm (+ cx (* dist (cos ang))))
 		(enm-y-set! enm (+ cy (* dist (sin ang))))
@@ -3190,6 +3190,7 @@
   (wait 40)
   
   (declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000 2000000)
+  (cancel-all #f)
   (wait 80)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 60)
