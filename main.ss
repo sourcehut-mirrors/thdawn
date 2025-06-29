@@ -34,7 +34,7 @@
   (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb)
   make-miscent-type-set)
 (define-enumeration particletype
-  (cancel itemvalue enmdeath graze spellbonus)
+  (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple)
   make-particletype-set)
 (define-enumeration bltflag
   (uncancelable ;; cannot be cancelled by bombs or other standard cancels
@@ -428,6 +428,8 @@
   (make 'bomb-full txbundle-hint 336 0 16 16 v2zero)
   (make 'magicircle txbundle-magicircle 0 0 256 256 (vec2 -128.0 -128.0))
   (make 'enemy-indicator txbundle-misc 128 72 48 16 (vec2 -24.0 0.0))
+  (make 'maple-grayscale txbundle-misc 0 0 32 32 shift16)
+  (make 'maple txbundle-misc 0 32 32 32 shift16)
   ret))
 
 (define (draw-laser-sprite textures sprite-id x y length radius
@@ -1625,7 +1627,7 @@
   (define (each p)
 	(particle-age-set! p (fx1+ (particle-age p)))
 	(case (particle-type p)
-	  ([graze]
+	  ([graze maple maple-grayscale]
 	   (let ([dir (cdr (assq 'dir (particle-extra-data p)))]
 			 [speed (cdr (assq 'speed (particle-extra-data p)))])
 		 (particle-x-set! p (+ (particle-x p) (* speed (cos dir))))
@@ -1640,6 +1642,15 @@
 	(define render-y (+ (particle-y p) +playfield-render-offset-y+))
 	(define extra-data (particle-extra-data p))
 	(case (particle-type p)
+	  ([maple maple-grayscale]
+	   (let* ([t (/ (particle-age p) (particle-max-age p))]
+			  [sz (lerp (cdr (assq 'initsz extra-data)) 16 t)]
+			  [rot (cdr (assq 'rot extra-data))])
+		 (draw-sprite-pro-with-rotation
+		  textures (particle-type p)
+		  (fl+ rot (flmod (* frames 3.0) 360.0))
+		  (make-rectangle render-x render-y sz sz)
+		  (packcolor 255 255 255 (eround (lerp 255 0 t))))))
 	  ([graze]
 	   (let* ([t (/ (particle-age p) (particle-max-age p))]
 			  [sz (lerp 6 0 t)]
@@ -2025,6 +2036,31 @@
   (bossinfo-active-spell-bonus-set! bossinfo #f)
   (bossinfo-active-attack-failed-set! bossinfo #f))
 
+(define (common-boss-postlude bossinfo enm)
+  (raylib:play-sound (sebundle-bossdie sounds))
+  (dotimes 90
+	(spawn-particle
+	 (make-particle
+	  (particletype maple)
+	  (fl+ (enm-x enm) (centered-roll visual-rng 5.0))
+	  (fl+ (enm-y enm) (centered-roll visual-rng 5.0))
+	  60 0 `((speed . ,(fl+ (centered-roll visual-rng 0.75) 1.5))
+			 (dir . ,(centered-roll visual-rng pi))
+			 (rot . ,(fl* (roll visual-rng) 360.0))
+			 (initsz . 55))))
+    (yield))
+  (raylib:play-sound (sebundle-bossdie sounds))
+  (dotimes 90
+	(spawn-particle
+	 (make-particle (particletype maple)
+					(fl+ (enm-x enm) (centered-roll visual-rng 2.0))
+					(fl+ (enm-y enm) (centered-roll visual-rng 2.0))
+					60 0 `((speed . ,(fl+ (centered-roll visual-rng 1.5) 2.5))
+						   (dir . ,(centered-roll visual-rng pi))
+						   (rot . ,(fl* (roll visual-rng) 360.0))
+						   (initsz . 70)))))
+  (delete-enemy enm))
+
 (define (test-fairy-control2 task enm)
   (test-fairy-non1 task enm)
   (delete-enemy enm))
@@ -2249,14 +2285,28 @@
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
   (when (raylib:is-key-pressed key-space)
-	(let ([enm (spawn-enemy 'boss 0.0 100.0 500 test-fairy-control2
+	(spawn-task
+	 "tst"
+	 (lambda (task)
+	   (interval-loop 1
+		 (spawn-particle
+		  (make-particle (particletype maple)
+						 0.0 50.0
+						 60 0
+						 `((speed . 1.0)
+						   (dir . ,(centered-roll visual-rng pi))
+						   (rot . ,(fl* (roll visual-rng) 360.0)))))
+		 (yield)))
+	 (constantly #t))
+	#;(let ([enm (spawn-enemy 'boss 0.0 100.0 500 test-fairy-control2
 							default-drop
 							(thunk #f))]
 		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
 								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
 								   #t #f #f #f 0 0 0 (immutable-vector))])
-	  (enm-extras-set! enm bossinfo)))
+	  (enm-extras-set! enm bossinfo))
+	)
   (when (raylib:is-key-pressed key-period)
 	(set! chapter-select (min (add1 chapter-select) 13)))
   (when (raylib:is-key-pressed key-comma)
@@ -3211,10 +3261,7 @@
 	keep-running task)
   (wait-while keep-running)
   (common-spell-postlude bossinfo enm)
-  (raylib:play-sound (sebundle-bossdie sounds))
-  (wait 90)
-  (raylib:play-sound (sebundle-bossdie sounds))
-  (delete-enemy enm))
+  (common-boss-postlude bossinfo enm))
 
 (define (chapter4 task)
   (set! current-chapter 4)
