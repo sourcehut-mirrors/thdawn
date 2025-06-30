@@ -2462,12 +2462,14 @@
 					   12.0 0.0 (bossinfo-name-color bossinfo))
   (let ([dummy-healthbars-end (render-dummy-healthbars)]
 		[cur-atk-max-health (bossinfo-max-health bossinfo)])
-	(when (> cur-atk-max-health 0)
+	(when (or (= -1 cur-atk-max-health) (> cur-atk-max-health 0))
 	  (raylib:draw-rectangle-gradient-v
 	   dummy-healthbars-end
 	   (+ +playfield-render-offset-y+ +playfield-min-y+)
 	   (eround (* (- (- +playfield-max-render-x+ 20.0) dummy-healthbars-end)
-				  (/ (enm-health enm) cur-atk-max-health)))
+				  (if (= -1 cur-atk-max-health)
+					  (/ remaining-timer (bossinfo-total-timer bossinfo))
+					  (/ (enm-health enm) cur-atk-max-health))))
 	   5
 	   #xf5f5f5ff
 	   #x808080ff)))
@@ -3285,6 +3287,8 @@
 
 (define (chapter5 task)
   (set! current-chapter 5)
+  ;; big fairy that pretends to spam a bunch of stars upwards, then have star shower
+  ;; like sss s6
   (wait-until (thunk (>= frames 6339)))
   (chapter6 task))
 (define (chapter6 task)
@@ -3301,18 +3305,23 @@
   (chapter9 task))
 (define (chapter9 task)
   (set! current-chapter 9)
+  ;; macro spinning like ufo s3 postmid
+  ;; rings + aimed
   (wait-until (thunk (>= frames 9392)))
   (chapter10 task))
 (define (chapter10 task)
   (set! current-chapter 10)
+  ;; falling fairies with attached bullets that spread if the fairy is killed
   (wait-until (thunk (>= frames 11019)))
   (chapter11 task))
 (define (chapter11 task)
   (set! current-chapter 11)
+  ;; midspell 2, micro spinning?
   (wait-until (thunk (>= frames 11785)))
   (chapter12 task))
 (define (chapter12 task)
   (set! current-chapter 12)
+  ;; last measures require positioning or dodging for each repetition
   (wait-until (thunk (>= frames 13000)))
   (chapter13 task))
 (define (chapter13 task)
