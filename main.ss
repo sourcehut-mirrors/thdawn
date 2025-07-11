@@ -988,16 +988,21 @@
 		(consume row col speed
  				 (+ base-angle starting-angle-offset
 					(* col local-angle)))))))
+
 ;; helper for the common case of shooting a fanbuilder from the enemy position
-;; with a fixed type and linear bullet motion
-(define (fbshootez fb enm type delay sound)
-  (define x (enm-x enm))
-  (define y (enm-y enm))
-  (fbshoot fb x y
-		   (lambda (row col speed facing)
-			 (when sound
-			   (raylib:play-sound sound))
-			 (spawn-bullet type x y delay (curry linear-step-forever facing speed)))))
+;; if provided, bullet control function should take facing, speed, bullet
+(define fbshootez
+  (case-lambda
+	[(fb enm type delay sound)
+	 (fbshootez fb enm type delay sound linear-step-forever)]
+	[(fb enm type delay sound control-function)
+	 (define x (enm-x enm))
+	 (define y (enm-y enm))
+	 (fbshoot fb x y
+	   (lambda (row col speed facing)
+		 (when sound
+		   (raylib:play-sound sound))
+		 (spawn-bullet type x y delay (curry control-function facing speed))))]))
 
 (define-record-type circle-builder
   (fields
@@ -1032,10 +1037,15 @@
 	 (circle-builder-min-speed-set! cb min-speed)
 	 (circle-builder-max-speed-set! cb max-speed)
 	 cb]))
-(define (cbang cb global per-layer)
-  (circle-builder-global-angle-set! cb (torad global))
-  (circle-builder-per-layer-angle-set! cb (torad per-layer))
-  cb)
+(define cbang
+  (case-lambda
+	[(cb global)
+	 (circle-builder-global-angle-set! cb (torad global))
+	 cb]
+	[(cb global per-layer)
+	 (circle-builder-global-angle-set! cb (torad global))
+	 (circle-builder-per-layer-angle-set! cb (torad per-layer))
+	 cb]))
 (define (cbshoot cb x y consume)
   (define layers (circle-builder-layers cb))
   (define per-layer (circle-builder-bullets-per-layer cb))
@@ -1054,16 +1064,22 @@
 	  (do [(in-layer 0 (add1 in-layer))] [(>= in-layer per-layer)]
 		(consume layer in-layer speed
 				 (+ layer-angle (* in-layer per-bullet-angle)))))))
+
 ;; helper for the common case of shooting a circlebuilder from the enemy position
 ;; with a fixed type and linear bullet motion
-(define (cbshootez cb enm type delay sound)
-  (define x (enm-x enm))
-  (define y (enm-y enm))
-  (cbshoot cb x y
-		   (lambda (row col speed facing)
-			 (when sound
-			   (raylib:play-sound sound))
-			 (spawn-bullet type x y delay (curry linear-step-forever facing speed)))))
+;; if provided, bullet control function should take facing, speed, bullet
+(define cbshootez
+  (case-lambda
+	[(cb enm type delay sound)
+	 (cbshootez cb enm type delay sound linear-step-forever)]
+	[(cb enm type delay sound control-function)
+	 (define x (enm-x enm))
+	 (define y (enm-y enm))
+	 (cbshoot cb x y
+	   (lambda (row col speed facing)
+		 (when sound
+		   (raylib:play-sound sound))
+		 (spawn-bullet type x y delay (curry control-function facing speed))))]))
 
 (define +boss-lazy-spellcircle-context+ 30)
 (define-record-type bossinfo
@@ -3284,11 +3300,30 @@
   (wait-until (thunk (>= frames 5200)))
   (chapter5 task))
 
+(define (ch5-bigfairy task enm)
+  (ease-to values (enm-x enm) 100.0 60 enm)
+  (let loop ([wave 0])
+	;; using the CB just to calculate the angles
+	(-> (cb)
+		(cbcount 8)
+;		(cbspeed 4.0)
+		(cbshoot (enm-x enm) (enm-y enm)
+				 (lambda (row col speed facing)
+				   (-> (fb)
+					   (fbabsolute-aim)
+					   (fbcounts 1 5)
+					   (fbang (todeg facing) 0.0)
+					   (fbspeed 2.0 5.0)
+					   (fbshootez enm 'butterfly-blue 5 #f))
+				   )))
+	(wait 20)
+	(loop (add1 wave))))
 
 (define (chapter5 task)
   (set! current-chapter 5)
   ;; big fairy that pretends to spam a bunch of stars upwards, then have star shower
   ;; like sss s6
+  (spawn-enemy (enmtype big-fairy) 0.0 -20.0 5000 ch5-bigfairy)
   (wait-until (thunk (>= frames 6339)))
   (chapter6 task))
 (define (chapter6 task)
