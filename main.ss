@@ -1616,6 +1616,16 @@
 	(yield)
 	(loop (+ vy ay))))
 
+;; TODO combine with above
+(define (linear-step-gravity-forever2 facing speed ay max-vy blt)
+  (define vx (* speed (cos facing)))
+  (define vy (* speed (sin facing)))
+  (bullet-facing-set! blt facing)
+  (let loop ([vy vy])
+	(linear-step-separate vx vy blt)
+	(yield)
+	(loop (min (+ vy ay) max-vy))))
+
 (define-record-type particle
   (fields
    type
@@ -3300,12 +3310,49 @@
   (wait-until (thunk (>= frames 5200)))
   (chapter5 task))
 
+(define (ch5-butterfly-control facing speed blt)
+  (bullet-facing-set! blt facing)
+  (loop-until
+   (or (< (bullet-x blt) +playfield-min-x+)
+	   (> (bullet-x blt) +playfield-max-x+)
+	   (< (bullet-y blt) +playfield-min-y+)
+	   (> (bullet-y blt) +playfield-max-y+))
+   (linear-step facing speed blt))
+  (cond
+   [(and (< (bullet-x blt) +playfield-min-x+)
+		 (< (bullet-y blt) 224))
+	;; splash left wall
+	(cancel-bullet blt)
+    (spawn-bullet 'small-star-blue (bullet-x blt) (bullet-y blt) 5
+				  (curry linear-step-gravity-forever2 (centered-roll game-rng (/ pi 2.0))
+						 2.0 0.05 2.0))]
+   [(and (> (bullet-x blt) +playfield-max-x+)
+		 (< (bullet-y blt) 224))
+	;; splash right wall
+	(cancel-bullet blt)
+	(spawn-bullet 'small-star-blue (bullet-x blt) (bullet-y blt) 5
+				  (curry linear-step-gravity-forever2
+						 (+ (centered-roll game-rng (/ pi 2.0))
+							pi)
+						 2.0 0.05 2.0))]
+   [(< (bullet-y blt) +playfield-min-y+)
+	(cancel-bullet blt)
+	;; splash top
+	(spawn-bullet 'small-star-blue (bullet-x blt) (bullet-y blt) 5
+				  (curry linear-step-gravity-forever2
+						 (+ (centered-roll game-rng (/ pi 2.0))
+							(/ pi 2.0))
+						 0.5 0.05 2.0))
+	]
+   [else ;; keep going like normal
+	(linear-step-forever facing speed blt)]))
+
 (define (ch5-bigfairy task enm)
   (ease-to values (enm-x enm) 100.0 60 enm)
   (let loop ([wave 0])
 	;; using the CB just to calculate the angles
 	(-> (cb)
-		(cbcount 8)
+		(cbcount 6)
 ;		(cbspeed 4.0)
 		(cbshoot (enm-x enm) (enm-y enm)
 				 (lambda (row col speed facing)
@@ -3314,7 +3361,7 @@
 					   (fbcounts 1 5)
 					   (fbang (todeg facing) 0.0)
 					   (fbspeed 2.0 5.0)
-					   (fbshootez enm 'butterfly-blue 5 #f))
+					   (fbshootez enm 'butterfly-blue 5 #f ch5-butterfly-control))
 				   )))
 	(wait 20)
 	(loop (add1 wave))))
