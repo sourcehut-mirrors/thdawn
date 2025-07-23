@@ -26,6 +26,8 @@
 (define key-x 88)
 (define key-y 89)
 (define key-z 90)
+(define key-left-bracket 91)
+(define key-right-bracket 93)
 (define pi 3.141592)
 (define tau 6.28318)
 (alias vnth vector-ref)
@@ -131,6 +133,17 @@
    laser damageresist)
   (sealed #t))
 (define sounds #f)
+(define sound-volume 85)
+(define (each-sound proc)
+  (define rtd (record-type-descriptor sebundle))
+  (define num-sounds (vlen (record-type-field-names rtd)))
+  (when sounds
+	(do [(i 0 (1+ i))]
+		[(>= i num-sounds)]
+	  (proc ((record-accessor rtd i) sounds)))))
+(define (update-sound-volumes)
+  (let ([vol-flt (inexact (/ sound-volume 100.0))])
+	(each-sound (lambda (sound) (raylib:set-sound-volume sound vol-flt)))))
 (define (load-sfx)
   (set! sounds
 		(apply
@@ -146,14 +159,19 @@
 				"se_pause.wav" "se_select00.wav"
 				"se_timeout.wav" "se_timeout2.wav"
 				"se_item00.wav" "se_damage00.wav" "se_damage01.wav"
-				"se_old_lazer01.wav" "se_nodamage.wav")))))
+				"se_old_lazer01.wav" "se_nodamage.wav"))))
+  (update-sound-volumes))
 (define (unload-sfx)
-  (define rtd (record-type-descriptor sebundle))
-  (define num-sounds (vlen (record-type-field-names rtd)))
-  (do [(i 0 (1+ i))]
-	  [(>= i num-sounds)]
-	(raylib:unload-sound ((record-accessor rtd i) sounds)))
+  (each-sound raylib:unload-sound)
   (set! sounds #f))
+(define (increase-sound-volume)
+  (when (< sound-volume 100)
+	(set! sound-volume (+ sound-volume 5)))
+  (update-sound-volumes))
+(define (decrease-sound-volume)
+  (when (> sound-volume 0)
+	(set! sound-volume (- sound-volume 5)))
+  (update-sound-volumes))
 
 (define-record-type txbundle
   (fields
@@ -611,6 +629,16 @@
   (raylib:unload-music-stream ojamajo-carnival)
   (set! ojamajo-carnival #f)
   (raylib:close-audio-device))
+
+(define music-volume 100)
+(define (increase-music-volume)
+  (when (< music-volume 100)
+	(set! music-volume (+ music-volume 5)))
+  (raylib:set-music-volume ojamajo-carnival (inexact (/ music-volume 100.0))))
+(define (decrease-music-volume)
+  (when (> music-volume 0)
+	(set! music-volume (- music-volume 5)))
+  (raylib:set-music-volume ojamajo-carnival (inexact (/ music-volume 100.0))))
 
 (define next-bullet-id 1)
 (define (get-next-bullet-id)
@@ -1606,7 +1634,7 @@
   (define ny (fl+ oy vy))
   (bullet-x-set! blt nx)
   (bullet-y-set! blt ny)
-  (bullet-facing-set! blt (atan (fl- ny oy) (fl- nx ox))))
+  (bullet-facing-set! blt (flatan (fl- ny oy) (fl- nx ox))))
 (define (linear-step-gravity-forever facing speed ay blt)
   (define vx (* speed (cos facing)))
   (define vy (* speed (sin facing)))
@@ -2317,29 +2345,17 @@
 	(set! initial-bomb-sweep-y-down bomb-sweep-y-down)
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
-  (when (raylib:is-key-pressed key-space)
-	(spawn-task
-	 "tst"
-	 (lambda (task)
-	   (interval-loop 1
-		 (spawn-particle
-		  (make-particle (particletype maple)
-						 0.0 50.0
-						 60 0
-						 `((speed . 1.0)
-						   (dir . ,(centered-roll visual-rng pi))
-						   (rot . ,(fl* (roll visual-rng) 360.0)))))
-		 (yield)))
-	 (constantly #t))
-	#;(let ([enm (spawn-enemy 'boss 0.0 100.0 500 test-fairy-control2
-							default-drop
-							(thunk #f))]
-		  [bossinfo (make-bossinfo "My Boss" #x98ff98ff
-								   (make-flvector +boss-lazy-spellcircle-context+ 0.0)
-								   (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								   #t #f #f #f 0 0 0 (immutable-vector))])
-	  (enm-extras-set! enm bossinfo))
+  (when (raylib:is-key-down key-space)
+	(raylib:play-sound (sebundle-shoot2 sounds))
 	)
+  (when (and (raylib:is-key-pressed key-left-bracket))
+	(if (raylib:is-key-down key-left-shift)
+		(decrease-music-volume)
+		(decrease-sound-volume)))
+  (when (and (raylib:is-key-pressed key-right-bracket))
+	(if (raylib:is-key-down key-left-shift)
+		(increase-music-volume)
+		(increase-sound-volume)))
   (when (raylib:is-key-pressed key-period)
 	(set! chapter-select (min (add1 chapter-select) 13)))
   (when (raylib:is-key-pressed key-comma)
@@ -2615,43 +2631,35 @@
 				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
   ;; todo: for prod release, hide this behind f3
+  (raylib:draw-text (format "VOL: ~d ~d" music-volume sound-volume)
+					440 175 18 -1)
   (raylib:draw-text (format "SPLED: ~d of [0, ~d]" spline-editor-selected-position
 							(sub1 (vlen spline-editor-positions)))
-					440 200
-					18 -1)
+					440 200 18 -1)
   (raylib:draw-text (format "FRSAV: ~d (~d)" frame-save frame-save-diff)
-					440 225
-					18 -1)
+					440 225 18 -1)
   (raylib:draw-text (format "CHAP: ~d / GOTO: ~d" current-chapter chapter-select)
-					440 250
-					18 -1)
+					440 250 18 -1)
   (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
-					440 275
-					18 -1)
+					440 275 18 -1)
   (raylib:draw-text (format "MEM: ~,2f MiB"
 							(/ (bytes-allocated)
 							   (* 1024.0 1024.0)))
-					440 300
-					18 -1)
+					440 300 18 -1)
   (raylib:draw-text (format "FRAME: ~d" frames)
-					440 325
-					18 -1)
+					440 325 18 -1)
   (raylib:draw-text (format "MISC: ~d / PART: ~d"
 							(vector-popcnt live-misc-ents)
 							(vector-popcnt live-particles))
-					440 350
-					18 -1)
+					440 350 18 -1)
   (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
-					440 375
-					18 -1)
+					440 375 18 -1)
   (raylib:draw-text (format "BLT: ~d / LFT: ~d"
 							(vector-popcnt live-bullets)
 							(fx1- next-bullet-id))
-					440 400
-					18 -1)
+					440 400 18 -1)
   (raylib:draw-text (format "TASK: ~d" (task-count))
-					440 425
-					18 -1)
+					440 425 18 -1)
   (raylib:draw-fps 440 450))
 
 (define bg1-scroll 0.0)
@@ -3324,7 +3332,8 @@
 	;; splash left wall
 	(cancel-bullet blt)
     (spawn-bullet 'small-star-blue (bullet-x blt) (bullet-y blt) 5
-				  (curry linear-step-gravity-forever2 (centered-roll game-rng (/ pi 2.0))
+				  (curry linear-step-gravity-forever2
+						 (centered-roll game-rng (/ pi 4.0))
 						 2.0 0.05 2.0))]
    [(and (> (bullet-x blt) +playfield-max-x+)
 		 (< (bullet-y blt) 224))
@@ -3332,7 +3341,7 @@
 	(cancel-bullet blt)
 	(spawn-bullet 'small-star-blue (bullet-x blt) (bullet-y blt) 5
 				  (curry linear-step-gravity-forever2
-						 (+ (centered-roll game-rng (/ pi 2.0))
+						 (+ (centered-roll game-rng (/ pi 4.0))
 							pi)
 						 2.0 0.05 2.0))]
    [(< (bullet-y blt) +playfield-min-y+)
@@ -3340,7 +3349,7 @@
 	;; splash top
 	(spawn-bullet 'small-star-blue (bullet-x blt) (bullet-y blt) 5
 				  (curry linear-step-gravity-forever2
-						 (+ (centered-roll game-rng (/ pi 2.0))
+						 (+ (centered-roll game-rng (/ pi 4.0))
 							(/ pi 2.0))
 						 0.5 0.05 2.0))
 	]

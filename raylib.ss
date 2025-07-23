@@ -14,7 +14,8 @@
 		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
-		  load-sound play-sound unload-sound
+		  set-music-volume
+		  load-sound play-sound unload-sound set-sound-pitch set-sound-volume
 		  load-texture unload-texture draw-texture-rec draw-texture draw-texture-pro
 		  load-font unload-font
 		  is-key-down get-key-pressed set-exit-key is-key-pressed is-key-released
@@ -242,6 +243,8 @@
 	(foreign-procedure "UpdateMusicStream" ((& Music)) void))
   (define unload-music-stream0
 	(foreign-procedure "UnloadMusicStream" ((& Music)) void))
+  (define set-music-volume
+	(foreign-procedure "SetMusicVolume" ((& Music) float) void))
   (define (unload-music-stream music)
 	(unload-music-stream0 music)
 	(foreign-free (ftype-pointer-address music)))
@@ -258,6 +261,10 @@
 	result)
   (define play-sound
 	(foreign-procedure "PlaySound" ((& Sound)) void))
+  (define set-sound-volume
+	(foreign-procedure "SetSoundVolume" ((& Sound) float) void))
+  (define set-sound-pitch
+	(foreign-procedure "SetSoundPitch" ((& Sound) float) void))
   (define unload-sound0
 	(foreign-procedure "UnloadSound" ((& Sound)) void))
   (define (unload-sound sound)
