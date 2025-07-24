@@ -40,6 +40,7 @@
   make-particletype-set)
 (define-enumeration bltflag
   (uncancelable ;; cannot be cancelled by bombs or other standard cancels
+   noprune ;; do not prune the bullet when it travels out of bounds
    )
   bltflags)
 (define empty-bltflags (bltflags))
@@ -238,6 +239,7 @@
    center-shift)
   (sealed #t))
 
+(define basic-colors '(red magenta blue cyan green yellow orange white))
 (define sprite-data
   (let ()
   (define ret (make-hashtable symbol-hash eq?))
@@ -245,7 +247,6 @@
   (define shift16 (vec2 -16.0 -16.0))
   (define shift24 (vec2 -24.0 -24.0))
   (define shift32 (vec2 -32.0 -32.0))
-  (define basic-colors '(red magenta blue cyan green yellow orange white))
   (define (make type accessor x y width height shift)
 	(symbol-hashtable-set!
 	 ret type
@@ -753,6 +754,9 @@
 (define (bullet-addflags blt flags)
   (bullet-flags-set! blt (enum-set-union (bullet-flags blt) flags)))
 
+(define (bullet-clrflags blt flags)
+  (bullet-flags-set! blt (enum-set-difference (bullet-flags blt) flags)))
+
 (define live-bullets (make-vector 4096 #f))
 
 (define (spawn-bullet type x y delay control-function)
@@ -835,10 +839,12 @@
 (define (despawn-out-of-bound-bullet bullet)
   (let ([x (bullet-x bullet)]
 		[y (bullet-y bullet)])
-	(when (or (> x (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+))
-			  (< x (- +playfield-min-x+ +oob-bullet-despawn-fuzz+))
-			  (< y (- +playfield-min-y+ +oob-bullet-despawn-fuzz+))
-			  (> y (+ +playfield-max-y+ +oob-bullet-despawn-fuzz+)))
+	(when (and
+		   (not (bullet-hasflag? bullet (bltflag noprune)))
+		   (or (> x (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+))
+			   (< x (- +playfield-min-x+ +oob-bullet-despawn-fuzz+))
+			   (< y (- +playfield-min-y+ +oob-bullet-despawn-fuzz+))
+			   (> y (+ +playfield-max-y+ +oob-bullet-despawn-fuzz+))))
 	  (delete-bullet bullet))))
 
 (define (bullet-family type)
@@ -3318,6 +3324,15 @@
   (wait-until (thunk (>= frames 5200)))
   (chapter5 task))
 
+(define (strawman facing ay max-vy blt)
+  (define vx (cos facing))
+  (define vy (sin facing))
+  (bullet-facing-set! blt facing)
+  (let loop ([vy vy])
+	(linear-step-separate vx vy blt)
+	(yield)
+	(loop (min (+ vy ay) max-vy))))
+
 (define (ch5-butterfly-control facing speed blt)
   (bullet-facing-set! blt facing)
   (loop-until
@@ -3332,54 +3347,116 @@
 	;; splash left wall
 	(cancel-bullet blt)
     (spawn-bullet 'small-star-blue (bullet-x blt) (bullet-y blt) 5
-				  (curry linear-step-gravity-forever2
-						 (centered-roll game-rng (/ pi 4.0))
-						 2.0 0.05 2.0))]
+				  (curry strawman #;linear-step-gravity-forever2
+						 (centered-roll game-rng (/ pi 2.0))
+						 #;2.0 0.05 2.0))]
    [(and (> (bullet-x blt) +playfield-max-x+)
 		 (< (bullet-y blt) 224))
 	;; splash right wall
 	(cancel-bullet blt)
 	(spawn-bullet 'small-star-blue (bullet-x blt) (bullet-y blt) 5
-				  (curry linear-step-gravity-forever2
-						 (+ (centered-roll game-rng (/ pi 4.0))
+				  (curry strawman #;linear-step-gravity-forever2
+						 (+ (centered-roll game-rng (/ pi 2.0))
 							pi)
-						 2.0 0.05 2.0))]
+						 #;2.0 0.05 2.0))]
    [(< (bullet-y blt) +playfield-min-y+)
 	(cancel-bullet blt)
 	;; splash top
 	(spawn-bullet 'small-star-blue (bullet-x blt) (bullet-y blt) 5
-				  (curry linear-step-gravity-forever2
-						 (+ (centered-roll game-rng (/ pi 4.0))
+				  (curry strawman #;linear-step-gravity-forever2
+						 (+ (centered-roll game-rng (/ pi 2.0))
 							(/ pi 2.0))
-						 0.5 0.05 2.0))
+						 #;0.5 0.05 2.0))
 	]
    [else ;; keep going like normal
 	(linear-step-forever facing speed blt)]))
 
 (define (ch5-bigfairy task enm)
   (ease-to values (enm-x enm) 100.0 60 enm)
-  (let loop ([wave 0])
-	;; using the CB just to calculate the angles
-	(-> (cb)
-		(cbcount 6)
-;		(cbspeed 4.0)
-		(cbshoot (enm-x enm) (enm-y enm)
-				 (lambda (row col speed facing)
-				   (-> (fb)
-					   (fbabsolute-aim)
-					   (fbcounts 1 5)
-					   (fbang (todeg facing) 0.0)
-					   (fbspeed 2.0 5.0)
-					   (fbshootez enm 'butterfly-blue 5 #f ch5-butterfly-control))
-				   )))
-	(wait 20)
-	(loop (add1 wave))))
+  (spawn-subtask "rally"
+	(lambda (task)
+	  (define (shoot type ang spd)
+		(define blt (spawn-bullet type
+								  (+ (enm-x enm) -10.0 (* 5 (cos ang)))
+								  (+ (enm-y enm) (* 5 (sin ang)))
+								  2
+								  (curry linear-step-gravity-forever2 ang spd
+										 0.07 3.5)))
+		(bullet-addflags blt (bltflags noprune))
+		(spawn-task "prune" (lambda (task)
+							  (wait 300)
+							  (bullet-clrflags blt (bltflags noprune)))
+					(constantly #t)))
+	  (define angs
+		(map torad '(210.0 230.0 250.0 270.0 290.0 310.0 330.0)))
+	  (define types
+		(map (lambda (color)
+			   (string->symbol (string-append "droplet-" (symbol->string color))))
+			 basic-colors))
+	  (let loop ([angs angs]
+				 [type-idx 0])
+		(for-each
+		 (lambda (ang)
+		   (shoot (list-ref types type-idx)
+				  (+ ang (centered-roll game-rng (torad 2.0))) 5.0)
+		   (shoot (list-ref types type-idx)
+				  (+ ang (centered-roll game-rng (torad 2.0))) 3.0)
+		   (raylib:play-sound (sebundle-shoot0 sounds))
+		   (wait 2))
+		 (cdr angs))
+		(loop (reverse! angs)
+			  (mod (1+ type-idx) (length types)))))
+	(constantly #t)
+	task)
+  (wait 360)
+  (ease-to ease-in-quart 0.0 -50.0 180 enm)
+  (delete-enemy enm))
+
+(define (ch5-med-fairy flip task enm)
+  (define points (vector (vec2 -200.0 250.0) (vec2 49.0 215.0)
+						 (vec2 192.0 85.0) (vec2 0.0 26.0)
+						 (vec2 -138.0 108.0)
+						 (vec2 -70.0 146.0) (vec2 200.0 210.0)))
+  (spawn-subtask "shoot"
+	(lambda (task)
+	  (let loop ([wave 0])
+		(do [(i 0 (1+ i))]
+			[(= i 5)]
+		  (-> (cb)
+			  (cbspeed 3.0)
+			  (cbcount 12)
+			  (cbang (inexact (+ (* 20 wave) (* 5 i))))
+			  (cbshootez enm 'heart-red 2 #f
+						 (lambda (facing speed blt)
+						   (bullet-facing-set! blt facing)
+						   (dotimes 5
+							 (linear-step facing speed blt)
+							 (yield))
+						   (wait 30)
+						   (raylib:play-sound (sebundle-bell sounds))
+						   (linear-step-forever facing speed blt)))))
+		(wait 30)
+		(loop (1+ wave))))
+	(constantly #t)
+	task)
+  (move-on-spline
+   (if flip (vector-map (lambda (p) (vec2 (fl- (v2x p)) (v2y p)))
+						points)
+	   points)
+   (lambda (_seg) (values values 120))
+   enm)
+  (delete-enemy enm))
 
 (define (chapter5 task)
   (set! current-chapter 5)
-  ;; big fairy that pretends to spam a bunch of stars upwards, then have star shower
-  ;; like sss s6
-  (spawn-enemy (enmtype big-fairy) 0.0 -20.0 5000 ch5-bigfairy)
+  (spawn-enemy (enmtype big-fairy) 0.0 -20.0 3000 ch5-bigfairy
+			   '((point . 10)))
+  (wait 420)
+  (spawn-enemy (enmtype medium-blue-fairy) -200.0 250.0 800 (curry ch5-med-fairy #f)
+			   '((point . 3)))
+  (wait 420)
+  (spawn-enemy (enmtype medium-blue-fairy) 200.0 250.0 800 (curry ch5-med-fairy #t)
+			   '((point . 3)))
   (wait-until (thunk (>= frames 6339)))
   (chapter6 task))
 (define (chapter6 task)
