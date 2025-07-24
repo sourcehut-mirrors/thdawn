@@ -2283,6 +2283,14 @@
 	(vector-set! option-ys 3
 				 (lerp player-y (- player-y 17) progress))))
 
+(define (toggle-paused)
+  (set! paused (not paused))
+  (if paused
+	  (let ()
+		(raylib:play-sound (sebundle-pause sounds))
+		(raylib:pause-music-stream ojamajo-carnival))
+	  (raylib:resume-music-stream ojamajo-carnival)))
+
 (define (handle-input)
   ;; is-key-down: Level-triggered
   ;; is-key-pressed, is-key-released: Edge-triggered
@@ -2323,12 +2331,7 @@
   (when (raylib:is-key-pressed key-f3)
 	(set! show-hitboxes (not show-hitboxes)))
   (when (raylib:is-key-pressed key-escape)
-	(set! paused (not paused))
-	(if paused
-		(let ()
-		  (raylib:play-sound (sebundle-pause sounds))
-		  (raylib:pause-music-stream ojamajo-carnival))
-		(raylib:resume-music-stream ojamajo-carnival)))
+	(toggle-paused))
   (when (and
 		 (raylib:is-key-pressed key-x)
 		 (not paused)
@@ -2367,7 +2370,13 @@
   (when (raylib:is-key-pressed key-comma)
 	(set! chapter-select (max (sub1 chapter-select) 0)))
   (when (raylib:is-key-pressed key-r)
-	(reset-to chapter-select)
+	(if paused
+		(begin
+		  (reset-state)
+		  (reset-to 0)
+		  (toggle-paused))
+		(reset-to chapter-select))
+
 	;; (set! frame-save-diff (- frames frame-save))
 	;; (set! frame-save frames)
 	)
@@ -3562,16 +3571,26 @@
 		(unload-audio)
 		(raylib:close-window)))))
 
-(define (debug-launch)
+(define (reset-state)
   (set! iframes 180)
   (set! frames 0)
-  (set! paused #f)
   ;; Clear everything out because they may have obsolete data
   (vector-fill! live-bullets #f)
   (vector-fill! live-enm #f)
   (vector-fill! live-misc-ents #f)
   (vector-fill! live-particles #f)
   (kill-all-tasks)
+  (set! life-stock 2)
+  (set! bomb-stock 3)
+  (set! item-value 10000)
+  (set! current-score 0)
+  (set! bombing 0)
+  (set! death-timer 0)
+  (set! graze 0))
+
+(define (debug-launch)
+  (reset-state)
+  (set! paused #f)
   (fork-thread main))
 
 (scheme-start (lambda _ (main)))
