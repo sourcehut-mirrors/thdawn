@@ -3099,7 +3099,10 @@
   (-> (cb)
 	  (cbcount 36 4)
 	  (cbspeed 5.0 6.0)
-	  (cbshootez enm 'big-star-magenta 5 (sebundle-shoot0 sounds))))
+	  (cbshootez enm 'big-star-magenta 5 (sebundle-shoot0 sounds)))
+  (wait 180)
+  (ease-to values (enm-x enm) -20.0 60 enm)
+  (delete-enemy enm))
 (define (ch2-w3-fairy task enm)
   (define x (enm-x enm))
   (define pat
