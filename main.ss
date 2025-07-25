@@ -290,6 +290,9 @@
    'pellet basic-colors
    txbundle-bullet2 176 0 16 16 shift8)
   (make-vertical-group-skip
+   'rice basic-colors
+   txbundle-bullet2 160 0 16 16 shift8)
+  (make-vertical-group-skip
    'small-star basic-colors
    txbundle-bullet2 96 0 16 16 shift8)
   (make-vertical-group
@@ -712,6 +715,7 @@
 					  colors))])
 	(make-family 'small-star basic-colors 3.7)
 	(make-family 'big-star basic-colors 5.5)
+	(make-family 'rice basic-colors 2.0)
 	(make-family 'pellet basic-colors 2.0)
 	(make-family 'butterfly basic-colors 3.7)
 	(make-family 'ellipse basic-colors 4.0)
@@ -908,7 +912,7 @@
 			([pellet small-ball medium-ball glow-orb]
 			 (draw-sprite textures type render-x render-y #xffffffff))
 			;; aimed in direction of movement
-			([butterfly ellipse arrowhead amulet ice-shard
+			([butterfly ellipse arrowhead amulet ice-shard rice
 						rest knife bacteria kunai droplet heart arrow]
 			 (draw-sprite-with-rotation textures type
 										(todeg (bullet-facing bullet))
@@ -3468,8 +3472,44 @@
 			   '((point . 3)))
   (wait-until (thunk (>= frames 6339)))
   (chapter6 task))
+
+(define (ch6-sswave x y even-type odd-type)
+  (-> (cb)
+	  (cbcount 20 3)
+	  (cbang 0.0 10.0)
+	  (cbspeed 2.0 3.5)
+	  (cbshoot x y
+		(lambda (layer in-layer speed facing)
+		  (spawn-bullet
+		   (if (fxeven? layer) even-type odd-type)
+		   x y 10
+		   (lambda (blt)
+			 (define initial-facing facing)
+			 (define turn-dir (torad (if (fxeven? layer) 4.0 -4.0)))
+			 (let loop ([facing initial-facing])
+			   (bullet-facing-set! blt facing)
+			   (linear-step facing speed blt)
+			   (yield)
+			   (if (fl> (flabs (fl- facing initial-facing)) tau)
+				   (begin
+					 (raylib:play-sound (sebundle-bell sounds))
+					 (linear-step-forever facing speed blt))
+				   (loop (fl+ facing turn-dir))))))))))
+
 (define (chapter6 task)
   (set! current-chapter 6)
+  (wait 30)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (ch6-sswave -90.0 150.0 'pellet-orange 'small-ball-red)
+  (wait 30)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (ch6-sswave 90.0 150.0 'pellet-yellow 'small-ball-orange)
+  (wait 30)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (ch6-sswave -20.0 120.0 'pellet-cyan 'small-ball-blue)
+  (wait 30)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (ch6-sswave 20.0 120.0 'pellet-red 'small-ball-magenta)
   (wait-until (thunk (>= frames 6725)))
   (chapter7 task))
 (define (chapter7 task)
