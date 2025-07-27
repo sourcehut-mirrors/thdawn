@@ -3521,6 +3521,8 @@
 						   (fbang 0.0 5.0)
 						   (fbspeed 5.0 7.0)
 						   (fbshoot 0.0 100.0
+							 ;; TODO: add some helpers to make this less gross?
+							 ;; 3 nested lambdas lol
 							 (lambda (row col speed facing)
 							   (spawn-bullet 'pellet-red 0.0 100.0 5
 											 (curry linear-step-forever facing speed)))))))
@@ -3535,15 +3537,125 @@
   (set! current-chapter 8)
   (wait-until (thunk (>= frames 8284)))
   (chapter9 task))
+
+(define (ch9-w1-left blttype points task enm)
+  (spawn-subtask "shoot"
+	(lambda (task)
+	  (interval-loop 15
+		(-> (fb)
+			(fbcounts 1 3)
+			(fbspeed 4.0 5.0)
+			(fbshootez enm blttype 2 #f))))
+	(constantly #t)
+	task)
+  (loop-until (flpositive? (enm-x enm))
+	(linear-step-enm 0.0 4.0 enm))
+  (move-on-spline points (lambda (_seg) (values values 60)) enm)
+  (loop-until (fl< (enm-x enm) -200.0)
+	(linear-step-enm pi 4.0 enm))
+  (delete-enemy enm))
+
+(define (ch9-w1-right blttype points task enm)
+  (spawn-subtask "shoot"
+	(lambda (task)
+	  (interval-loop 15
+		(-> (fb)
+			(fbcounts 1 3)
+			(fbspeed 4.0 5.0)
+			(fbshootez enm blttype 2 #f))))
+	(constantly #t)
+	task)
+  (loop-until (flnegative? (enm-x enm))
+	(linear-step-enm pi 4.0 enm))
+  (move-on-spline points (lambda (_seg) (values values 60)) enm)
+  (loop-until (fl> (enm-x enm) 200.0)
+	(linear-step-enm 0.0 4.0 enm))
+  (delete-enemy enm))
+
+(define (ch9-w2 task enm)
+  (ease-to values (enm-x enm) (+ 140.0 (enm-y enm)) 90 enm)
+  (let ([start-frames frames]
+		[x (enm-x enm)]
+		[y (enm-y enm)])
+	(interval-loop-while 30 (fx< (fx- frames start-frames) 240)
+	  (let* ([center-blt
+			  (spawn-bullet
+			   'big-star-orange x y 5
+			   (lambda (_) #f))]
+			 [ring-blts (map (lambda (_)
+							   (spawn-bullet 'small-star-yellow
+										     x y 5
+											 (lambda (_) #f)))
+							 (iota 10))]
+			 [facing (facing-player x y)])
+		(raylib:play-sound (sebundle-shoot0 sounds))
+		(spawn-task "ch9w2-ring-controller"
+		  (lambda (task)
+			(let loop ([i 0])
+			  (linear-step facing 5.0 center-blt)
+			  (let ([r (flmin (fl* (inexact i) 1.5) 30.0)])
+				(for-each-indexed
+				 (lambda (j sub)
+				   (bullet-x-set!
+					sub
+					(fl+ (bullet-x center-blt)
+						 (fl* r (flcos (fl* (torad 36.0) (inexact j))))))
+				   (bullet-y-set!
+					sub
+					(fl+ (bullet-y center-blt)
+						 (fl* r (flsin (fl* (torad 36.0) (inexact j)))))))
+				 ring-blts))
+			  (yield)
+			  (when (fx< i 240)
+				(loop (fx1+ i))))
+			(delete-bullet center-blt)
+			(for-each delete-bullet ring-blts))
+		  (constantly #t)))))
+  (ease-to ease-in-quad (enm-x enm) -20.0 60 enm)
+  (delete-enemy enm))
+
 (define (chapter9 task)
   (set! current-chapter 9)
-  ;; macro spinning like ufo s3 postmid
-  ;; rings + aimed
+  (dotimes 10
+	(spawn-enemy (enmtype red-fairy) -200.0 117.0 100
+				 (curry ch9-w1-left
+						'arrowhead-red
+						(vector (vec2 0.0 116.0) (vec2 81.0 122.0)
+								(vec2 110.0 257.0) (vec2 0.0 265.0))))
+	(wait 10))
+  (wait 100)
+  (dotimes 10
+	(spawn-enemy (enmtype green-fairy) 200.0 117.0 100
+				 (curry ch9-w1-right
+						'arrowhead-green
+						(vector (vec2 0.0 116.0) (vec2 -81.0 122.0)
+								(vec2 -110.0 257.0) (vec2 0.0 265.0))))
+	(wait 10))
+
+  (wait 120)
+  (dotimes 10
+	(spawn-enemy (enmtype blue-fairy) -200.0 265.0 100
+				 (curry ch9-w1-left
+						'arrowhead-blue
+						(vector (vec2 0.0 265.0) (vec2 110.0 257.0)
+								(vec2 81.0 122.0) (vec2 0.0 116.0))))
+	(wait 10))
+  (wait 100)
+  (dotimes 10
+	(spawn-enemy (enmtype yellow-fairy) 200.0 265.0 100
+				 (curry ch9-w1-right
+						'arrowhead-yellow
+						(vector (vec2 0.0 265.0) (vec2 -110.0 257.0)
+								(vec2 -81.0 122.0) (vec2 0.0 116.0))))
+	(wait 10))
+  (let ([drops '((point . 15))])
+	(spawn-enemy (enmtype big-fairy) -90.0 -20.0 400 ch9-w2 drops)
+	(spawn-enemy (enmtype big-fairy) 0.0 -30.0 400 ch9-w2 drops)
+	(spawn-enemy (enmtype big-fairy) 90.0 -20.0 400 ch9-w2 drops))
   (wait-until (thunk (>= frames 9392)))
   (chapter10 task))
 (define (chapter10 task)
   (set! current-chapter 10)
-  ;; falling fairies with attached bullets that spread if the fairy is killed
   (wait-until (thunk (>= frames 11019)))
   (chapter11 task))
 (define (chapter11 task)
