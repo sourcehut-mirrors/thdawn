@@ -85,6 +85,14 @@
 (define (ease-out-circ x)
   (sqrt (- 1 (* (- x 1) (- x 1)))))
 
+(define (round-score to-add) ;; to-add can be a flonum
+  (define rounded (eround to-add))
+  (define rem (remainder rounded 10))
+  (define res (* 10 (quotient rounded 10)))
+  (if (>= rem 5)
+	  (+ 10 res)
+	  res))
+
 (define-syntax interval-loop
   (syntax-rules ()
 	[(_ intvl b ...)
@@ -1204,8 +1212,8 @@
 		(fx<= (fx- total-time remaining-time) 180))
 	max-bonus]
    [else
-	(eround (lerp (eround (/ max-bonus 2)) max-bonus
-				  (/ remaining-time (- total-time grace-period))))]))
+	(round-score (lerp (eround (/ max-bonus 2)) max-bonus
+					   (/ remaining-time (- total-time grace-period))))]))
 
 (define (fail-current-attack)
   (define (each enm)
@@ -1329,7 +1337,7 @@
 								(sebundle-damageresist sounds)
 								(sebundle-damage0 sounds))))
 	   (enm-health-set! enm (- (enm-health enm) amount))
-	   (set! current-score (+ current-score amount))
+	   (set! current-score (+ current-score 20))
 
 	   (when (fx<= (enm-health enm) 0)
 		 (kill-enemy enm)))]))
@@ -1943,7 +1951,7 @@
 										 (max 0.25
 											  (- 1.0 (/ (- player-y +poc-y+)
 														(- +playfield-max-y+ +poc-y+)))))]
-				   [value (eround (* item-value value-multiplier))])
+				   [value (round-score (* item-value value-multiplier))])
 			  (set! current-score (+ current-score value))
 			  (spawn-particle
 			   (make-particle (particletype itemvalue)
