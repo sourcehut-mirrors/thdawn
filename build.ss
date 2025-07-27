@@ -6,6 +6,7 @@
 (compile-imported-libraries #t)
 ;; Generate wpo (chez term for LTO, mostly) files
 (generate-wpo-files #t)
+(undefined-variable-warnings #t)
 (when (getenv "PROD")
   (optimize-level 3)
   (generate-inspector-information #f))

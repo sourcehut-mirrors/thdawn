@@ -1189,10 +1189,8 @@
    ;; - boss: contains a bossinfo instance
    (mutable extras)))
 (define live-enm (make-vector 256 #f))
-(define (point-items n)
-  (list (cons (miscenttype point) n)))
-(define default-drop (point-items 1))
-(define five-point-items (point-items 5))
+(define default-drop '((point . 1)))
+(define five-point-items '((point . 5)))
 
 (define (is-boss? enm)
   (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko boss-onpu)))
@@ -2995,20 +2993,20 @@
   (wait 120)
   ;; wave1
   (let ([w1 (curry ch0-w12-fairy 'music-red 1.95)])
-	(spawn-enemy (enmtype red-fairy) -150.0 -130.0 80 w1 default-drop)
-	(spawn-enemy (enmtype red-fairy) -150.0 -100.0 80 w1 default-drop)
-	(spawn-enemy (enmtype red-fairy) -150.0 -70.0 80 w1 default-drop)
-	(spawn-enemy (enmtype red-fairy) -150.0 -40.0 80 w1 default-drop)
-	(spawn-enemy (enmtype red-fairy) -150.0 -10.0 80 w1 default-drop))
+	(spawn-enemy (enmtype red-fairy) -150.0 -130.0 80 w1 )
+	(spawn-enemy (enmtype red-fairy) -150.0 -100.0 80 w1)
+	(spawn-enemy (enmtype red-fairy) -150.0 -70.0 80 w1)
+	(spawn-enemy (enmtype red-fairy) -150.0 -40.0 80 w1)
+	(spawn-enemy (enmtype red-fairy) -150.0 -10.0 80 w1))
   
   ;; wave 2
   (wait 200)
   (let ([w2 (curry ch0-w12-fairy 'music-orange -1.95)])
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -130.0 80 w2 default-drop)
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -100.0 80 w2 default-drop)
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -70.0 80 w2 default-drop)
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -40.0 80 w2 default-drop)
-	(spawn-enemy (enmtype yellow-fairy) 150.0 -10.0 80 w2 default-drop))
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -130.0 80 w2)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -100.0 80 w2)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -70.0 80 w2)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -40.0 80 w2)
+	(spawn-enemy (enmtype yellow-fairy) 150.0 -10.0 80 w2))
 
   (wait 200)
   (spawn-enemy (enmtype big-fairy) 0.0 -10.0 3000 ch0-big-fairy
@@ -3016,19 +3014,19 @@
 
   (wait 190)
   (spawn-enemy (enmtype red-fairy) -220.0 115.0 100
-			   (curry ch0-w3-fairy 'fixed-laser-red) default-drop)
+			   (curry ch0-w3-fairy 'fixed-laser-red))
   (wait 25)
   (spawn-enemy (enmtype green-fairy) -220.0 130.0 100
-			   (curry ch0-w3-fairy 'fixed-laser-orange) default-drop)
+			   (curry ch0-w3-fairy 'fixed-laser-orange))
   (wait 25)
   (spawn-enemy (enmtype blue-fairy) -220.0 145.0 100
-			   (curry ch0-w3-fairy 'fixed-laser-blue) default-drop)
+			   (curry ch0-w3-fairy 'fixed-laser-blue))
   (wait 25)
   (spawn-enemy (enmtype yellow-fairy) -220.0 160.0 100
-			   (curry ch0-w3-fairy 'fixed-laser-magenta) default-drop)
+			   (curry ch0-w3-fairy 'fixed-laser-magenta))
   (wait 25)
   (spawn-enemy (enmtype red-fairy) -220.0 175.0 100
-			   (curry ch0-w3-fairy 'fixed-laser-yellow) default-drop)
+			   (curry ch0-w3-fairy 'fixed-laser-yellow))
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
 
@@ -3088,14 +3086,14 @@
 			   five-point-items)
   (wait 225)
   (dotimes 10
-	(spawn-enemy (enmtype red-fairy) -141.0 0.0 50 ch1-small-fairy default-drop)
+	(spawn-enemy (enmtype red-fairy) -141.0 0.0 50 ch1-small-fairy)
 	(wait 7))
   (wait 70)
   (spawn-enemy (enmtype big-fairy) 141.0 0.0 600 (curry ch1-big-fairy #t)
-			   (point-items 10))
+			   '((point . 10)))
   (wait 220)
   (dotimes 10
-	(spawn-enemy (enmtype red-fairy) 141.0 0.0 50 ch1-small-fairy default-drop)
+	(spawn-enemy (enmtype red-fairy) 141.0 0.0 50 ch1-small-fairy)
 	(wait 7))
   (wait-until (thunk (>= frames 1645)))
   (chapter2 task))
@@ -3163,16 +3161,16 @@
 			   five-point-items)
   (wait 180)
   (spawn-enemy (enmtype medium-red-fairy) -100.0 -20.0 350 ch2-w2-fairy
-			   default-drop)
+			   five-point-items)
   (wait 30)
   (spawn-enemy (enmtype medium-red-fairy) 0.0 -20.0 350 ch2-w2-fairy
-			   default-drop)
+			   five-point-items)
   (wait 30)
   (spawn-enemy (enmtype medium-red-fairy) 100.0 -20.0 350 ch2-w2-fairy
-			   default-drop)
+			   five-point-items)
   (wait 120)
-  (spawn-enemy (enmtype big-fairy) -220.0 380.0 50 ch2-w3-fairy five-point-items)
-  (spawn-enemy (enmtype big-fairy) 220.0 380.0 50 ch2-w3-fairy five-point-items)
+  (spawn-enemy (enmtype big-fairy) -220.0 380.0 50 ch2-w3-fairy '((point . 15)))
+  (spawn-enemy (enmtype big-fairy) 220.0 380.0 50 ch2-w3-fairy '((point . 15)))
   (wait-until (thunk (>= frames 2425)))
   (chapter3 task))
 
@@ -3363,7 +3361,8 @@
 (define (chapter4 task)
   (set! current-chapter 4)
   (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500 midboss-control
-						  default-drop (thunk #f))]
+						  '((bomb . 1) (point . 30))
+						  (thunk #f))]
 		[bossinfo (make-bossinfo "Harukaze Doremi" #xff7fbcff
 								 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 								 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
