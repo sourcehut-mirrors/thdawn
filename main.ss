@@ -1048,7 +1048,8 @@
 	   (lambda (row col speed facing)
 		 (when sound
 		   (raylib:play-sound sound))
-		 (spawn-bullet type x y delay (curry control-function facing speed))))]))
+		 (-> (spawn-bullet type x y delay (curry control-function facing speed))
+			 (bullet-facing-set! facing))))]))
 
 (define-record-type circle-builder
   (fields
@@ -3473,21 +3474,23 @@
 	  (cbspeed 2.0 3.5)
 	  (cbshoot x y
 		(lambda (layer in-layer speed facing)
-		  (spawn-bullet
-		   (if (fxeven? layer) even-type odd-type)
-		   x y 10
-		   (lambda (blt)
-			 (define initial-facing facing)
-			 (define turn-dir (torad (if (fxeven? layer) 4.0 -4.0)))
-			 (let loop ([facing initial-facing])
-			   (bullet-facing-set! blt facing)
-			   (linear-step facing speed blt)
-			   (yield)
-			   (if (fl> (flabs (fl- facing initial-facing)) tau)
-				   (begin
-					 (raylib:play-sound (sebundle-bell sounds))
-					 (linear-step-forever facing speed blt))
-				   (loop (fl+ facing turn-dir))))))))))
+		  (-> (spawn-bullet
+			   (if (fxeven? layer) even-type odd-type)
+			   x y 10
+			   (lambda (blt)
+				 (define initial-facing facing)
+				 (define turn-dir (torad (if (fxeven? layer) 4.0 -4.0)))
+				 (let loop ([facing initial-facing])
+				   (bullet-facing-set! blt facing)
+				   (linear-step facing speed blt)
+				   (yield)
+				   (if (fl> (flabs (fl- facing initial-facing)) tau)
+					   (begin
+						 (raylib:play-sound (sebundle-bell sounds))
+						 (bullet-clrflags blt (bltflags uncancelable))
+						 (linear-step-forever facing speed blt))
+					   (loop (fl+ facing turn-dir))))))
+			  (bullet-addflags (bltflags uncancelable)))))))
 
 (define (chapter6 task)
   (set! current-chapter 6)
@@ -3508,33 +3511,34 @@
 	  (cbspeed 2.0 3.5)
 	  (cbshoot 0.0 100.0
 		(lambda (layer in-layer speed facing)
-		  (spawn-bullet
-		   (if (fxeven? layer) 'music-green 'rest-cyan)
-		   0.0 100.0 10
-		   (lambda (blt)
-			 (define initial-facing facing)
-			 (define turn-dir (torad (if (fxeven? layer) 4.0 -4.0)))
-			 (let loop ([facing initial-facing])
-			   (bullet-facing-set! blt facing)
-			   (linear-step facing speed blt)
-			   (yield)
-			   (if (fl> (flabs (fl- facing initial-facing)) tau)
-				   (begin
-					 (raylib:play-sound (sebundle-bell sounds))
-					 (cancel-bullet blt)
-					 (when (and (zero? layer)
-								(zero? in-layer))
-					   (-> (fb)
-						   (fbcounts 7 7)
-						   (fbang 0.0 5.0)
-						   (fbspeed 5.0 7.0)
-						   (fbshoot 0.0 100.0
-							 ;; TODO: add some helpers to make this less gross?
-							 ;; 3 nested lambdas lol
-							 (lambda (row col speed facing)
-							   (spawn-bullet 'pellet-red 0.0 100.0 5
-											 (curry linear-step-forever facing speed)))))))
-				   (loop (fl+ facing turn-dir)))))))))
+		  (-> (spawn-bullet
+			   (if (fxeven? layer) 'music-green 'rest-cyan)
+			   0.0 100.0 10
+			   (lambda (blt)
+				 (define initial-facing facing)
+				 (define turn-dir (torad (if (fxeven? layer) 4.0 -4.0)))
+				 (raylib:play-sound (sebundle-oldvwoopslow sounds))
+				 (let loop ([facing initial-facing])
+				   (bullet-facing-set! blt facing)
+				   (linear-step facing speed blt)
+				   (yield)
+				   (if (fl> (flabs (fl- facing initial-facing)) tau)
+					   (begin
+						 (cancel-bullet blt #t)
+						 (when (and (zero? layer)
+									(zero? in-layer))
+						   (-> (fb)
+							   (fbcounts 7 7)
+							   (fbang 0.0 5.0)
+							   (fbspeed 5.0 7.0)
+							   (fbshoot 0.0 100.0
+								 ;; TODO: add some helpers to make this less gross?
+								 ;; 3 nested lambdas lol
+								 (lambda (row col speed facing)
+								   (spawn-bullet 'pellet-red 0.0 100.0 5
+												 (curry linear-step-forever facing speed)))))))
+					   (loop (fl+ facing turn-dir))))))
+			  (bullet-addflags (bltflags uncancelable))))))
   (wait-until (thunk (>= frames 6725)))
   (chapter7 task))
 (define (chapter7 task)
