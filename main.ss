@@ -1362,7 +1362,8 @@
 
 (define (damage-player)
   ;; if player is already dying, don't reset this
-  (when (fxzero? death-timer)
+  (when (and (not (player-invincible?))
+			 (fxzero? death-timer))
 	(raylib:play-sound (sebundle-playerdie sounds))
 	(set! death-timer +deathbomb-time+)))
 
@@ -1412,7 +1413,7 @@
 	   (bullet-hit-radius (bullet-type bullet)))))
 
 (define (process-collisions)
-  (define (each bullet)
+  (define (each-bullet bullet)
 	(define is-laser (eq? 'fixed-laser (bullet-family (bullet-type bullet))))
 	(when (bullet-active? bullet)
 	  (when (and (if is-laser
@@ -1444,10 +1445,30 @@
 	  (when (check-player-collision bullet hit-radius)
 		(unless is-laser
 		  (cancel-bullet bullet))
-		(when (not (player-invincible?))
-		  (damage-player)))))
-  (vector-for-each-truthy each live-bullets))
+		(damage-player))))
+  (define (each-enm enm)
+	(let-values ([(x y w h) (enm-collision-box enm)])
+	  (when (check-collision-circle-rec
+			 player-x player-y hit-radius
+			 x y w h)
+		(damage-player))))
+  (vector-for-each-truthy each-bullet live-bullets)
+  (vector-for-each-truthy each-enm live-enm))
 
+(define (enm-collision-box enm)
+  (case (enm-type enm)
+	([red-fairy green-fairy blue-fairy yellow-fairy]
+	 (values (- (enm-x enm) 8)
+			 (- (enm-y enm) 8)
+			 16 16))
+	([boss-doremi boss-hazuki boss-aiko boss-onpu]
+	 (values (- (enm-x enm) 24)
+			 (- (enm-y enm) 24)
+			 48 48))
+	([medium-blue-fairy medium-red-fairy big-fairy]
+	 (values (- (enm-x enm) 16)
+			 (- (enm-y enm) 16)
+			 32 32))))
 
 (define (enm-hurtbox enm)
   (case (enm-type enm)
@@ -1616,10 +1637,12 @@
 		(let-values ([(x y w h) (enm-hurtbox enm)])
 		  (raylib:draw-rectangle-rec
 		   (+ x +playfield-render-offset-x+)
+		   (+ y +playfield-render-offset-y+) w h green))
+		(let-values ([(x y w h) (enm-collision-box enm)])
+		  (raylib:draw-rectangle-rec
+		   (+ x +playfield-render-offset-x+)
 		   (+ y +playfield-render-offset-y+) w h red))
-		(raylib:draw-text (format "~d" (enm-superarmor enm))
-						  (exact (floor render-x)) (exact (floor render-y))
-						  10 -1))))
+		)))
   (vector-for-each-truthy each live-enm))
 
 (define (linear-step-forever facing speed blt)
