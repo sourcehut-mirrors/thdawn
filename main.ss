@@ -1428,8 +1428,8 @@
 					 (not (bullet-grazed bullet)))
 				 (check-player-collision bullet graze-radius))
 		(set! graze (fx1+ graze))
-		(when (fxzero? (mod graze 10))
-		  (set! item-value (fx+ 10 item-value)))
+		(set! item-value (fx+ 10 item-value))
+		(set! current-score (fx+ 1000 current-score))
 		(if is-laser
 			(laser-last-grazed-at-set! bullet frames)
 			(bullet-grazed-set! bullet #t))
