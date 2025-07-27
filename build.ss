@@ -7,7 +7,8 @@
 ;; Generate wpo (chez term for LTO, mostly) files
 (generate-wpo-files #t)
 (when (getenv "PROD")
-  (optimize-level 3))
+  (optimize-level 3)
+  (generate-inspector-information #f))
 
 ;; Do the main compilation
 (define libs-used (compile-program "main.ss"))
