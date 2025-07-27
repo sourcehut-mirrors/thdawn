@@ -1192,6 +1192,15 @@
 (define default-drop '((point . 1)))
 (define five-point-items '((point . 5)))
 
+(define (enm-hasflag? enm flag)
+  (enum-set-member? flag (enm-flags enm)))
+
+(define (enm-addflags enm flags)
+  (enm-flags-set! enm (enum-set-union (enm-flags enm) flags)))
+
+(define (enm-clrflags enm flags)
+  (enm-flags-set! enm (enum-set-difference (enm-flags enm) flags)))
+
 (define (is-boss? enm)
   (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko boss-onpu)))
 (define (first-boss)
@@ -1323,23 +1332,23 @@
 	[(enm amount)
 	 (damage-enemy enm amount #t)]
 	[(enm amount playsound)
-	 (let* ([superarmor (positive? (enm-superarmor enm))]
-			[amount (cond
-					 [(and (is-boss? enm)
-						   (= -1 (bossinfo-max-health (enm-extras enm))))
-					  0]
-					 [superarmor
-					  (max 1 (eround (* 0.1 amount)))]
-					 [else amount])])
-	   (when (and playsound (> amount 0))
-		 (raylib:play-sound (if superarmor
-								(sebundle-damageresist sounds)
-								(sebundle-damage0 sounds))))
-	   (enm-health-set! enm (- (enm-health enm) amount))
-	   (set! current-score (+ current-score 20))
+	 (set! current-score (+ current-score 20))
+	 (if (enm-hasflag? enm (enmflag invincible))
+		 (when playsound
+		   (raylib:play-sound (sebundle-damageresist sounds)))
+		 (let* ([superarmor (positive? (enm-superarmor enm))]
+				[amount (cond
+						 [superarmor
+						  (max 1 (eround (* 0.1 amount)))]
+						 [else amount])])
+		   (when (and playsound (> amount 0))
+			 (raylib:play-sound (if superarmor
+									(sebundle-damageresist sounds)
+									(sebundle-damage0 sounds))))
+		   (enm-health-set! enm (- (enm-health enm) amount))
 
-	   (when (fx<= (enm-health enm) 0)
-		 (kill-enemy enm)))]))
+		   (when (fx<= (enm-health enm) 0)
+			 (kill-enemy enm))))]))
 
 (define (spawn-drops drops x y)
   (for-each
@@ -1890,11 +1899,13 @@
 		  (vector-for-each-truthy
 		   (lambda (enm)
 			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
-			   (when (check-collision-recs
-					  ehx ehy ehw ehh
-					  (- (miscent-x ent) 6)
-					  (- (miscent-y ent) 10)
-					  12 16)
+			   (when (and
+					  (not (enm-hasflag? enm (enmflag invincible)))
+					  (check-collision-recs
+					   ehx ehy ehw ehh
+					   (- (miscent-x ent) 6)
+					   (- (miscent-y ent) 10)
+					   12 16))
 				 (delete-misc-ent ent)
 				 (damage-enemy enm 25)
 				 (return))))
@@ -1908,11 +1919,13 @@
 		  (vector-for-each-truthy
 		   (lambda (enm)
 			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
-			   (when (check-collision-recs
-					  ehx ehy ehw ehh
-					  (- (miscent-x ent) 5)
-					  (- (miscent-y ent) 6)
-					  10 52)
+			   (when (and
+					  (not (enm-hasflag? enm (enmflag invincible)))
+					  (check-collision-recs
+					   ehx ehy ehw ehh
+					   (- (miscent-x ent) 5)
+					   (- (miscent-y ent) 6)
+					   10 52))
 				 (delete-misc-ent ent)
 				 (damage-enemy enm 10)
 				 (return))))
@@ -3194,7 +3207,13 @@
 		  (cbcount 12)
 		  (cbspeed 4.0)
 		  (cbshootez enm 'medium-ball-cyan 5 (sebundle-bell sounds)))))
-  (enm-superarmor-set! enm 90)
+  (enm-addflags enm (enmflags invincible))
+  (spawn-subtask "uninvincible"
+	(lambda (task)
+	  (wait 90)
+	  (enm-clrflags enm (enmflags invincible)))
+	(constantly #t)
+	task)
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ch3-fairy-sin-move flip task enm))
 (define (ch3-w1-leader-on-death followers)
@@ -3227,7 +3246,13 @@
 						(lambda (blt)
 						  (linear-step-gravity-forever facing speed 0.1 blt))))))
 		(wait 2))))
-  (enm-superarmor-set! enm (+ delay 100))
+  (spawn-subtask "uninvincible"
+	(lambda (task)
+	  (wait (+ delay 100))
+	  (enm-clrflags enm (enmflags invincible)))
+	(constantly #t)
+	task)
+  (enm-addflags enm (enmflags invincible))
   (wait delay)
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ch3-fairy-sin-move flip task enm))
@@ -3339,7 +3364,8 @@
   (ease-to values 0.0 100.0 20 enm)
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 40)
-  
+
+  (enm-addflags enm (enmflags invincible))
   (declare-spell enm "Conjuring \"Eternal Meek\"" 1540 -1 2000000)
   (cancel-all #f)
   (wait 80)
@@ -3355,6 +3381,7 @@
 							  5.0)))))
 	keep-running task)
   (wait-while keep-running)
+  (enm-clrflags enm (enmflags invincible))
   (common-spell-postlude bossinfo enm)
   (common-boss-postlude bossinfo enm))
 
