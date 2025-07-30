@@ -630,6 +630,10 @@
 (define (facing-player x y)
   (flatan (fl- player-y y) (fl- player-x x)))
 
+(define (dist-away enm facing dist)
+  (values (fl+ (enm-x enm) (fl* dist (flcos facing)))
+		  (fl+ (enm-y enm) (fl* dist (flsin facing)))))
+
 (define (player-invincible?)
   (fxpositive? iframes))
 
@@ -1702,6 +1706,31 @@
 	(linear-step-separate vx vy blt)
 	(yield)
 	(loop (min (+ vy ay) max-vy))))
+
+;; Returns once the bullet reaches stationary speed
+;; acceleration should be negative
+(define (linear-step-decelerate facing speed accel blt)
+  (bullet-facing-set! blt facing)
+  (let loop ([v speed])
+	(linear-step-separate (fl* v (flcos facing))
+						  (fl* v (flsin facing))
+						  blt)
+	(yield)
+	(let ([next-v (fl+ v accel)])
+	  (when (flpositive? next-v)
+		(loop next-v)))))
+
+;; Returns once the bullet reaches max-speed
+(define (linear-step-accelerate facing speed accel max-speed blt)
+  (bullet-facing-set! blt facing)
+  (let loop ([v speed])
+	(linear-step-separate (fl* v (flcos facing))
+						  (fl* v (flsin facing))
+						  blt)
+	(yield)
+	(let ([next-v (fl+ v accel)])
+	  (when (fl< next-v max-speed)
+		(loop next-v)))))
 
 (define-record-type particle
   (fields
@@ -3583,7 +3612,7 @@
 		(-> (fb)
 			(fbcounts 1 3)
 			(fbspeed 4.0 5.0)
-			(fbshootez enm blttype 2 #f))))
+			(fbshootez enm blttype 2 (sebundle-shoot0 sounds)))))
 	(constantly #t)
 	task)
   (loop-until (flpositive? (enm-x enm))
@@ -3600,7 +3629,7 @@
 		(-> (fb)
 			(fbcounts 1 3)
 			(fbspeed 4.0 5.0)
-			(fbshootez enm blttype 2 #f))))
+			(fbshootez enm blttype 2 (sebundle-shoot0 sounds)))))
 	(constantly #t)
 	task)
   (loop-until (flnegative? (enm-x enm))
@@ -3692,7 +3721,50 @@
 	(spawn-enemy (enmtype big-fairy) 90.0 -20.0 400 ch9-w2 drops))
   (wait-until (thunk (>= frames 9392)))
   (chapter10 task))
+
+(define (ch10-med-fairy task enm)
+  (spawn-subtask "shoot"
+	(lambda (task)
+	  (let loop ([facing 0.0])
+		(let-values ([(x y) (dist-away enm facing 20.0)])
+		  (spawn-bullet
+		   'small-ball-white x y 5
+		   (lambda (blt)
+			 (linear-step-decelerate facing 2.0 -0.05 blt)
+			 (wait 60)
+			 (raylib:play-sound (sebundle-bell sounds))
+			 (linear-step-accelerate facing 0.0 0.05 3.0 blt)
+			 (linear-step-forever facing 3.0 blt))))
+		(wait 1)
+		(loop (fl+ facing (torad 36.0)))))
+	(constantly #t)
+	task)
+  (move-on-spline
+   (vector (vec2 -210.0 272.0) (vec2 -36.0 273.0)
+		   (vec2 131.0 251.0) (vec2 124.0 -10.0))
+   (lambda (_seg) (values values 180))
+   enm)
+  )
+
 (define (chapter10 task)
+  ;; small fairies run across screen, swirling smaller bullets bigger fairies launch rings
+  ;; of music notes that deflect off the wall (play on "ookina koe de")
+  (wait 70)
+  (spawn-enemy 'medium-red-fairy -210.0 272.0 300 ch10-med-fairy)
+  (-> (cb)
+	  (cbcount 20)
+	  (cbspeed 2.0)
+	  (cbshoot 0.0 150.0
+	   (lambda (row col speed facing)
+		 (spawn-bullet 'small-ball-white 0.0 150.0 5
+					   (lambda (blt)
+						 (linear-step-decelerate facing speed -0.05 blt)
+						 (wait 60)
+						 (linear-step-accelerate facing 0.0 0.05 3.0 blt)
+						 (linear-step-forever facing 3.0 blt)
+						 )
+					   )))
+	  )
   (set! current-chapter 10)
   (wait-until (thunk (>= frames 11019)))
   (chapter11 task))
