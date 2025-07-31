@@ -55,6 +55,8 @@
   (* (fl/ 180.0 pi) x))
 (define (eround x)
   (exact (round x)))
+(define (epsilon-equal a b)
+  (fl< (flabs (fl- a b)) 0.00000001))
 
 (define (clamp v lower upper)
   (max (min v upper) lower))
@@ -1254,8 +1256,6 @@
   (vector-for-each-truthy each live-enm))
 
 (define (posttick-enemies)
-  (define (epsilon-equal a b)
-	(fl< (flabs (fl- a b)) 0.00000001))
   (define (each enm)
 	(when (is-boss? enm)
 	  (let* ([bossinfo (enm-extras enm)]
@@ -3722,49 +3722,122 @@
   (wait-until (thunk (>= frames 9392)))
   (chapter10 task))
 
-(define (ch10-med-fairy task enm)
-  (spawn-subtask "shoot"
-	(lambda (task)
-	  (let loop ([facing 0.0])
-		(let-values ([(x y) (dist-away enm facing 20.0)])
-		  (spawn-bullet
-		   'small-ball-white x y 5
-		   (lambda (blt)
-			 (linear-step-decelerate facing 2.0 -0.05 blt)
-			 (wait 60)
-			 (raylib:play-sound (sebundle-bell sounds))
-			 (linear-step-accelerate facing 0.0 0.05 3.0 blt)
-			 (linear-step-forever facing 3.0 blt))))
-		(wait 1)
-		(loop (fl+ facing (torad 36.0)))))
-	(constantly #t)
-	task)
-  (move-on-spline
-   (vector (vec2 -210.0 272.0) (vec2 -36.0 273.0)
-		   (vec2 131.0 251.0) (vec2 124.0 -10.0))
-   (lambda (_seg) (values values 180))
-   enm)
+(define (ch10-small right-side task enm)
+  (define dest-x (if right-side
+					 (- +playfield-min-x+ 20.0)
+					 (+ +playfield-max-x+ 20.0)))
+  (define dest-y (+ (enm-y enm)
+					(centered-roll game-rng 80.0)))
+  (define (shoot task)
+	(interval-loop 10
+	  (-> (fb)
+		  (fbcounts 2 3)
+		  (fbang 0.0 20.0)
+		  (fbspeed 2.0 3.0)
+		  (fbshootez enm (if right-side 'small-star-red 'small-star-blue) 5 #f))))
+  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (ease-to values dest-x dest-y 180 enm)
+  (delete-enemy enm))
+
+(define (ch10-side right-side task enm)
+  (ease-to values (enm-x enm) (+ (enm-y enm) 90.0) 30 enm)
+  (dotimes 120
+	(spawn-bullet 'small-star-red (enm-x enm) (enm-y enm) 5
+				  (curry linear-step-forever (centered-roll game-rng pi) 3.0))
+	(yield))
+  ;; (spawn-subtask "shoot"
+  ;; 	(lambda (task)
+  ;; 	  (interval-loop 60
+  ;; 		(-> (cb)
+  ;; 			(cbcount 12)
+  ;; 			(cbspeed 3.5)
+  ;; 			(cbshootez enm 'medium-ball-green 5 (sebundle-shoot0 sounds)))
+  ;; 		(-> (cb)
+  ;; 			(cbcount 24)
+  ;; 			(cbang 10.0)
+  ;; 			(cbspeed 3.5)
+  ;; 			(cbshootez enm 'small-ball-cyan 5 #f
+  ;; 					   (lambda (facing speed blt)
+  ;; 						 (dotimes 30
+  ;; 						   (linear-step facing speed blt)
+  ;; 						   (yield))
+  ;; 						 (wait 10)
+  ;; 						 (raylib:play-sound (sebundle-bell sounds))
+  ;; 						 (linear-step-forever (facing-player (bullet-x blt) (bullet-y blt)) speed blt)
+  ;; 						 )))))
+  ;; 	(constantly #t)
+  ;; 	task)
+  ;; (move-on-spline
+  ;;  (vector (vec2 -200.0 243.0)
+  ;; 		   (vec2 -31.0 233.0)
+  ;; 		   (vec2 82.0 137.0)
+  ;; 		   (vec2 17.0 -10.0))
+  ;;  (lambda (_seg) (values values 300))
+  ;;  enm)
+  #;(-> (fb)
+	  (fbcounts 10 5)
+	  (fbang 0.0 #;(if right-side -135.0 -45.0) 5.0)
+	  (fbspeed 5.0 6.0)
+	  (fbshoot (enm-x enm) (enm-y enm)
+		(lambda (row col speed facing)
+		  (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm) 5
+						(curry linear-step-forever facing speed))
+		  (wait 1))))
+  )
+
+(define (linear-step-with-bounce facing speed blt)
+  (let loop ()
+	(let ([ox (bullet-x blt)]
+		  [oy (bullet-y blt)])
+	  (linear-step facing speed blt)
+	  (yield)
+	  (let ([nx (bullet-x blt)]
+			[ny (bullet-y blt)])
+		(cond
+		 [(> ny +playfield-max-y+)
+		  (linear-step-forever facing speed blt)]
+		 [(< ny +playfield-min-y+)
+		  (let ([xv (flcos facing)]
+				[yv (flsin facing)])
+			(linear-step-forever (atan (fl- yv) xv) speed blt))]
+		 [(or (< nx +playfield-min-x+)
+			  (> nx +playfield-max-x+))
+		  (let ([xv (flcos facing)]
+				[yv (flsin facing)])
+			(linear-step-forever (atan yv (fl- xv)) speed blt))])
+		)
+	  (loop))))
+
+(define (ch10-big task enm)
+  (ease-to values (enm-x enm) (+ (enm-y enm) 100.0) 30 enm)
+  (interval-loop 60
+	(-> (cb)
+		(cbcount 12)
+		(cbspeed 4.0)
+		(cbshoot (enm-x enm) (enm-y enm)
+		  (lambda (layer in-layer speed facing)
+			(spawn-bullet 'music-orange (enm-x enm) (enm-y enm) 5
+						  (curry linear-step-with-bounce facing speed))))))
   )
 
 (define (chapter10 task)
   ;; small fairies run across screen, swirling smaller bullets bigger fairies launch rings
   ;; of music notes that deflect off the wall (play on "ookina koe de")
   (wait 70)
-  (spawn-enemy 'medium-red-fairy -210.0 272.0 300 ch10-med-fairy)
-  (-> (cb)
-	  (cbcount 20)
-	  (cbspeed 2.0)
-	  (cbshoot 0.0 150.0
-	   (lambda (row col speed facing)
-		 (spawn-bullet 'small-ball-white 0.0 150.0 5
-					   (lambda (blt)
-						 (linear-step-decelerate facing speed -0.05 blt)
-						 (wait 60)
-						 (linear-step-accelerate facing 0.0 0.05 3.0 blt)
-						 (linear-step-forever facing 3.0 blt)
-						 )
-					   )))
-	  )
+  ;; (spawn-enemy 'medium-red-fairy -192.0 100.0 300 (curry ch10-small #f)
+  ;; 			   five-point-items)
+  ;; (spawn-enemy 'medium-red-fairy 192.0 100.0 300 (curry ch10-small #t)
+  ;; 			   five-point-items)
+  (spawn-enemy 'big-fairy -80.0 -20.0 300 ch10-big
+			   five-point-items)
+  (spawn-enemy 'big-fairy 0.0 -20.0 300 ch10-big
+			   five-point-items)
+  (spawn-enemy 'big-fairy 80.0 -20.0 300 ch10-big
+			   five-point-items)
+  ;; TODO: ^ time those
+  ;; idea: papa mama sensei -> small fairies that just show up and fire something easy
+  ;; (bubble + some scattered random stuff)
+  ;; gami gami ojisan -> random fairy doing swirly bullets across screen
   (set! current-chapter 10)
   (wait-until (thunk (>= frames 11019)))
   (chapter11 task))
