@@ -535,6 +535,8 @@
 			   a))
 (define red (packcolor 230 41 55 255))
 (define green (packcolor 0 228 48 255))
+(define invincible-flash (packcolor 64 64 255 255))
+(define damage-flash (packcolor 255 64 64 255))
 
 ;; [31-416] x bounds of playfield in the hud texture
 ;; [15-463] y bounds of playfield in the hud texture
@@ -1177,6 +1179,8 @@
    (mutable ox)
    (mutable oy)
    (mutable health)
+   ;; set to positive when damaged, decreases automatically every frame.
+   (mutable damaged-recently)
    (mutable flags)
    ;; alist of (miscent type . count) to drop on death.
    (mutable drops)
@@ -1237,6 +1241,9 @@
 
 (define (pretick-enemies)
   (define (each enm)
+	(define damaged-recently (enm-damaged-recently enm))
+	(when (fxpositive? damaged-recently)
+	  (enm-damaged-recently-set! enm (fx1- damaged-recently)))
 	(enm-ox-set! enm (enm-x enm))
 	(enm-oy-set! enm (enm-y enm))
 	(when (is-boss? enm)
@@ -1301,7 +1308,7 @@
 	 (let ((idx (vector-index #f live-enm)))
 	   (unless idx
 		 (error 'spawn-enemy "No more open enemy slots!"))
-	   (let ([enemy (make-enm type x y x y health empty-enmflags
+	   (let ([enemy (make-enm type x y x y health 0 empty-enmflags
 							  drops on-death 0 0.0 #f)])
 		 (vector-set! live-enm idx enemy)
 		 (spawn-task
@@ -1349,7 +1356,9 @@
 			 (raylib:play-sound (if superarmor
 									(sebundle-damageresist sounds)
 									(sebundle-damage0 sounds))))
-		   (enm-health-set! enm (- (enm-health enm) amount))
+		   (when (> amount 0)
+			 (enm-damaged-recently-set! enm 20)
+			 (enm-health-set! enm (- (enm-health enm) amount)))
 
 		   (when (fx<= (enm-health enm) 0)
 			 (kill-enemy enm))))]))
@@ -1590,7 +1599,15 @@
 	(let ([render-x (+ (enm-x enm) +playfield-render-offset-x+)]
 		  [render-y (+ (enm-y enm) +playfield-render-offset-y+)]
 		  [dx (enm-dx-render enm)]
-		  [type (enm-type enm)])
+		  [type (enm-type enm)]
+		  [tint (cond
+				 [(and (enm-hasflag? enm (enmflag invincible))
+					   (< (fxmod frames 4) 2))
+				  invincible-flash]
+				 [(and (fxpositive? (enm-damaged-recently enm))
+					   (< (fxmod frames 4) 2))
+				  damage-flash]
+				 [else -1])])
 	  (case type
 		([boss-doremi boss-hazuki boss-aiko boss-onpu]
 		 (draw-boss textures enm render-x render-y))
@@ -1611,7 +1628,7 @@
 				  [sprite (vnth fwd-sprites
 								(truncate (mod (/ frames 5)
 											   (vlen fwd-sprites))))])
-			 (draw-sprite textures sprite render-x render-y -1))]
+			 (draw-sprite textures sprite render-x render-y tint))]
 		  [(fl< (abs dx) 10.0)
 		   (let* ([transition-sprites
 				   (case type
@@ -1627,8 +1644,8 @@
 											   (vlen
 												transition-sprites))))])
 			 (if (flnegative? dx)
-				 (draw-sprite-mirror-x textures sprite render-x render-y -1)
-				 (draw-sprite textures sprite render-x render-y -1)))]
+				 (draw-sprite-mirror-x textures sprite render-x render-y tint)
+				 (draw-sprite textures sprite render-x render-y tint)))]
 		  [else
 		   (let* ([side-sprites
 				   (case type
@@ -1651,8 +1668,8 @@
 								(truncate (mod (/ frames 7)
 											   (vlen side-sprites))))])
 			 (if (flnegative? dx)
-				 (draw-sprite-mirror-x textures sprite render-x render-y -1)
-				 (draw-sprite textures sprite render-x render-y -1)))])))
+				 (draw-sprite-mirror-x textures sprite render-x render-y tint)
+				 (draw-sprite textures sprite render-x render-y tint)))])))
 	  (when show-hitboxes
 		(let-values ([(x y w h) (enm-hurtbox enm)])
 		  (raylib:draw-rectangle-rec
@@ -2536,7 +2553,7 @@
 	   (make-rectangle (* 32.0 x-texture-index) 48.0 32.0 48.0))])
    (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
    (if (and (player-invincible?) (< (mod frames 4) 2))
-	   (packcolor 64 64 255 255)
+	   invincible-flash
 	   -1))
 
   (when (positive? death-timer)
@@ -3472,12 +3489,12 @@
   (set! current-chapter 5)
   (spawn-enemy (enmtype big-fairy) 0.0 -20.0 3000 ch5-bigfairy
 			   '((point . 10)))
-  (wait 420)
-  (spawn-enemy (enmtype medium-blue-fairy) -200.0 250.0 800 (curry ch5-med-fairy #f)
-			   '((point . 3)))
-  (wait 420)
-  (spawn-enemy (enmtype medium-blue-fairy) 200.0 250.0 800 (curry ch5-med-fairy #t)
-			   '((point . 3)))
+  ;; (wait 420)
+  ;; (spawn-enemy (enmtype medium-blue-fairy) -200.0 250.0 800 (curry ch5-med-fairy #f)
+  ;; 			   '((point . 3)))
+  ;; (wait 420)
+  ;; (spawn-enemy (enmtype medium-blue-fairy) 200.0 250.0 800 (curry ch5-med-fairy #t)
+  ;; 			   '((point . 3)))
   (wait-until (thunk (>= frames 6339)))
   (chapter6 task))
 
@@ -3828,6 +3845,7 @@
   )
 
 (define (chapter10 task)
+  (set! current-chapter 10)
   ;; small fairies run across screen, swirling smaller bullets bigger fairies launch rings
   ;; of music notes that deflect off the wall (play on "ookina koe de")
   (wait 70)
@@ -3845,7 +3863,7 @@
   ;; idea: papa mama sensei -> small fairies that just show up and fire something easy
   ;; (bubble + some scattered random stuff)
   ;; gami gami ojisan -> random fairy doing swirly bullets across screen
-  (set! current-chapter 10)
+
   (wait-until (thunk (>= frames 11019)))
   (chapter11 task))
 (define (chapter11 task)
