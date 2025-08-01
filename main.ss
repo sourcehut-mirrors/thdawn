@@ -3468,46 +3468,6 @@
   (ease-to ease-in-quart 0.0 -50.0 180 enm)
   (delete-enemy enm))
 
-(define (ch5-med-fairy flip task enm)
-  (define points (vector (vec2 -200.0 250.0) (vec2 49.0 215.0)
-						 (vec2 192.0 85.0) (vec2 0.0 26.0)
-						 (vec2 -138.0 108.0)
-						 (vec2 -70.0 146.0) (vec2 200.0 210.0)))
-  (spawn-subtask "shoot"
-	(lambda (task)
-	  (let loop ([wave 0])
-		(do [(i 0 (1+ i))]
-			[(= i 5)]
-		  (-> (cb)
-			  (cbspeed 3.0)
-			  (cbcount 12)
-			  (cbang (inexact (+ (* 20 wave) (* 5 i))))
-			  (cbshootez enm 'heart-red 2 #f
-						 (lambda (facing speed blt)
-						   (bullet-facing-set! blt facing)
-						   (dotimes 5
-							 (linear-step facing speed blt)
-							 (yield))
-						   (wait 30)
-						   (raylib:play-sound (sebundle-bell sounds))
-						   (linear-step-forever facing speed blt))))
-		  (spawn-bullet 'big-star-magenta
-						(enm-x enm) (enm-y enm)
-						2 (lambda (blt)
-							(wait 35)
-							(cancel-bullet blt))))
-		(wait 30)
-		(loop (1+ wave))))
-	(constantly #t)
-	task)
-  (move-on-spline
-   (if flip (vector-map (lambda (p) (vec2 (fl- (v2x p)) (v2y p)))
-						points)
-	   points)
-   (lambda (_seg) (values values 120))
-   enm)
-  (delete-enemy enm))
-
 (define (chapter5 task)
   (set! current-chapter 5)
   (spawn-enemy (enmtype big-fairy) 0.0 -20.0 3000 ch5-bigfairy
@@ -3596,8 +3556,55 @@
 			  (bullet-addflags (bltflags uncancelable))))))
   (wait-until (thunk (>= frames 6725)))
   (chapter7 task))
+
+(define (ch7-med-fairy flip task enm)
+  (define points (vector (vec2 -200.0 250.0) (vec2 49.0 215.0)
+						 (vec2 192.0 85.0) (vec2 0.0 26.0)
+						 (vec2 -138.0 108.0)
+						 (vec2 -70.0 146.0) (vec2 200.0 210.0)))
+  (spawn-subtask "shoot"
+	(lambda (task)
+	  (let loop ([wave 0])
+		(do [(i 0 (1+ i))]
+			[(= i 5)]
+		  (-> (cb)
+			  (cbspeed 3.0)
+			  (cbcount 12)
+			  (cbang (inexact (+ (* 20 wave) (* 5 i))))
+			  (cbshootez enm 'heart-red 2 #f
+						 (lambda (facing speed blt)
+						   (bullet-facing-set! blt facing)
+						   (dotimes 5
+							 (linear-step facing speed blt)
+							 (yield))
+						   (wait 30)
+						   (raylib:play-sound (sebundle-bell sounds))
+						   (linear-step-forever facing speed blt))))
+		  (spawn-bullet 'big-star-magenta
+						(enm-x enm) (enm-y enm)
+						2 (lambda (blt)
+							(wait 35)
+							(cancel-bullet blt))))
+		(wait 30)
+		(loop (1+ wave))))
+	(constantly #t)
+	task)
+  (move-on-spline
+   (if flip (vector-map (lambda (p) (vec2 (fl- (v2x p)) (v2y p)))
+						points)
+	   points)
+   (lambda (_seg) (values values 120))
+   enm)
+  (delete-enemy enm))
+
 (define (chapter7 task)
   (set! current-chapter 7)
+  (wait 50)
+  (spawn-enemy (enmtype medium-blue-fairy) -200.0 250.0 800 (curry ch7-med-fairy #f)
+			   '((point . 3)))
+  (wait 420)
+  (spawn-enemy (enmtype medium-blue-fairy) 200.0 250.0 800 (curry ch7-med-fairy #t)
+			   '((point . 3)))
   (wait-until (thunk (>= frames 7497)))
   (chapter8 task))
 (define (chapter8 task)
