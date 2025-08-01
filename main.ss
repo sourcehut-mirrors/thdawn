@@ -3006,13 +3006,13 @@
 	(wait 200)
 	(for-each
 	 (lambda (xoff yoff)
-	   (dotimes 15
+	   (dotimes 10
 		 (spawn-bullet 'pellet-blue (- (enm-x enm) 40.0) (+ yoff (enm-y enm)) 5
 					   (lambda (blt)
 						 (wait-until (thunk (>= (- frames start-time) 350)))
 						 (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
 	   (unless (flzero? xoff)
-		 (dotimes 15
+		 (dotimes 10
 		   (spawn-bullet 'pellet-blue (+ xoff (enm-x enm) -40.0)
 						 (+ yoff (enm-y enm)) 5
 					   (lambda (blt)
@@ -3618,10 +3618,10 @@
   (set! current-chapter 7)
   (wait 50)
   (spawn-enemy (enmtype medium-blue-fairy) -200.0 250.0 800 (curry ch7-med-fairy #f)
-			   '((point . 3)))
+			   '((point . 10)))
   (wait 420)
   (spawn-enemy (enmtype medium-blue-fairy) 200.0 250.0 800 (curry ch7-med-fairy #t)
-			   '((point . 3)))
+			   '((point . 10)))
   (wait-until (thunk (>= frames 7497)))
   (chapter8 task))
 (define (chapter8 task)
@@ -3832,15 +3832,15 @@
 		)
 	  (loop))))
 
-(define (ch10-big task enm)
+(define (ch10-big type task enm)
   (ease-to values (enm-x enm) (+ (enm-y enm) 100.0) 30 enm)
   (interval-loop 60
 	(-> (cb)
-		(cbcount 12)
-		(cbspeed 4.0)
+		(cbcount 20)
+		(cbspeed 3.0)
 		(cbshoot (enm-x enm) (enm-y enm)
 		  (lambda (layer in-layer speed facing)
-			(spawn-bullet 'music-orange (enm-x enm) (enm-y enm) 5
+			(spawn-bullet type (enm-x enm) (enm-y enm) 5
 						  (curry linear-step-with-bounce facing speed))))))
   )
 
@@ -3853,11 +3853,11 @@
   ;; 			   five-point-items)
   ;; (spawn-enemy 'medium-red-fairy 192.0 100.0 300 (curry ch10-small #t)
   ;; 			   five-point-items)
-  (spawn-enemy 'big-fairy -80.0 -20.0 300 ch10-big
+  (spawn-enemy 'big-fairy -80.0 -20.0 300 (curry ch10-big 'music-red)
 			   five-point-items)
-  (spawn-enemy 'big-fairy 0.0 -20.0 300 ch10-big
+  (spawn-enemy 'big-fairy 0.0 -20.0 300 (curry ch10-big 'music-orange)
 			   five-point-items)
-  (spawn-enemy 'big-fairy 80.0 -20.0 300 ch10-big
+  (spawn-enemy 'big-fairy 80.0 -20.0 300 (curry ch10-big 'music-blue)
 			   five-point-items)
   ;; TODO: ^ time those
   ;; idea: papa mama sensei -> small fairies that just show up and fire something easy
