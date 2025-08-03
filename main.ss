@@ -436,6 +436,14 @@
 			(+ 192 (* 64 row))
 			64 64 shift32)))
 
+  (make 'red-yinyang txbundle-enemy1 192 64 32 32 shift16)
+  (make 'green-yinyang txbundle-enemy1 224 64 32 32 shift16)
+  (make 'blue-yinyang txbundle-enemy1 256 64 32 32 shift16)
+  (make 'magenta-yinyang txbundle-enemy1 288 64 32 32 shift16)
+  (make 'red-yinyang-outer txbundle-enemy1 192 96 32 32 shift16)
+  (make 'green-yinyang-outer txbundle-enemy1 224 96 32 32 shift16)
+  (make 'blue-yinyang-outer txbundle-enemy1 256 96 32 32 shift16)
+  (make 'magenta-yinyang-outer txbundle-enemy1 288 96 32 32 shift16)
 
   ;; items
   (make 'life-frag txbundle-item 0 32 32 32 shift16)
@@ -527,6 +535,21 @@
    (sprite-descriptor-bounds data) dest
    (vec2 (/ (rectangle-width dest) 2.0) (/ (rectangle-height dest) 2.0))
    rotation color))
+
+(define (draw-sprite-with-scale-rotation textures sprite-id rotation scale x y color)
+  (define data (symbol-hashtable-ref sprite-data sprite-id #f))
+  (define center-shift (sprite-descriptor-center-shift data))
+  (raylib:with-matrix
+   (raylib:translatef x y 0.0)
+   (raylib:rotatef (inexact rotation) 0.0 0.0 1.0)
+   (raylib:scalef scale scale 1.0)
+   (raylib:translatef (+ (v2x center-shift)) (+ (v2y center-shift)) 0.0)
+   (raylib:draw-texture-rec
+	((sprite-descriptor-tx-accessor data) textures)
+	(sprite-descriptor-bounds data)
+	v2zero
+	color))
+  )
 
 (define (packcolor r g b a)
   (bitwise-ior (bitwise-arithmetic-shift-left r 24)
@@ -1168,6 +1191,7 @@
 
 (define-enumeration enmtype
   (red-fairy green-fairy blue-fairy yellow-fairy
+			 red-yinyang green-yinyang blue-yinyang magenta-yinyang
 			 medium-red-fairy medium-blue-fairy
 			 big-fairy boss-doremi boss-hazuki boss-aiko boss-onpu)
   make-enmtype-set)
@@ -1494,10 +1518,11 @@
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))
-	([medium-blue-fairy medium-red-fairy big-fairy]
-	 (values (- (enm-x enm) 16)
-			 (- (enm-y enm) 16)
-			 32 32))))
+	([medium-blue-fairy medium-red-fairy big-fairy
+						red-yinyang green-yinyang blue-yinyang magenta-yinyang]
+	 (values (- (enm-x enm) 11)
+			 (- (enm-y enm) 11)
+			 22 22))))
 
 (define (enm-hurtbox enm)
   (case (enm-type enm)
@@ -1509,10 +1534,11 @@
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))
-	([medium-blue-fairy medium-red-fairy big-fairy]
-	 (values (- (enm-x enm) 24)
-			 (- (enm-y enm) 24)
-			 48 48))))
+	([medium-blue-fairy medium-red-fairy big-fairy
+						red-yinyang green-yinyang blue-yinyang magenta-yinyang]
+	 (values (- (enm-x enm) 16)
+			 (- (enm-y enm) 16)
+			 32 32))))
 
 (define (draw-boss textures enm render-x render-y)
   (define bossinfo (enm-extras enm))
@@ -1611,6 +1637,26 @@
 	  (case type
 		([boss-doremi boss-hazuki boss-aiko boss-onpu]
 		 (draw-boss textures enm render-x render-y))
+		([red-yinyang green-yinyang blue-yinyang magenta-yinyang]
+		 (draw-sprite textures type render-x render-y -1)
+		 (let ([outer-sprite
+				(case type
+				  ([red-yinyang] 'red-yinyang-outer)
+				  ([green-yinyang] 'green-yinyang-outer)
+				  ([blue-yinyang] 'blue-yinyang-outer)
+				  ([magenta-yinyang] 'magenta-yinyang-outer))])
+		   (draw-sprite-with-scale-rotation
+			textures
+			outer-sprite
+			(flmod (* frames -4.0) 360.0)
+			1.4 render-x render-y -1)
+		   (draw-sprite-with-rotation
+			textures
+			outer-sprite
+			(flmod (* frames 8.0) 360.0)
+			render-x render-y -1)
+
+		   ))
 		([yellow-fairy red-fairy green-fairy blue-fairy
 					   medium-red-fairy medium-blue-fairy big-fairy]
 		 (cond
@@ -2447,8 +2493,11 @@
 	(set! initial-bomb-sweep-y-down bomb-sweep-y-down)
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
-  (when (raylib:is-key-down key-space)
-	(raylib:play-sound (sebundle-shoot2 sounds))
+  (when (raylib:is-key-pressed key-space)
+	(spawn-enemy (enmtype red-yinyang) -50.0 100.0 20 (lambda (task enm) #f))
+	(spawn-enemy (enmtype green-yinyang) -10.0 100.0 20 (lambda (task enm) #f))
+	(spawn-enemy (enmtype blue-yinyang) 10.0 100.0 20 (lambda (task enm) #f))
+	(spawn-enemy (enmtype magenta-yinyang) 50.0 100.0 20 (lambda (task enm) #f))
 	)
   (when (and (raylib:is-key-pressed key-left-bracket))
 	(if (raylib:is-key-down key-left-shift)
@@ -3481,20 +3530,17 @@
 			  (mod (1+ type-idx) (length types)))))
 	(constantly #t)
 	task)
-  (wait 360)
+  (wait 300)
   (ease-to ease-in-quart 0.0 -50.0 180 enm)
   (delete-enemy enm))
 
 (define (chapter5 task)
   (set! current-chapter 5)
-  (spawn-enemy (enmtype big-fairy) 0.0 -20.0 3000 ch5-bigfairy
+  (spawn-enemy (enmtype big-fairy) 0.0 -20.0 2500 ch5-bigfairy
 			   '((point . 10)))
-  ;; (wait 420)
-  ;; (spawn-enemy (enmtype medium-blue-fairy) -200.0 250.0 800 (curry ch5-med-fairy #f)
-  ;; 			   '((point . 3)))
-  ;; (wait 420)
-  ;; (spawn-enemy (enmtype medium-blue-fairy) 200.0 250.0 800 (curry ch5-med-fairy #t)
-  ;; 			   '((point . 3)))
+  ;; TODO: Some simpler/slower moving fairy with no hurtbox, harder outer rings,
+  ;; intent is you dodge inside the rings
+  ;; OR some chill yin yang orb stuff
   (wait-until (thunk (>= frames 6339)))
   (chapter6 task))
 

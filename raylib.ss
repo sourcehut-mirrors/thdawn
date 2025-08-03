@@ -20,7 +20,7 @@
 		  load-font unload-font
 		  is-key-down get-key-pressed set-exit-key is-key-pressed is-key-released
 		  set-trace-log-level
-		  push-matrix pop-matrix with-matrix translatef rotatef
+		  push-matrix pop-matrix with-matrix translatef rotatef scalef
 		  rlbegin rlend vertex2 texcoord color4f color4ub normal3f set-texture
 		  set-texture-filter
 		  set-shapes-texture get-shapes-texture get-shapes-texture-rectangle
@@ -453,6 +453,8 @@
 	(foreign-procedure "rlTranslatef" (float float float) void))
   (define rotatef
 	(foreign-procedure "rlRotatef" (float float float float) void))
+  (define scalef
+	(foreign-procedure "rlScalef" (float float float) void))
   (define rlbegin
 	(foreign-procedure "rlBegin" (int) void))
   (define rlend
