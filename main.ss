@@ -1649,14 +1649,12 @@
 			textures
 			outer-sprite
 			(flmod (* frames -4.0) 360.0)
-			1.4 render-x render-y -1)
+			1.4 render-x render-y tint)
 		   (draw-sprite-with-rotation
 			textures
 			outer-sprite
 			(flmod (* frames 8.0) 360.0)
-			render-x render-y -1)
-
-		   ))
+			render-x render-y tint)))
 		([yellow-fairy red-fairy green-fairy blue-fairy
 					   medium-red-fairy medium-blue-fairy big-fairy]
 		 (cond
@@ -3534,53 +3532,58 @@
   (ease-to ease-in-quart 0.0 -50.0 180 enm)
   (delete-enemy enm))
 
+(define (ch5-yinyang task enm)
+  (spawn-subtask "shoot"
+	(lambda (task)
+	  (interval-loop 40
+		(dotimes 5
+		  (-> (fb)
+			  (fbcounts 3)
+			  (fbabsolute-aim)
+			  (fbang -90.0 70.0)
+			  (fbspeed 2.0)
+			  (fbshootez enm 'small-star-red 2 #f))
+		  (-> (fb)
+			  (fbcounts 3)
+			  (fbabsolute-aim)
+			  (fbang 90.0 70.0)
+			  (fbspeed 4.0)
+			  (fbshootez enm 'small-star-orange 2 #f))
+		  (wait 2))))
+	(constantly #t)
+	task)
+  (loop-forever
+   (linear-step-enm (torad 90.0) 2.0 enm)
+   (when (> (enm-y enm) +playfield-max-y+)
+	 (enm-drops-set! enm '())
+	 (kill-enemy enm)
+	 (-> (cb)
+		 (cbcount 18)
+		 (cbspeed 2.0)
+		 (cbshootez enm 'small-ball-magenta 5 (sebundle-bell sounds))))))
+
 (define (chapter5 task)
+  (define xs '((-105.0 . 20.0) (-20.0 . 40.0)
+			   (-50.0 . 20.0) (-40.0 . 0.0)
+			   (-90.0 . -20.0) (-10.0 . 10.0)
+			   (-20.0 . 0.0) (0.0 . 20.0)
+			   (-80.0 . -20.0) (-10.0 . 50.0)))
   (set! current-chapter 5)
   (spawn-enemy (enmtype big-fairy) 0.0 -20.0 2500 ch5-bigfairy
 			   '((point . 20)))
   ;; TODO: Some simpler/slower moving fairy with no hurtbox, harder outer rings,
   ;; intent is you dodge inside the rings
   (wait 360)
-  (let loop ([i 0]
-			 [x 0.0])
+  (for-each
+   (lambda (pair)
 	(spawn-enemy (enmtype magenta-yinyang)
-				 x 0.0
-				 300
-				 (lambda (task enm)
-				   (spawn-subtask "shoot"
-					 (lambda (task)
-					   (interval-loop 20
-						 (dotimes 5
-						   (-> (fb)
-							   (fbcounts 3)
-							   (fbabsolute-aim)
-							   (fbang -90.0 70.0)
-							   (fbspeed 2.0)
-							   (fbshootez enm 'small-star-red 2 #f))
-						   (-> (fb)
-							   (fbcounts 3)
-							   (fbabsolute-aim)
-							   (fbang 90.0 70.0)
-							   (fbspeed 4.0)
-							   (fbshootez enm 'small-star-orange 2 #f))
-						   (wait 2))))
-					 (constantly #t)
-					 task)
-				   (loop-forever
-					(linear-step-enm (torad 90.0) 2.0 enm)
-					(when (> (enm-y enm) +playfield-max-y+)
-					  (enm-drops-set! enm '())
-					  (kill-enemy enm)
-					  (-> (cb)
-						  (cbcount 18)
-						  (cbspeed 2.0)
-						  (cbshootez enm 'small-ball-magenta 5 (sebundle-bell sounds))))))
-				 '((point . 5)))
-	(wait 50)
-	(when (< i 9)
-	  (loop (add1 i)
-			(if (< (roll game-rng) 0.5) (fl+ x 40.0) (fl- x 40.0))))
-	)
+				 (car pair) (centered-roll game-rng 10.0)
+				 250 ch5-yinyang '((point . 5)))
+	(spawn-enemy (enmtype magenta-yinyang)
+				 (cdr pair) (centered-roll game-rng 10.0)
+				 250 ch5-yinyang '((point . 5)))
+	(wait 50))
+	xs)
   (wait-until (thunk (>= frames 6339)))
   (chapter6 task))
 
