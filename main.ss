@@ -1518,11 +1518,15 @@
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))
-	([medium-blue-fairy medium-red-fairy big-fairy
+	([medium-blue-fairy medium-red-fairy
 						red-yinyang green-yinyang blue-yinyang magenta-yinyang]
 	 (values (- (enm-x enm) 11)
 			 (- (enm-y enm) 11)
-			 22 22))))
+			 22 22))
+	([big-fairy]
+	 (values (- (enm-x enm) 15)
+			 (- (enm-y enm) 15)
+			 30 30))))
 
 (define (enm-hurtbox enm)
   (case (enm-type enm)
@@ -1534,11 +1538,15 @@
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))
-	([medium-blue-fairy medium-red-fairy big-fairy
+	([medium-blue-fairy medium-red-fairy
 						red-yinyang green-yinyang blue-yinyang magenta-yinyang]
 	 (values (- (enm-x enm) 16)
 			 (- (enm-y enm) 16)
-			 32 32))))
+			 32 32))
+	([big-fairy]
+	 (values (- (enm-x enm) 22)
+			 (- (enm-y enm) 22)
+			 44 44))))
 
 (define (draw-boss textures enm render-x render-y)
   (define bossinfo (enm-extras enm))
@@ -3708,7 +3716,7 @@
   (wait 50)
   (spawn-enemy (enmtype medium-blue-fairy) -200.0 250.0 800 (curry ch7-med-fairy #f)
 			   '((point . 10)))
-  (wait 420)
+  (wait 370)
   (spawn-enemy (enmtype medium-blue-fairy) 200.0 250.0 800 (curry ch7-med-fairy #t)
 			   '((point . 10)))
   (wait-until (thunk (>= frames 7497)))
