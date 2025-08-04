@@ -4,7 +4,7 @@
 ;; file as a r6rs Program
 (import (chezscheme))
 (import (add-prefix (raylib) raylib:)
-		(coro) (geom) (funcutils))
+		(coro) (geom) (funcutils) (config))
 (define key-space 32)
 (define key-escape 256)
 (define key-f1 290)
@@ -95,6 +95,8 @@
 	  (+ 10 res)
 	  res))
 
+(define config #f)
+
 (define-syntax interval-loop
   (syntax-rules ()
 	[(_ intvl b ...)
@@ -144,7 +146,6 @@
    laser damageresist)
   (sealed #t))
 (define sounds #f)
-(define sound-volume 85)
 (define (each-sound proc)
   (define rtd (record-type-descriptor sebundle))
   (define num-sounds (vlen (record-type-field-names rtd)))
@@ -153,7 +154,7 @@
 		[(>= i num-sounds)]
 	  (proc ((record-accessor rtd i) sounds)))))
 (define (update-sound-volumes)
-  (let ([vol-flt (inexact (/ sound-volume 100.0))])
+  (let ([vol-flt (inexact (/ (cdr (assq 'sfx-vol config)) 100.0))])
 	(each-sound (lambda (sound) (raylib:set-sound-volume sound vol-flt)))))
 (define (load-sfx)
   (set! sounds
@@ -176,13 +177,17 @@
   (each-sound raylib:unload-sound)
   (set! sounds #f))
 (define (increase-sound-volume)
-  (when (< sound-volume 100)
-	(set! sound-volume (+ sound-volume 5)))
-  (update-sound-volumes))
+  (define pair (assq 'sfx-vol config))
+  (when (< (cdr pair) 100)
+	(set-cdr! pair (+ (cdr pair) 5))
+	(save-config config)
+	(update-sound-volumes)))
 (define (decrease-sound-volume)
-  (when (> sound-volume 0)
-	(set! sound-volume (- sound-volume 5)))
-  (update-sound-volumes))
+  (define pair (assq 'sfx-vol config))
+  (when (> (cdr pair) 0)
+	(set-cdr! pair (- (cdr pair) 5))
+	(save-config config)
+	(update-sound-volumes)))
 
 (define-record-type txbundle
   (fields
@@ -667,21 +672,25 @@
 (define ojamajo-carnival #f)
 (define (load-audio)
   (raylib:init-audio-device)
-  (set! ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav")))
+  (set! ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav"))
+  (raylib:set-music-volume ojamajo-carnival (inexact (/ (cdr (assq 'music-vol config)) 100.0))))
 (define (unload-audio)
   (raylib:unload-music-stream ojamajo-carnival)
   (set! ojamajo-carnival #f)
   (raylib:close-audio-device))
 
-(define music-volume 100)
 (define (increase-music-volume)
-  (when (< music-volume 100)
-	(set! music-volume (+ music-volume 5)))
-  (raylib:set-music-volume ojamajo-carnival (inexact (/ music-volume 100.0))))
+  (define pair (assq 'music-vol config))
+  (when (< (cdr pair) 100)
+	(set-cdr! pair (+ (cdr pair) 5))
+	(save-config config)
+	(raylib:set-music-volume ojamajo-carnival (inexact (/ (cdr pair) 100.0)))))
 (define (decrease-music-volume)
-  (when (> music-volume 0)
-	(set! music-volume (- music-volume 5)))
-  (raylib:set-music-volume ojamajo-carnival (inexact (/ music-volume 100.0))))
+  (define pair (assq 'music-vol config))
+  (when (> (cdr pair) 0)
+	(set-cdr! pair (- (cdr pair) 5))
+	(save-config config)
+	(raylib:set-music-volume ojamajo-carnival (inexact (/ (cdr pair) 100.0)))))
 
 (define next-bullet-id 1)
 (define (get-next-bullet-id)
@@ -2794,7 +2803,9 @@
 				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
   ;; todo: for prod release, hide this behind f3
-  (raylib:draw-text (format "VOL: ~d ~d" music-volume sound-volume)
+  (raylib:draw-text (format "VOL: ~d ~d"
+							(cdr (assq 'music-vol config))
+							(cdr (assq 'sfx-vol config)))
 					440 175 18 -1)
   (raylib:draw-text (format "SPLED: ~d of [0, ~d]" spline-editor-selected-position
 							(sub1 (vlen spline-editor-positions)))
@@ -4005,6 +4016,7 @@
   (raylib:init-window 1280 960 "thdawn")
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)
+  (set! config (read-config))
   (load-audio)
   (load-sfx)
   
