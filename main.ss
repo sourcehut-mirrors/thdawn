@@ -45,7 +45,7 @@
   bltflags)
 (define empty-bltflags (bltflags))
 (define-enumeration enmflag
-  (invincible)
+  (invincible nocollide)
   enmflags)
 (define empty-enmflags (enmflags))
 
@@ -1509,11 +1509,12 @@
 		  (cancel-bullet bullet))
 		(damage-player))))
   (define (each-enm enm)
-	(let-values ([(x y w h) (enm-collision-box enm)])
-	  (when (check-collision-circle-rec
-			 player-x player-y hit-radius
-			 x y w h)
-		(damage-player))))
+	(unless (enm-hasflag? enm (enmflag nocollide))
+	  (let-values ([(x y w h) (enm-collision-box enm)])
+		(when (check-collision-circle-rec
+			   player-x player-y hit-radius
+			   x y w h)
+		  (damage-player)))))
   (vector-for-each-truthy each-bullet live-bullets)
   (vector-for-each-truthy each-enm live-enm))
 
@@ -1736,10 +1737,11 @@
 		  (raylib:draw-rectangle-rec
 		   (+ x +playfield-render-offset-x+)
 		   (+ y +playfield-render-offset-y+) w h green))
-		(let-values ([(x y w h) (enm-collision-box enm)])
-		  (raylib:draw-rectangle-rec
-		   (+ x +playfield-render-offset-x+)
-		   (+ y +playfield-render-offset-y+) w h red))
+		(unless (enm-hasflag? enm (enmflag nocollide))
+		  (let-values ([(x y w h) (enm-collision-box enm)])
+			(raylib:draw-rectangle-rec
+			 (+ x +playfield-render-offset-x+)
+			 (+ y +playfield-render-offset-y+) w h red)))
 		)))
   (vector-for-each-truthy each live-enm))
 
