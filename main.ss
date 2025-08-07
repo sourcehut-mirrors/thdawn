@@ -2273,6 +2273,7 @@
 		   (fl+ (enm-y enm) (centered-roll game-rng 30.0))
 		   90 enm)
   (raylib:play-sound (sebundle-bossdie sounds))
+  (cancel-all #t)
   (dotimes 90
 	(spawn-particle
 	 (make-particle (particletype maple)
@@ -4015,11 +4016,33 @@
   ;; (bubble + some scattered random stuff)
   ;; gami gami ojisan -> random fairy doing swirly bullets across screen
 
-  (wait-until (thunk (>= frames 11019)))
+  (wait-until (thunk (>= frames 10960)))
   (chapter11 task))
+
+(define (midboss2-control task enm)
+  (define bossinfo (enm-extras enm))
+  (define keep-running
+	(lambda () (positive? (bossinfo-remaining-timer bossinfo))))
+  (ease-to values 0.0 100.0 20 enm)
+  (wait 50)
+
+  (declare-spell enm "\"???\"" 720 -1 5000000)
+  (cancel-all #f)
+  (wait-while keep-running)
+  (common-spell-postlude bossinfo enm)
+  (common-boss-postlude bossinfo enm))
+
 (define (chapter11 task)
   (set! current-chapter 11)
   ;; midspell 2, micro spinning?
+  (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500 midboss2-control
+						  '((life . 1) (point . 50))
+						  (thunk #f))]
+		[bossinfo (make-bossinfo "Harukaze Doremi" #xff7fbcff
+								 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
+								 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
+								 #t #f #f #f 0 0 0 (immutable-vector))])
+	(enm-extras-set! enm bossinfo))
   (wait-until (thunk (>= frames 11785)))
   (chapter12 task))
 (define (chapter12 task)
@@ -4043,7 +4066,7 @@
 	  [(4) (values chapter4 3500)] [(5) (values chapter5 5200)]
 	  [(6) (values chapter6 6339)] [(7) (values chapter7 6725)]
 	  [(8) (values chapter8 7497)] [(9) (values chapter9 8284)]
-	  [(10) (values chapter10 9392)] [(11) (values chapter11 11019)]
+	  [(10) (values chapter10 9392)] [(11) (values chapter11 10960)]
 	  [(12) (values chapter12 11785)] [(13) (values chapter13 13000)]))
   (vector-fill! live-bullets #f)
   (vector-fill! live-enm #f)
