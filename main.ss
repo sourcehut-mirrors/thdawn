@@ -343,7 +343,7 @@
   (make-vertical-group-skip
    'bacteria basic-colors
    txbundle-bullet3 48 0 16 16 shift8)
-  (make-vertical-group
+  (make-vertical-group-skip
    'kunai basic-colors
    txbundle-bullet3 80 0 16 16 shift8)
   (make-vertical-group
@@ -3734,8 +3734,48 @@
 			   '((point . 10)))
   (wait-until (thunk (>= frames 7497)))
   (chapter8 task))
+
+(define (ch8-bigfairy flip task enm)
+  ;; TODO: something more interesting
+  (define (shoot task)
+	(let loop ([ang 0.0])
+	  (-> (cb)
+		  (cbabsolute-aim)
+		  (cbang ang)
+		  (cbcount 8)
+		  (cbspeed 2.0)
+		  (cbshoot (enm-x enm) (enm-y enm)
+			(lambda (layer in-layer speed facing)
+			  (spawn-bullet (if flip 'kunai-orange 'kunai-red)
+							(fl+ (enm-x enm) (fl* 2.0 (flcos facing)))
+							(fl+ (enm-y enm) (fl* 2.0 (flsin facing)))
+							2
+							(curry linear-step-forever facing speed)))))
+	  (wait 5)
+	  (loop (fl+ ang (* 20.0 (sin frames))))))
+  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (move-on-spline
+   (if flip
+	   (vector (vec2 200.0 259.0)
+			   (vec2 101.0 80.0)
+			   (vec2 -130.0 222.0)
+			   (vec2 -200.0 33.0))
+	   (vector (vec2 -200.0 259.0)
+			   (vec2 -101.0 80.0)
+			   (vec2 130.0 222.0)
+			   (vec2 200.0 33.0)))
+   (lambda (_seg) (values values 480))
+   enm))
+
 (define (chapter8 task)
   (set! current-chapter 8)
+  (-> (spawn-enemy (enmtype big-fairy) -200.0 259.0 1700 (curry ch8-bigfairy #f)
+				   '((point . 20)))
+	  (enm-addflags (enmflags nocollide)))
+  (wait 240)
+  (-> (spawn-enemy (enmtype big-fairy) 200.0 259.0 1700 (curry ch8-bigfairy #t)
+				   '((point . 20)))
+	  (enm-addflags (enmflags nocollide)))
   (wait-until (thunk (>= frames 8284)))
   (chapter9 task))
 
@@ -3774,6 +3814,7 @@
   (delete-enemy enm))
 
 (define (ch9-w2 task enm)
+  (enm-superarmor-set! enm 60)
   (ease-to values (enm-x enm) (+ 140.0 (enm-y enm)) 90 enm)
   (let ([start-frames frames]
 		[x (enm-x enm)]
@@ -3818,7 +3859,7 @@
 (define (chapter9 task)
   (set! current-chapter 9)
   (dotimes 10
-	(spawn-enemy (enmtype red-fairy) -200.0 117.0 100
+	(spawn-enemy (enmtype red-fairy) -200.0 117.0 90
 				 (curry ch9-w1-left
 						'arrowhead-red
 						(vector (vec2 0.0 116.0) (vec2 81.0 122.0)
@@ -3826,7 +3867,7 @@
 	(wait 10))
   (wait 100)
   (dotimes 10
-	(spawn-enemy (enmtype green-fairy) 200.0 117.0 100
+	(spawn-enemy (enmtype green-fairy) 200.0 117.0 90
 				 (curry ch9-w1-right
 						'arrowhead-green
 						(vector (vec2 0.0 116.0) (vec2 -81.0 122.0)
@@ -3835,7 +3876,7 @@
 
   (wait 120)
   (dotimes 10
-	(spawn-enemy (enmtype blue-fairy) -200.0 265.0 100
+	(spawn-enemy (enmtype blue-fairy) -200.0 265.0 90
 				 (curry ch9-w1-left
 						'arrowhead-blue
 						(vector (vec2 0.0 265.0) (vec2 110.0 257.0)
@@ -3843,7 +3884,7 @@
 	(wait 10))
   (wait 100)
   (dotimes 10
-	(spawn-enemy (enmtype yellow-fairy) 200.0 265.0 100
+	(spawn-enemy (enmtype yellow-fairy) 200.0 265.0 90
 				 (curry ch9-w1-right
 						'arrowhead-yellow
 						(vector (vec2 0.0 265.0) (vec2 -110.0 257.0)
