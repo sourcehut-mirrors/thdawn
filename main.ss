@@ -3743,8 +3743,8 @@
 	  (-> (cb)
 		  (cbabsolute-aim)
 		  (cbang ang)
-		  (cbcount 8)
-		  (cbspeed 2.0)
+		  (cbcount 4)
+		  (cbspeed 3.0)
 		  (cbshoot (enm-x enm) (enm-y enm)
 			(lambda (layer in-layer speed facing)
 			  (spawn-bullet (if flip 'kunai-orange 'kunai-red)
@@ -3752,8 +3752,9 @@
 							(fl+ (enm-y enm) (fl* 2.0 (flsin facing)))
 							2
 							(curry linear-step-forever facing speed)))))
-	  (wait 5)
-	  (loop (fl+ ang (* 20.0 (sin frames))))))
+	  (yield)
+	  (loop
+	   (fl+ ang (* 12.0 (cos (torad frames)) (sin (torad frames)))))))
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (move-on-spline
    (if flip
@@ -3766,7 +3767,8 @@
 			   (vec2 130.0 222.0)
 			   (vec2 200.0 33.0)))
    (lambda (_seg) (values values 480))
-   enm))
+   enm)
+  )
 
 (define (chapter8 task)
   (set! current-chapter 8)
@@ -3774,9 +3776,9 @@
 				   '((point . 20)))
 	  (enm-addflags (enmflags nocollide)))
   (wait 240)
-  (-> (spawn-enemy (enmtype big-fairy) 200.0 259.0 1700 (curry ch8-bigfairy #t)
-				   '((point . 20)))
-	  (enm-addflags (enmflags nocollide)))
+  ;; (-> (spawn-enemy (enmtype big-fairy) 200.0 259.0 1700 (curry ch8-bigfairy #t)
+  ;; 				   '((point . 20)))
+  ;; 	  (enm-addflags (enmflags nocollide)))
   (wait-until (thunk (>= frames 8284)))
   (chapter9 task))
 
