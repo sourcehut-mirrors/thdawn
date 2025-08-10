@@ -1,8 +1,8 @@
-image: debian/trixie
+image: archlinux
 packages:
   - chezscheme
 sources:
   - https://git.sr.ht/~williewillus/thdawn
 tasks:
   - build: |
-      cd thdawn && PROD=1 chezscheme --program build.ss
+      cd thdawn && PROD=1 chez --program build.ss
