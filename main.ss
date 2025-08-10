@@ -3302,8 +3302,8 @@
   (spawn-enemy (enmtype medium-red-fairy) 100.0 -20.0 350 ch2-w2-fairy
 			   five-point-items)
   (wait 120)
-  (spawn-enemy (enmtype big-fairy) -220.0 380.0 50 ch2-w3-fairy '((point . 15)))
-  (spawn-enemy (enmtype big-fairy) 220.0 380.0 50 ch2-w3-fairy '((point . 15)))
+  (spawn-enemy (enmtype big-fairy) -220.0 380.0 50 ch2-w3-fairy five-point-items)
+  (spawn-enemy (enmtype big-fairy) 220.0 380.0 50 ch2-w3-fairy five-point-items)
   (wait-until (thunk (>= frames 2425)))
   (chapter3 task))
 
@@ -3959,52 +3959,6 @@
   (ease-to values dest-x dest-y 180 enm)
   (delete-enemy enm))
 
-(define (ch10-side right-side task enm)
-  (ease-to values (enm-x enm) (+ (enm-y enm) 90.0) 30 enm)
-  (dotimes 120
-	(spawn-bullet 'small-star-red (enm-x enm) (enm-y enm) 5
-				  (curry linear-step-forever (centered-roll game-rng pi) 3.0))
-	(yield))
-  ;; (spawn-subtask "shoot"
-  ;; 	(lambda (task)
-  ;; 	  (interval-loop 60
-  ;; 		(-> (cb)
-  ;; 			(cbcount 12)
-  ;; 			(cbspeed 3.5)
-  ;; 			(cbshootez enm 'medium-ball-green 5 (sebundle-shoot0 sounds)))
-  ;; 		(-> (cb)
-  ;; 			(cbcount 24)
-  ;; 			(cbang 10.0)
-  ;; 			(cbspeed 3.5)
-  ;; 			(cbshootez enm 'small-ball-cyan 5 #f
-  ;; 					   (lambda (facing speed blt)
-  ;; 						 (dotimes 30
-  ;; 						   (linear-step facing speed blt)
-  ;; 						   (yield))
-  ;; 						 (wait 10)
-  ;; 						 (raylib:play-sound (sebundle-bell sounds))
-  ;; 						 (linear-step-forever (facing-player (bullet-x blt) (bullet-y blt)) speed blt)
-  ;; 						 )))))
-  ;; 	(constantly #t)
-  ;; 	task)
-  ;; (move-on-spline
-  ;;  (vector (vec2 -200.0 243.0)
-  ;; 		   (vec2 -31.0 233.0)
-  ;; 		   (vec2 82.0 137.0)
-  ;; 		   (vec2 17.0 -10.0))
-  ;;  (lambda (_seg) (values values 300))
-  ;;  enm)
-  #;(-> (fb)
-	  (fbcounts 10 5)
-	  (fbang 0.0 #;(if right-side -135.0 -45.0) 5.0)
-	  (fbspeed 5.0 6.0)
-	  (fbshoot (enm-x enm) (enm-y enm)
-		(lambda (row col speed facing)
-		  (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm) 5
-						(curry linear-step-forever facing speed))
-		  (wait 1))))
-  )
-
 (define (linear-step-with-bounce facing speed blt)
   (let loop ()
 	(let ([ox (bullet-x blt)]
@@ -4042,13 +3996,15 @@
 
 (define (chapter10 task)
   (set! current-chapter 10)
+  ;; some sort of dlw s5 thing where fairies cover entire columsn of screen except
+  ;; for given safe column, then gfw-like knife fairies
   ;; small fairies run across screen, swirling smaller bullets bigger fairies launch rings
   ;; of music notes that deflect off the wall (play on "ookina koe de")
   (wait 70)
-  ;; (spawn-enemy 'medium-red-fairy -192.0 100.0 300 (curry ch10-small #f)
-  ;; 			   five-point-items)
-  ;; (spawn-enemy 'medium-red-fairy 192.0 100.0 300 (curry ch10-small #t)
-  ;; 			   five-point-items)
+  (spawn-enemy 'medium-red-fairy -192.0 100.0 300 (curry ch10-small #f)
+			   five-point-items)
+  (spawn-enemy 'medium-red-fairy 192.0 100.0 300 (curry ch10-small #t)
+			   five-point-items)
   (spawn-enemy 'big-fairy -80.0 -20.0 300 (curry ch10-big 'music-red)
 			   five-point-items)
   (spawn-enemy 'big-fairy 0.0 -20.0 300 (curry ch10-big 'music-orange)
