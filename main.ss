@@ -32,6 +32,9 @@
 (define tau 6.28318)
 (alias vnth vector-ref)
 (alias vlen vector-length)
+(alias roll pseudo-random-generator-next!) ;; convenience alias
+(define (vrand v rng)
+  (vector-ref v (roll rng (vector-length v))))
 (define-enumeration miscenttype
   (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb)
   make-miscent-type-set)
@@ -108,9 +111,9 @@
   (syntax-rules ()
 	[(_ intvl cond b ...)
 	 (let loop ()
-	   b ...
-	   (wait intvl)
 	   (when cond
+		 b ...
+		 (wait intvl)
 		 (loop)))]))
 (define-syntax interval-loop-waitfirst
   (syntax-rules ()
@@ -643,7 +646,6 @@
 (define bomb-stock 3)
 (define game-rng (make-pseudo-random-generator))
 (define visual-rng (make-pseudo-random-generator))
-(alias roll pseudo-random-generator-next!) ;; convenience alias
 (define (centered-roll rng radius)
   (- (* (roll rng) 2 radius)
 	 radius))
@@ -1239,10 +1241,12 @@
   (enum-set-member? flag (enm-flags enm)))
 
 (define (enm-addflags enm flags)
-  (enm-flags-set! enm (enum-set-union (enm-flags enm) flags)))
+  (enm-flags-set! enm (enum-set-union (enm-flags enm) flags))
+  enm)
 
 (define (enm-clrflags enm flags)
-  (enm-flags-set! enm (enum-set-difference (enm-flags enm) flags)))
+  (enm-flags-set! enm (enum-set-difference (enm-flags enm) flags))
+  enm)
 
 (define (is-boss? enm)
   (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko boss-onpu)))
@@ -3142,19 +3146,19 @@
 			   `((point . 20)))
 
   (wait 190)
-  (spawn-enemy (enmtype red-fairy) -220.0 115.0 100
+  (spawn-enemy (enmtype red-fairy) -220.0 115.0 50
 			   (curry ch0-w3-fairy 'fixed-laser-red))
   (wait 25)
-  (spawn-enemy (enmtype green-fairy) -220.0 130.0 100
+  (spawn-enemy (enmtype green-fairy) -220.0 130.0 50
 			   (curry ch0-w3-fairy 'fixed-laser-orange))
   (wait 25)
-  (spawn-enemy (enmtype blue-fairy) -220.0 145.0 100
+  (spawn-enemy (enmtype blue-fairy) -220.0 145.0 50
 			   (curry ch0-w3-fairy 'fixed-laser-blue))
   (wait 25)
-  (spawn-enemy (enmtype yellow-fairy) -220.0 160.0 100
+  (spawn-enemy (enmtype yellow-fairy) -220.0 160.0 50
 			   (curry ch0-w3-fairy 'fixed-laser-magenta))
   (wait 25)
-  (spawn-enemy (enmtype red-fairy) -220.0 175.0 100
+  (spawn-enemy (enmtype red-fairy) -220.0 175.0 50
 			   (curry ch0-w3-fairy 'fixed-laser-yellow))
   (wait-until (thunk (>= frames 870)))
   (chapter1 task))
@@ -3776,17 +3780,47 @@
   )
 
 (define (chapter8 task)
+  (define colors '#((red-fairy . big-star-red)
+					(green-fairy . big-star-green)
+					(blue-fairy . big-star-blue)
+					(yellow-fairy . big-star-yellow)))
   (set! current-chapter 8)
-  (-> (spawn-enemy (enmtype medium-blue-fairy)
+  (let* ([first (-> (spawn-enemy (enmtype medium-blue-fairy)
 				   -200.0 200.0 1200 (curry ch8-bigfairy #f)
 				   '((point . 20)))
-	  (enm-addflags (enmflags nocollide)))
-  (wait 240)
-  (-> (spawn-enemy (enmtype medium-red-fairy)
-				   200.0 200.0 1200 (curry ch8-bigfairy #t)
-				   '((point . 20)))
-	  (enm-addflags (enmflags nocollide)))
-  ;; todo: extra small fairies at end of phrase if both the medium fairies are dead
+					(enm-addflags (enmflags nocollide)))]
+		 [second (begin
+				   (wait 240)
+				   (-> (spawn-enemy (enmtype medium-red-fairy)
+									200.0 200.0 1200 (curry ch8-bigfairy #t)
+									'((point . 20)))
+					   (enm-addflags (enmflags nocollide))))])
+	(wait-until (thunk (and (not (vector-index first live-enm))
+							(not (vector-index second live-enm)))))
+	(interval-loop-while 30 (< frames 8070)
+	  (let ([pair (vrand colors game-rng)])
+		(spawn-enemy
+		 (car pair)
+		 (centered-roll game-rng 160.0) -20.0 70
+		 (lambda (task enm)
+		   (ease-to ease-out-quad
+					(+ (enm-x enm) (centered-roll game-rng 20.0))
+					(+ (enm-y enm) (+ 50.0 (roll game-rng 20)))
+					30 enm)
+		   (dotimes 3
+			 (-> (fb)
+				 (fbcounts 3 5)
+				 (fbspeed 2.0 4.0)
+				 (fbang 0.0 20.0)
+				 (fbshootez enm (cdr pair) 5 (sebundle-shoot0 sounds)))
+			 (wait 30))
+		   (ease-to values
+					(+ (enm-x enm) (centered-roll game-rng 20.0))
+					-20.0
+					30 enm)
+		   (delete-enemy enm)
+		   ))))
+	)
   (wait-until (thunk (>= frames 8284)))
   (chapter9 task))
 
