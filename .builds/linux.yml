@@ -1,6 +1,6 @@
 image: archlinux
 packages:
-  - chezscheme
+  - chez-scheme
 sources:
   - https://git.sr.ht/~williewillus/thdawn
 tasks:
