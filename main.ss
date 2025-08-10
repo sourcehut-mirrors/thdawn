@@ -622,7 +622,7 @@
 (define paused #f)
 (define graze-radius 22.0)
 (define hit-radius 3.0)
-(define vacuum-radius-unfocused 40.0)
+(define vacuum-radius-unfocused 25.0)
 (define vacuum-radius-focused 80.0)
 (define player-x 0.0)
 ;; Increments away from 0 whenever horizontal movement happens, returns to 0 otherwise
@@ -2638,11 +2638,12 @@
 	  render-x render-y -1))
    option-xs option-ys)
 
-  (raylib:draw-circle-lines-v
-   render-player-x render-player-y
-   (lerp vacuum-radius-unfocused vacuum-radius-focused
-		 (/ focus-frames +max-focus-frames+))
-   #xffffff80)
+  (let ([focus-progress (/ focus-frames +max-focus-frames+)])
+	(raylib:draw-circle-lines-v
+	 render-player-x render-player-y
+	 (lerp vacuum-radius-unfocused vacuum-radius-focused
+		   focus-progress)
+	 (packcolor 255 255 255 (eround (lerp 16 128 focus-progress)))))
 
   (when show-hitboxes
 	(raylib:draw-circle-v render-player-x render-player-y graze-radius
