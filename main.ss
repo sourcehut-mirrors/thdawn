@@ -588,7 +588,7 @@
 (define +playfield-max-render-y+ (+ +playfield-max-y+ +playfield-render-offset-y+))
 (define +playfield-width+ (- +playfield-max-x+ +playfield-min-x+))
 (define +playfield-height+ (- +playfield-max-y+ +playfield-min-y+))
-(define +poc-y+ 120)
+(define +poc-y+ 160)
 (define +oob-bullet-despawn-fuzz+ 80)
 
 ;; Number of frames the current stage has been running. Does not increment when paused
@@ -1101,10 +1101,16 @@
    (mutable max-speed)
    (mutable global-angle)
    (mutable per-layer-angle)
+   (mutable offset)
    (mutable aimed-at-player))
   (sealed #t))
 (define (cb)
-  (make-circle-builder 0 0 0.0 0.0 0.0 0.0 #t))
+  (make-circle-builder 0 0 0.0 0.0 0.0 0.0 0.0 #t))
+
+;; NB: Only works when used with cbshootez
+(define (cboffset cb offset)
+  (circle-builder-offset-set! cb offset)
+  cb)
 (define cbcount
   (case-lambda
 	[(cb per-layer)
@@ -1164,11 +1170,14 @@
 	[(cb enm type delay sound control-function)
 	 (define x (enm-x enm))
 	 (define y (enm-y enm))
+	 (define offset (circle-builder-offset cb))
 	 (cbshoot cb x y
 	   (lambda (row col speed facing)
 		 (when sound
 		   (raylib:play-sound sound))
-		 (spawn-bullet type x y delay (curry control-function facing speed))))]))
+		 (spawn-bullet
+		  type (fl+ x (fl* offset (flcos facing))) (fl+ y (fl* offset (flsin facing)))
+		  delay (curry control-function facing speed))))]))
 
 (define +boss-lazy-spellcircle-context+ 30)
 (define-record-type bossinfo
@@ -3742,7 +3751,6 @@
   (chapter8 task))
 
 (define (ch8-bigfairy flip task enm)
-  ;; TODO: something more interesting
   (define (shoot task)
 	(wait 20)
 	(raylib:play-sound (sebundle-shortcharge sounds))
@@ -3753,13 +3761,8 @@
 		  (cbang ang)
 		  (cbcount 4)
 		  (cbspeed 3.0)
-		  (cbshoot (enm-x enm) (enm-y enm)
-			(lambda (layer in-layer speed facing)
-			  (spawn-bullet (if flip 'kunai-orange 'kunai-red)
-							(fl+ (enm-x enm) (fl* 25.0 (flcos facing)))
-							(fl+ (enm-y enm) (fl* 25.0 (flsin facing)))
-							2
-							(curry linear-step-forever facing speed)))))
+		  (cboffset 25.0)
+		  (cbshootez enm (if flip 'kunai-orange 'kunai-red) 2 #f))
 	  (yield)
 	  (loop
 	   (fl+ ang (* 12.0 (cos (torad frames)) (sin (torad frames)))))))
@@ -3942,7 +3945,7 @@
   (wait-until (thunk (>= frames 9392)))
   (chapter10 task))
 
-(define (ch10-small right-side task enm)
+(define (ch10-w1 right-side task enm)
   (define dest-x (if right-side
 					 (- +playfield-min-x+ 20.0)
 					 (+ +playfield-max-x+ 20.0)))
@@ -3950,7 +3953,17 @@
 					(centered-roll game-rng 80.0)))
   (define (shoot task)
 	(interval-loop 10
-	  (-> (fb)
+	  (let ([color (vrand '#(music-cyan music-blue music-green) game-rng)])
+		(-> (cb)
+			(cbcount 16)
+			(cbspeed 3.0)
+			(cbabsolute-aim)
+			(cbshoot (enm-x enm) (enm-y enm)
+			  (lambda (layer in-layer speed facing)
+				(spawn-bullet color (enm-x enm) (enm-y enm) 5
+							  (curry linear-step-with-bounce facing speed))
+				(wait 2)))))
+	  #;(-> (fb)
 		  (fbcounts 2 3)
 		  (fbang 0.0 20.0)
 		  (fbspeed 2.0 3.0)
@@ -3982,40 +3995,59 @@
 		)
 	  (loop))))
 
-(define (ch10-big type task enm)
-  (ease-to values (enm-x enm) (+ (enm-y enm) 100.0) 30 enm)
-  (interval-loop 60
-	(-> (cb)
-		(cbcount 20)
-		(cbspeed 3.0)
-		(cbshoot (enm-x enm) (enm-y enm)
-		  (lambda (layer in-layer speed facing)
-			(spawn-bullet type (enm-x enm) (enm-y enm) 5
-						  (curry linear-step-with-bounce facing speed))))))
+(define (ch10-w2 right-side task enm)
+  (ease-to values
+		   (+ (enm-x enm) (if right-side -50.0 50.0))
+		   (enm-y enm) 20 enm)
+  (-> (fb)
+	  (fbcounts 1 10)
+	  (fbspeed 1.0 (fl+ 5.5 (centered-roll game-rng 0.7)))
+	  (fbabsolute-aim)
+	  (fbang (if right-side 180.0 0.0) 0.0)
+	  (fbshootez enm (if right-side 'knife-red 'knife-blue)
+				 2 (sebundle-shoot0 sounds)
+				 (lambda (facing speed blt)
+				   (dotimes 60
+					 (linear-step facing speed blt)
+					 (yield))
+				   (linear-step-forever (fl/ pi 2.0) 3.0 blt))))
+  (wait 60)
+  (when (< (enm-y enm) 220.0)
+	(spawn-subtask "rings"
+	  (lambda (task)
+		(interval-loop 40
+		  (-> (cb)
+			  (cbcount 12)
+			  (cbspeed 4.0)
+			  (cbabsolute-aim)
+			  (cbang (inexact (roll game-rng 360)) 0.0)
+			  (cbshootez enm 'small-ball-yellow 2 (sebundle-bell sounds)))))
+	  (constantly #t) task))
+  (ease-to values (if right-side -200.0 200.0)
+		   (enm-y enm)
+		   300 enm)
+  (delete-enemy enm)
+  
   )
 
 (define (chapter10 task)
   (set! current-chapter 10)
-  ;; some sort of dlw s5 thing where fairies cover entire columsn of screen except
-  ;; for given safe column, then gfw-like knife fairies
-  ;; small fairies run across screen, swirling smaller bullets bigger fairies launch rings
-  ;; of music notes that deflect off the wall (play on "ookina koe de")
   (wait 70)
-  (spawn-enemy 'medium-red-fairy -192.0 100.0 300 (curry ch10-small #f)
-			   five-point-items)
-  (spawn-enemy 'medium-red-fairy 192.0 100.0 300 (curry ch10-small #t)
-			   five-point-items)
-  (spawn-enemy 'big-fairy -80.0 -20.0 300 (curry ch10-big 'music-red)
-			   five-point-items)
-  (spawn-enemy 'big-fairy 0.0 -20.0 300 (curry ch10-big 'music-orange)
-			   five-point-items)
-  (spawn-enemy 'big-fairy 80.0 -20.0 300 (curry ch10-big 'music-blue)
-			   five-point-items)
-  ;; TODO: ^ time those
-  ;; idea: papa mama sensei -> small fairies that just show up and fire something easy
-  ;; (bubble + some scattered random stuff)
-  ;; gami gami ojisan -> random fairy doing swirly bullets across screen
-
+  (spawn-enemy 'medium-red-fairy -192.0 100.0 300 (curry ch10-w1 #f)
+			   '((point . 5) (bomb-frag . 1)))
+  (spawn-enemy 'medium-red-fairy 192.0 100.0 300 (curry ch10-w1 #t)
+			   '((point . 5) (bomb-frag . 1)))
+  (wait 300)
+  (let loop ([y 100.0]
+			 [right-side #f])
+	(spawn-enemy (if right-side 'red-fairy 'blue-fairy)
+				 (if right-side 200.0 -200.0) y
+				 100 (curry ch10-w2 right-side)
+				 '((point . 10)))
+	(when (fl< y 300.0)
+	  (wait 30)
+	  (loop (fl+ y 40.0)
+			(not right-side))))
   (wait-until (thunk (>= frames 10960)))
   (chapter11 task))
 
