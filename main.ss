@@ -1930,7 +1930,14 @@
 		  extra-data
 		  (+ +playfield-render-offset-x+ (/ width -2.0))
 		  75.0
-		  24.0 0.0 -1)))))
+		  24.0 0.0
+		  (if (< (particle-age p) 120)
+			  -1
+			  (packcolor
+			   255 255 255
+			   (eround (lerp 255 0
+							 (/ (- (particle-age p) 120)
+								(- (particle-max-age p) 120)))))))))))
   (vector-for-each-truthy each live-particles))
 
 (define-record-type miscent
@@ -2256,7 +2263,7 @@
 	(particletype spellbonus)
 	;; Position dynamically calculated at render to avoid
 	;; the enemy tasks needing to access the fonts
-	0.0 0.0 150 0
+	0.0 0.0 180 0
 	(if failed
 		"Bonus Failed..."
 		(format "GET Spell Bonus!! ~:d" bonus))))
@@ -2525,11 +2532,7 @@
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
   (when (raylib:is-key-pressed key-space)
-	(spawn-enemy (enmtype red-yinyang) -50.0 100.0 20 (lambda (task enm) #f))
-	(spawn-enemy (enmtype green-yinyang) -10.0 100.0 20 (lambda (task enm) #f))
-	(spawn-enemy (enmtype blue-yinyang) 10.0 100.0 20 (lambda (task enm) #f))
-	(spawn-enemy (enmtype magenta-yinyang) 50.0 100.0 20 (lambda (task enm) #f))
-	)
+	(values))
   (when (and (raylib:is-key-pressed key-left-bracket))
 	(if (raylib:is-key-down key-left-shift)
 		(decrease-music-volume)
@@ -3591,8 +3594,8 @@
   (loop-forever
    (linear-step-enm (torad 90.0) 2.0 enm)
    (when (> (enm-y enm) +playfield-max-y+)
-	 (enm-drops-set! enm '())
-	 (kill-enemy enm)
+	 (raylib:play-sound (sebundle-enmdie sounds))
+	 (delete-enemy enm)
 	 (-> (cb)
 		 (cbcount 18)
 		 (cbspeed 2.0)
@@ -3604,22 +3607,29 @@
 			   (-90.0 . -20.0) (-10.0 . 10.0)
 			   (-20.0 . 0.0) (0.0 . 20.0)
 			   (-80.0 . -20.0) (-10.0 . 50.0)))
+  (define yys-killed (box 0))
+  (define (on-death)
+	(define next (1+ (unbox yys-killed)))
+	(set-box! yys-killed next)
+	(when (= next (* 2 (length xs)))
+	  ;; all yinyangs killed, reward
+	  (spawn-drops '((bomb . 1) (life-frag . 1))
+				   0.0 (inexact +poc-y+)))
+	#t)
   (set! current-chapter 5)
   (spawn-enemy (enmtype big-fairy) 0.0 -20.0 2500 ch5-bigfairy
 			   '((point . 20)))
-  ;; TODO: Some simpler/slower moving fairy with no hurtbox, harder outer rings,
-  ;; intent is you dodge inside the rings
   (wait 360)
   (for-each
    (lambda (pair)
 	(spawn-enemy (enmtype magenta-yinyang)
 				 (car pair) (centered-roll game-rng 10.0)
-				 250 ch5-yinyang '((point . 5)))
+				 250 ch5-yinyang '((point . 5)) on-death)
 	(spawn-enemy (enmtype magenta-yinyang)
 				 (cdr pair) (centered-roll game-rng 10.0)
-				 250 ch5-yinyang '((point . 5)))
+				 250 ch5-yinyang '((point . 5)) on-death)
 	(wait 50))
-	xs)
+   xs)
   (wait-until (thunk (>= frames 6339)))
   (chapter6 task))
 
@@ -4048,6 +4058,9 @@
 	  (wait 30)
 	  (loop (fl+ y 40.0)
 			(not right-side))))
+
+  ;; big fairy with segmented circle waves (div 5?)
+  ;; some filler streaming (pretty tight)
   (wait-until (thunk (>= frames 10960)))
   (chapter11 task))
 
