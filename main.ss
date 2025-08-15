@@ -1245,6 +1245,7 @@
 (define live-enm (make-vector 256 #f))
 (define default-drop '((point . 1)))
 (define five-point-items '((point . 5)))
+(define ten-point '((point . 10)))
 
 (define (enm-hasflag? enm flag)
   (enum-set-member? flag (enm-flags enm)))
@@ -1824,6 +1825,10 @@
 	(let ([next-v (fl+ v accel)])
 	  (when (fl< next-v max-speed)
 		(loop next-v)))))
+;; Maintains max-speed once it's reached
+(define (linear-step-accelerate-forever facing speed accel max-speed blt)
+  (linear-step-accelerate facing speed accel max-speed blt)
+  (linear-step-forever facing max-speed blt))
 
 (define-record-type particle
   (fields
@@ -3235,7 +3240,7 @@
 	(wait 7))
   (wait 70)
   (spawn-enemy (enmtype big-fairy) 141.0 0.0 600 (curry ch1-big-fairy #t)
-			   '((point . 10)))
+			   ten-point)
   (wait 220)
   (dotimes 10
 	(spawn-enemy (enmtype red-fairy) 141.0 0.0 50 ch1-small-fairy)
@@ -3753,10 +3758,10 @@
   (set! current-chapter 7)
   (wait 50)
   (spawn-enemy (enmtype big-fairy) -200.0 250.0 800 (curry ch7-med-fairy #f)
-			   '((point . 10)))
+			   ten-point)
   (wait 370)
   (spawn-enemy (enmtype big-fairy) 200.0 250.0 800 (curry ch7-med-fairy #t)
-			   '((point . 10)))
+			   ten-point)
   (wait-until (thunk (>= frames 7497)))
   (chapter8 task))
 
@@ -3972,12 +3977,7 @@
 			  (lambda (layer in-layer speed facing)
 				(spawn-bullet color (enm-x enm) (enm-y enm) 5
 							  (curry linear-step-with-bounce facing speed))
-				(wait 2)))))
-	  #;(-> (fb)
-		  (fbcounts 2 3)
-		  (fbang 0.0 20.0)
-		  (fbspeed 2.0 3.0)
-		  (fbshootez enm (if right-side 'small-star-red 'small-star-blue) 5 #f))))
+				(wait 2)))))))
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ease-to values dest-x dest-y 180 enm)
   (delete-enemy enm))
@@ -3996,16 +3996,16 @@
 		 [(< ny +playfield-min-y+)
 		  (let ([xv (flcos facing)]
 				[yv (flsin facing)])
-			(linear-step-forever (atan (fl- yv) xv) speed blt))]
+			(linear-step-forever (flatan (fl- yv) xv) speed blt))]
 		 [(or (< nx +playfield-min-x+)
 			  (> nx +playfield-max-x+))
 		  (let ([xv (flcos facing)]
 				[yv (flsin facing)])
-			(linear-step-forever (atan yv (fl- xv)) speed blt))])
+			(linear-step-forever (flatan yv (fl- xv)) speed blt))])
 		)
 	  (loop))))
 
-(define (ch10-w2 right-side task enm)
+(define (ch10-w2 type right-side task enm)
   (ease-to values
 		   (+ (enm-x enm) (if right-side -50.0 50.0))
 		   (enm-y enm) 20 enm)
@@ -4014,7 +4014,7 @@
 	  (fbspeed 1.0 (fl+ 5.5 (centered-roll game-rng 0.7)))
 	  (fbabsolute-aim)
 	  (fbang (if right-side 180.0 0.0) 0.0)
-	  (fbshootez enm (if right-side 'knife-red 'knife-blue)
+	  (fbshootez enm type
 				 2 (sebundle-shoot0 sounds)
 				 (lambda (facing speed blt)
 				   (dotimes 60
@@ -4022,44 +4022,78 @@
 					 (yield))
 				   (linear-step-forever (fl/ pi 2.0) 3.0 blt))))
   (wait 60)
-  (when (< (enm-y enm) 220.0)
-	(spawn-subtask "rings"
-	  (lambda (task)
-		(interval-loop 40
-		  (-> (cb)
-			  (cbcount 12)
-			  (cbspeed 4.0)
-			  (cbabsolute-aim)
-			  (cbang (inexact (roll game-rng 360)) 0.0)
-			  (cbshootez enm 'small-ball-yellow 2 (sebundle-bell sounds)))))
-	  (constantly #t) task))
+  (spawn-subtask "rings"
+	(lambda (task)
+	  (interval-loop 50
+		(-> (cb)
+			(cbcount 12)
+			(cbspeed 4.0)
+			(cbabsolute-aim)
+			(cbang (inexact (roll game-rng 360)) 0.0)
+			(cbshootez enm 'small-ball-yellow 2 (sebundle-bell sounds)))))
+	(constantly #t) task)
   (ease-to values (if right-side -200.0 200.0)
 		   (enm-y enm)
 		   300 enm)
-  (delete-enemy enm)
-  
-  )
+  (delete-enemy enm))
+
+(define (ch10-w3 task enm)
+  (define iters 5)
+  (define angper 8.0)
+  (enm-superarmor-set! enm 60)
+  (ease-to values 0.0 100.0 60 enm)
+  (spawn-subtask "decoration"
+	(lambda (task)
+	  (interval-loop 30
+		(-> (cb)
+			(cbcount 12)
+			(cbspeed 5.0)
+			(cbshootez enm 'heart-red 2 #f linear-step-forever))))
+	(constantly #t)
+	task)
+  (let loop ([sign 1]
+			 [start-ang 0.0])
+	(do [(i 0 (fx1+ i))]
+		[(= i iters)]
+	  (-> (cb)
+		  (cbabsolute-aim)
+		  (cbcount 5)
+		  (cbang (fl+ start-ang (fl* (inexact sign) (inexact i) angper)))
+		  (cbspeed 3.0)
+		  (cbshootez enm 'big-star-magenta 2 (sebundle-shoot0 sounds)
+					 (lambda (facing speed blt)
+					   (linear-step-decelerate facing speed -0.1 blt)
+					   (wait 10)
+					   (linear-step-accelerate-forever facing 0.0 0.7 6.0 blt))))
+	  (wait 5))
+	(wait 5)
+	(loop (- sign)
+		  (fl+ start-ang
+			   ;; start where previous wave ended, plus a bit more
+			   (* sign angper iters)
+			   (* sign 5.0)))))
 
 (define (chapter10 task)
   (set! current-chapter 10)
   (wait 70)
-  (spawn-enemy 'medium-red-fairy -192.0 100.0 300 (curry ch10-w1 #f)
+  (spawn-enemy 'medium-red-fairy -192.0 100.0 270 (curry ch10-w1 #f)
 			   '((point . 5) (bomb-frag . 1)))
-  (spawn-enemy 'medium-red-fairy 192.0 100.0 300 (curry ch10-w1 #t)
+  (spawn-enemy 'medium-red-fairy 192.0 100.0 270 (curry ch10-w1 #t)
 			   '((point . 5) (bomb-frag . 1)))
   (wait 300)
-  (let loop ([y 100.0]
-			 [right-side #f])
+  (let loop ([y 50.0]
+			 [right-side #f]
+			 [types '(knife-red knife-orange knife-blue knife-magenta knife-yellow)])
 	(spawn-enemy (if right-side 'red-fairy 'blue-fairy)
 				 (if right-side 200.0 -200.0) y
-				 100 (curry ch10-w2 right-side)
-				 '((point . 10)))
-	(when (fl< y 300.0)
-	  (wait 30)
-	  (loop (fl+ y 40.0)
-			(not right-side))))
+				 100 (curry ch10-w2 (car types) right-side)
+				 ten-point)
+	(wait 30)
+	(unless (null? (cdr types))
+	  (loop (fl+ y 40.0) (not right-side) (cdr types))))
 
-  ;; big fairy with segmented circle waves (div 5?)
+  (wait 300)
+  (spawn-enemy 'big-fairy 0.0 -20.0 1500 ch10-w3 '((point . 10)))
   ;; some filler streaming (pretty tight)
   (wait-until (thunk (>= frames 10960)))
   (chapter11 task))
