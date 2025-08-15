@@ -529,7 +529,7 @@
   (raylib:with-matrix
    (raylib:translatef x y 0.0)
    (raylib:rotatef (inexact rotation) 0.0 0.0 1.0)
-   (raylib:translatef (+ (v2x center-shift)) (+ (v2y center-shift)) 0.0)
+   (raylib:translatef (v2x center-shift) (v2y center-shift) 0.0)
    (raylib:draw-texture-rec
 	((sprite-descriptor-tx-accessor data) textures)
 	(sprite-descriptor-bounds data)
@@ -2918,6 +2918,9 @@
 	   (lerp 2.5 1.5 progress)))]
    [else (values 0.5 1.0 1.5)]))
 
+(define bullet-cc (make-cost-center))
+(define miscent-cc (make-cost-center))
+
 (define background-draw-bounds
   ;; x is integer multiple of texture width to prevent stretching
   ;; y isn't but the stretching isn't too noticeable so it's ok
@@ -2963,8 +2966,10 @@
 	(draw-lasers textures sorted-bullets)
 	(draw-enemies textures)
 	(draw-player textures)
-	(draw-misc-ents textures)
-	(draw-bullets textures sorted-bullets))
+	(with-cost-center miscent-cc
+					  (thunk (draw-misc-ents textures)))
+	(with-cost-center bullet-cc
+					  (thunk (draw-bullets textures sorted-bullets))))
   (draw-particles textures fonts)
 
   ;; focus sigil. Done here after the bullets because we want the player hitbox
@@ -4268,7 +4273,18 @@
 		  (render-all render-texture render-texture-inner textures fonts)
 		  (unless paused
 			(set! frames (fx1+ frames)))
-		  (set! true-frames (fx1+ true-frames))))
+		  (set! true-frames (fx1+ true-frames))
+		  #;(when (fxzero? (fxmod true-frames 180))
+			(display (format "B ~,2f || "
+							 (/ (cost-center-allocation-count bullet-cc)
+								(* 1024.0 1024.0))))
+			(display (format "M ~,2f || "
+							 (/ (cost-center-allocation-count miscent-cc)
+								(* 1024.0 1024.0))))
+			(reset-cost-center! bullet-cc)
+			(reset-cost-center! miscent-cc)
+			(newline))
+		  ))
 	  (lambda ()
 		(unload-fonts fonts)
 		(unload-textures textures)
