@@ -2016,7 +2016,7 @@
 	(define type (miscent-type ent))
 	(define terminal-velocity
 	  (case type
-		([point life-frag big-piv life bomb-frag small-piv bomb] 20.0)
+		([point life-frag big-piv life bomb-frag small-piv bomb] 10.0)
 		(else +inf.0)))
 	(define (do-standard-movement)
 	  (let ([vy (miscent-vy ent)]
@@ -2083,7 +2083,9 @@
 		 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
 											(- player-y (miscent-y ent))))])
 		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 6)))
-		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 6))))]
+		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 6)))
+		   ;; reset this to something reasonable
+		   (miscent-vy-set! ent 1.0))]
 		[else (do-standard-movement)])
 	   (when (check-collision-circle-rec
 			  player-x player-y hit-radius
@@ -2214,7 +2216,8 @@
   (bossinfo-max-health-set! bossinfo health)
   (enm-superarmor-set! boss 120)
   (enm-health-set! boss health)
-  (raylib:play-sound (sebundle-spelldeclare sounds)))
+  (raylib:play-sound (sebundle-spelldeclare sounds))
+  (bossinfo-active-attack-failed-set! bossinfo #f))
 
 (define (declare-nonspell boss duration-frames health)
   (define bossinfo (enm-extras boss))
@@ -2274,8 +2277,7 @@
 		(format "GET Spell Bonus!! ~:d" bonus))))
   (cancel-all #t)
   (bossinfo-active-spell-name-set! bossinfo #f)
-  (bossinfo-active-spell-bonus-set! bossinfo #f)
-  (bossinfo-active-attack-failed-set! bossinfo #f))
+  (bossinfo-active-spell-bonus-set! bossinfo #f))
 
 (define (common-boss-postlude bossinfo enm)
   (raylib:play-sound (sebundle-bossdie sounds))
@@ -4073,6 +4075,57 @@
 			   (* sign angper iters)
 			   (* sign 5.0)))))
 
+(define (ch10-w4 task enm)
+  (define (shoot task)
+	(wait 10)
+	(interval-loop 5
+	  (-> (fb)
+		  (fbspeed 5.0)
+		  (fbcounts 2 1)
+		  (fbang 0.0 45.0)
+		  (fbshootez enm 'music-red 2 #f))
+	  (-> (fb)
+		  (fbspeed 5.0)
+		  (fbcounts 1 3)
+		  (fbshootez enm 'music-blue 2 #f))))
+  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (ease-to values 200.0 (enm-y enm) 100 enm)
+  (delete-enemy enm))
+
+(define (ch10-w5 right-side task enm)
+  (define types '(fixed-laser-red
+				  fixed-laser-orange fixed-laser-blue
+				  fixed-laser-magenta))
+  (ease-to values
+		   (+ (enm-x enm)
+			  (if right-side -50.0 50.0))
+		   (enm-y enm)
+		   20 enm)
+  (for-each
+   (lambda (type)
+	(raylib:play-sound (sebundle-laser sounds))
+	(spawn-laser type
+				 (enm-x enm) (enm-y enm)
+				 (facing-player (enm-x enm) (enm-y enm))
+				 550.0 5.0 5 30
+				 (lambda (_blt) (wait 60)))
+	(wait 25))
+   types)
+  (wait-until (thunk (>= frames 10872)))
+  (for-each
+   (lambda (type)
+	 (-> (fb)
+		 (fbcounts 1 5)
+		 (fbspeed 4.0 7.0)
+		 (fbshootez enm type 2 (sebundle-bell sounds)))
+	 (-> (cb)
+		 (cbcount 16 3)
+		 (cbspeed 4.0 7.0)
+		 (cbshootez enm 'small-ball-blue 2 #f))
+	 (wait 50)
+	 )
+   '(bubble-red bubble-orange bubble-blue bubble-magenta)))
+
 (define (chapter10 task)
   (set! current-chapter 10)
   (wait 70)
@@ -4094,7 +4147,24 @@
 
   (wait 300)
   (spawn-enemy 'big-fairy 0.0 -20.0 1500 ch10-w3 '((point . 10)))
-  ;; some filler streaming (pretty tight)
+  (wait 240)
+  (dotimes 10
+	(spawn-enemy 'red-fairy -200.0 200.0 100 ch10-w4)
+	(wait 10))
+  (wait 100)
+  (spawn-enemy 'green-fairy
+			   -200.0 50.0
+			   100 (curry ch10-w5 #f))
+  (spawn-enemy 'green-fairy
+			   200.0 50.0
+			   100 (curry ch10-w5 #t))
+  (wait 100)
+  (spawn-enemy 'green-fairy
+			   -200.0 130.0
+			   100 (curry ch10-w5 #f))
+  (spawn-enemy 'green-fairy
+			   200.0 130.0
+			   100 (curry ch10-w5 #t))
   (wait-until (thunk (>= frames 10960)))
   (chapter11 task))
 
@@ -4105,6 +4175,11 @@
   (ease-to values 0.0 100.0 20 enm)
   (wait 50)
 
+  (vector-for-each-truthy
+   (lambda (enm)
+	 (unless (is-boss? enm)
+	   (kill-enemy enm)))
+   live-enm)
   (declare-spell enm "\"???\"" 720 -1 5000000)
   (cancel-all #f)
   (wait-while keep-running)
