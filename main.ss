@@ -53,9 +53,9 @@
 (define empty-enmflags (enmflags))
 
 (define (torad x)
-  (* (fl/ pi 180.0) x))
+  (fl* (fl/ pi 180.0) x))
 (define (todeg x)
-  (* (fl/ 180.0 pi) x))
+  (fl* (fl/ 180.0 pi) x))
 (define (eround x)
   (exact (round x)))
 (define (epsilon-equal a b)
@@ -3782,7 +3782,8 @@
 		  (cbshootez enm (if flip 'kunai-orange 'kunai-red) 2 #f))
 	  (yield)
 	  (loop
-	   (fl+ ang (* 12.0 (cos (torad frames)) (sin (torad frames)))))))
+	   (fl+ ang (fl* 12.0 (flcos (torad (inexact frames)))
+				   (flsin (torad (inexact frames))))))))
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (move-on-spline
    (if flip
