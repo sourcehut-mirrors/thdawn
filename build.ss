@@ -9,8 +9,7 @@
 (undefined-variable-warnings #t)
 (generate-allocation-counts #t)
 (when (getenv "PROD")
-  (optimize-level 3)
-  (generate-inspector-information #f))
+  (optimize-level 3))
 
 ;; Do the main compilation
 (define libs-used (compile-program "main.ss"))

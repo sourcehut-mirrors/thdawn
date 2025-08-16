@@ -626,7 +626,7 @@
 (define graze-radius 22.0)
 (define hit-radius 3.0)
 (define vacuum-radius-unfocused 25.0)
-(define vacuum-radius-focused 80.0)
+(define vacuum-radius-focused 55.0)
 (define player-x 0.0)
 ;; Increments away from 0 whenever horizontal movement happens, returns to 0 otherwise
 (define player-dx-render 0)
@@ -3311,10 +3311,10 @@
   (delete-enemy enm))
 (define (chapter2 task)
   (set! current-chapter 2)
-  (spawn-enemy (enmtype medium-blue-fairy) -220.0 150.0 500 (curry ch2-w1-fairy #f)
+  (spawn-enemy (enmtype medium-blue-fairy) 220.0 150.0 500 (curry ch2-w1-fairy #t)
 			   five-point-items)
   (wait 220)
-  (spawn-enemy (enmtype medium-blue-fairy) 220.0 150.0 500 (curry ch2-w1-fairy #t)
+  (spawn-enemy (enmtype medium-blue-fairy) -220.0 150.0 500 (curry ch2-w1-fairy #f)
 			   five-point-items)
   (wait 180)
   (spawn-enemy (enmtype medium-red-fairy) -100.0 -20.0 350 ch2-w2-fairy
@@ -4114,7 +4114,7 @@
 				 (enm-x enm) (enm-y enm)
 				 (facing-player (enm-x enm) (enm-y enm))
 				 550.0 5.0 5 30
-				 (lambda (_blt) (wait 60)))
+				 (lambda (_blt) (wait 40)))
 	(wait 25))
    types)
   (wait-until (thunk (>= frames 10872)))
@@ -4128,8 +4128,7 @@
 		 (cbcount 16 3)
 		 (cbspeed 4.0 7.0)
 		 (cbshootez enm 'small-ball-blue 2 #f))
-	 (wait 50)
-	 )
+	 (wait 48))
    '(bubble-red bubble-orange bubble-blue bubble-magenta)))
 
 (define (chapter10 task)
@@ -4186,6 +4185,7 @@
 	 (unless (is-boss? enm)
 	   (kill-enemy enm)))
    live-enm)
+  (autocollect-all-items)
   (declare-spell enm "\"???\"" 720 -1 5000000)
   (cancel-all #f)
   (wait-while keep-running)
@@ -4314,4 +4314,32 @@
   (set! paused #f)
   (fork-thread main))
 
-(scheme-start (lambda _ (main)))
+(define (main-with-backtrace)
+  (define (print-stacktrace e)
+	(define ins (inspect/object (condition-continuation e)))
+	(define depth (ins 'depth))
+	(display "Crash! Please report this to the developer along with the version information.\n")
+	(display "Bytes Allocated: ")
+	(display (bytes-allocated))
+	(newline)
+	(when (message-condition? e)
+	  (display "Message: ")
+	  (display (condition-message e))
+	  (newline))
+	(display "\nBacktrace:\n")
+	(do [(i 0 (fx1+ i))]
+		[(fx= i depth)]
+	  (let* ([frame (ins 'link* i)]
+			 [source-obj (frame 'source-object)])
+		(display (or ((frame 'code) 'name) "anonymous"))
+		(when source-obj
+		  (display " @ ")
+		  (display source-obj))
+		;; todo: still maybe want the 'source, but truncated?
+		(newline))))
+  (guard (e [(continuation-condition? e)
+			 (print-stacktrace e)])
+	(main)))
+
+(scheme-start
+ (lambda _ (main-with-backtrace)))
