@@ -1,3 +1,25 @@
+* [2025-08-23 Sat]
+Pretty much all but one chapter of the stage patterns are in place.
+
+Some replay brainstorming:
+
+We'll have to first refactor input to introduce a layer of indirection: we need to capture
+the current state of any level-triggered keys, as well as the list of all edge-triggered
+key changes that happened in the frame. This needs to happen at the start of the frame and
+produce a snapshot of the input state, and the handle-input function should operate solely
+based on this snapshot.
+This snapshot will also be used to write the input state for that frame of the replay.
+
+(This might require another prerequisite refactor step to abstract away from the raw keys
+and deal with what danmakufu calls the virtual keys (up down left right shoot bomb, etc.))
+
+Then, playing replays is just setting the rng seed properly, then providing the snapshots
+to handle-input from the replay file instead of the live input devices.
+
+We can also save the rng state into the replay every X frames and compare it to the live
+game-rng state to ensure we don't have any rng-based desyncs. Probably disabled in prod or
+set to a pretty high interval (every 10 seconds?).
+
 * [2025-05-11 Sun]
 Some chapter 1 hacking, but I also took some time to figure out the Windows build process.
 It's actually super simple, everything basically just works. The build.ss script runs
