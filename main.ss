@@ -3326,8 +3326,8 @@
   (spawn-enemy (enmtype medium-red-fairy) 100.0 -20.0 350 ch2-w2-fairy
 			   five-point-items)
   (wait 120)
-  (spawn-enemy (enmtype big-fairy) -220.0 380.0 50 ch2-w3-fairy five-point-items)
-  (spawn-enemy (enmtype big-fairy) 220.0 380.0 50 ch2-w3-fairy five-point-items)
+  (spawn-enemy (enmtype big-fairy) -220.0 180.0 500 ch2-w3-fairy ten-point)
+  (spawn-enemy (enmtype big-fairy) 220.0 180.0 500 ch2-w3-fairy ten-point)
   (wait-until (thunk (>= frames 2425)))
   (chapter3 task))
 
@@ -3515,6 +3515,11 @@
   (wait 80)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 60)
+  ;; TODO: spawner task moving up and down (on the sides probably?)
+  ;; spawns decorative bullets + some rings that delay aim at the player
+  ;; maybe vertical/box streaming is the idea?
+  ;; if box streaming then spawners would move around all edges instead of just
+  ;; up/down
   (spawn-subtask "spam"
 	(lambda (_task)
 	  (loop-forever
@@ -4050,6 +4055,7 @@
   (define angper 8.0)
   (enm-superarmor-set! enm 60)
   (ease-to values 0.0 100.0 60 enm)
+  ;; TODO: Despawn logic
   (spawn-subtask "decoration"
 	(lambda (task)
 	  (interval-loop 30
