@@ -4051,11 +4051,8 @@
   (delete-enemy enm))
 
 (define (ch10-w3 task enm)
-  (define iters 5)
-  (define angper 8.0)
   (enm-superarmor-set! enm 60)
   (ease-to values 0.0 100.0 60 enm)
-  ;; TODO: Despawn logic
   (spawn-subtask "decoration"
 	(lambda (task)
 	  (interval-loop 30
@@ -4065,27 +4062,36 @@
 			(cbshootez enm 'heart-red 2 #f linear-step-forever))))
 	(constantly #t)
 	task)
-  (let loop ([sign 1]
-			 [start-ang 0.0])
-	(do [(i 0 (fx1+ i))]
-		[(= i iters)]
-	  (-> (cb)
-		  (cbabsolute-aim)
-		  (cbcount 5)
-		  (cbang (fl+ start-ang (fl* (inexact sign) (inexact i) angper)))
-		  (cbspeed 3.0)
-		  (cbshootez enm 'big-star-magenta 2 (sebundle-shoot0 sounds)
-					 (lambda (facing speed blt)
-					   (linear-step-decelerate facing speed -0.1 blt)
-					   (wait 10)
-					   (linear-step-accelerate-forever facing 0.0 0.7 6.0 blt))))
-	  (wait 5))
-	(wait 5)
-	(loop (- sign)
-		  (fl+ start-ang
-			   ;; start where previous wave ended, plus a bit more
-			   (* sign angper iters)
-			   (* sign 5.0)))))
+  (spawn-subtask "shoot"
+	(lambda (task)
+	  (define iters 5)
+	  (define angper 8.0)
+	  (let loop ([sign 1]
+				 [start-ang 0.0])
+		(do [(i 0 (fx1+ i))]
+			[(= i iters)]
+		  (-> (cb)
+			  (cbabsolute-aim)
+			  (cbcount 5)
+			  (cbang (fl+ start-ang (fl* (inexact sign) (inexact i) angper)))
+			  (cbspeed 3.0)
+			  (cbshootez enm 'big-star-magenta 2 (sebundle-shoot0 sounds)
+						 (lambda (facing speed blt)
+						   (linear-step-decelerate facing speed -0.1 blt)
+						   (wait 10)
+						   (linear-step-accelerate-forever facing 0.0 0.7 6.0 blt))))
+		  (wait 5))
+		(wait 5)
+		(loop (- sign)
+			  (fl+ start-ang
+				   ;; start where previous wave ended, plus a bit more
+				   (* sign angper iters)
+				   (* sign 5.0)))))
+	(constantly #t)
+	task)
+  (wait 190)
+  (ease-to values 0.0 -20.0 70 enm)
+  (delete-enemy enm))
 
 (define (ch10-w4 task enm)
   (define (shoot task)
