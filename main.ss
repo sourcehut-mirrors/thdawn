@@ -1782,24 +1782,18 @@
   (bullet-x-set! blt nx)
   (bullet-y-set! blt ny)
   (bullet-facing-set! blt (flatan (fl- ny oy) (fl- nx ox))))
-(define (linear-step-gravity-forever facing speed ay blt)
-  (define vx (* speed (cos facing)))
-  (define vy (* speed (sin facing)))
-  (bullet-facing-set! blt facing)
-  (let loop ([vy vy])
-	(linear-step-separate vx vy blt)
-	(yield)
-	(loop (+ vy ay))))
-
-;; TODO combine with above
-(define (linear-step-gravity-forever2 facing speed ay max-vy blt)
-  (define vx (* speed (cos facing)))
-  (define vy (* speed (sin facing)))
-  (bullet-facing-set! blt facing)
-  (let loop ([vy vy])
-	(linear-step-separate vx vy blt)
-	(yield)
-	(loop (min (+ vy ay) max-vy))))
+(define linear-step-gravity-forever
+  (case-lambda
+	([facing speed ay blt]
+	 (linear-step-gravity-forever facing speed ay +inf.0 blt))
+	([facing speed ay max-vy blt]
+	 (define vx (* speed (cos facing)))
+	 (define vy (* speed (sin facing)))
+	 (bullet-facing-set! blt facing)
+	 (let loop ([vy vy])
+	   (linear-step-separate vx vy blt)
+	   (yield)
+	   (loop (min (+ vy ay) max-vy))))))
 
 ;; Returns once the bullet reaches stationary speed
 ;; acceleration should be negative
@@ -1856,7 +1850,7 @@
 (define (tick-particles)
   (define (each p)
 	(particle-age-set! p (fx1+ (particle-age p)))
-	(case (particle-type p)
+	(case(particle-type p)
 	  ([graze maple maple-grayscale]
 	   (let ([dir (cdr (assq 'dir (particle-extra-data p)))]
 			 [speed (cdr (assq 'speed (particle-extra-data p)))])
@@ -3556,7 +3550,7 @@
 								  (+ (enm-x enm) -10.0 (* 5 (cos ang)))
 								  (+ (enm-y enm) (* 5 (sin ang)))
 								  2
-								  (curry linear-step-gravity-forever2 ang spd
+								  (curry linear-step-gravity-forever ang spd
 										 0.07 3.5)))
 		(bullet-addflags blt (bltflags noprune))
 		(spawn-task "prune" (lambda (task)
