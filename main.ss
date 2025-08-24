@@ -4211,11 +4211,45 @@
 	(enm-extras-set! enm bossinfo))
   (wait-until (thunk (>= frames 11785)))
   (chapter12 task))
+
+(define (ch12-small-fairy right-side task enm)
+  (spawn-subtask "shoot"
+	(lambda (task)
+	  (interval-loop 10
+		(-> (cb)
+			(cbcount 12)
+			(cbspeed 4.5)
+			(cbshootez enm 'rice-cyan 2 #f))))
+	(constantly #t)
+	task)
+  (move-on-spline
+   (if right-side
+	   (vector (vec2 (enm-x enm) (enm-y enm))
+			   (vec2 -5.0 168.0) (vec2 -133.0 146.0)
+			   (vec2 -210.0 (fl+ 61.0 (centered-roll game-rng 30.0))))
+	   (vector (vec2 (enm-x enm) (enm-y enm))
+			   (vec2 5.0 168.0) (vec2 133.0 146.0)
+			   (vec2 210.0 (fl+ 61.0 (centered-roll game-rng 30.0)))))
+   (lambda (_seg) (values values 100))
+   enm)
+  (delete-enemy enm))
+
 (define (chapter12 task)
   (set! current-chapter 12)
+  (wait 50)
+  (dotimes 60
+	(spawn-enemy 'red-fairy (- -20.0 (inexact (roll game-rng 100))) -10.0
+				 20 (curry ch12-small-fairy #f) five-point-items)
+	(wait 5))
+  (wait 75)
+  (dotimes 25
+	(spawn-enemy 'red-fairy (+ 20.0 (inexact (roll game-rng 100))) -10.0
+				 20 (curry ch12-small-fairy #t) five-point-items)
+	(wait 5))
   ;; last measures require positioning or dodging for each repetition
   (wait-until (thunk (>= frames 13000)))
   (chapter13 task))
+
 (define (chapter13 task)
   (set! current-chapter 13)
   (loop-forever))
