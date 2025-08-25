@@ -39,7 +39,8 @@
   (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb)
   make-miscent-type-set)
 (define-enumeration particletype
-  (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple)
+  (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
+		  circle-hint)
   make-particletype-set)
 (define-enumeration bltflag
   (uncancelable ;; cannot be cancelled by bombs or other standard cancels
@@ -1922,6 +1923,14 @@
 				(eround render-x))
 			(eround render-y)
 			16.0 0.0 (bitwise-ior color alpha)))))
+	  ([circle-hint]
+	   (let ([color (cdr (assq 'color extra-data))]
+			 [r1 (cdr (assq 'r1 extra-data))]
+			 [r2 (cdr (assq 'r2 extra-data))])
+		 (raylib:draw-circle-lines-v
+		  render-x render-y
+		  (lerp r1 r2 (/ (particle-age p) (particle-max-age p)))
+		  color)))
 	  ([spellbonus]	   
 	   (let*-values ([(width _) (raylib:measure-text-ex
 								 (fontbundle-cabin fonts)
@@ -3479,7 +3488,15 @@
 	(spawn-enemy (enmtype big-fairy) 220.0 180.0 500
 				 (curry ch3-w1-leader-fairy #t) five-point-items
 				 (lambda () (ch3-w1-leader-on-death followers))))
-  (wait 400)
+  (wait 240)
+  (dotimes 4
+	(spawn-particle
+	 (make-particle
+	  (particletype circle-hint)
+	  0.0 224.0
+	  30 0 '((color . -1) (r1 . 300.0) (r2 . 80.0))))
+	(wait 30))
+  (wait 40)
   ;; TODO: hint particle telling player to get in middle of screen?
   (let ([cx 0.0]
 		[cy 224.0]
