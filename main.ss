@@ -1175,9 +1175,11 @@
 	   (lambda (row col speed facing)
 		 (when sound
 		   (raylib:play-sound sound))
-		 (spawn-bullet
-		  type (fl+ x (fl* offset (flcos facing))) (fl+ y (fl* offset (flsin facing)))
-		  delay (curry control-function facing speed))))]))
+		 (-> (spawn-bullet type
+			  (fl+ x (fl* offset (flcos facing)))
+			  (fl+ y (fl* offset (flsin facing)))
+			  delay (curry control-function facing speed))
+			 (bullet-facing-set! facing))))]))
 
 (define +boss-lazy-spellcircle-context+ 30)
 (define-record-type bossinfo
