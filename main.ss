@@ -3528,12 +3528,14 @@
   (define bossinfo (enm-extras enm))
   (define keep-running
 	(lambda () (positive? (bossinfo-remaining-timer bossinfo))))
-  (ease-to values 0.0 100.0 20 enm)
+  (ease-to values 0.0 80.0 20 enm)
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 40)
 
   (enm-addflags enm (enmflags invincible))
-  (declare-spell enm "Conjuring \"Eternal Meek\"" 1540 -1 2000000)
+  (spawn-subtask "nudge" (lambda (task) (ease-to values 0.0 100.0 20 enm))
+				 (constantly #t) task)
+  (declare-spell enm "\"My First Spell Card!\"" 1540 -1 2000000)
   (cancel-all #f)
   (wait 80)
   (raylib:play-sound (sebundle-shortcharge sounds))
@@ -3543,15 +3545,6 @@
   ;; maybe vertical/box streaming is the idea?
   ;; if box streaming then spawners would move around all edges instead of just
   ;; up/down
-  (spawn-subtask "spam"
-	(lambda (_task)
-	  (loop-forever
-	   (dotimes 3
-		 (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
-					   5
-					   (curry linear-step-forever (centered-roll game-rng pi)
-							  5.0)))))
-	keep-running task)
   (wait-while keep-running)
   (enm-clrflags enm (enmflags invincible))
   (common-spell-postlude bossinfo enm)
