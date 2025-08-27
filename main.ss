@@ -1085,8 +1085,13 @@
 	[(fb enm type delay sound)
 	 (fbshootenm fb enm type delay sound linear-step-forever)]
 	[(fb enm type delay sound control-function)
-	 (define x (enm-x enm))
-	 (define y (enm-y enm))
+	 (fbshootez fb (enm-x enm) (enm-y enm) type delay sound control-function)]))
+
+(define fbshootez
+  (case-lambda
+	[(fb x y type delay sound)
+	 (fbshootez fb x y type delay sound linear-step-forever)]
+	[(fb x y type delay sound control-function)
 	 (fbshoot fb x y
 	   (lambda (row col speed facing)
 		 (when sound
@@ -1108,7 +1113,7 @@
 (define (cb)
   (make-circle-builder 0 0 0.0 0.0 0.0 0.0 0.0 #t))
 
-;; NB: Only works when used with cbshootenm
+;; NB: Only works when used with cbshootenm/ez
 (define (cboffset cb offset)
   (circle-builder-offset-set! cb offset)
   cb)
@@ -1169,18 +1174,23 @@
 	[(cb enm type delay sound)
 	 (cbshootenm cb enm type delay sound linear-step-forever)]
 	[(cb enm type delay sound control-function)
-	 (define x (enm-x enm))
-	 (define y (enm-y enm))
+	 (cbshootez cb (enm-x enm) (enm-y enm) type delay sound control-function)]))
+
+(define cbshootez
+  (case-lambda
+	[(cb x y type delay sound)
+	 (cbshootez cb x y type delay sound linear-step-forever)]
+	[(cb x y type delay sound control-function)
 	 (define offset (circle-builder-offset cb))
 	 (cbshoot cb x y
-	   (lambda (row col speed facing)
-		 (when sound
-		   (raylib:play-sound sound))
-		 (-> (spawn-bullet type
-			  (fl+ x (fl* offset (flcos facing)))
-			  (fl+ y (fl* offset (flsin facing)))
-			  delay (curry control-function facing speed))
-			 (bullet-facing-set! facing))))]))
+			  (lambda (row col speed facing)
+				(when sound
+				  (raylib:play-sound sound))
+				(-> (spawn-bullet type
+								  (fl+ x (fl* offset (flcos facing)))
+								  (fl+ y (fl* offset (flsin facing)))
+								  delay (curry control-function facing speed))
+					(bullet-facing-set! facing))))]))
 
 (define +boss-lazy-spellcircle-context+ 30)
 (define-record-type bossinfo
@@ -3728,12 +3738,7 @@
 							   (fbcounts 7 7)
 							   (fbang 0.0 5.0)
 							   (fbspeed 5.0 7.0)
-							   (fbshoot 0.0 100.0
-								 ;; TODO: add some helpers to make this less gross?
-								 ;; 3 nested lambdas lol
-								 (lambda (row col speed facing)
-								   (spawn-bullet 'pellet-red 0.0 100.0 5
-												 (curry linear-step-forever facing speed)))))))
+							   (fbshootez 0.0 100.0 'pellet-red 5 #f))))
 					   (loop (fl+ facing turn-dir))))))
 			  (bullet-addflags (bltflags uncancelable))))))
   (wait-until (thunk (>= frames 6725)))
