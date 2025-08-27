@@ -1080,10 +1080,10 @@
 
 ;; helper for the common case of shooting a fanbuilder from the enemy position
 ;; if provided, bullet control function should take facing, speed, bullet
-(define fbshootez
+(define fbshootenm
   (case-lambda
 	[(fb enm type delay sound)
-	 (fbshootez fb enm type delay sound linear-step-forever)]
+	 (fbshootenm fb enm type delay sound linear-step-forever)]
 	[(fb enm type delay sound control-function)
 	 (define x (enm-x enm))
 	 (define y (enm-y enm))
@@ -1108,7 +1108,7 @@
 (define (cb)
   (make-circle-builder 0 0 0.0 0.0 0.0 0.0 0.0 #t))
 
-;; NB: Only works when used with cbshootez
+;; NB: Only works when used with cbshootenm
 (define (cboffset cb offset)
   (circle-builder-offset-set! cb offset)
   cb)
@@ -1164,10 +1164,10 @@
 ;; helper for the common case of shooting a circlebuilder from the enemy position
 ;; with a fixed type and linear bullet motion
 ;; if provided, bullet control function should take facing, speed, bullet
-(define cbshootez
+(define cbshootenm
   (case-lambda
 	[(cb enm type delay sound)
-	 (cbshootez cb enm type delay sound linear-step-forever)]
+	 (cbshootenm cb enm type delay sound linear-step-forever)]
 	[(cb enm type delay sound control-function)
 	 (define x (enm-x enm))
 	 (define y (enm-y enm))
@@ -3061,7 +3061,7 @@
 	  (-> (fb)
 		  (fbcounts 1 3)
 		  (fbspeed 4.0 6.0)
-		  (fbshootez enm bullet 5 (sebundle-shoot0 sounds)))
+		  (fbshootenm enm bullet 5 (sebundle-shoot0 sounds)))
 	  (wait 50)))
   (spawn-subtask "movement" movement (constantly #t) task)
   (spawn-subtask "shoot" shoot (constantly #t) task)
@@ -3104,7 +3104,7 @@
 		  (cbcount 15)
 		  (cbang 15.0 0.0)
 		  (cbspeed 3.0 3.0)
-		  (cbshootez enm 'music-blue 5 (sebundle-bell sounds)))))
+		  (cbshootenm enm 'music-blue 5 (sebundle-bell sounds)))))
   (define (note task)
 	(wait 200)
 	(for-each
@@ -3231,7 +3231,7 @@
 		  (fbcounts 4 3)
 		  (fbang 0.0 25.0)
 		  (fbspeed 6.0 7.0)
-		  (fbshootez enm 'small-ball-red 5 (sebundle-shoot0 sounds)))))
+		  (fbshootenm enm 'small-ball-red 5 (sebundle-shoot0 sounds)))))
   (define facing (facing-player (enm-x enm) (enm-y enm)))
   (define (move task)
 	;; FIXME: this breaks at shallow angles
@@ -3269,7 +3269,7 @@
 		  (cbcount 50 3)
 		  (cbang 0.0 (if flip 5.0 -5.0))
 		  (cbspeed 3.0 4.0)
-		  (cbshootez enm 'small-star-green 5 (sebundle-bell sounds)))))
+		  (cbshootenm enm 'small-star-green 5 (sebundle-bell sounds)))))
   (spawn-subtask "shoot" shoot (thunk (fx< (fx- frames start-time) 240)) task)
   (ease-to values (if flip 160.0 -160.0) 150.0 30 enm)
   (wait 240)
@@ -3291,7 +3291,7 @@
   (-> (cb)
 	  (cbcount 36 4)
 	  (cbspeed 5.0 6.0)
-	  (cbshootez enm 'big-star-magenta 5 (sebundle-shoot0 sounds)))
+	  (cbshootenm enm 'big-star-magenta 5 (sebundle-shoot0 sounds)))
   (wait 180)
   (ease-to values (enm-x enm) -20.0 60 enm)
   (delete-enemy enm))
@@ -3305,13 +3305,13 @@
 		(cbang 140.0 0.0)))
   (ease-to values (if (negative? x) (+ x 80.0) (- x 80.0)) (enm-y enm) 60 enm)
   (wait 80)
-  (cbshootez pat enm 'rest-red 5 (sebundle-shoot0 sounds))
+  (cbshootenm pat enm 'rest-red 5 (sebundle-shoot0 sounds))
   (wait 25)
-  (cbshootez pat enm 'rest-orange 5 (sebundle-shoot0 sounds))
+  (cbshootenm pat enm 'rest-orange 5 (sebundle-shoot0 sounds))
   (wait 12)
-  (cbshootez pat enm 'rest-blue 5 (sebundle-shoot0 sounds))
+  (cbshootenm pat enm 'rest-blue 5 (sebundle-shoot0 sounds))
   (wait 12)
-  (cbshootez pat enm 'rest-magenta 5 (sebundle-shoot0 sounds))
+  (cbshootenm pat enm 'rest-magenta 5 (sebundle-shoot0 sounds))
   (ease-to values x (enm-y enm) 60 enm)
   (delete-enemy enm))
 (define (chapter2 task)
@@ -3355,7 +3355,7 @@
 	  (-> (cb)
 		  (cbcount 12)
 		  (cbspeed 4.0)
-		  (cbshootez enm 'medium-ball-cyan 5 (sebundle-bell sounds)))))
+		  (cbshootenm enm 'medium-ball-cyan 5 (sebundle-bell sounds)))))
   (enm-addflags enm (enmflags invincible))
   (spawn-subtask "uninvincible"
 	(lambda (task)
@@ -3374,7 +3374,7 @@
 	   (-> (cb)
 		   (cbcount 12 2)
 		   (cbspeed 2.0 3.0)
-		   (cbshootez f 'small-ball-white 2
+		   (cbshootenm f 'small-ball-white 2
 					  (sebundle-bell sounds)))))
    followers))
 
@@ -3442,7 +3442,7 @@
 			  (fbspeed 9.0)
 			  (fbang (- ang 90.0) 5.0)
 			  (fbabsolute-aim)
-			  (fbshootez enm 'music-blue 5 #f)))))
+			  (fbshootenm enm 'music-blue 5 #f)))))
 	(thunk (not (unbox stop-spinning)))
 	task)
   (let ([final-ang (do-spin)])
@@ -3454,7 +3454,7 @@
 						   (fbcounts 2)
 						   (fbspeed 6.0)
 						   (fbang 0.0 12.0)
-						   (fbshootez enm 'small-star-red 2 #f))))
+						   (fbshootenm enm 'small-star-red 2 #f))))
 				   (constantly #t)
 				   task)
 	(ease-to values
@@ -3611,13 +3611,13 @@
 			  (fbabsolute-aim)
 			  (fbang -90.0 70.0)
 			  (fbspeed 2.0)
-			  (fbshootez enm 'small-star-red 2 #f))
+			  (fbshootenm enm 'small-star-red 2 #f))
 		  (-> (fb)
 			  (fbcounts 3)
 			  (fbabsolute-aim)
 			  (fbang 90.0 70.0)
 			  (fbspeed 4.0)
-			  (fbshootez enm 'small-star-orange 2 #f))
+			  (fbshootenm enm 'small-star-orange 2 #f))
 		  (wait 2))))
 	(constantly #t)
 	task)
@@ -3629,7 +3629,7 @@
 	 (-> (cb)
 		 (cbcount 18)
 		 (cbspeed 2.0)
-		 (cbshootez enm 'small-ball-magenta 5 (sebundle-bell sounds))))))
+		 (cbshootenm enm 'small-ball-magenta 5 (sebundle-bell sounds))))))
 
 (define (chapter5 task)
   (define xs '((-105.0 . 20.0) (-20.0 . 40.0)
@@ -3753,7 +3753,7 @@
 			  (cbspeed 3.0)
 			  (cbcount 12)
 			  (cbang (inexact (+ (* 20 wave) (* 5 i))))
-			  (cbshootez enm 'heart-red 2 #f
+			  (cbshootenm enm 'heart-red 2 #f
 						 (lambda (facing speed blt)
 						   (bullet-facing-set! blt facing)
 						   (dotimes 5
@@ -3802,7 +3802,7 @@
 		  (cbcount 4)
 		  (cbspeed 3.0)
 		  (cboffset 25.0)
-		  (cbshootez enm (if flip 'kunai-orange 'kunai-red) 2 #f))
+		  (cbshootenm enm (if flip 'kunai-orange 'kunai-red) 2 #f))
 	  (yield)
 	  (loop
 	   (fl+ ang (fl* 12.0 (flcos (torad (inexact frames)))
@@ -3856,7 +3856,7 @@
 				 (fbcounts 3 5)
 				 (fbspeed 2.0 4.0)
 				 (fbang 0.0 20.0)
-				 (fbshootez enm (cdr pair) 5 (sebundle-shoot0 sounds)))
+				 (fbshootenm enm (cdr pair) 5 (sebundle-shoot0 sounds)))
 			 (wait 30))
 		   (ease-to values
 					(+ (enm-x enm) (centered-roll game-rng 20.0))
@@ -3875,7 +3875,7 @@
 		(-> (fb)
 			(fbcounts 1 3)
 			(fbspeed 4.0 5.0)
-			(fbshootez enm blttype 2 (sebundle-shoot0 sounds)))))
+			(fbshootenm enm blttype 2 (sebundle-shoot0 sounds)))))
 	(constantly #t)
 	task)
   (loop-until (flpositive? (enm-x enm))
@@ -3892,7 +3892,7 @@
 		(-> (fb)
 			(fbcounts 1 3)
 			(fbspeed 4.0 5.0)
-			(fbshootez enm blttype 2 (sebundle-shoot0 sounds)))))
+			(fbshootenm enm blttype 2 (sebundle-shoot0 sounds)))))
 	(constantly #t)
 	task)
   (loop-until (flnegative? (enm-x enm))
@@ -4040,7 +4040,7 @@
 	  (fbspeed 1.0 (fl+ 5.5 (centered-roll game-rng 0.7)))
 	  (fbabsolute-aim)
 	  (fbang (if right-side 180.0 0.0) 0.0)
-	  (fbshootez enm type
+	  (fbshootenm enm type
 				 2 (sebundle-shoot0 sounds)
 				 (lambda (facing speed blt)
 				   (dotimes 60
@@ -4056,7 +4056,7 @@
 			(cbspeed 4.0)
 			(cbabsolute-aim)
 			(cbang (inexact (roll game-rng 360)) 0.0)
-			(cbshootez enm 'small-ball-yellow 2 (sebundle-bell sounds)))))
+			(cbshootenm enm 'small-ball-yellow 2 (sebundle-bell sounds)))))
 	(constantly #t) task)
   (ease-to values (if right-side -200.0 200.0)
 		   (enm-y enm)
@@ -4072,7 +4072,7 @@
 		(-> (cb)
 			(cbcount 12)
 			(cbspeed 5.0)
-			(cbshootez enm 'heart-red 2 #f linear-step-forever))))
+			(cbshootenm enm 'heart-red 2 #f linear-step-forever))))
 	(constantly #t)
 	task)
   (spawn-subtask "shoot"
@@ -4088,7 +4088,7 @@
 			  (cbcount 5)
 			  (cbang (fl+ start-ang (fl* (inexact sign) (inexact i) angper)))
 			  (cbspeed 3.0)
-			  (cbshootez enm 'big-star-magenta 2 (sebundle-shoot0 sounds)
+			  (cbshootenm enm 'big-star-magenta 2 (sebundle-shoot0 sounds)
 						 (lambda (facing speed blt)
 						   (linear-step-decelerate facing speed -0.1 blt)
 						   (wait 10)
@@ -4114,11 +4114,11 @@
 		  (fbspeed 5.0)
 		  (fbcounts 2 1)
 		  (fbang 0.0 45.0)
-		  (fbshootez enm 'music-red 2 #f))
+		  (fbshootenm enm 'music-red 2 #f))
 	  (-> (fb)
 		  (fbspeed 5.0)
 		  (fbcounts 1 3)
-		  (fbshootez enm 'music-blue 2 #f))))
+		  (fbshootenm enm 'music-blue 2 #f))))
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ease-to values 200.0 (enm-y enm) 100 enm)
   (delete-enemy enm))
@@ -4148,11 +4148,11 @@
 	 (-> (fb)
 		 (fbcounts 1 5)
 		 (fbspeed 4.0 7.0)
-		 (fbshootez enm type 2 (sebundle-bell sounds)))
+		 (fbshootenm enm type 2 (sebundle-bell sounds)))
 	 (-> (cb)
 		 (cbcount 16 3)
 		 (cbspeed 4.0 7.0)
-		 (cbshootez enm 'small-ball-blue 2 #f))
+		 (cbshootenm enm 'small-ball-blue 2 #f))
 	 (wait 48))
    '(bubble-red bubble-orange bubble-blue bubble-magenta)))
 
@@ -4238,7 +4238,7 @@
 		(-> (cb)
 			(cbcount 12)
 			(cbspeed 4.5)
-			(cbshootez enm 'rice-cyan 2 #f))))
+			(cbshootenm enm 'rice-cyan 2 #f))))
 	(constantly #t)
 	task)
   (move-on-spline
@@ -4265,7 +4265,8 @@
 	(spawn-enemy 'red-fairy (+ 20.0 (inexact (roll game-rng 100))) -10.0
 				 20 (curry ch12-small-fairy #t) five-point-items)
 	(wait 5))
-  ;; last measures require positioning or dodging for each repetition
+  ;; TODO: just a couple waves of self spawning bullets.
+  ;; Last one has absolute aim towards middle?
   (wait-until (thunk (>= frames 13000)))
   (chapter13 task))
 
