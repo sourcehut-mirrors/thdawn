@@ -3686,7 +3686,7 @@
 			   x y 10
 			   (lambda (blt)
 				 (define initial-facing facing)
-				 (define turn-dir (torad (if (fxeven? layer) 4.0 -4.0)))
+				 (define turn-dir (torad (if (fxeven? layer) -4.0 4.0)))
 				 (let loop ([facing initial-facing])
 				   (bullet-facing-set! blt facing)
 				   (linear-step facing speed blt)
@@ -3723,7 +3723,7 @@
 			   0.0 100.0 10
 			   (lambda (blt)
 				 (define initial-facing facing)
-				 (define turn-dir (torad (if (fxeven? layer) 4.0 -4.0)))
+				 (define turn-dir (torad (if (fxeven? layer) -4.0 4.0)))
 				 (raylib:play-sound (sebundle-oldvwoopslow sounds))
 				 (let loop ([facing initial-facing])
 				   (bullet-facing-set! blt facing)
@@ -4239,7 +4239,7 @@
 (define (ch12-small-fairy right-side task enm)
   (spawn-subtask "shoot"
 	(lambda (task)
-	  (interval-loop 10
+	  (interval-loop 15
 		(-> (cb)
 			(cbcount 12)
 			(cbspeed 4.5)
@@ -4258,6 +4258,46 @@
    enm)
   (delete-enemy enm))
 
+(define ch12-sswave
+  (case-lambda
+	([x y final-way final-wideness even-type odd-type]
+	 (ch12-sswave x y final-way final-wideness even-type odd-type #f #f))
+	([x y final-way final-wideness even-type odd-type force-aim-x force-aim-y]
+	 (-> (cb)
+		 (cbcount 20 3)
+		 (cbang 0.0 10.0)
+		 (cbspeed 2.0 3.5)
+		 (cbshoot x y
+		   (lambda (layer in-layer speed facing)
+			 (-> (spawn-bullet
+				  (if (fxeven? layer) even-type odd-type)
+				  x y 10
+				  (lambda (blt)
+					(define initial-facing facing)
+					(define turn-dir (torad (if (fxeven? layer) -5.5 5.5)))
+					(let loop ([facing initial-facing])
+					  (bullet-facing-set! blt facing)
+					  (linear-step facing speed blt)
+					  (yield)
+					  (if (fl> (flabs (fl- facing initial-facing)) tau)
+						  (begin
+							(cancel-bullet blt #t)
+							(when (and (zero? layer)
+									   (zero? in-layer))
+							  (-> (fb)
+								  (fbcounts final-way 7)
+								  (fbabsolute-aim)
+								  (fbang
+								   (todeg
+									(flatan (fl- (or force-aim-y player-y) y)
+											(fl- (or force-aim-x player-x) x)))
+								   final-wideness)
+								  (fbspeed 5.0 7.0)
+								  (fbshootez x y 'pellet-white 5
+											 (sebundle-shoot0 sounds)))))
+						  (loop (fl+ facing turn-dir))))))
+				 (bullet-addflags (bltflags uncancelable)))))))))
+
 (define (chapter12 task)
   (set! current-chapter 12)
   (wait 50)
@@ -4270,8 +4310,21 @@
 	(spawn-enemy 'red-fairy (+ 20.0 (inexact (roll game-rng 100))) -10.0
 				 20 (curry ch12-small-fairy #t) five-point-items)
 	(wait 5))
-  ;; TODO: just a couple waves of self spawning bullets.
-  ;; Last one has absolute aim towards middle?
+  (wait 60)
+  (wait 90)
+  (ch12-sswave -160.0 160.0 3 8.0 'pellet-magenta 'music-red)
+  (ch12-sswave 160.0 160.0 3 8.0 'pellet-magenta 'music-red)
+  (ch12-sswave 0.0 120.0 3 8.0 'pellet-magenta 'music-red)
+  (wait 90)
+  (ch12-sswave -160.0 32.0 5 4.0 'pellet-yellow 'music-orange)
+  (ch12-sswave 160.0 32.0 5 4.0 'pellet-yellow 'music-orange)
+  (ch12-sswave -160.0 416.0 5 4.0 'pellet-yellow 'music-orange)
+  (ch12-sswave 160.0 416.0 5 4.0 'pellet-yellow 'music-orange)
+  (wait 70)
+  (ch12-sswave -160.0 224.0 6 10.0 'pellet-cyan 'music-blue 0.0 224.0)
+  (ch12-sswave 160.0 224.0 6 10.0 'pellet-cyan 'music-blue 0.0 224.0)
+  (ch12-sswave 0.0 32.0 6 10.0 'pellet-cyan 'music-blue 0.0 224.0)
+  (ch12-sswave 0.0 416.0 6 10.0 'pellet-cyan 'music-blue 0.0 224.0)
   (wait-until (thunk (>= frames 13000)))
   (chapter13 task))
 
