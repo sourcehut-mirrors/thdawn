@@ -4031,31 +4031,31 @@
 		[x (enm-x enm)]
 		[y (enm-y enm)])
 	(interval-loop-while 30 (fx< (fx- frames start-frames) 240)
-	  (let* ([center-blt
-			  (spawn-bullet
-			   'big-star-orange x y 5
-			   (lambda (_) #f))]
-			 [ring-blts (map (lambda (_)
-							   (spawn-bullet 'small-star-yellow
-										     x y 5
-											 (lambda (_) #f)))
-							 (iota 10))]
-			 [facing (facing-player x y)])
-		(raylib:play-sound (sebundle-shoot0 sounds))
-		(spawn-task "ch9w2-ring-controller"
-		  (lambda (task)
-			(let loop ([i 0])
-			  (linear-step facing 5.0 center-blt)
-			  (let ([r (flmin (fl* (inexact i) 1.5) 30.0)])
-				(position-bullets-around (bullet-x center-blt)
-										 (bullet-y center-blt)
-										 r ring-blts))
-			  (yield)
-			  (when (fx< i 240)
-				(loop (fx1+ i))))
-			(delete-bullet center-blt)
-			(for-each delete-bullet ring-blts))
-		  (constantly #t)))))
+	  (raylib:play-sound (sebundle-shoot0 sounds))
+	  (letrec ([facing (facing-player x y)]
+			   [center-blt
+				(spawn-bullet
+				 'big-star-orange x y 5
+				 (lambda (blt)
+				   (do [(i 0 (fx1+ i))]
+					   [(fx= i 241)]
+					 (linear-step facing 5.0 blt)
+					 (let ([r (flmin (fl* (inexact i) 1.5) 30.0)])
+					   (position-bullets-around (bullet-x center-blt)
+												(bullet-y center-blt)
+												r ring-blts))
+					 (yield))
+				   (delete-bullet blt)))]
+			   [ring-blts (map
+						   (lambda (_)
+							 (spawn-bullet
+							  'small-star-yellow x y 5
+							  (lambda (blt)
+								(wait-until
+								 (thunk (not (vector-index center-blt live-bullets))))
+								(delete-bullet blt))))
+						   (iota 10))])
+		(void))))
   (ease-to ease-in-quad (enm-x enm) -20.0 60 enm)
   (delete-enemy enm))
 
