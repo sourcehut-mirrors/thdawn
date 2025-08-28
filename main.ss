@@ -78,6 +78,11 @@
 (define (ease-out-quad x)
   (define invx (- 1 x))
   (- 1 (* invx invx)))
+(define (ease-in-out-quad x)
+  (if (< x 0.5)
+	  (* 2 x x)
+	  (- 1 (/ (expt (+ (* -2 x) 2) 2)
+			  2))))
 (define (ease-out-quart x)
   (- 1 (expt (- 1 x) 4)))
 (define (ease-out-quint x)
@@ -3524,6 +3529,36 @@
   (wait-until (thunk (>= frames 3500)))
   (chapter4 task))
 
+(define (boss-standard-wander enm task)
+  (define (pick-next-y)
+	(clamp (fl+ (enm-y enm)
+				(centered-roll game-rng 20.0))
+		   80.0 140.0))
+  (define (pick-next-x)
+	(define ox (enm-x enm))
+	(define mag (inexact (+ 15 (roll game-rng 65))))
+	(cond
+	 [(fl< ox -160.0)
+	  (fl+ ox mag)]
+	 [(fl< ox -80.0)
+	  (if (fl< (roll game-rng) 0.3333)
+		  (fl- ox mag)
+		  (fl+ ox mag))]
+	 [(fl< ox 80.0)
+	  (if (fl< (roll game-rng) 0.5)
+		  (fl- ox mag)
+		  (fl+ ox mag))]
+	 [(fl< ox 160.0)
+	  (if (fl< (roll game-rng) 0.3333)
+		  (fl+ ox mag)
+		  (fl- ox mag))]
+	 [else
+	  (fl- ox mag)]))
+  (interval-loop 60
+	(let ([x (pick-next-x)]
+		  [y (pick-next-y)])
+	  (ease-to ease-in-out-quad x y 70 enm))))
+
 (define (midboss-control task enm)
   (define bossinfo (enm-extras enm))
   (define keep-running
@@ -3540,6 +3575,7 @@
   (wait 80)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 60)
+  (spawn-subtask "move" (curry boss-standard-wander enm) keep-running task)
   ;; TODO: spawner task moving up and down (on the sides probably?)
   ;; spawns decorative bullets + some rings that delay aim at the player
   ;; maybe vertical/box streaming is the idea?
@@ -4209,15 +4245,62 @@
 	   (kill-enemy enm)))
    live-enm)
   (autocollect-all-items)
-  (declare-spell enm "\"???\"" 720 -1 5000000)
+  (declare-spell enm "Natural Sign \"Butterfly Smelling the Flowers\"" 720 -1 5000000)
+  (enm-addflags enm (enmflags invincible))
   (cancel-all #f)
+  (wait 60)
+  (raylib:play-sound (sebundle-shortcharge sounds))
+  (spawn-subtask "fan"
+	(lambda (task)
+	  (interval-loop 60
+		(-> (fb)
+			(fbang 0.0 25.0)
+			(fbcounts 5)
+			(fbspeed 4.0)
+			(fbshootenm enm 'medium-ball-red 10 #f))))
+	keep-running task)
+  (spawn-subtask "circle"
+	(lambda (task)
+	  (define dang (torad 10.0))
+	  (define cx player-x)
+	  (define cy player-y)
+	  (define dist 120.0)
+	  (let loop ([ang 0.0])
+		(let* ([x (fl+ cx (fl* dist (flcos ang)))]
+			   [y (fl+ cy (fl* dist (flsin ang)))]
+			   [ang1 (flatan (- cy y) (- cx x))]
+			   [x2 (fl+ cx (fl* dist (flcos (fl+ ang pi))))]
+			   [y2 (fl+ cy (fl* dist (flsin (fl+ ang pi))))]
+			   [ang2 (flatan (- cy y2) (- cx x2))])
+		  (spawn-bullet 'butterfly-magenta x y 5
+						(curry linear-step-accelerate-forever
+							   ang1 0.5 0.07 2.0))
+		  (-> (fb)
+			  (fbcounts 5 2)
+			  (fbabsolute-aim)
+			  (fbang (todeg (fl+ ang1 (fl* 3.0 (fl/ pi 4.0)))) 30.0)
+			  (fbspeed 3.0 5.0)
+			  (fbshootez x y 'music-red 5 #f))
+		  (spawn-bullet 'butterfly-cyan x2 y2 5
+						(curry linear-step-accelerate-forever
+							   ang2
+							   0.5 0.07 2.0))
+		  (-> (fb)
+			  (fbcounts 5 2)
+			  (fbabsolute-aim)
+			  (fbang (todeg (fl+ ang2 (fl* 3.0 (fl/ pi 4.0)))) 30.0)
+			  (fbspeed 3.0 5.0)
+			  (fbshootez x2 y2 'music-orange 5 #f))
+		  (wait 5)
+		  (loop (fl+ ang dang)))))
+	keep-running
+	task)
   (wait-while keep-running)
   (common-spell-postlude bossinfo enm)
   (common-boss-postlude bossinfo enm))
 
 (define (chapter11 task)
   (set! current-chapter 11)
-  ;; midspell 2, micro spinning?
   (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500 midboss2-control
 						  '((life . 1) (point . 50))
 						  (thunk #f))]
