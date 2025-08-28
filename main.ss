@@ -1083,6 +1083,36 @@
  				 (+ base-angle starting-angle-offset
 					(* col local-angle)))))))
 
+;; Return all of the row/col/speed/facing tuples that would have been shot by
+;; fbshoot. TODO: Clean this up? Import a sequence library?
+(define (fbcollect fb x y)
+  (define rows (fan-builder-rows fb))
+  (define row-width (fan-builder-row-width fb))
+  (define min-speed (fan-builder-min-speed fb))
+  (define max-speed (fan-builder-max-speed fb))
+  (define base-angle
+	(if (fan-builder-aimed-at-player fb)
+		(+ (fan-builder-global-angle fb)
+		   (facing-player x y))
+		(fan-builder-global-angle fb)))
+  (define local-angle (fan-builder-local-angle fb))
+  (define starting-angle-offset
+	(if (odd? row-width)
+		(- (* (quotient row-width 2)
+			  local-angle))
+		(- (+ (/ local-angle 2.0)
+			  (* (sub1 (/ row-width 2))
+				 local-angle)))))
+  (define result '())
+  (do [(row 0 (add1 row))] [(>= row rows)]
+	(let ([speed (lerp min-speed max-speed (/ row rows))])
+	  (do [(col 0 (add1 col))] [(>= col row-width)]
+		(set! result (cons (list row col speed
+ 								 (+ base-angle starting-angle-offset
+									(* col local-angle)))
+						   result)))))
+  (reverse! result))
+
 ;; helper for the common case of shooting a fanbuilder from the enemy position
 ;; if provided, bullet control function should take facing, speed, bullet
 (define fbshootenm
@@ -3554,7 +3584,7 @@
 		  (fl- ox mag))]
 	 [else
 	  (fl- ox mag)]))
-  (interval-loop 60
+  (interval-loop 80
 	(let ([x (pick-next-x)]
 		  [y (pick-next-y)])
 	  (ease-to ease-in-out-quad x y 70 enm))))
@@ -3562,27 +3592,39 @@
 (define (midboss-control task enm)
   (define bossinfo (enm-extras enm))
   (define keep-running
-	(lambda () (positive? (bossinfo-remaining-timer bossinfo))))
+	(lambda () (and (positive? (enm-health enm))
+					(positive? (bossinfo-remaining-timer bossinfo)))))
   (ease-to values 0.0 80.0 20 enm)
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 40)
 
-  (enm-addflags enm (enmflags invincible))
-  (spawn-subtask "nudge" (lambda (task) (ease-to values 0.0 100.0 20 enm))
-				 (constantly #t) task)
-  (declare-spell enm "\"My First Spell Card!\"" 1540 -1 2000000)
+  (declare-spell enm "\"My First Spell Card!\"" 1540 14000 2000000)
   (cancel-all #f)
-  (wait 80)
+  (ease-to values 0.0 100.0 20 enm)
+  (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 60)
   (spawn-subtask "move" (curry boss-standard-wander enm) keep-running task)
-  ;; TODO: spawner task moving up and down (on the sides probably?)
-  ;; spawns decorative bullets + some rings that delay aim at the player
-  ;; maybe vertical/box streaming is the idea?
-  ;; if box streaming then spawners would move around all edges instead of just
-  ;; up/down
+  (spawn-subtask "shoot"
+	(lambda (task)
+	  (interval-loop 60
+		(let ([points (-> (fb)
+						  (fbcounts 3)
+						  (fbang 0.0 25.0)
+						  (fbspeed 3.0)
+						  (fbcollect (enm-x enm) (enm-y enm)))])
+		  (for-each
+		   (lambda (point)
+			 (define _row (list-ref point 0))
+			 (define _col (list-ref point 1))
+			 (define speed (list-ref point 2))
+			 (define facing (list-ref point 3))
+			 (spawn-bullet 'medium-ball-cyan (enm-x enm) (enm-y enm) 5
+						   (curry linear-step-forever facing speed)))
+		   points))))
+	keep-running
+	task)
   (wait-while keep-running)
-  (enm-clrflags enm (enmflags invincible))
   (common-spell-postlude bossinfo enm)
   (common-boss-postlude bossinfo enm))
 
