@@ -3594,9 +3594,9 @@
 		  [y (pick-next-y)])
 	  (ease-to ease-in-out-quad x y 70 enm))))
 
-(define (position-bullets-around cx cy dist bullets)
+(define (position-bullets-around cx cy dist start-angle bullets)
   (define dang (fl/ tau (inexact (length bullets))))
-  (let loop ([ang 0.0]
+  (let loop ([ang start-angle]
 			 [bullets bullets])
 	(unless (null? bullets)
 	  (bullet-x-set! (car bullets) (fl+ cx (fl* dist (flcos ang))))
@@ -3628,46 +3628,63 @@
 			(cbspeed 5.0 6.0)
 			(cbang 0.0 10.0)
 			(cbshootenm enm 'heart-red 5 (sebundle-bell sounds))))
+	  (define (orb point)
+		(define speed (list-ref point 2))
+		(define facing (list-ref point 3))
+		(define x (enm-x enm))
+		(define y (enm-y enm))
+		(define start-frames frames)
+		(raylib:play-sound (sebundle-shoot0 sounds))
+		(letrec ([center-blt
+				  (spawn-bullet
+				   'small-ball-red x y 5
+				   (lambda (blt)
+					 (loop-forever
+					  (linear-step facing speed blt)
+					  (position-bullets-around (bullet-x blt) (bullet-y blt)
+											   33.0 0.0 ring)
+					  (position-bullets-around (bullet-x blt) (bullet-y blt)
+											   12.0 (torad (mod (* 2 (+ start-frames
+																		frames))
+																360.0))
+											   notes))))]
+				 [ring (map
+						(lambda (_)
+						  (spawn-bullet
+						   'pellet-white x y 5
+						   (lambda (blt)
+							 (wait-until
+							  (thunk (not (vector-index center-blt live-bullets))))
+							 (delete-bullet blt))))
+						(iota 24))]
+				 [notes (map
+						 (lambda (type)
+						   (spawn-bullet
+							type x y 5
+							(lambda (blt)
+							  (wait-until
+							   (thunk (not (vector-index center-blt live-bullets))))
+							  (delete-bullet blt))))
+						 '(music-red music-yellow music-cyan))])
+		  (void)))
 	  (loop-forever
 		(let ([points (-> (fb)
 						  (fbcounts 8)
 						  (fbang 0.0 25.0)
-						  (fbspeed 4.5)
+						  (fbspeed 6.0)
 						  (fbcollect (enm-x enm) (enm-y enm)))])
 		  (for-each
-		   (lambda (point)
-			 (define _row (list-ref point 0))
-			 (define _col (list-ref point 1))
-			 (define speed (list-ref point 2))
-			 (define facing (list-ref point 3))
-			 (spawn-bullet 'medium-ball-cyan (enm-x enm) (enm-y enm) 5
-						   (curry linear-step-forever facing speed))
-			 (raylib:play-sound (sebundle-shoot0 sounds))
-			 (wait 12))
+		   (lambda (point) (orb point) (wait 12))
 		   points)
-		  (ring)
-		  (wait 22)
-		  (ring)
-		  (wait 22)
-		  (ring)
-		  (wait 60)
+		  (ring) (wait 22)
+		  (ring) (wait 22)
+		  (ring) (wait 60)
 		  (for-each
-		   (lambda (point)
-			 (define _row (list-ref point 0))
-			 (define _col (list-ref point 1))
-			 (define speed (list-ref point 2))
-			 (define facing (list-ref point 3))
-			 (spawn-bullet 'medium-ball-cyan (enm-x enm) (enm-y enm) 5
-						   (curry linear-step-forever facing speed))
-			 (raylib:play-sound (sebundle-shoot0 sounds))
-			 (wait 12))
+		   (lambda (point) (orb point) (wait 12))
 		   (reverse points))
-		  (ring)
-		  (wait 22)
-		  (ring)
-		  (wait 22)
-		  (ring)
-		  (wait 50))))
+		  (ring) (wait 22)
+		  (ring) (wait 22)
+		  (ring) (wait 50))))
 	keep-running
 	task)
   (wait-while keep-running)
@@ -4043,7 +4060,7 @@
 					 (let ([r (flmin (fl* (inexact i) 1.5) 30.0)])
 					   (position-bullets-around (bullet-x center-blt)
 												(bullet-y center-blt)
-												r ring-blts))
+												r 0.0 ring-blts))
 					 (yield))
 				   (delete-bullet blt)))]
 			   [ring-blts (map
