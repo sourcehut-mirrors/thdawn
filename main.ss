@@ -800,6 +800,9 @@
 				 type
 				 (make-blttype type 'bubble type 2.0 32.0 16.0)))
 			  basic-colors)
+	(symbol-hashtable-set! ret 'placeholder
+						   (make-blttype 'placeholder 'placeholder 'preimg-white
+										 0.0 0.0 0.0))
 	ret))
 
 (define (bullet-active? blt)
@@ -1531,10 +1534,12 @@
 							 (laser-radius bullet)
 							 (laser-length bullet)
 							 player-x player-y player-radius)
-	  (check-collision-circles
-	   player-x player-y player-radius
-	   (bullet-x bullet) (bullet-y bullet)
-	   (bullet-hit-radius (bullet-type bullet)))))
+	  (let ([radius (bullet-hit-radius (bullet-type bullet))])
+		(when (positive? radius)
+		  (check-collision-circles
+		   player-x player-y player-radius
+		   (bullet-x bullet) (bullet-y bullet)
+		   (bullet-hit-radius (bullet-type bullet)))))))
 
 (define (process-collisions)
   (define (each-bullet bullet)
@@ -3617,7 +3622,7 @@
 		(let ([points (-> (fb)
 						  (fbcounts 8)
 						  (fbang 0.0 25.0)
-						  (fbspeed 3.0)
+						  (fbspeed 4.5)
 						  (fbcollect (enm-x enm) (enm-y enm)))])
 		  (for-each
 		   (lambda (point)
