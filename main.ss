@@ -3616,8 +3616,8 @@
   (enm-addflags enm (enmflags invincible))
   (cancel-all #f)
   (ease-to values 0.0 100.0 20 enm)
-  (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
+  (wait 60)
   
   (spawn-subtask "move" (curry boss-standard-wander enm) keep-running task)
   (spawn-subtask "shoot"
@@ -3678,13 +3678,17 @@
 		   points)
 		  (ring) (wait 22)
 		  (ring) (wait 22)
-		  (ring) (wait 60)
+		  (ring)
+		  (raylib:play-sound (sebundle-shortcharge sounds))
+		  (wait 60)
 		  (for-each
 		   (lambda (point) (orb point) (wait 12))
 		   (reverse points))
 		  (ring) (wait 22)
 		  (ring) (wait 22)
-		  (ring) (wait 50))))
+		  (ring)
+		  (raylib:play-sound (sebundle-shortcharge sounds))
+		  (wait 50))))
 	keep-running
 	task)
   (wait-while keep-running)
@@ -4346,9 +4350,9 @@
   (enm-addflags enm (enmflags invincible))
   (cancel-all #f)
   (wait 60)
-  (raylib:play-sound (sebundle-shortcharge sounds))
   (spawn-subtask "fan"
 	(lambda (task)
+	  (wait 30)
 	  (interval-loop 60
 		(-> (fb)
 			(fbang 0.0 25.0)
@@ -4369,6 +4373,7 @@
 			   [x2 (fl+ cx (fl* dist (flcos (fl+ ang pi))))]
 			   [y2 (fl+ cy (fl* dist (flsin (fl+ ang pi))))]
 			   [ang2 (flatan (- cy y2) (- cx x2))])
+		  (raylib:play-sound (sebundle-bell sounds))
 		  (spawn-bullet 'butterfly-magenta x y 5
 						(curry linear-step-accelerate-forever
 							   ang1 0.5 0.07 2.0))
