@@ -3594,6 +3594,16 @@
 		  [y (pick-next-y)])
 	  (ease-to ease-in-out-quad x y 70 enm))))
 
+(define (position-bullets-around cx cy dist bullets)
+  (define dang (fl/ tau (inexact (length bullets))))
+  (let loop ([ang 0.0]
+			 [bullets bullets])
+	(unless (null? bullets)
+	  (bullet-x-set! (car bullets) (fl+ cx (fl* dist (flcos ang))))
+	  (bullet-y-set! (car bullets) (fl+ cy (fl* dist (flsin ang))))
+	  (loop (fl+ ang dang)
+			(cdr bullets)))))
+
 (define (midboss-control task enm)
   (define bossinfo (enm-extras enm))
   (define keep-running
@@ -4037,17 +4047,9 @@
 			(let loop ([i 0])
 			  (linear-step facing 5.0 center-blt)
 			  (let ([r (flmin (fl* (inexact i) 1.5) 30.0)])
-				(for-each-indexed
-				 (lambda (j sub)
-				   (bullet-x-set!
-					sub
-					(fl+ (bullet-x center-blt)
-						 (fl* r (flcos (fl* (torad 36.0) (inexact j))))))
-				   (bullet-y-set!
-					sub
-					(fl+ (bullet-y center-blt)
-						 (fl* r (flsin (fl* (torad 36.0) (inexact j)))))))
-				 ring-blts))
+				(position-bullets-around (bullet-x center-blt)
+										 (bullet-y center-blt)
+										 r ring-blts))
 			  (yield)
 			  (when (fx< i 240)
 				(loop (fx1+ i))))
