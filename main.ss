@@ -1808,8 +1808,7 @@
 		  (let-values ([(x y w h) (enm-collision-box enm)])
 			(raylib:draw-rectangle-rec
 			 (+ x +playfield-render-offset-x+)
-			 (+ y +playfield-render-offset-y+) w h red)))
-		)))
+			 (+ y +playfield-render-offset-y+) w h red))))))
   (vector-for-each-truthy each live-enm))
 
 (define (linear-step-forever facing speed blt)
@@ -2632,8 +2631,7 @@
 												  (vec2 player-x player-y)))))
   (when (and (raylib:is-key-pressed key-f)
 			 (not (zero? (vlen spline-editor-positions))))
-	(set! spline-editor-positions (vector-pop spline-editor-positions)))
-  )
+	(set! spline-editor-positions (vector-pop spline-editor-positions))))
 
 (define (handle-player-movement)
   (define left-pressed (raylib:is-key-down key-left))
@@ -3963,8 +3961,7 @@
 			   (vec2 200.0 -20.0)))
    (lambda (_seg) (values values 480))
    enm)
-  (delete-enemy enm)
-  )
+  (delete-enemy enm))
 
 (define (chapter8 task)
   (define colors '#((red-fairy . big-star-red)
@@ -4005,9 +4002,7 @@
 					(+ (enm-x enm) (centered-roll game-rng 20.0))
 					-20.0
 					30 enm)
-		   (delete-enemy enm)
-		   ))))
-	)
+		   (delete-enemy enm))))))
   (wait-until (thunk (>= frames 8284)))
   (chapter9 task))
 
@@ -4201,7 +4196,7 @@
 (define (ch10-w3 task enm)
   (enm-superarmor-set! enm 60)
   (ease-to values 0.0 100.0 60 enm)
-  (spawn-subtask "decoration"
+  (spawn-subtask "hearts"
 	(lambda (task)
 	  (interval-loop 30
 		(-> (cb)
