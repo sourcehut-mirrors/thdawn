@@ -14,7 +14,7 @@
 		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
-		  set-music-volume
+		  set-music-volume set-music-looping
 		  load-sound play-sound unload-sound set-sound-pitch set-sound-volume
 		  load-texture unload-texture draw-texture-rec draw-texture draw-texture-pro
 		  load-font unload-font
@@ -38,12 +38,6 @@
 	  [(i3osx ti3osx a6osx ta6osx arm64osx tarm64osx ppc32osx tppc32osx)
 	   (load-shared-object "libraylib.dylib")]
 	  [else (load-shared-object "libraylib.so")]))
-
-  ;; WARNING: Chez's FFI treats the boolean ftype as C `int`,
-  ;; NOT as C99 _Bool/bool. Raylib, on all the target platforms we care about,
-  ;; is compiled against C99 bool. Ideally we shouldn't assume sizeof(bool) is 1,
-  ;; but on any sane platform that should be the case. Therefore, we should type all
-  ;; C bools that appear as unsigned-8 and do the zero check on the Chez side.
 
   ;; For foreign structs that Raylib handles by-value, we just allocate
   ;; one location and use it to pass and return things from ffi by-value
@@ -125,10 +119,8 @@
   (define get-screen-height
 	(foreign-procedure "GetScreenHeight" () int))
 
-  (define window-should-close0
-	(foreign-procedure "WindowShouldClose" () unsigned-8))
-  (define (window-should-close)
-	(not (fxzero? (window-should-close0))))
+  (define window-should-close
+	(foreign-procedure "WindowShouldClose" () stdbool))
 
   (define set-target-fps
 	(foreign-procedure "SetTargetFPS" (int) void))
@@ -219,7 +211,7 @@
 	(struct
 	  (_ AudioStream)
 	  (_ unsigned-int)
-	  (_ unsigned-8)
+	  (looping stdbool)
 	  (_ int)
 	  (_ void*)))
   
@@ -245,6 +237,8 @@
 	(foreign-procedure "UnloadMusicStream" ((& Music)) void))
   (define set-music-volume
 	(foreign-procedure "SetMusicVolume" ((& Music) float) void))
+  (define (set-music-looping music looping)
+	(ftype-set! Music (looping) music looping))
   (define (unload-music-stream music)
 	(unload-music-stream0 music)
 	(foreign-free (ftype-pointer-address music)))
@@ -411,20 +405,14 @@
 	(unload-font0 font)
 	(foreign-free (ftype-pointer-address font)))
 
-  (define is-key-down0
-	(foreign-procedure "IsKeyDown" (int) unsigned-8))
-  (define (is-key-down k)
-	(not (fxzero? (is-key-down0 k))))
+  (define is-key-down
+	(foreign-procedure "IsKeyDown" (int) stdbool))
 
-  (define is-key-pressed0
-	(foreign-procedure "IsKeyPressed" (int) unsigned-8))
-  (define (is-key-pressed k)
-	(not (fxzero? (is-key-pressed0 k))))
+  (define is-key-pressed
+	(foreign-procedure "IsKeyPressed" (int) stdbool))
 
-  (define is-key-released0
-	(foreign-procedure "IsKeyReleased" (int) unsigned-8))
-  (define (is-key-released k)
-	(not (fxzero? (is-key-released0 k))))
+  (define is-key-released
+	(foreign-procedure "IsKeyReleased" (int) stdbool))
 
   (define get-key-pressed
 	(foreign-procedure "GetKeyPressed" () int))

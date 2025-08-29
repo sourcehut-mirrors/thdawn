@@ -681,6 +681,7 @@
 (define (load-audio)
   (raylib:init-audio-device)
   (set! ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav"))
+  (raylib:set-music-looping ojamajo-carnival #f)
   (raylib:set-music-volume ojamajo-carnival (inexact (/ (cdr (assq 'music-vol config)) 100.0))))
 (define (unload-audio)
   (raylib:unload-music-stream ojamajo-carnival)
