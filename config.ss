@@ -4,11 +4,22 @@
 (library (config)
   (export read-config save-config)
   (import (chezscheme))
+
+  (include "keyconsts.ss")
   
   (define default-config
 	;; todo: key-config, 
-	'((music-vol . 100)
-	  (sfx-vol . 85)))
+	`((music-vol . 100)
+	  (sfx-vol . 85)
+	  ;; meh, too lazy to get the typed wrappers, punt the checks to runtime
+	  (keybindings . ((up . ,key-up)
+					  (down . ,key-down)
+					  (left . ,key-left)
+					  (right . ,key-right)
+					  (focus . ,key-left-shift)
+					  (shoot . ,key-z)
+					  (bomb . ,key-x)
+					  (pause . ,key-escape)))))
   (define config-path "config.dat")
 
   (define (read-config)

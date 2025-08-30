@@ -10,29 +10,7 @@
   (up down left right shoot bomb focus pause screenshot)
   vkeys)
 
-(define key-space 32)
-(define key-escape 256)
-(define key-f1 290)
-(define key-f2 291)
-(define key-f3 292)
-(define key-left-shift 340)
-(define key-right 262)
-(define key-left 263)
-(define key-down 264)
-(define key-up 265)
-(define key-comma 44)
-(define key-period 46)
-(define key-a 65)
-(define key-d 68)
-(define key-f 70)
-(define key-g 71)
-(define key-r 82)
-(define key-s 83)
-(define key-x 88)
-(define key-y 89)
-(define key-z 90)
-(define key-left-bracket 91)
-(define key-right-bracket 93)
+(include "keyconsts.ss")
 (define pi 3.141592)
 (define tau 6.28318)
 (alias vnth vector-ref)
@@ -2535,16 +2513,9 @@
 		(raylib:pause-music-stream ojamajo-carnival))
 	  (raylib:resume-music-stream ojamajo-carnival)))
 
-;; TODO: move to config
-(define keybindings
-  `((,(vkeys up) . ,key-up)
-	(,(vkeys down) . ,key-down)
-	(,(vkeys left) . ,key-left)
-	(,(vkeys right) . ,key-right)
-	(,(vkeys shoot) . ,key-z)
-	(,(vkeys bomb) . ,key-x)
-	(,(vkeys focus) . ,key-left-shift)
-	(,(vkeys pause) . ,key-escape)))
+;; initialized after config read
+;; alist of vkey-enum-set (which should only have one vkey in it) -> key code
+(define keybindings '())
 (define (gather-input)
   (define level-pressed
 	(fold-left
@@ -4582,6 +4553,12 @@
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)
   (set! config (read-config))
+  (let ([ctor (enum-set-constructor (vkeys))])
+	(set! keybindings
+		  (map (lambda (pair)
+				 (cons (ctor (list (car pair)))
+					   (cdr pair)))
+			   (cdr (assq 'keybindings config)))))
   (load-audio)
   (load-sfx)
   
