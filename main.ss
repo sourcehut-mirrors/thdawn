@@ -5,6 +5,11 @@
 (import (chezscheme))
 (import (add-prefix (raylib) raylib:)
 		(coro) (geom) (funcutils) (config))
+
+(define-enumeration vkey
+  (up down left right shoot bomb focus pause screenshot)
+  vkeys)
+
 (define key-space 32)
 (define key-escape 256)
 (define key-f1 290)
@@ -2530,11 +2535,55 @@
 		(raylib:pause-music-stream ojamajo-carnival))
 	  (raylib:resume-music-stream ojamajo-carnival)))
 
+;; TODO: move to config
+(define keybindings
+  `((,(vkeys up) . ,key-up)
+	(,(vkeys down) . ,key-down)
+	(,(vkeys left) . ,key-left)
+	(,(vkeys right) . ,key-right)
+	(,(vkeys shoot) . ,key-z)
+	(,(vkeys bomb) . ,key-x)
+	(,(vkeys focus) . ,key-left-shift)
+	(,(vkeys pause) . ,key-escape)))
+(define (gather-input)
+  (define level-pressed
+	(fold-left
+	 (lambda (acc pair)
+	   (if (raylib:is-key-down (cdr pair))
+		   (enum-set-union acc (car pair))
+		   acc))
+	 (vkeys)
+	 keybindings))
+  (define edge-pressed
+	(fold-left
+	 (lambda (acc pair)
+	   (if (raylib:is-key-pressed (cdr pair))
+		   (enum-set-union acc (car pair))
+		   acc))
+	 (vkeys)
+	 keybindings))
+  (define edge-released
+	(fold-left
+	 (lambda (acc pair)
+	   (if (raylib:is-key-released (cdr pair))
+		   (enum-set-union acc (car pair))
+		   acc))
+	 (vkeys)
+	 keybindings))
+  (values level-pressed edge-pressed edge-released))
+
+;; gathers the pending input to be used for the current frame
+;; returns (list (vkeys that are level-pressed)
+;;               (vkeys that are edge-pressed) (vkeys that are edge-released))
+;; No gameplay-facing keys should be checked outside this function.
+;; Debug-facing keys can still be checked outside.
+;; In the future this function will also be responsible for writing the key state
+;; to replays, or reading it from the replay.
 (define (handle-input)
-  ;; is-key-down: Level-triggered
-  ;; is-key-pressed, is-key-released: Edge-triggered
+  (define-values (level-pressed edge-pressed edge-released)
+	(gather-input))
   (when (not paused)
-	(set! focused-immediate (raylib:is-key-down key-left-shift))
+	(set! focused-immediate (enum-set-member? (vkey focus) level-pressed))
 	(if focused-immediate
 		(when (fx< focus-frames +max-focus-frames+)
 		  (set! focus-frames (fx1+ focus-frames)))
@@ -2543,9 +2592,9 @@
   (when (and (not paused) (zero? respawning))
 	(when (zero? death-timer)
 	  ;; don't allow moving between hit/death
-	  (handle-player-movement))
-	(when (raylib:is-key-down key-z)
-	  (when (raylib:is-key-pressed key-z)
+	  (handle-player-movement level-pressed))
+	(when (enum-set-member? (vkey shoot) level-pressed)
+	  (when (enum-set-member? (vkey shoot) edge-pressed)
 		(set! start-shot-frames frames))
 	  (when (= 5 (mod (fx- frames start-shot-frames) 10))
 		(vector-for-each
@@ -2560,7 +2609,7 @@
 						  -10 0)
 		  (raylib:play-sound (sebundle-playershoot sounds))))))
   
-  (when (raylib:is-key-released key-z)
+  (when (enum-set-member? (vkey shoot) edge-released)
 	(set! start-shot-frames -1))
   (when (raylib:is-key-pressed key-f1)
 	(set! force-invincible (not force-invincible)))
@@ -2569,10 +2618,10 @@
 										   ".png")))
   (when (raylib:is-key-pressed key-f3)
 	(set! show-hitboxes (not show-hitboxes)))
-  (when (raylib:is-key-pressed key-escape)
+  (when (enum-set-member? (vkey pause) edge-pressed)
 	(toggle-paused))
   (when (and
-		 (raylib:is-key-pressed key-x)
+		 (enum-set-member? (vkey bomb) edge-pressed)
 		 (not paused)
 		 (zero? bombing)
 		 (zero? respawning)
@@ -2593,8 +2642,6 @@
 	(set! initial-bomb-sweep-y-down bomb-sweep-y-down)
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
-  (when (raylib:is-key-pressed key-space)
-	(values))
   (when (and (raylib:is-key-pressed key-left-bracket))
 	(if (raylib:is-key-down key-left-shift)
 		(decrease-music-volume)
@@ -2634,13 +2681,13 @@
 			 (not (zero? (vlen spline-editor-positions))))
 	(set! spline-editor-positions (vector-pop spline-editor-positions))))
 
-(define (handle-player-movement)
-  (define left-pressed (raylib:is-key-down key-left))
-  (define right-pressed (raylib:is-key-down key-right))
-  (define up-pressed (raylib:is-key-down key-up))
-  (define down-pressed (raylib:is-key-down key-down))
-  (define dir (vec2 (fl+ (if left-pressed -1.0 0.0) (if right-pressed 1.0 0.0))
-					(fl+ (if up-pressed -1.0 0.0) (if down-pressed 1.0 0.0))))
+(define (handle-player-movement level-pressed)
+  (define left-down (enum-set-member? (vkey left) level-pressed))
+  (define right-down (enum-set-member? (vkey right) level-pressed))
+  (define up-down (enum-set-member? (vkey up) level-pressed))
+  (define down-down (enum-set-member? (vkey down) level-pressed))
+  (define dir (vec2 (fl+ (if left-down -1.0 0.0) (if right-down 1.0 0.0))
+					(fl+ (if up-down -1.0 0.0) (if down-down 1.0 0.0))))
   (cond
    [(not (flzero? (v2x dir)))
 	(set! player-dx-render (clamp (fx+ player-dx-render (exact (v2x dir))) -10 10))]
