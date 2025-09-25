@@ -135,6 +135,7 @@
    oldvwoopfast oldvwoopslow
    pause menuselect
    timeout timeoutwarn item damage0 damage1
+   dropbomb droplife
    laser damageresist)
   (sealed #t))
 (define sounds #f)
@@ -163,6 +164,7 @@
 				"se_pause.wav" "se_select00.wav"
 				"se_timeout.wav" "se_timeout2.wav"
 				"se_item00.wav" "se_damage00.wav" "se_damage01.wav"
+				"se_bonus2.wav" "se_bonus.wav"
 				"se_old_lazer01.wav" "se_nodamage.wav"))))
   (update-sound-volumes))
 (define (unload-sfx)
@@ -2012,6 +2014,11 @@
 	  (error 'spawn-misc-ent "No more open misc entity slots!"))
 	(let ([ent (make-miscent type x y vy ay 0 #f)])
 	  (vector-set! live-misc-ents idx ent)
+	  (case type
+		[(bomb bomb-frag)
+		 (raylib:play-sound (sebundle-dropbomb sounds))]
+		[(life life-frag)
+		 (raylib:play-sound (sebundle-droplife sounds))])
 	  ent)))
 
 (define (delete-misc-ent ent)
