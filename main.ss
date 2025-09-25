@@ -7,7 +7,7 @@
 		(coro) (geom) (funcutils) (config))
 
 (define-enumeration vkey
-  (up down left right shoot bomb focus pause screenshot)
+  (up down left right shoot bomb focus pause screenshot quick-restart)
   vkeys)
 
 (include "keyconsts.ss")
@@ -2625,7 +2625,7 @@
 	(set! chapter-select (min (add1 chapter-select) 13)))
   (when (raylib:is-key-pressed key-comma)
 	(set! chapter-select (max (sub1 chapter-select) 0)))
-  (when (raylib:is-key-pressed key-r)
+  (when (enum-set-member? (vkey quick-restart) edge-pressed)
 	(if paused
 		(begin
 		  (reset-state)
@@ -3581,7 +3581,7 @@
   (wait-until (thunk (>= frames 3500)))
   (chapter4 task))
 
-(define (boss-standard-wander enm task)
+(define (boss-standard-wander-once enm duration)
   (define (pick-next-y)
 	(clamp (fl+ (enm-y enm)
 				(centered-roll game-rng 20.0))
@@ -3604,12 +3604,12 @@
 	  (if (fl< (roll game-rng) 0.3333)
 		  (fl+ ox mag)
 		  (fl- ox mag))]
-	 [else
-	  (fl- ox mag)]))
+	 [else (fl- ox mag)]))
+  (ease-to ease-in-out-quad (pick-next-x) (pick-next-y) duration enm))
+
+(define (boss-standard-wander enm task)
   (interval-loop 80
-	(let ([x (pick-next-x)]
-		  [y (pick-next-y)])
-	  (ease-to ease-in-out-quad x y 70 enm))))
+	(boss-standard-wander-once enm 70)))
 
 (define (position-bullets-around cx cy dist start-angle bullets)
   (define dang (fl/ tau (inexact (length bullets))))
@@ -3625,6 +3625,51 @@
   (define bossinfo (enm-extras enm))
   (define keep-running
 	(lambda () (positive? (bossinfo-remaining-timer bossinfo))))
+  (define (ring)
+	(-> (cb)
+		(cbcount 18 3)
+		(cbspeed 5.0 6.0)
+		(cbang 0.0 10.0)
+		(cbshootenm enm 'heart-red 5 (sebundle-bell sounds))))
+  (define (orb point)
+	(define speed (list-ref point 2))
+	(define facing (list-ref point 3))
+	(define x (enm-x enm))
+	(define y (enm-y enm))
+	(define start-frames frames)
+	(raylib:play-sound (sebundle-shoot0 sounds))
+	(letrec ([center-blt
+			  (spawn-bullet
+			   'small-ball-red x y 5
+			   (lambda (blt)
+				 (loop-forever
+				  (linear-step facing speed blt)
+				  (position-bullets-around (bullet-x blt) (bullet-y blt)
+										   33.0 0.0 ring)
+				  (position-bullets-around (bullet-x blt) (bullet-y blt)
+										   12.0 (torad (mod (* 2 (+ start-frames
+																	frames))
+															360.0))
+										   notes))))]
+			 [ring (map
+					(lambda (_)
+					  (spawn-bullet
+					   'pellet-white x y 5
+					   (lambda (blt)
+						 (wait-until
+						  (thunk (not (vector-index center-blt live-bullets))))
+						 (delete-bullet blt))))
+					(iota 24))]
+			 [notes (map
+					 (lambda (type)
+					   (spawn-bullet
+						type x y 5
+						(lambda (blt)
+						  (wait-until
+						   (thunk (not (vector-index center-blt live-bullets))))
+						  (delete-bullet blt))))
+					 '(music-red music-yellow music-cyan))])
+	  (void)))
   (ease-to values 0.0 80.0 20 enm)
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 40)
@@ -3636,54 +3681,9 @@
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 60)
   
-  (spawn-subtask "move" (curry boss-standard-wander enm) keep-running task)
-  (spawn-subtask "shoot"
+  ;(spawn-subtask "move" (curry boss-standard-wander enm) keep-running task)
+  (spawn-subtask "wave1"
 	(lambda (task)
-	  (define (ring)
-		(-> (cb)
-			(cbcount 18 3)
-			(cbspeed 5.0 6.0)
-			(cbang 0.0 10.0)
-			(cbshootenm enm 'heart-red 5 (sebundle-bell sounds))))
-	  (define (orb point)
-		(define speed (list-ref point 2))
-		(define facing (list-ref point 3))
-		(define x (enm-x enm))
-		(define y (enm-y enm))
-		(define start-frames frames)
-		(raylib:play-sound (sebundle-shoot0 sounds))
-		(letrec ([center-blt
-				  (spawn-bullet
-				   'small-ball-red x y 5
-				   (lambda (blt)
-					 (loop-forever
-					  (linear-step facing speed blt)
-					  (position-bullets-around (bullet-x blt) (bullet-y blt)
-											   33.0 0.0 ring)
-					  (position-bullets-around (bullet-x blt) (bullet-y blt)
-											   12.0 (torad (mod (* 2 (+ start-frames
-																		frames))
-																360.0))
-											   notes))))]
-				 [ring (map
-						(lambda (_)
-						  (spawn-bullet
-						   'pellet-white x y 5
-						   (lambda (blt)
-							 (wait-until
-							  (thunk (not (vector-index center-blt live-bullets))))
-							 (delete-bullet blt))))
-						(iota 24))]
-				 [notes (map
-						 (lambda (type)
-						   (spawn-bullet
-							type x y 5
-							(lambda (blt)
-							  (wait-until
-							   (thunk (not (vector-index center-blt live-bullets))))
-							  (delete-bullet blt))))
-						 '(music-red music-yellow music-cyan))])
-		  (void)))
 	  (loop-forever
 		(let ([points (-> (fb)
 						  (fbcounts 8)
@@ -3697,7 +3697,7 @@
 		  (ring) (wait 22)
 		  (ring)
 		  (raylib:play-sound (sebundle-shortcharge sounds))
-		  (wait 60)
+		  (boss-standard-wander-once enm 60)
 		  (for-each
 		   (lambda (point) (orb point) (wait 12))
 		   (reverse points))
@@ -3705,7 +3705,7 @@
 		  (ring) (wait 22)
 		  (ring)
 		  (raylib:play-sound (sebundle-shortcharge sounds))
-		  (wait 50))))
+		  (boss-standard-wander-once enm 50))))
 	keep-running
 	task)
   (wait-while keep-running)

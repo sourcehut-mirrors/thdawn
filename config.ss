@@ -19,7 +19,8 @@
 					  (focus . ,key-left-shift)
 					  (shoot . ,key-z)
 					  (bomb . ,key-x)
-					  (pause . ,key-escape)))))
+					  (pause . ,key-escape)
+					  (quick-restart . ,key-r)))))
   (define config-path "config.dat")
 
   (define (read-config)
