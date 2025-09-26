@@ -3695,7 +3695,7 @@
   (wait 25)
   (raylib:play-sound (sebundle-shoot0 sounds))
   (cancel-all #f)
-  (ease-to ease-in-out-quad 0.0 100.0 30 enm)
+  (ease-to values 0.0 100.0 30 enm)
   (let loop ([ang 0.0]
 			 [offset 80.0])
 	(-> (cb)
