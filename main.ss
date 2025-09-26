@@ -1072,34 +1072,11 @@
  				 (+ base-angle starting-angle-offset
 					(* col local-angle)))))))
 
-;; Return all of the row/col/speed/facing tuples that would have been shot by
-;; fbshoot. TODO: Clean this up? Import a sequence library?
+; TODO: Clean this up? Import a sequence library?
 (define (fbcollect fb x y)
-  (define rows (fan-builder-rows fb))
-  (define row-width (fan-builder-row-width fb))
-  (define min-speed (fan-builder-min-speed fb))
-  (define max-speed (fan-builder-max-speed fb))
-  (define base-angle
-	(if (fan-builder-aimed-at-player fb)
-		(+ (fan-builder-global-angle fb)
-		   (facing-player x y))
-		(fan-builder-global-angle fb)))
-  (define local-angle (fan-builder-local-angle fb))
-  (define starting-angle-offset
-	(if (odd? row-width)
-		(- (* (quotient row-width 2)
-			  local-angle))
-		(- (+ (/ local-angle 2.0)
-			  (* (sub1 (/ row-width 2))
-				 local-angle)))))
   (define result '())
-  (do [(row 0 (add1 row))] [(>= row rows)]
-	(let ([speed (lerp min-speed max-speed (/ row rows))])
-	  (do [(col 0 (add1 col))] [(>= col row-width)]
-		(set! result (cons (list row col speed
- 								 (+ base-angle starting-angle-offset
-									(* col local-angle)))
-						   result)))))
+  (fbshoot fb x y
+		   (lambda args (set! result (cons args result))))
   (reverse! result))
 
 ;; helper for the common case of shooting a fanbuilder from the enemy position
@@ -1189,6 +1166,11 @@
 	  (do [(in-layer 0 (add1 in-layer))] [(>= in-layer per-layer)]
 		(consume layer in-layer speed
 				 (+ layer-angle (* in-layer per-bullet-angle)))))))
+
+(define (cbcollect cb x y)
+  (define result '())
+  (cbshoot cb x y (lambda args (set! result (cons args result))))
+  (reverse! result))
 
 ;; helper for the common case of shooting a circlebuilder from the enemy position
 ;; with a fixed type and linear bullet motion
@@ -3630,8 +3612,6 @@
 
 (define (midboss-control task enm)
   (define bossinfo (enm-extras enm))
-  (define keep-running
-	(lambda () (positive? (bossinfo-remaining-timer bossinfo))))
   (define (ring)
 	(-> (cb)
 		(cbcount 18 3)
@@ -3687,35 +3667,47 @@
   (ease-to values 0.0 100.0 20 enm)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 60)
-  
-  ;(spawn-subtask "move" (curry boss-standard-wander enm) keep-running task)
-  (spawn-subtask "wave1"
-	(lambda (task)
-	  (loop-forever
-		(let ([points (-> (fb)
-						  (fbcounts 8)
-						  (fbang 0.0 25.0)
-						  (fbspeed 6.0)
-						  (fbcollect (enm-x enm) (enm-y enm)))])
-		  (for-each
-		   (lambda (point) (orb point) (wait 12))
-		   points)
-		  (ring) (wait 22)
-		  (ring) (wait 22)
-		  (ring)
-		  (raylib:play-sound (sebundle-shortcharge sounds))
-		  (boss-standard-wander-once enm 60)
-		  (for-each
-		   (lambda (point) (orb point) (wait 12))
-		   (reverse points))
-		  (ring) (wait 22)
-		  (ring) (wait 22)
-		  (ring)
-		  (raylib:play-sound (sebundle-shortcharge sounds))
-		  (boss-standard-wander-once enm 50))))
-	keep-running
-	task)
-  (wait-while keep-running)
+
+  (let loop ([first #t])
+   (let ([points (-> (fb)
+					 (fbcounts 8)
+					 (fbang 0.0 25.0)
+					 (fbspeed 6.0)
+					 (fbcollect (enm-x enm) (enm-y enm)))])
+	 (for-each
+	  (lambda (point) (orb point) (wait 12))
+	  points)
+	 (ring) (wait 22)
+	 (ring) (wait 22)
+	 (ring)
+	 (raylib:play-sound (sebundle-shortcharge sounds))
+	 (boss-standard-wander-once enm 60)
+	 (for-each
+	  (lambda (point) (orb point) (wait 12))
+	  (reverse points))
+	 (ring) (wait 22)
+	 (ring) (wait 22)
+	 (ring)
+	 (when first
+	   (raylib:play-sound (sebundle-shortcharge sounds))
+	   (boss-standard-wander-once enm 50)
+	   (loop #f))))
+  (wait 25)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (cancel-all #f)
+  (ease-to ease-in-out-quad 0.0 100.0 30 enm)
+  (let loop ([ang 0.0]
+			 [offset 80.0])
+	(-> (cb)
+		(cbcount 18)
+		(cbabsolute-aim)
+		(cbang ang)
+		(cbspeed 5.0)
+		(cboffset offset)
+		(cbshootenm enm 'heart-red 5 (sebundle-shoot0 sounds)))
+	(when (positive? (bossinfo-remaining-timer bossinfo))
+	  (wait 7)
+	  (loop (fl+ ang 8.0) (if (<= offset 38.0) offset (- offset 1.0)))))
   (common-spell-postlude bossinfo enm)
   (common-boss-postlude bossinfo enm))
 
