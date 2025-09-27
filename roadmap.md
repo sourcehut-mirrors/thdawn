@@ -6,12 +6,9 @@ Stage is to be themed roughly around music. BGM will be Ojamajo Carnival.
 
 Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 
-Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
+Boss: Doremi/Hazuki/Aiko/Onpu. BGM: Half Point (no syncing)
 
 ## Immediate TODOs
-* implement first chapter of stage to flesh out API's needed
-  * and all bullet types needed for it
-* spell tracking and hud
 * implement gameover
 * dialogue system
 * player and boss portraits
@@ -19,10 +16,7 @@ Boss: Alcyone from Magic Knight Rayearth (with banger boss theme tm)
 * make sure we're doing proper alpha blending (premultiplication and such)
 * find a way to avoid having to add render-offset-x and y everywhere.
   * for example, draw to a separate framebuffer for gameplay area then move that whole thing
-* lasers
 * pan sfx based on horizontal position
-* investigate if we want to adopt a system similar to the official Touhou games'
-  "two-level" position and velocity system
 
 ## Stage design brainstorming
 

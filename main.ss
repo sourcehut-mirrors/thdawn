@@ -2788,7 +2788,20 @@
 						  [(fx<= remaining-timer 600) #xffb6c1ff]
 						  [else -1]))
 	(when spname
-	  (let*-values ([(width height) (raylib:measure-text-ex
+	  (let*-values ([(bonus) (calculate-spell-bonus bossinfo)]
+					[(bonus-txt) (format "Bonus: ~11:d" bonus)]
+					[(bonus-width _) (raylib:measure-text-ex
+									  (fontbundle-sharetechmono fonts)
+									  bonus-txt 15.0 0.0)]
+					[(bonus-x)
+					 (+ +playfield-render-offset-x+
+						-5.0
+						(if (fx<= elapsed-frames 30)
+							(+ +playfield-max-x+
+							   (lerp 0.0 (fl- bonus-width)
+									 (ease-out-cubic (/ elapsed-frames 30))))
+							(+ +playfield-max-x+ (fl- bonus-width))))]
+					[(width height) (raylib:measure-text-ex
 									 (fontbundle-cabin fonts)
 									 spname 18.0 0.5)]
 					[(spx) (+ +playfield-render-offset-x+
@@ -2807,8 +2820,7 @@
 								 (- +playfield-max-y+ height 15.0)
 								 (+ +playfield-min-y+ 15.0)
 								 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
-							   [else (+ +playfield-min-y+ 15.0)]))]
-					[(bonus) (calculate-spell-bonus bossinfo)])
+							   [else (+ +playfield-min-y+ 15.0)]))])
 		;; TODO: scissor when outside of playfield
 		(raylib:draw-texture-pro
 		 (txbundle-boss-ui textures)
@@ -2820,8 +2832,8 @@
 		 spx spy
 		 18.0 0.5 -1)
 		(raylib:draw-text-ex
-		 (fontbundle-sharetechmono fonts) (format "Bonus: ~:d" bonus)
-		 spx (+ spy height 5.0)
+		 (fontbundle-sharetechmono fonts) bonus-txt
+		 bonus-x (+ spy height 5.0)
 		 15.0 0.0 -1))))
   (draw-sprite textures 'enemy-indicator
 			   (+ +playfield-render-offset-x+
@@ -3695,7 +3707,7 @@
   (wait 25)
   (raylib:play-sound (sebundle-shoot0 sounds))
   (cancel-all #f)
-  (ease-to values 0.0 100.0 30 enm)
+  (ease-to ease-in-out-quad 0.0 100.0 60 enm)
   (let loop ([ang 0.0]
 			 [offset 80.0])
 	(-> (cb)

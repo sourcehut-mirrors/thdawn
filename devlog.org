@@ -1,3 +1,17 @@
+* [2025-09-26 Fri]
+Back from vacation. The entire stage portion is completely done. Assessing where we are
+now, I think I want to work on the dialogue system next, then replays. So it'll be a bit
+of infrastructure time instead of pattern work, but I'm keeping some brainstorming going
+on in the background for when the time comes.
+
+I probably won't have strict music syncing with the boss fight because it's really hard to
+do if the music isn't designed with the fight in mind. The BGM will probably just be a
+looped version of Half Point.
+
+I also need to start practicing art again because I want to draw all the character
+portraits myself. If I'm extra ambitious, maybe I'll even have different portraits for the
+spell card cutins. This can proceed in parallel with working on the infra bits.
+
 * [2025-08-23 Sat]
 Pretty much all but one chapter of the stage patterns are in place.
 
