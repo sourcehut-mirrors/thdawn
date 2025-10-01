@@ -1913,12 +1913,14 @@
 (define (tick-particles)
   (define (each p)
 	(particle-age-set! p (fx1+ (particle-age p)))
-	(case(particle-type p)
+	(case (particle-type p)
 	  ([graze maple maple-grayscale]
 	   (let ([dir (cdr (assq 'dir (particle-extra-data p)))]
 			 [speed (cdr (assq 'speed (particle-extra-data p)))])
 		 (particle-x-set! p (+ (particle-x p) (* speed (cos dir))))
-		 (particle-y-set! p (+ (particle-y p) (* speed (sin dir)))))))
+		 (particle-y-set! p (+ (particle-y p) (* speed (sin dir))))))
+	  ([itemvalue]
+	   (particle-y-set! p (- (particle-y p) 0.5))))
 	(when (fx> (particle-age p) (particle-max-age p))
 	  (delete-particle p)))
   (vector-for-each-truthy each live-particles))
