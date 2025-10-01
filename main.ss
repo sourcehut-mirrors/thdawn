@@ -613,7 +613,6 @@
 (define death-timer 0)
 (define force-invincible #f)
 (define graze 0)
-(define paused #f)
 (define graze-radius 22.0)
 (define hit-radius 3.0)
 (define vacuum-radius-unfocused 25.0)
@@ -644,6 +643,47 @@
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
 
+;; stack of active guis, front of the list is highest priority w.r.t input.
+;; rendered bottom to top (reverse order)
+;; if a stage is active, it is rendered before any gui
+(define gui-stack '())
+(define-record-type gui
+  (fields
+   ;; function (self level-pressed, edge-pressed, edge-released) -> boolish
+   ;;
+   ;; if returns truthy, the gui handled the input and it should not pass on to
+   ;; lower guis or the gameplay itself. Otherwise, it will be.
+   handle-input
+   ;; function (self textures fonts) -> any. Draws the gui.
+   render))
+
+;; todo this probably needs to become a subtype of gui in the future once it
+;; starts needing state (menu selections, etc.)
+(define pause-gui
+  ;; give the lambdas names so they show up in stacktraces, etc.
+  (let ([pause-gui-handle-input
+		 (lambda (self level-pressed edge-pressed edge-released)
+		   (cond
+			[(enum-set-member? (vkey pause) edge-pressed)
+			 (set! gui-stack (remq self gui-stack))
+			 (raylib:resume-music-stream ojamajo-carnival)
+			 #t]
+			[(enum-set-member? (vkey quick-restart) edge-pressed)
+			 (reset-state)
+			 (raylib:resume-music-stream ojamajo-carnival)
+			 (reset-to 0)
+			 (set! gui-stack (remq self gui-stack))
+			 #t]
+			[else #f]))]
+		[pause-gui-render
+		 (lambda (self textures fonts)
+		   (when (< (mod true-frames 60) 30)
+			 (raylib:draw-text-ex
+			  (fontbundle-bubblegum fonts)
+			  "Paused"
+			  175 150 32.0 0.0 (packcolor 200 122 255 255))))])
+	(make-gui pause-gui-handle-input pause-gui-render)))
+
 (define (truncate-to-whole-spline v)
   (let*-values ([(quot rem) (div-and-mod (sub1 (vlen v)) 3)])
 	(if (fxzero? rem)
@@ -661,6 +701,9 @@
 
 (define (player-invincible?)
   (fxpositive? iframes))
+
+(define (paused?)
+  (memp (lambda (g) (eq? g pause-gui)) gui-stack))
 
 (define ojamajo-carnival #f)
 (define (load-audio)
@@ -2494,14 +2537,6 @@
 	(vector-set! option-ys 3
 				 (lerp player-y (- player-y 17) progress))))
 
-(define (toggle-paused)
-  (set! paused (not paused))
-  (if paused
-	  (let ()
-		(raylib:play-sound (sebundle-pause sounds))
-		(raylib:pause-music-stream ojamajo-carnival))
-	  (raylib:resume-music-stream ojamajo-carnival)))
-
 ;; initialized after config read
 ;; alist of vkey-enum-set (which should only have one vkey in it) -> key code
 (define keybindings '())
@@ -2532,24 +2567,24 @@
 	 keybindings))
   (values level-pressed edge-pressed edge-released))
 
-;; gathers the pending input to be used for the current frame
-;; returns (list (vkeys that are level-pressed)
-;;               (vkeys that are edge-pressed) (vkeys that are edge-released))
-;; No gameplay-facing keys should be checked outside this function.
-;; Debug-facing keys can still be checked outside.
-;; In the future this function will also be responsible for writing the key state
-;; to replays, or reading it from the replay.
-(define (handle-input)
-  (define-values (level-pressed edge-pressed edge-released)
-	(gather-input))
-  (when (not paused)
+(define (handle-gui-input level-pressed edge-pressed edge-released)
+  (let loop ([lst gui-stack])
+	(if (null? lst)
+		#f
+		(let* ([cur (car lst)]
+			   [handled ((gui-handle-input cur) cur
+						 level-pressed edge-pressed edge-released)])
+		  (or handled (loop (cdr lst)))))))
+
+(define (handle-game-input level-pressed edge-pressed edge-released)
+  (when (not (paused?))
 	(set! focused-immediate (enum-set-member? (vkey focus) level-pressed))
 	(if focused-immediate
 		(when (fx< focus-frames +max-focus-frames+)
 		  (set! focus-frames (fx1+ focus-frames)))
 		(when (fx> focus-frames 0)
 		  (set! focus-frames (fx1- focus-frames)))))
-  (when (and (not paused) (zero? respawning))
+  (when (and (not (paused?)) (zero? respawning))
 	(when (zero? death-timer)
 	  ;; don't allow moving between hit/death
 	  (handle-player-movement level-pressed))
@@ -2579,10 +2614,13 @@
   (when (raylib:is-key-pressed key-f3)
 	(set! show-hitboxes (not show-hitboxes)))
   (when (enum-set-member? (vkey pause) edge-pressed)
-	(toggle-paused))
+	(when (null? gui-stack)
+	  (set! gui-stack (cons pause-gui gui-stack))
+	  (raylib:play-sound (sebundle-pause sounds))
+	  (raylib:pause-music-stream ojamajo-carnival)))
   (when (and
 		 (enum-set-member? (vkey bomb) edge-pressed)
-		 (not paused)
+		 (not (paused?))
 		 (zero? bombing)
 		 (zero? respawning)
 		 (>= bomb-stock 1))
@@ -2614,17 +2652,8 @@
 	(set! chapter-select (min (add1 chapter-select) 13)))
   (when (raylib:is-key-pressed key-comma)
 	(set! chapter-select (max (sub1 chapter-select) 0)))
-  (when (enum-set-member? (vkey quick-restart) edge-pressed)
-	(if paused
-		(begin
-		  (reset-state)
-		  (reset-to 0)
-		  (toggle-paused))
-		(reset-to chapter-select))
-
-	;; (set! frame-save-diff (- frames frame-save))
-	;; (set! frame-save frames)
-	)
+  (when (and (not (paused?)) (raylib:is-key-pressed key-r))
+	(reset-to chapter-select))
 
   (when (raylib:is-key-pressed key-a)
 	(when (> spline-editor-selected-position 0)
@@ -2640,6 +2669,20 @@
   (when (and (raylib:is-key-pressed key-f)
 			 (not (zero? (vlen spline-editor-positions))))
 	(set! spline-editor-positions (vector-pop spline-editor-positions))))
+
+;; gathers the pending input to be used for the current frame
+;; returns (list (vkeys that are level-pressed)
+;;               (vkeys that are edge-pressed) (vkeys that are edge-released))
+;; No gameplay-facing keys should be checked outside this function.
+;; Debug-facing keys can still be checked outside.
+;; In the future this function will also be responsible for writing the key state
+;; to replays, or reading it from the replay.
+(define (handle-input)
+  (define-values (level-pressed edge-pressed edge-released)
+	(gather-input))
+  (unless (handle-gui-input level-pressed edge-pressed edge-released)
+	;; todo save to replay here
+	(handle-game-input level-pressed edge-pressed edge-released)))
 
 (define (handle-player-movement level-pressed)
   (define left-down (enum-set-member? (vkey left) level-pressed))
@@ -3000,7 +3043,7 @@
   (make-rectangle 0.0 0.0 512.0 480.0))
 (define (do-render-all textures fonts)
   (raylib:clear-background #x000000ff) ;;#x42024aff) ;; todo: some variability :D
-  (unless paused
+  (unless (paused?)
 	(let-values ([(bg1-vel bg2-vel bg3-vel) (background-acceleration frames)])
 	  (set! bg1-scroll (fl- bg1-scroll bg1-vel))
 	  (set! bg2-scroll (fl- bg2-scroll bg2-vel))
@@ -3064,11 +3107,11 @@
   (when (positive? bombing)
 	(draw-bomb textures))
 
-  (when (and paused (< (mod true-frames 60) 30))
-	(raylib:draw-text-ex
-	 (fontbundle-bubblegum fonts)
-	 "Paused"
-	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
+  ;; (when (and paused (< (mod true-frames 60) 30))
+  ;; 	(raylib:draw-text-ex
+  ;; 	 (fontbundle-bubblegum fonts)
+  ;; 	 "Paused"
+  ;; 	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
   (draw-hud textures fonts)
 
   (let ([render-positions (vector-map
@@ -3090,7 +3133,11 @@
 				  (eround (v2x (vnth spline-editor-positions i)))
 				  (eround (v2y (vnth spline-editor-positions i))))
 		  (eround (v2x p)) (eround (v2y p)) 10 -1)))
-	 render-positions)))
+	 render-positions))
+
+  (for-each
+   (lambda (g) ((gui-render g) g textures fonts))
+   (reverse gui-stack)))
 
 (define (render-all render-texture render-texture-inner textures fonts)
   (raylib:begin-texture-mode render-texture)
@@ -4586,7 +4633,7 @@
 		(do [] [(raylib:window-should-close)]
 		  (handle-input)
 		  (raylib:update-music-stream ojamajo-carnival)
-		  (unless paused
+		  (unless (paused?)
 			(tick-player)
 			(vector-for-each-truthy
 			 despawn-out-of-bound-bullet
@@ -4598,7 +4645,7 @@
 			(tick-particles)
 			(process-collisions))
 		  (render-all render-texture render-texture-inner textures fonts)
-		  (unless paused
+		  (unless (paused?)
 			(set! frames (fx1+ frames)))
 		  (set! true-frames (fx1+ true-frames))
 		  #;(when (fxzero? (fxmod true-frames 180))
@@ -4638,7 +4685,7 @@
 
 (define (debug-launch)
   (reset-state)
-  (set! paused #f)
+  (set! gui-stack '())
   (fork-thread main))
 
 (define (main-with-backtrace)
