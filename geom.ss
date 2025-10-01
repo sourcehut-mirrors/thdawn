@@ -65,7 +65,6 @@
 	(define dx (fl- x2 x1))
 	(define dy (fl- y2 y1))
 	(define dist-sq (fl+ (fl* dx dx) (fl* dy dy)))
-	(define radius-sum (fl+ radius1 radius2))
 	(fl<= dist-sq (fl+ (fl* radius1 radius1) (fl* radius2 radius2))))
 
   (define (check-collision-recs x1 y1 w1 h1 x2 y2 w2 h2)
