@@ -1,6 +1,6 @@
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 ;; The config is just an alist. This is because nongenerative records can't handle old
 ;; data when new fields are added.
-
 (library (config)
   (export read-config save-config)
   (import (chezscheme))
