@@ -657,32 +657,79 @@
    ;; function (self textures fonts) -> any. Draws the gui.
    render))
 
-;; todo this probably needs to become a subtype of gui in the future once it
-;; starts needing state (menu selections, etc.)
-(define pause-gui
-  ;; give the lambdas names so they show up in stacktraces, etc.
-  (let ([pause-gui-handle-input
-		 (lambda (self level-pressed edge-pressed edge-released)
-		   (cond
-			[(enum-set-member? (vkey pause) edge-pressed)
-			 (set! gui-stack (remq self gui-stack))
-			 (raylib:resume-music-stream ojamajo-carnival)
-			 #t]
-			[(enum-set-member? (vkey quick-restart) edge-pressed)
-			 (reset-state)
-			 (raylib:resume-music-stream ojamajo-carnival)
-			 (reset-to 0)
-			 (set! gui-stack (remq self gui-stack))
-			 #t]
-			[else #f]))]
-		[pause-gui-render
-		 (lambda (self textures fonts)
-		   (when (< (mod true-frames 60) 30)
-			 (raylib:draw-text-ex
-			  (fontbundle-bubblegum fonts)
-			  "Paused"
-			  175 150 32.0 0.0 (packcolor 200 122 255 255))))])
-	(make-gui pause-gui-handle-input pause-gui-render)))
+(define-record-type menu-item
+  (fields
+   label ;; text to render
+   on-select ;; nullary function, run when selected
+   ))
+
+(define-record-type pause-gui
+  (parent gui)
+  (fields
+   (mutable menu-options) ;; vector of menu-item
+   (mutable selected-option)) ;; index into menu-options
+  )
+
+(define (mk-pause-gui)
+  (define (unpause gui)
+	(set! gui-stack (remq gui gui-stack))
+	(raylib:resume-music-stream ojamajo-carnival))
+  (define (restart gui)
+	(reset-state)
+	(raylib:resume-music-stream ojamajo-carnival)
+	(reset-to 0)
+	(set! gui-stack (remq gui gui-stack)))
+  (define (pause-gui-handle-input
+		   self level-pressed edge-pressed edge-released)
+	(cond
+	 [(enum-set-member? (vkey pause) edge-pressed)
+	  (unpause self)
+	  #t]
+	 [(enum-set-member? (vkey quick-restart) edge-pressed)
+	  (restart self)
+	  #t]
+	 [(enum-set-member? (vkey down) edge-pressed)
+	  (pause-gui-selected-option-set!
+	   self
+	   (clamp (add1 (pause-gui-selected-option self))
+			  0 (sub1 (vlen (pause-gui-menu-options self)))))
+	  #t]
+	 [(enum-set-member? (vkey up) edge-pressed)
+	  (pause-gui-selected-option-set!
+	   self
+	   (clamp (sub1 (pause-gui-selected-option self))
+			  0 (sub1 (vlen (pause-gui-menu-options self)))))
+	  #t]
+	 [(enum-set-member? (vkey shoot) edge-pressed)
+	  (let ([item (vnth (pause-gui-menu-options self)
+						(pause-gui-selected-option self))])
+		((menu-item-on-select item)))
+	  #t]
+	 [else #f]))
+  (define (pause-gui-render self textures fonts)
+	(define opts (pause-gui-menu-options self))
+	(define selected (pause-gui-selected-option self))
+	(raylib:draw-text-ex
+	 (fontbundle-bubblegum fonts)
+	 "Paused"
+	 175 150 32.0 0.0 (packcolor 200 122 255 255))
+	(do [(i 0 (add1 i))]
+		[(>= i (vlen opts))]
+	  (let ([item (vnth opts i)])
+		(raylib:draw-text-ex
+		 (fontbundle-bubblegum fonts)
+		 (menu-item-label item)
+		 100 (+ 200 (* 20 i)) 20.0 0.0
+		 (if (= i selected)
+			 (packcolor 200 122 255 255) -1)))))
+  (define result
+	(make-pause-gui pause-gui-handle-input pause-gui-render
+					'#() 0))
+  (pause-gui-menu-options-set!
+   result
+   (vector (make-menu-item "Resume" (thunk (unpause result)))
+		   (make-menu-item "Restart" (thunk (restart result)))))
+  result)
 
 (define (truncate-to-whole-spline v)
   (let*-values ([(quot rem) (div-and-mod (sub1 (vlen v)) 3)])
@@ -703,7 +750,7 @@
   (fxpositive? iframes))
 
 (define (paused?)
-  (memp (lambda (g) (eq? g pause-gui)) gui-stack))
+  (memp pause-gui? gui-stack))
 
 (define ojamajo-carnival #f)
 (define (load-audio)
@@ -2617,7 +2664,7 @@
 	(set! show-hitboxes (not show-hitboxes)))
   (when (enum-set-member? (vkey pause) edge-pressed)
 	(when (null? gui-stack)
-	  (set! gui-stack (cons pause-gui gui-stack))
+	  (set! gui-stack (cons (mk-pause-gui) gui-stack))
 	  (raylib:play-sound (sebundle-pause sounds))
 	  (raylib:pause-music-stream ojamajo-carnival)))
   (when (and
