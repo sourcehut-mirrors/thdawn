@@ -670,6 +670,17 @@
    (mutable selected-option)) ;; index into menu-options
   )
 
+(define (render-ingame-menu fonts items selected x start-y step-y size)
+  (do [(i 0 (add1 i))]
+	  [(>= i (vlen items))]
+	(let ([item (vnth items i)])
+	  (raylib:draw-text-ex
+	   (fontbundle-bubblegum fonts)
+	   (menu-item-label item)
+	   x (+ start-y (* step-y i)) size 0.0
+	   (if (= i selected)
+		   (packcolor 200 122 255 255) -1)))))
+
 (define (mk-pause-gui)
   (define (unpause gui)
 	(set! gui-stack (remq gui gui-stack))
@@ -681,29 +692,31 @@
 	(set! gui-stack (remq gui gui-stack)))
   (define (pause-gui-handle-input
 		   self level-pressed edge-pressed edge-released)
+	(define opts (pause-gui-menu-options self))
+	(define selected (pause-gui-selected-option self))
 	(cond
 	 [(enum-set-member? (vkey pause) edge-pressed)
 	  (unpause self)
 	  #t]
 	 [(enum-set-member? (vkey quick-restart) edge-pressed)
+	  (raylib:play-sound (sebundle-menuselect sounds))
 	  (restart self)
 	  #t]
 	 [(enum-set-member? (vkey down) edge-pressed)
+	  (raylib:play-sound (sebundle-menuselect sounds))
 	  (pause-gui-selected-option-set!
 	   self
-	   (clamp (add1 (pause-gui-selected-option self))
-			  0 (sub1 (vlen (pause-gui-menu-options self)))))
+	   (clamp (add1 selected) 0 (sub1 (vlen opts))))
 	  #t]
 	 [(enum-set-member? (vkey up) edge-pressed)
+	  (raylib:play-sound (sebundle-menuselect sounds))
 	  (pause-gui-selected-option-set!
 	   self
-	   (clamp (sub1 (pause-gui-selected-option self))
-			  0 (sub1 (vlen (pause-gui-menu-options self)))))
+	   (clamp (sub1 selected) 0 (sub1 (vlen opts))))
 	  #t]
 	 [(enum-set-member? (vkey shoot) edge-pressed)
-	  (let ([item (vnth (pause-gui-menu-options self)
-						(pause-gui-selected-option self))])
-		((menu-item-on-select item)))
+	  (raylib:play-sound (sebundle-menuselect sounds))
+	  ((menu-item-on-select (vnth opts selected)))
 	  #t]
 	 [else #f]))
   (define (pause-gui-render self textures fonts)
@@ -713,15 +726,7 @@
 	 (fontbundle-bubblegum fonts)
 	 "Paused"
 	 175 150 32.0 0.0 (packcolor 200 122 255 255))
-	(do [(i 0 (add1 i))]
-		[(>= i (vlen opts))]
-	  (let ([item (vnth opts i)])
-		(raylib:draw-text-ex
-		 (fontbundle-bubblegum fonts)
-		 (menu-item-label item)
-		 100 (+ 200 (* 20 i)) 20.0 0.0
-		 (if (= i selected)
-			 (packcolor 200 122 255 255) -1)))))
+	(render-ingame-menu fonts opts selected 100 200 20 20.0))
   (define result
 	(make-pause-gui pause-gui-handle-input pause-gui-render
 					'#() 0))
@@ -1332,6 +1337,7 @@
    (mutable ox)
    (mutable oy)
    (mutable health)
+   initial-health
    ;; set to positive when damaged, decreases automatically every frame.
    (mutable damaged-recently)
    (mutable flags)
@@ -1464,7 +1470,7 @@
 	 (let ((idx (vector-index #f live-enm)))
 	   (unless idx
 		 (error 'spawn-enemy "No more open enemy slots!"))
-	   (let ([enemy (make-enm type x y x y health 0 empty-enmflags
+	   (let ([enemy (make-enm type x y x y health health 0 empty-enmflags
 							  drops on-death 0 0.0 #f)])
 		 (vector-set! live-enm idx enemy)
 		 (spawn-task
@@ -1509,9 +1515,13 @@
 						  (max 1 (eround (* 0.1 amount)))]
 						 [else amount])])
 		   (when (and playsound (> amount 0))
-			 (raylib:play-sound (if superarmor
-									(sebundle-damageresist sounds)
-									(sebundle-damage0 sounds))))
+			 (raylib:play-sound
+			  (cond
+			   [superarmor (sebundle-damageresist sounds)]
+			   ;; this logic is kinda arbitary. consider changing to percentage-based?
+			   [(and (< (enm-health enm) 300) (>= (enm-initial-health enm) 300))
+				(sebundle-damage1 sounds)]
+			   [else (sebundle-damage0 sounds)])))
 		   (when (> amount 0)
 			 (enm-damaged-recently-set! enm 20)
 			 (enm-health-set! enm (- (enm-health enm) amount)))
