@@ -655,6 +655,7 @@
    ;; lower guis or the gameplay itself. Otherwise, it will be.
    handle-input
    ;; function (self textures fonts) -> any. Draws the gui.
+   ;; I guess you can do any per-frame logic in here too...
    render))
 
 (define-record-type menu-item
@@ -667,10 +668,17 @@
   (parent gui)
   (fields
    (mutable menu-options) ;; vector of menu-item
-   (mutable selected-option)) ;; index into menu-options
-  )
+   (mutable selected-option) ;; index into menu-options
+   ;; counts down from 15 to 0 when playing opening animation
+   (mutable opening)
+   ;; counts up from 1 to 16 when playing closing animation
+   ;; this means that "steady state" can be checked by just checking
+   ;; whether both variables are zero
+   (mutable closing)
+   ;; function to run once close animation is done
+   (mutable close-fn)))
 
-(define (render-ingame-menu fonts items selected x start-y step-y size)
+(define (render-ingame-menu fonts items selected x start-y step-y size alpha)
   (do [(i 0 (add1 i))]
 	  [(>= i (vlen items))]
 	(let ([item (vnth items i)])
@@ -679,7 +687,7 @@
 	   (menu-item-label item)
 	   x (+ start-y (* step-y i)) size 0.0
 	   (if (= i selected)
-		   (packcolor 200 122 255 255) -1)))))
+		   (packcolor 200 122 255 alpha) (packcolor 255 255 255 alpha))))))
 
 (define (mk-pause-gui)
   (define (unpause gui)
@@ -694,46 +702,79 @@
 		   self level-pressed edge-pressed edge-released)
 	(define opts (pause-gui-menu-options self))
 	(define selected (pause-gui-selected-option self))
-	(cond
-	 [(enum-set-member? (vkey pause) edge-pressed)
-	  (unpause self)
-	  #t]
-	 [(enum-set-member? (vkey quick-restart) edge-pressed)
-	  (raylib:play-sound (sebundle-menuselect sounds))
-	  (restart self)
-	  #t]
-	 [(enum-set-member? (vkey down) edge-pressed)
-	  (raylib:play-sound (sebundle-menuselect sounds))
-	  (pause-gui-selected-option-set!
-	   self
-	   (clamp (add1 selected) 0 (sub1 (vlen opts))))
-	  #t]
-	 [(enum-set-member? (vkey up) edge-pressed)
-	  (raylib:play-sound (sebundle-menuselect sounds))
-	  (pause-gui-selected-option-set!
-	   self
-	   (clamp (sub1 selected) 0 (sub1 (vlen opts))))
-	  #t]
-	 [(enum-set-member? (vkey shoot) edge-pressed)
-	  (raylib:play-sound (sebundle-menuselect sounds))
-	  ((menu-item-on-select (vnth opts selected)))
-	  #t]
-	 [else #f]))
+	(and (not (or (> (pause-gui-opening self) 0)
+				  (> (pause-gui-closing self) 0)))
+		 (cond
+		  [(enum-set-member? (vkey pause) edge-pressed)
+		   (pause-gui-close-fn-set! self (thunk (unpause self)))
+		   (pause-gui-closing-set! self 1)
+		   #t]
+		  [(enum-set-member? (vkey quick-restart) edge-pressed)
+		   (raylib:play-sound (sebundle-menuselect sounds))
+		   (pause-gui-close-fn-set! self (thunk (restart self)))
+		   (pause-gui-closing-set! self 1)
+		   #t]
+		  [(enum-set-member? (vkey down) edge-pressed)
+		   (when (< selected (sub1 (vlen opts)))
+			 (pause-gui-selected-option-set!
+			  self
+			  (add1 selected))
+			 (raylib:play-sound (sebundle-menuselect sounds)))
+		   #t]
+		  [(enum-set-member? (vkey up) edge-pressed)
+		   (when (> selected 0)
+			 (pause-gui-selected-option-set!
+			  self
+			  (sub1 selected))
+			 (raylib:play-sound (sebundle-menuselect sounds)))
+		   #t]
+		  [(enum-set-member? (vkey shoot) edge-pressed)
+		   (raylib:play-sound (sebundle-menuselect sounds))
+		   ((menu-item-on-select (vnth opts selected)))
+		   #t]
+		  [else #f])))
   (define (pause-gui-render self textures fonts)
 	(define opts (pause-gui-menu-options self))
 	(define selected (pause-gui-selected-option self))
+	(define opening (pause-gui-opening self))
+	(define closing (pause-gui-closing self))
+	(define progress
+	  (cond
+	   [(> opening 0)
+		(- 1 (/ opening 15))]
+	   [(> closing 0)
+	    (- 1 (/ closing 15))]
+	   [else 1]))
+	(define alpha (eround (lerp 0 255 progress)))
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
 	 "Paused"
-	 175 150 32.0 0.0 (packcolor 200 122 255 255))
-	(render-ingame-menu fonts opts selected 100 200 20 20.0))
+	 175 (eround (lerp 120 150 progress))
+	 32.0 0.0 (packcolor 200 122 255 alpha))
+	(render-ingame-menu fonts opts selected
+						(eround (lerp 80 100 progress))
+						200 20 20.0 alpha)
+	(when (> opening 0)
+	  (pause-gui-opening-set! self (sub1 opening)))
+	(when (> closing 0)
+	  (pause-gui-closing-set! self (add1 closing))
+	  (when (= closing 15)
+	    ((pause-gui-close-fn self)))))
   (define result
 	(make-pause-gui pause-gui-handle-input pause-gui-render
-					'#() 0))
+					'#() 0 15 0 #f))
   (pause-gui-menu-options-set!
    result
-   (vector (make-menu-item "Resume" (thunk (unpause result)))
-		   (make-menu-item "Restart" (thunk (restart result)))))
+   (vector (make-menu-item
+			"Resume"
+			(thunk
+			 (pause-gui-close-fn-set! result (thunk (unpause result)))
+			 (pause-gui-closing-set! result 1)))
+		   (make-menu-item
+			"Restart"
+			(thunk
+			 (pause-gui-close-fn-set! result (thunk (restart result)))
+			 (pause-gui-closing-set! result 1)))))
   result)
 
 (define (truncate-to-whole-spline v)
@@ -4740,7 +4781,9 @@
   (set! current-score 0)
   (set! bombing 0)
   (set! death-timer 0)
-  (set! graze 0))
+  (set! graze 0)
+  (set! player-x 0.0)
+  (set! player-y +initial-player-y+))
 
 (define (debug-launch)
   (reset-state)
