@@ -3777,35 +3777,37 @@
 		(cbspeed 5.0 6.0)
 		(cbang 0.0 10.0)
 		(cbshootenm enm 'heart-red 5 (sebundle-bell sounds))))
-  (define (orb point)
+  (define (orb point with-ring)
 	(define speed (list-ref point 2))
 	(define facing (list-ref point 3))
 	(define x (enm-x enm))
 	(define y (enm-y enm))
 	(define start-frames frames)
-	(raylib:play-sound (sebundle-shoot0 sounds))
 	(letrec ([center-blt
 			  (spawn-bullet
 			   'small-ball-red x y 5
 			   (lambda (blt)
 				 (loop-forever
 				  (linear-step facing speed blt)
-				  (position-bullets-around (bullet-x blt) (bullet-y blt)
-										   33.0 0.0 ring)
+				  (when with-ring
+					(position-bullets-around (bullet-x blt) (bullet-y blt)
+											 33.0 0.0 ring))
 				  (position-bullets-around (bullet-x blt) (bullet-y blt)
 										   12.0 (torad (mod (* 2 (+ start-frames
 																	frames))
 															360.0))
 										   notes))))]
-			 [ring (map
-					(lambda (_)
-					  (spawn-bullet
-					   'pellet-white x y 5
-					   (lambda (blt)
-						 (wait-until
-						  (thunk (not (vector-index center-blt live-bullets))))
-						 (delete-bullet blt))))
-					(iota 24))]
+			 [ring (if with-ring
+					   (map
+						(lambda (_)
+						  (spawn-bullet
+						   'pellet-white x y 5
+						   (lambda (blt)
+							 (wait-until
+							  (thunk (not (vector-index center-blt live-bullets))))
+							 (delete-bullet blt))))
+						(iota 24))
+					   '())]
 			 [notes (map
 					 (lambda (type)
 					   (spawn-bullet
@@ -3834,7 +3836,9 @@
 					 (fbspeed 6.0)
 					 (fbcollect (enm-x enm) (enm-y enm)))])
 	 (for-each
-	  (lambda (point) (orb point) (wait 12))
+	  (lambda (point)
+		(raylib:play-sound (sebundle-shoot0 sounds))
+		(orb point #t) (wait 12))
 	  points)
 	 (ring) (wait 22)
 	 (ring) (wait 22)
@@ -3842,7 +3846,9 @@
 	 (raylib:play-sound (sebundle-shortcharge sounds))
 	 (boss-standard-wander-once enm 60)
 	 (for-each
-	  (lambda (point) (orb point) (wait 12))
+	  (lambda (point)
+		(raylib:play-sound (sebundle-shoot0 sounds))
+		(orb point #t) (wait 12))
 	  (reverse points))
 	 (ring) (wait 22)
 	 (ring) (wait 22)
@@ -3854,19 +3860,31 @@
   (wait 25)
   (raylib:play-sound (sebundle-shoot0 sounds))
   (cancel-all #f)
-  (ease-to ease-in-out-quad 0.0 100.0 60 enm)
+  (ease-to ease-in-out-quad 0.0 150.0 60 enm)
+  (spawn-subtask "aim"
+	(lambda (task)
+	  (interval-loop 30 
+		(-> (cb)
+			(cbcount 14)
+			(cbspeed 6.0)
+			(cbshootenm enm 'ellipse-red 5 (sebundle-bell sounds)))
+		))
+	(thunk (positive? (bossinfo-remaining-timer bossinfo)))
+	task)
   (let loop ([ang 0.0]
 			 [offset 80.0])
-	(-> (cb)
-		(cbcount 18)
-		(cbabsolute-aim)
-		(cbang ang)
-		(cbspeed 5.0)
-		(cboffset offset)
-		(cbshootenm enm 'heart-red 5 (sebundle-shoot0 sounds)))
+	(for-each
+	 (lambda (point) (orb point #f))
+	 (-> (cb)
+		 (cbcount 6)
+		 (cbabsolute-aim)
+		 (cbang ang)
+		 (cbspeed 4.5)
+		 (cboffset offset)
+		 (cbcollect (enm-x enm) (enm-y enm))))
 	(when (positive? (bossinfo-remaining-timer bossinfo))
 	  (wait 7)
-	  (loop (fl+ ang 8.0) (if (<= offset 38.0) offset (- offset 1.0)))))
+	  (loop (fl+ ang 35.0) (if (<= offset 38.0) offset (- offset 1.0)))))
   (common-spell-postlude bossinfo enm)
   (common-boss-postlude bossinfo enm))
 
