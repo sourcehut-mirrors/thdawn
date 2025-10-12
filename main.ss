@@ -689,6 +689,7 @@
 	   (if (= i selected)
 		   (packcolor 200 122 255 alpha) (packcolor 255 255 255 alpha))))))
 
+(define +menu-animate-dur+ 10)
 (define (mk-pause-gui)
   (define (unpause gui)
 	(set! gui-stack (remq gui gui-stack))
@@ -741,11 +742,13 @@
 	(define progress
 	  (cond
 	   [(> opening 0)
-		(- 1 (/ opening 15))]
+		(- 1 (/ opening +menu-animate-dur+))]
 	   [(> closing 0)
-	    (- 1 (/ closing 15))]
+	    (- 1 (/ closing +menu-animate-dur+))]
 	   [else 1]))
 	(define alpha (eround (lerp 0 255 progress)))
+	(raylib:draw-rectangle-rec
+	 0.0 0.0 1280.0 960.0 (packcolor 96 96 96 (eround (lerp 0 160 progress))))
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
 	 "Paused"
@@ -758,11 +761,11 @@
 	  (pause-gui-opening-set! self (sub1 opening)))
 	(when (> closing 0)
 	  (pause-gui-closing-set! self (add1 closing))
-	  (when (= closing 15)
+	  (when (= closing +menu-animate-dur+)
 	    ((pause-gui-close-fn self)))))
   (define result
 	(make-pause-gui pause-gui-handle-input pause-gui-render
-					'#() 0 15 0 #f))
+					'#() 0 +menu-animate-dur+ 0 #f))
   (pause-gui-menu-options-set!
    result
    (vector (make-menu-item
