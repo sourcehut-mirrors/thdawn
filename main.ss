@@ -582,8 +582,21 @@
 (define +poc-y+ 160)
 (define +oob-bullet-despawn-fuzz+ 80)
 
-;; Number of frames the current stage has been running. Does not increment when paused
-(define frames 0)
+(define-record-type stage-ctx
+  (fields
+   ;; Number of frames the current stage has been running.
+   ;; Does not increment when paused
+   (mutable frames))
+  (sealed #t))
+(define (fresh-stage-ctx)
+  (make-stage-ctx 0))
+
+(define current-stage-ctx #f)
+(define-syntax frames
+  (identifier-syntax
+   [frames (stage-ctx-frames current-stage-ctx)]
+   [(set! frames e) (stage-ctx-frames-set! current-stage-ctx e)]))
+
 (define frame-save 0)
 (define frame-save-diff 0)
 (define current-chapter 0) ;; informational/debug only
@@ -4745,6 +4758,7 @@
 		 [fonts (load-fonts)]
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
+	(set! current-stage-ctx (fresh-stage-ctx))
 	(raylib:play-music-stream ojamajo-carnival)
 	(set! stage-driver-task
 		  (spawn-task "stage driver" chapter0 (constantly #t)))
@@ -4788,8 +4802,8 @@
 		(raylib:close-window)))))
 
 (define (reset-state)
+  (set! current-stage-ctx (fresh-stage-ctx))
   (set! iframes 180)
-  (set! frames 0)
   ;; Clear everything out because they may have obsolete data
   (vector-fill! live-bullets #f)
   (vector-fill! live-enm #f)
