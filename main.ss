@@ -675,7 +675,8 @@
   (fields
    label ;; text to render
    on-select ;; nullary function, run when selected
-   ))
+   )
+  (sealed #t))
 
 (define-record-type pause-gui
   (parent gui)
@@ -868,7 +869,8 @@
    radius ;; aka half-thickness
    despawn-time ;; how long the laser despawn animation takes
    (mutable last-grazed-at)
-   (mutable start-despawning-at)))
+   (mutable start-despawning-at))
+  (sealed #t))
 
 (define-record-type blttype
   (fields
@@ -1378,7 +1380,8 @@
    width
    post-padding
    top-color
-   bottom-color))
+   bottom-color)
+  (sealed #t))
 
 (define-enumeration enmtype
   (red-fairy green-fairy blue-fairy yellow-fairy
@@ -2008,7 +2011,8 @@
    (mutable y)
    max-age
    (mutable age)
-   extra-data))
+   extra-data)
+  (sealed #t))
 
 (define live-particles (make-vector 4096 #f))
 
@@ -2134,7 +2138,8 @@
    (mutable vy)
    (mutable ay)
    (mutable livetime)
-   (mutable autocollect)))
+   (mutable autocollect))
+  (sealed #t))
 
 (define (miscent-supports-autocollect? ent)
   (not (eq? (miscent-type ent) 'mainshot)))
