@@ -586,16 +586,45 @@
   (fields
    ;; Number of frames the current stage has been running.
    ;; Does not increment when paused
-   (mutable frames))
+   (mutable frames)
+   ;; Remaining frames of invincibility
+   (mutable iframes)
+   ;; Nonzero if going through the respawn animation
+   (mutable respawning))
   (sealed #t))
 (define (fresh-stage-ctx)
-  (make-stage-ctx 0))
+  (make-stage-ctx 0 0 0))
 
 (define current-stage-ctx #f)
-(define-syntax frames
-  (identifier-syntax
-   [frames (stage-ctx-frames current-stage-ctx)]
-   [(set! frames e) (stage-ctx-frames-set! current-stage-ctx e)]))
+
+(define-syntax (define-stage-accessor stx)
+  (syntax-case stx ()
+	[(_) #'(void)]
+	[(k field)
+	 (with-syntax ([field-accessor
+					(datum->syntax #'k (string->symbol
+										(string-append "stage-ctx-"
+													   (symbol->string
+														(syntax->datum #'field)))))]
+				   [field-mutator
+					(datum->syntax #'k (string->symbol
+										(string-append "stage-ctx-"
+													   (symbol->string
+														(syntax->datum #'field))
+													   "-set!")))])
+	   #`(define-syntax field
+		   (identifier-syntax
+			[field (field-accessor current-stage-ctx)]
+			[(set! field e) (field-mutator current-stage-ctx e)])))]))
+(define-syntax define-stage-accessors
+  (syntax-rules ()
+	[(_ f)
+	 (define-stage-accessor f)]
+	[(_ f g rest ...)
+	 (begin
+	   (define-stage-accessor f)
+	   (define-stage-accessors g rest ...))]))
+(define-stage-accessors iframes frames respawning)
 
 (define frame-save 0)
 (define frame-save-diff 0)
@@ -605,8 +634,6 @@
 ;; The value of frames when the shot button was pressed down.
 ;; -1 if shot is not currently held
 (define start-shot-frames -1)
-(define iframes 0) ;; Remaining frames of invincibility
-(define respawning 0) ;; Nonzero if going through the respawn animation
 (define +respawning-max+ 60)
 (define show-hitboxes #f)
 (define bombing 0) ;; Nonzero if a bomb is in progress
