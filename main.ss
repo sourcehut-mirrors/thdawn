@@ -584,16 +584,60 @@
 
 (define-record-type stage-ctx
   (fields
+   live-bullets
+   live-enm
+   live-misc-ents
    ;; Number of frames the current stage has been running.
    ;; Does not increment when paused
    (mutable frames)
    ;; Remaining frames of invincibility
    (mutable iframes)
    ;; Nonzero if going through the respawn animation
-   (mutable respawning))
+   (mutable respawning)
+   ;; The value of frames when the shot button was pressed down.
+   ;; -1 if shot is not currently held
+   (mutable start-shot-frames)
+   ;; Nonzero if a bomb is in progress
+   (mutable bombing)
+   ;; If positive, player is going to be killed in N frames, unless a bomb is used.
+   (mutable death-timer)
+   (mutable graze)
+   (mutable player-x)
+   (mutable player-y)
+   (mutable item-value)
+   (mutable current-score)
+   ;; fragments are stored as Scheme's fractional data types
+   (mutable life-stock)
+   (mutable bomb-stock)
+   game-rng
+   (mutable bomb-sweep-x-left)
+   (mutable bomb-sweep-x-right)
+   (mutable bomb-sweep-y-up)
+   (mutable bomb-sweep-y-down)
+   (mutable initial-bomb-sweep-x-left)
+   (mutable initial-bomb-sweep-x-right)
+   (mutable initial-bomb-sweep-y-up)
+   (mutable initial-bomb-sweep-y-down)
+   ;; Increments away from 0 whenever horizontal movement happens, returns to 0 otherwise
+   (mutable player-dx-render)
+   ;; increases when focus is held, decreases when it isn't
+   ;; used for things that smooth over several frames
+   (mutable focus-frames)
+   (mutable focused-immediate)
+   option-xs
+   option-ys)
   (sealed #t))
 (define (fresh-stage-ctx)
-  (make-stage-ctx 0 0 0))
+  (make-stage-ctx
+   (make-vector 4096 #f)
+   (make-vector 256 #f)
+   (make-vector 4096 #f)
+   0 0 0 -1 0 0 0 0.0 +initial-player-y+ 10000 0 2 3
+				  (make-pseudo-random-generator)
+				  0.0 0.0 0.0 0.0
+				  0.0 0.0 0.0 0.0
+				  0 0 #f
+				  (make-vector 4 0.0) (make-vector 4 0.0)))
 
 (define current-stage-ctx #f)
 
@@ -624,57 +668,34 @@
 	 (begin
 	   (define-stage-accessor f)
 	   (define-stage-accessors g rest ...))]))
-(define-stage-accessors iframes frames respawning)
+(define-stage-accessors
+  live-bullets live-enm live-misc-ents
+  frames iframes respawning start-shot-frames
+  bombing death-timer graze player-x player-y item-value current-score
+  life-stock bomb-stock game-rng
+  bomb-sweep-x-left bomb-sweep-x-right bomb-sweep-y-up bomb-sweep-y-down
+  initial-bomb-sweep-x-left initial-bomb-sweep-x-right
+  initial-bomb-sweep-y-up initial-bomb-sweep-y-down
+  player-dx-render focus-frames focused-immediate option-xs option-ys)
 
 (define frame-save 0)
 (define frame-save-diff 0)
 (define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
 (define true-frames 0)
-;; The value of frames when the shot button was pressed down.
-;; -1 if shot is not currently held
-(define start-shot-frames -1)
 (define +respawning-max+ 60)
 (define show-hitboxes #f)
-(define bombing 0) ;; Nonzero if a bomb is in progress
 (define +bombing-max+ 180)
 (define +bomb-initial-phase-length+ 60)
 (define +bomb-noninitial-phase-length+ (- +bombing-max+ +bomb-initial-phase-length+))
-(define bomb-sweep-x-left 0.0)
-(define bomb-sweep-x-right 0.0)
-(define bomb-sweep-y-up 0.0)
-(define bomb-sweep-y-down 0.0)
-(define initial-bomb-sweep-x-left 0.0)
-(define initial-bomb-sweep-x-right 0.0)
-(define initial-bomb-sweep-y-up 0.0)
-(define initial-bomb-sweep-y-down 0.0)
 (define +deathbomb-time+ 10)
-;; If positive, player is going to be killed in N frames, unless a bomb is used.
-(define death-timer 0)
 (define force-invincible #f)
-(define graze 0)
-(define graze-radius 22.0)
-(define hit-radius 3.0)
-(define vacuum-radius-unfocused 25.0)
-(define vacuum-radius-focused 55.0)
-(define player-x 0.0)
-;; Increments away from 0 whenever horizontal movement happens, returns to 0 otherwise
-(define player-dx-render 0)
+(define +graze-radius+ 22.0)
+(define +hit-radius+ 3.0)
+(define +vacuum-radius-unfocused+ 25.0)
+(define +vacuum-radius-focused+ 55.0)
 (define +initial-player-y+ (- +playfield-max-y+ 20.0))
-(define player-y +initial-player-y+)
-(define focused-immediate #f)
-;; increases when focus is held, decreases when it isn't
-;; used for things that smooth over several frames
-(define focus-frames 0)
 (define +max-focus-frames+ 10)
-(define option-xs (make-vector 4 0.0))
-(define option-ys (make-vector 4 0.0))
-(define item-value 10000)
-(define current-score 0)
-;; fragments are stored as Scheme's fractional data types
-(define life-stock 2)
-(define bomb-stock 3)
-(define game-rng (make-pseudo-random-generator))
 (define visual-rng (make-pseudo-random-generator))
 (define (centered-roll rng radius)
   (- (* (roll rng) 2 radius)
@@ -986,8 +1007,6 @@
 
 (define (bullet-clrflags blt flags)
   (bullet-flags-set! blt (enum-set-difference (bullet-flags blt) flags)))
-
-(define live-bullets (make-vector 4096 #f))
 
 (define (spawn-bullet type x y delay control-function)
   (let ([idx (vector-index #f live-bullets)])
@@ -1444,7 +1463,6 @@
    ;; arbitrary scratchpad for custom data depending on type
    ;; - boss: contains a bossinfo instance
    (mutable extras)))
-(define live-enm (make-vector 256 #f))
 (define default-drop '((point . 1)))
 (define five-point-items '((point . 5)))
 (define ten-point '((point . 10)))
@@ -1703,7 +1721,7 @@
 	  (when (and (if is-laser
 					 (fx>= (fx- frames (laser-last-grazed-at bullet)) 4)
 					 (not (bullet-grazed bullet)))
-				 (check-player-collision bullet graze-radius))
+				 (check-player-collision bullet +graze-radius+))
 		(set! graze (fx1+ graze))
 		(set! item-value (fx+ 10 item-value))
 		(set! current-score (fx+ 1000 current-score))
@@ -1726,7 +1744,7 @@
 							   (cons 'rot (* (roll visual-rng) 360.0)))))
 		(raylib:play-sound (sebundle-graze sounds)))
 
-	  (when (check-player-collision bullet hit-radius)
+	  (when (check-player-collision bullet +hit-radius+)
 		(unless is-laser
 		  (cancel-bullet bullet))
 		(damage-player))))
@@ -1734,7 +1752,7 @@
 	(unless (enm-hasflag? enm (enmflag nocollide))
 	  (let-values ([(x y w h) (enm-collision-box enm)])
 		(when (check-collision-circle-rec
-			   player-x player-y hit-radius
+			   player-x player-y +hit-radius+
 			   x y w h)
 		  (damage-player)))))
   (vector-for-each-truthy each-bullet live-bullets)
@@ -2178,9 +2196,6 @@
 	   (miscent-autocollect-set! ent #t)))
    live-misc-ents))
 
-(define live-misc-ents
-  (make-vector 4096 #f))
-
 (define (spawn-misc-ent type x y vy ay)
   (let ((idx (vector-index #f live-misc-ents)))
 	(unless idx
@@ -2294,8 +2309,8 @@
 		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 8)))
 		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 8))))]
 		[(check-collision-circle-rec
-		  player-x player-y (if focused-immediate vacuum-radius-focused
-								vacuum-radius-unfocused)
+		  player-x player-y (if focused-immediate +vacuum-radius-focused+
+								+vacuum-radius-unfocused+)
 		  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
 		  16 16)
 		 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
@@ -2306,7 +2321,7 @@
 		   (miscent-vy-set! ent 1.0))]
 		[else (do-standard-movement)])
 	   (when (check-collision-circle-rec
-			  player-x player-y hit-radius
+			  player-x player-y +hit-radius+
 			  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
 			  16 16)
 		 (case type
@@ -2916,14 +2931,14 @@
   (let ([focus-progress (/ focus-frames +max-focus-frames+)])
 	(raylib:draw-circle-lines-v
 	 render-player-x render-player-y
-	 (lerp vacuum-radius-unfocused vacuum-radius-focused
+	 (lerp +vacuum-radius-unfocused+ +vacuum-radius-focused+
 		   focus-progress)
 	 (packcolor 255 255 255 (eround (lerp 16 128 focus-progress)))))
 
   (when show-hitboxes
-	(raylib:draw-circle-v render-player-x render-player-y graze-radius
+	(raylib:draw-circle-v render-player-x render-player-y +graze-radius+
 						  (packcolor 0 228 48 255))
-	(raylib:draw-circle-v render-player-x render-player-y hit-radius
+	(raylib:draw-circle-v render-player-x render-player-y +hit-radius+
 						  red)))
 
 (define (draw-boss-hud enm textures fonts)
