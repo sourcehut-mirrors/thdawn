@@ -752,7 +752,7 @@
 		   (packcolor 200 122 255 alpha) (packcolor 255 255 255 alpha))))))
 
 (define +menu-animate-dur+ 10)
-(define (mk-pause-gui)
+(define (mk-pause-gui gameover)
   (define (unpause gui)
 	(set! gui-stack (remq gui gui-stack))
 	(raylib:resume-music-stream ojamajo-carnival))
@@ -768,7 +768,8 @@
 	(and (not (or (> (pause-gui-opening self) 0)
 				  (> (pause-gui-closing self) 0)))
 		 (cond
-		  [(enum-set-member? (vkey pause) edge-pressed)
+		  [(and (enum-set-member? (vkey pause) edge-pressed)
+				(not gameover))
 		   (pause-gui-close-fn-set! self (thunk (unpause self)))
 		   (pause-gui-closing-set! self 1)
 		   #t]
@@ -813,7 +814,7 @@
 	 0.0 0.0 1280.0 960.0 (packcolor 96 96 96 (eround (lerp 0 160 progress))))
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
-	 "Paused"
+	 (if gameover "Game Over :(" "Paused")
 	 175 (eround (lerp 120 150 progress))
 	 32.0 0.0 (packcolor 200 122 255 alpha))
 	(render-ingame-menu fonts opts selected
@@ -830,16 +831,23 @@
 					'#() 0 +menu-animate-dur+ 0 #f))
   (pause-gui-menu-options-set!
    result
-   (vector (make-menu-item
-			"Resume"
-			(thunk
-			 (pause-gui-close-fn-set! result (thunk (unpause result)))
-			 (pause-gui-closing-set! result 1)))
-		   (make-menu-item
-			"Restart"
-			(thunk
-			 (pause-gui-close-fn-set! result (thunk (restart result)))
-			 (pause-gui-closing-set! result 1)))))
+   (if gameover
+	   (vector
+		(make-menu-item
+		 "Restart"
+		 (thunk
+		  (pause-gui-close-fn-set! result (thunk (restart result)))
+		  (pause-gui-closing-set! result 1))))
+	   (vector (make-menu-item
+				"Resume"
+				(thunk
+				 (pause-gui-close-fn-set! result (thunk (unpause result)))
+				 (pause-gui-closing-set! result 1)))
+			   (make-menu-item
+				"Restart"
+				(thunk
+				 (pause-gui-close-fn-set! result (thunk (restart result)))
+				 (pause-gui-closing-set! result 1))))))
   result)
 
 (define (truncate-to-whole-spline v)
@@ -1672,14 +1680,20 @@
   (fail-current-attack)
   (unless force-invincible
 	(raylib:play-sound (sebundle-shoot0 sounds))
-	(when (>= life-stock 1)
-	  (set! life-stock (sub1 life-stock))) ;; todo gameovering
-	(when (< bomb-stock 3)
-	  (set! bomb-stock 3))
 
-	(set! respawning +respawning-max+)
-	(set! player-x 0.0)
-	(set! player-y +initial-player-y+)))
+	(if (< life-stock 1)
+		(begin
+		  (raylib:pause-music-stream ojamajo-carnival)
+		  (set! gui-stack (list (mk-pause-gui #t))))
+		(begin
+		  (when (>= life-stock 1)
+			(set! life-stock (sub1 life-stock)))
+		  (when (< bomb-stock 3)
+			(set! bomb-stock 3))
+
+		  (set! respawning +respawning-max+)
+		  (set! player-x 0.0)
+		  (set! player-y +initial-player-y+)))))
 
 (define (check-laser-collision lx ly rotation lradius length
 							   px py pradius)
@@ -2778,7 +2792,7 @@
 	(set! show-hitboxes (not show-hitboxes)))
   (when (enum-set-member? (vkey pause) edge-pressed)
 	(when (null? gui-stack)
-	  (set! gui-stack (cons (mk-pause-gui) gui-stack))
+	  (set! gui-stack (cons (mk-pause-gui #f) gui-stack))
 	  (raylib:play-sound (sebundle-pause sounds))
 	  (raylib:pause-music-stream ojamajo-carnival)))
   (when (and
@@ -4851,21 +4865,8 @@
 (define (reset-state)
   (set! current-stage-ctx (fresh-stage-ctx))
   (set! iframes 180)
-  ;; Clear everything out because they may have obsolete data
-  (vector-fill! live-bullets #f)
-  (vector-fill! live-enm #f)
-  (vector-fill! live-misc-ents #f)
   (vector-fill! live-particles #f)
-  (kill-all-tasks)
-  (set! life-stock 2)
-  (set! bomb-stock 3)
-  (set! item-value 10000)
-  (set! current-score 0)
-  (set! bombing 0)
-  (set! death-timer 0)
-  (set! graze 0)
-  (set! player-x 0.0)
-  (set! player-y +initial-player-y+))
+  (kill-all-tasks))
 
 (define (debug-launch)
   (reset-state)
