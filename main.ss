@@ -767,8 +767,8 @@
 	(raylib:resume-music-stream ojamajo-carnival)
 	(reset-to 0)
 	(set! gui-stack (remq gui gui-stack)))
-  (define (pause-gui-handle-input
-		   self level-pressed edge-pressed edge-released)
+  (define (pause-gui-handle-input self inputs)
+	(define edge-pressed (inputset-edge-pressed inputs))
 	(define opts (pause-gui-menu-options self))
 	(define selected (pause-gui-selected-option self))
 	(and (not (or (> (pause-gui-opening self) 0)
@@ -2723,7 +2723,33 @@
 ;; initialized after config read
 ;; alist of vkey-enum-set (which should only have one vkey in it) -> key code
 (define keybindings '())
+
+(define-record-type inputset
+  (fields
+   ;; List of raw integer codes obtained from raylib GetKeyPressed.
+
+   ;; Used in the key rebind menu, but if we need to use it at any time,
+   ;; we need to drain it every frame,
+   ;; or else raylib will stop populating the internal queue once it fills.
+   edge-pressed-raw
+   ;; these are enumsets of vkey
+   edge-pressed
+   edge-released
+   level-pressed)
+  (sealed #t))
+
+;; gathers the pending input to be used for the current frame
+;; No gameplay-facing keys should be checked outside this function.
+;; Debug-facing keys can still be checked outside.
+;; In the future this function will also be responsible for writing the key state
+;; to replays, or reading it from the replay.
 (define (gather-input)
+  (define edge-pressed-raw
+	(let ([result '()])
+	  (do [(k (raylib:get-key-pressed) (raylib:get-key-pressed))]
+		  [(zero? k)]
+		(set! result (cons k result)))
+	  (reverse! result)))
   (define level-pressed
 	(fold-left
 	 (lambda (acc pair)
@@ -2748,18 +2774,20 @@
 		   acc))
 	 (vkeys)
 	 keybindings))
-  (values level-pressed edge-pressed edge-released))
+  (make-inputset edge-pressed-raw edge-pressed edge-released level-pressed))
 
-(define (handle-gui-input level-pressed edge-pressed edge-released)
+(define (handle-gui-input inputs)
   (let loop ([lst gui-stack])
 	(if (null? lst)
 		#f
 		(let* ([cur (car lst)]
-			   [handled ((gui-handle-input cur) cur
-						 level-pressed edge-pressed edge-released)])
+			   [handled ((gui-handle-input cur) cur inputs)])
 		  (or handled (loop (cdr lst)))))))
 
-(define (handle-game-input level-pressed edge-pressed edge-released)
+(define (handle-game-input inputs)
+  (define level-pressed (inputset-level-pressed inputs))
+  (define edge-pressed (inputset-edge-pressed inputs))
+  (define edge-released (inputset-edge-released inputs))
   (when (not (paused?))
 	(set! focused-immediate (enum-set-member? (vkey focus) level-pressed))
 	(if focused-immediate
@@ -2853,19 +2881,11 @@
 			 (not (zero? (vlen spline-editor-positions))))
 	(set! spline-editor-positions (vector-pop spline-editor-positions))))
 
-;; gathers the pending input to be used for the current frame
-;; returns (list (vkeys that are level-pressed)
-;;               (vkeys that are edge-pressed) (vkeys that are edge-released))
-;; No gameplay-facing keys should be checked outside this function.
-;; Debug-facing keys can still be checked outside.
-;; In the future this function will also be responsible for writing the key state
-;; to replays, or reading it from the replay.
 (define (handle-input)
-  (define-values (level-pressed edge-pressed edge-released)
-	(gather-input))
-  (unless (handle-gui-input level-pressed edge-pressed edge-released)
+  (define inputs (gather-input))
+  (unless (handle-gui-input inputs)
 	;; todo save to replay here
-	(handle-game-input level-pressed edge-pressed edge-released)))
+	(handle-game-input inputs)))
 
 (define (handle-player-movement level-pressed)
   (define left-down (enum-set-member? (vkey left) level-pressed))
