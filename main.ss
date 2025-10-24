@@ -4615,19 +4615,23 @@
 	(spawn-enemy 'red-fairy -200.0 200.0 100 ch10-w4)
 	(wait 10))
   (wait 100)
-  (spawn-enemy 'green-fairy
-			   -200.0 50.0
-			   100 (curry ch10-w5 #f))
-  (spawn-enemy 'green-fairy
-			   200.0 50.0
-			   100 (curry ch10-w5 #t))
+  (-> (spawn-enemy 'green-fairy
+				   -200.0 50.0
+				   150 (curry ch10-w5 #f))
+	  (enm-superarmor-set! 90))
+  (-> (spawn-enemy 'green-fairy
+				   200.0 50.0
+				   150 (curry ch10-w5 #t))
+  	  (enm-superarmor-set! 90))
   (wait 100)
-  (spawn-enemy 'green-fairy
-			   -200.0 130.0
-			   100 (curry ch10-w5 #f))
-  (spawn-enemy 'green-fairy
-			   200.0 130.0
-			   100 (curry ch10-w5 #t))
+  (-> (spawn-enemy 'green-fairy
+				   -200.0 130.0
+				   150 (curry ch10-w5 #f))
+	  (enm-superarmor-set! 50))
+  (-> (spawn-enemy 'green-fairy
+				   200.0 130.0
+				   150 (curry ch10-w5 #t))
+	  (enm-superarmor-set! 50))
   (wait-until (thunk (>= frames 10960)))
   (chapter11 task))
 
