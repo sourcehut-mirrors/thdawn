@@ -719,6 +719,12 @@
    ;; I guess you can do any per-frame logic in here too...
    render))
 
+(define-record-type main-menu-gui
+  (parent gui)
+  (fields
+   (mutable menu-options)
+   (mutable selected-option)))
+
 (define-record-type menu-item
   (fields
    label ;; text to render
@@ -4381,10 +4387,15 @@
 						(vector (vec2 0.0 265.0) (vec2 -110.0 257.0)
 								(vec2 -81.0 122.0) (vec2 0.0 116.0))))
 	(wait 10))
-  (let ([drops '((point . 15))])
-	(spawn-enemy (enmtype big-fairy) -90.0 -20.0 400 ch9-w2 drops)
-	(spawn-enemy (enmtype big-fairy) 0.0 -30.0 400 ch9-w2 drops)
-	(spawn-enemy (enmtype big-fairy) 90.0 -20.0 400 ch9-w2 drops))
+  (let ([drops '((point . 15))]
+		[on-death (let ([killed (box 0)])
+					(lambda ()
+					  (set-box! killed (add1 (unbox killed)))
+					  (when (= (unbox killed) 3)
+						(spawn-drops '((bomb-frag . 1)) 0.0 110.0))))])
+	(spawn-enemy (enmtype big-fairy) -90.0 -20.0 400 ch9-w2 drops on-death)
+	(spawn-enemy (enmtype big-fairy) 0.0 -30.0 400 ch9-w2 drops on-death)
+	(spawn-enemy (enmtype big-fairy) 90.0 -20.0 400 ch9-w2 drops on-death))
   (wait-until (thunk (>= frames 9392)))
   (chapter10 task))
 
