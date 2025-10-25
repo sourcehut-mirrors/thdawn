@@ -719,12 +719,6 @@
    ;; I guess you can do any per-frame logic in here too...
    render))
 
-(define-record-type main-menu-gui
-  (parent gui)
-  (fields
-   (mutable menu-options)
-   (mutable selected-option)))
-
 (define-record-type menu-item
   (fields
    label ;; text to render
@@ -756,6 +750,69 @@
 	   x (+ start-y (* step-y i)) size 0.0
 	   (if (= i selected)
 		   (packcolor 200 122 255 alpha) (packcolor 255 255 255 alpha))))))
+
+(define-record-type title-gui
+  (parent gui)
+  (fields
+   (mutable menu-options)
+   (mutable selected-option)))
+(define (title-handle-input self inputs)
+  (define edge-pressed (inputset-edge-pressed inputs))
+  (define opts (title-gui-menu-options self))
+  (define selected (title-gui-selected-option self))
+  (and #t
+	   (cond
+		[(enum-set-member? (vkey down) edge-pressed)
+		 (when (< selected (sub1 (vlen opts)))
+		   (title-gui-selected-option-set!
+			self
+			(add1 selected))
+		   (raylib:play-sound (sebundle-menuselect sounds)))
+		 #t]
+		[(enum-set-member? (vkey up) edge-pressed)
+		 (when (> selected 0)
+		   (title-gui-selected-option-set!
+			self
+			(sub1 selected))
+		   (raylib:play-sound (sebundle-menuselect sounds)))
+		 #t]
+		[(enum-set-member? (vkey shoot) edge-pressed)
+		 (raylib:play-sound (sebundle-menuselect sounds))
+		 ((menu-item-on-select (vnth opts selected)))
+		 #t]
+		[else #f])))
+(define (title-render self textures fonts)
+  (raylib:draw-rectangle-gradient-h 0 0 1280 960 #xff0000ff #x0000ffff)
+  (render-ingame-menu
+   fonts
+   (title-gui-menu-options self) (title-gui-selected-option self)
+   20.0 200 50 30.0 255))
+(define want-quit #f)
+(define (mk-title-gui)
+  (make-title-gui
+   title-handle-input title-render
+   (vector
+	(make-menu-item
+	 "Game Start"
+	 (thunk
+	  (set! current-stage-ctx (fresh-stage-ctx))
+	  (raylib:play-music-stream ojamajo-carnival)
+	  (raylib:seek-music-stream ojamajo-carnival 0.0)
+	  (spawn-task "stage driver" chapter0 (constantly #t))
+	  (set! gui-stack '())))
+	(make-menu-item
+	 "Replay"
+	 (thunk (void)))
+	(make-menu-item
+	 "Play Data"
+	 (thunk (void)))
+	(make-menu-item
+	 "Setting"
+	 (thunk (void)))
+	(make-menu-item
+	 "Quit"
+	 (thunk (set! want-quit #t))))
+   0))
 
 (define +menu-animate-dur+ 10)
 (define (mk-pause-gui gameover)
@@ -835,25 +892,31 @@
   (define result
 	(make-pause-gui pause-gui-handle-input pause-gui-render
 					'#() 0 +menu-animate-dur+ 0 #f))
+  (define restart-opt
+	(make-menu-item
+	 "Restart"
+	 (thunk
+	  (pause-gui-close-fn-set! result (thunk (restart result)))
+	  (pause-gui-closing-set! result 1))))
+  (define quit-opt
+	(make-menu-item
+	 "Quit to Menu"
+	 (thunk
+	  (pause-gui-close-fn-set! result
+							   (thunk
+								(set! current-stage-ctx #f)
+								(set! gui-stack (list (mk-title-gui)))))
+	  (pause-gui-closing-set! result 1))))
   (pause-gui-menu-options-set!
    result
    (if gameover
-	   (vector
-		(make-menu-item
-		 "Restart"
-		 (thunk
-		  (pause-gui-close-fn-set! result (thunk (restart result)))
-		  (pause-gui-closing-set! result 1))))
+	   (vector restart-opt quit-opt)
 	   (vector (make-menu-item
 				"Resume"
 				(thunk
 				 (pause-gui-close-fn-set! result (thunk (unpause result)))
 				 (pause-gui-closing-set! result 1)))
-			   (make-menu-item
-				"Restart"
-				(thunk
-				 (pause-gui-close-fn-set! result (thunk (restart result)))
-				 (pause-gui-closing-set! result 1))))))
+			   restart-opt quit-opt)))
   result)
 
 (define (truncate-to-whole-spline v)
@@ -2885,7 +2948,8 @@
   (define inputs (gather-input))
   (unless (handle-gui-input inputs)
 	;; todo save to replay here
-	(handle-game-input inputs)))
+	(when current-stage-ctx
+	  (handle-game-input inputs))))
 
 (define (handle-player-movement level-pressed)
   (define left-down (enum-set-member? (vkey left) level-pressed))
@@ -3244,7 +3308,8 @@
   ;; x is integer multiple of texture width to prevent stretching
   ;; y isn't but the stretching isn't too noticeable so it's ok
   (make-rectangle 0.0 0.0 512.0 480.0))
-(define (do-render-all textures fonts)
+
+(define (do-render-game textures fonts)
   (raylib:clear-background #x000000ff) ;;#x42024aff) ;; todo: some variability :D
   (unless (paused?)
 	(let-values ([(bg1-vel bg2-vel bg3-vel) (background-acceleration frames)])
@@ -3336,8 +3401,11 @@
 				  (eround (v2x (vnth spline-editor-positions i)))
 				  (eround (v2y (vnth spline-editor-positions i))))
 		  (eround (v2x p)) (eround (v2y p)) 10 -1)))
-	 render-positions))
+	 render-positions)))
 
+(define (do-render-all textures fonts)
+  (when current-stage-ctx
+	(do-render-game textures fonts))
   (for-each
    (lambda (g) ((gui-render g) g textures fonts))
    (reverse gui-stack)))
@@ -4812,8 +4880,6 @@
   (set! current-chapter 13)
   (loop-forever))
 
-(define stage-driver-task #f)
-
 (define (reset-to chapter)
   ;; we do it like this instead of putting the functions directly in an
   ;; alist/vector because otherwise we don't pick up live reloads
@@ -4831,9 +4897,22 @@
   (vector-fill! live-misc-ents #f)
   (vector-fill! live-particles #f)
   (kill-all-tasks)
-  (set! stage-driver-task (spawn-task "stage driver" func (constantly #t)))
+  (spawn-task "stage driver" func (constantly #t))
   (set! frames timestamp)
   (raylib:seek-music-stream ojamajo-carnival (inexact (/ frames 60.0))))
+
+(define (tick-game)
+  (unless (paused?)
+	(tick-player)
+	(vector-for-each-truthy
+	 despawn-out-of-bound-bullet
+	 live-bullets)
+	(pretick-enemies)
+	(run-tasks)
+	(posttick-enemies)
+	(tick-misc-ents)
+	(tick-particles)
+	(process-collisions)))
 
 (define (main)
   (raylib:set-trace-log-level 4) ;; WARNING or above
@@ -4854,29 +4933,17 @@
 		 [fonts (load-fonts)]
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
-	(set! current-stage-ctx (fresh-stage-ctx))
-	(raylib:play-music-stream ojamajo-carnival)
-	(set! stage-driver-task
-		  (spawn-task "stage driver" chapter0 (constantly #t)))
+	(set! gui-stack (list (mk-title-gui)))
 	(dynamic-wind
 	  (thunk #f)
 	  (lambda ()
-		(do [] [(raylib:window-should-close)]
+		(do [] [(or (raylib:window-should-close) want-quit)]
 		  (handle-input)
-		  (raylib:update-music-stream ojamajo-carnival)
-		  (unless (paused?)
-			(tick-player)
-			(vector-for-each-truthy
-			 despawn-out-of-bound-bullet
-			 live-bullets)
-			(pretick-enemies)
-			(run-tasks)
-			(posttick-enemies)
-			(tick-misc-ents)
-			(tick-particles)
-			(process-collisions))
+		  (when current-stage-ctx
+			(raylib:update-music-stream ojamajo-carnival)
+			(tick-game))
 		  (render-all render-texture render-texture-inner textures fonts)
-		  (unless (paused?)
+		  (when (and current-stage-ctx (not (paused?)))
 			(set! frames (fx1+ frames)))
 		  (set! true-frames (fx1+ true-frames))
 		  #;(when (fxzero? (fxmod true-frames 180))
@@ -4904,7 +4971,7 @@
   (kill-all-tasks))
 
 (define (debug-launch)
-  (reset-state)
+  (set! current-stage-ctx #f)
   (set! gui-stack '())
   (fork-thread main))
 
