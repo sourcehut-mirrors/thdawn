@@ -471,6 +471,45 @@
   (make 'maple txbundle-misc 0 32 32 32 shift16)
   ret))
 
+(define current-stage-ctx #f)
+
+(define-syntax (define-stage-accessor stx)
+  (syntax-case stx ()
+	[(_) #'(void)]
+	[(k field)
+	 (with-syntax ([field-accessor
+					(datum->syntax #'k (string->symbol
+										(string-append "stage-ctx-"
+													   (symbol->string
+														(syntax->datum #'field)))))]
+				   [field-mutator
+					(datum->syntax #'k (string->symbol
+										(string-append "stage-ctx-"
+													   (symbol->string
+														(syntax->datum #'field))
+													   "-set!")))])
+	   #`(define-syntax field
+		   (identifier-syntax
+			[field (field-accessor current-stage-ctx)]
+			[(set! field e) (field-mutator current-stage-ctx e)])))]))
+(define-syntax define-stage-accessors
+  (syntax-rules ()
+	[(_ f)
+	 (define-stage-accessor f)]
+	[(_ f g rest ...)
+	 (begin
+	   (define-stage-accessor f)
+	   (define-stage-accessors g rest ...))]))
+(define-stage-accessors
+  live-bullets live-enm live-misc-ents
+  frames iframes respawning start-shot-frames
+  bombing death-timer graze player-x player-y item-value current-score
+  life-stock bomb-stock game-rng
+  bomb-sweep-x-left bomb-sweep-x-right bomb-sweep-y-up bomb-sweep-y-down
+  initial-bomb-sweep-x-left initial-bomb-sweep-x-right
+  initial-bomb-sweep-y-up initial-bomb-sweep-y-down
+  player-dx-render focus-frames focused-immediate option-xs option-ys)
+
 (define (draw-laser-sprite textures sprite-id x y length radius
 						   rotation shine-sprite)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
@@ -639,45 +678,6 @@
 				  0 0 #f
 				  (make-vector 4 0.0) (make-vector 4 0.0)))
 
-(define current-stage-ctx #f)
-
-(define-syntax (define-stage-accessor stx)
-  (syntax-case stx ()
-	[(_) #'(void)]
-	[(k field)
-	 (with-syntax ([field-accessor
-					(datum->syntax #'k (string->symbol
-										(string-append "stage-ctx-"
-													   (symbol->string
-														(syntax->datum #'field)))))]
-				   [field-mutator
-					(datum->syntax #'k (string->symbol
-										(string-append "stage-ctx-"
-													   (symbol->string
-														(syntax->datum #'field))
-													   "-set!")))])
-	   #`(define-syntax field
-		   (identifier-syntax
-			[field (field-accessor current-stage-ctx)]
-			[(set! field e) (field-mutator current-stage-ctx e)])))]))
-(define-syntax define-stage-accessors
-  (syntax-rules ()
-	[(_ f)
-	 (define-stage-accessor f)]
-	[(_ f g rest ...)
-	 (begin
-	   (define-stage-accessor f)
-	   (define-stage-accessors g rest ...))]))
-(define-stage-accessors
-  live-bullets live-enm live-misc-ents
-  frames iframes respawning start-shot-frames
-  bombing death-timer graze player-x player-y item-value current-score
-  life-stock bomb-stock game-rng
-  bomb-sweep-x-left bomb-sweep-x-right bomb-sweep-y-up bomb-sweep-y-down
-  initial-bomb-sweep-x-left initial-bomb-sweep-x-right
-  initial-bomb-sweep-y-up initial-bomb-sweep-y-down
-  player-dx-render focus-frames focused-immediate option-xs option-ys)
-
 (define frame-save 0)
 (define frame-save-diff 0)
 (define current-chapter 0) ;; informational/debug only
@@ -760,27 +760,32 @@
   (define edge-pressed (inputset-edge-pressed inputs))
   (define opts (title-gui-menu-options self))
   (define selected (title-gui-selected-option self))
-  (and #t
-	   (cond
-		[(enum-set-member? (vkey down) edge-pressed)
-		 (when (< selected (sub1 (vlen opts)))
-		   (title-gui-selected-option-set!
-			self
-			(add1 selected))
-		   (raylib:play-sound (sebundle-menuselect sounds)))
-		 #t]
-		[(enum-set-member? (vkey up) edge-pressed)
-		 (when (> selected 0)
-		   (title-gui-selected-option-set!
-			self
-			(sub1 selected))
-		   (raylib:play-sound (sebundle-menuselect sounds)))
-		 #t]
-		[(enum-set-member? (vkey shoot) edge-pressed)
-		 (raylib:play-sound (sebundle-menuselect sounds))
-		 ((menu-item-on-select (vnth opts selected)))
-		 #t]
-		[else #f])))
+  (cond
+   [(enum-set-member? (vkey down) edge-pressed)
+	(when (< selected (sub1 (vlen opts)))
+	  (title-gui-selected-option-set!
+	   self
+	   (add1 selected))
+	  (raylib:play-sound (sebundle-menuselect sounds)))
+	#t]
+   [(enum-set-member? (vkey up) edge-pressed)
+	(when (> selected 0)
+	  (title-gui-selected-option-set!
+	   self
+	   (sub1 selected))
+	  (raylib:play-sound (sebundle-menuselect sounds)))
+	#t]
+   [(enum-set-member? (vkey shoot) edge-pressed)
+	(raylib:play-sound (sebundle-menuselect sounds))
+	((menu-item-on-select (vnth opts selected)))
+	#t]
+   [(enum-set-member? (vkey bomb) edge-pressed)
+	(raylib:play-sound (sebundle-menuselect sounds))
+	(if (= selected 4) ;; Quit
+		((menu-item-on-select (vnth opts selected)))
+		(title-gui-selected-option-set! self 4))
+	#t]
+   [else #f]))
 (define (title-render self textures fonts)
   (raylib:draw-rectangle-gradient-h 0 0 1280 960 #xff0000ff #x0000ffff)
   (render-ingame-menu
@@ -796,8 +801,8 @@
 	 "Game Start"
 	 (thunk
 	  (set! current-stage-ctx (fresh-stage-ctx))
-	  (raylib:play-music-stream ojamajo-carnival)
 	  (raylib:seek-music-stream ojamajo-carnival 0.0)
+	  (raylib:play-music-stream ojamajo-carnival)
 	  (spawn-task "stage driver" chapter0 (constantly #t))
 	  (set! gui-stack '())))
 	(make-menu-item
@@ -808,10 +813,60 @@
 	 (thunk (void)))
 	(make-menu-item
 	 "Setting"
-	 (thunk (void)))
+	 (thunk (set! gui-stack (list (mk-setting-gui)))))
 	(make-menu-item
 	 "Quit"
 	 (thunk (set! want-quit #t))))
+   0))
+
+(define-record-type setting-gui
+  (parent gui)
+  (fields
+   (mutable menu-options)
+   (mutable selected-option)))
+(define (setting-handle-input self inputs)
+  (define edge-pressed (inputset-edge-pressed inputs))
+  (define opts (setting-gui-menu-options self))
+  (define selected (setting-gui-selected-option self))
+  (cond
+   [(enum-set-member? (vkey down) edge-pressed)
+	(when (< selected (sub1 (vlen opts)))
+	  (setting-gui-selected-option-set!
+	   self
+	   (add1 selected))
+	  (raylib:play-sound (sebundle-menuselect sounds)))
+	#t]
+   [(enum-set-member? (vkey up) edge-pressed)
+	(when (> selected 0)
+	  (setting-gui-selected-option-set!
+	   self
+	   (sub1 selected))
+	  (raylib:play-sound (sebundle-menuselect sounds)))
+	#t]
+   [(enum-set-member? (vkey shoot) edge-pressed)
+	(raylib:play-sound (sebundle-menuselect sounds))
+	((menu-item-on-select (vnth opts selected)))
+	#t]
+   [else #f]))
+(define (setting-render self textures fonts)
+  (raylib:draw-rectangle-gradient-h 0 0 1280 960 #xff0000ff #x0000ffff)
+  (render-ingame-menu
+   fonts
+   (setting-gui-menu-options self) (setting-gui-selected-option self)
+   40.0 200 50 25.0 255))
+(define (mk-setting-gui)
+  (make-setting-gui
+   setting-handle-input setting-render
+   (vector
+	(make-menu-item
+	 "SFX Volume"
+	 (thunk (void)))
+	(make-menu-item
+	 "Music Volume"
+	 (thunk (void)))
+	(make-menu-item
+	 "Back"
+	 (thunk (set! gui-stack (list (mk-title-gui))))))
    0))
 
 (define +menu-animate-dur+ 10)
@@ -904,6 +959,9 @@
 	 (thunk
 	  (pause-gui-close-fn-set! result
 							   (thunk
+								(raylib:stop-music-stream ojamajo-carnival)
+								(kill-all-tasks)
+								(vector-fill! live-particles #f)
 								(set! current-stage-ctx #f)
 								(set! gui-stack (list (mk-title-gui)))))
 	  (pause-gui-closing-set! result 1))))
@@ -2142,6 +2200,8 @@
    extra-data)
   (sealed #t))
 
+;; todo: consider moving this into stage-ctx if we don't end up adding effects
+;; to the menus
 (define live-particles (make-vector 4096 #f))
 
 (define (spawn-particle p)
@@ -4915,6 +4975,7 @@
 	(process-collisions)))
 
 (define (main)
+  (set! want-quit #f)
   (raylib:set-trace-log-level 4) ;; WARNING or above
   (raylib:init-window 1280 960 "thdawn")
   (raylib:set-target-fps 60)
