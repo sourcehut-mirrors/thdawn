@@ -2694,26 +2694,28 @@
   (bossinfo-active-spell-name-set! bossinfo #f)
   (bossinfo-active-spell-bonus-set! bossinfo #f))
 
-(define (common-boss-postlude bossinfo enm)
-  (raylib:play-sound (sebundle-bossdie sounds))
-  (spawn-task "particles"
-			  (lambda (task)
-				(dotimes 90
-				  (spawn-particle
-				   (make-particle
-					(particletype maple)
-					(fl+ (enm-x enm) (centered-roll visual-rng 5.0))
-					(fl+ (enm-y enm) (centered-roll visual-rng 5.0))
-					60 0 `((speed . ,(fl+ (centered-roll visual-rng 0.75) 1.5))
-						   (dir . ,(centered-roll visual-rng pi))
-						   (rot . ,(fl* (roll visual-rng) 360.0))
-						   (initsz . 55))))
-				  (yield)))
-			  (constantly #t))
-  (ease-to values
-		   (fl+ (enm-x enm) (centered-roll game-rng 40.0))
-		   (fl+ (enm-y enm) (centered-roll game-rng 30.0))
-		   90 enm)
+;; If short, only explodes once and doesn't drift, and also doesn't delete the boss
+(define (common-boss-postlude bossinfo enm short)
+  (unless short
+	(raylib:play-sound (sebundle-bossdie sounds))
+	(spawn-task "particles"
+	  (lambda (task)
+		(dotimes 90
+		  (spawn-particle
+		   (make-particle
+			(particletype maple)
+			(fl+ (enm-x enm) (centered-roll visual-rng 5.0))
+			(fl+ (enm-y enm) (centered-roll visual-rng 5.0))
+			60 0 `((speed . ,(fl+ (centered-roll visual-rng 0.75) 1.5))
+				   (dir . ,(centered-roll visual-rng pi))
+				   (rot . ,(fl* (roll visual-rng) 360.0))
+				   (initsz . 55))))
+		  (yield)))
+	  (constantly #t))
+	(ease-to values
+			 (fl+ (enm-x enm) (centered-roll game-rng 40.0))
+			 (fl+ (enm-y enm) (centered-roll game-rng 30.0))
+			 90 enm))
   (raylib:play-sound (sebundle-bossdie sounds))
   (cancel-all #t)
   (dotimes 90
@@ -2725,7 +2727,8 @@
 						   (dir . ,(centered-roll visual-rng pi))
 						   (rot . ,(fl* (roll visual-rng) 360.0))
 						   (initsz . 70)))))
-  (delete-enemy enm))
+  (unless short
+	(delete-enemy enm)))
 
 (define (test-fairy-control2 task enm)
   (test-fairy-non1 task enm)
@@ -4156,7 +4159,10 @@
 	  (wait 7)
 	  (loop (fl+ ang 35.0) (if (<= offset 38.0) offset (- offset 1.0)))))
   (common-spell-postlude bossinfo enm)
-  (common-boss-postlude bossinfo enm))
+  (common-boss-postlude bossinfo enm #t)
+  (wait 60)
+  (ease-to values -100.0 -100.0 20 enm)
+  (delete-enemy enm))
 
 (define (chapter4 task)
   (set! current-chapter 4)
@@ -4868,7 +4874,10 @@
 	task)
   (wait-while keep-running)
   (common-spell-postlude bossinfo enm)
-  (common-boss-postlude bossinfo enm))
+  (common-boss-postlude bossinfo enm #t)
+  (wait 60)
+  (ease-to values -100.0 -100.0 20 enm)
+  (delete-enemy enm))
 
 (define (chapter11 task)
   (set! current-chapter 11)
