@@ -9,10 +9,8 @@ Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 Boss: Doremi/Hazuki/Aiko/Onpu. BGM: Naisho yo ojamajo (no syncing)
 
 ## Immediate TODOs
-* main menu
 * settings menu
   * control remapping
-  * volume
 * replay saving/playback
 * replay menu
 * dialogue system (localization support)
