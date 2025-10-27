@@ -37,7 +37,7 @@
 	   (load-shared-object "raylib.dll")]
 	  [(i3osx ti3osx a6osx ta6osx arm64osx tarm64osx ppc32osx tppc32osx)
 	   (load-shared-object "libraylib.dylib")]
-	  [else (load-shared-object "./libraylib_asan.so")]))
+	  [else (load-shared-object "./libraylib.so")]))
 
   ;; For foreign structs that Raylib handles by-value, we just allocate
   ;; one location and use it to pass and return things from ffi by-value
