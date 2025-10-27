@@ -37,7 +37,7 @@
 	   (load-shared-object "raylib.dll")]
 	  [(i3osx ti3osx a6osx ta6osx arm64osx tarm64osx ppc32osx tppc32osx)
 	   (load-shared-object "libraylib.dylib")]
-	  [else (load-shared-object "./libraylib.so")]))
+	  [else (load-shared-object "./libraylib_asan.so")]))
 
   ;; For foreign structs that Raylib handles by-value, we just allocate
   ;; one location and use it to pass and return things from ffi by-value
@@ -199,7 +199,7 @@
   (define close-audio-device
 	(foreign-procedure "CloseAudioDevice" () void))
 
-  ;; ABI as of Raylib 5.0-1
+  ;; ABI as of Raylib 5.5
   (define-ftype AudioStream
 	(struct
 	  (_ uptr)
@@ -245,8 +245,8 @@
 
   (define-ftype Sound
 	(struct
-	  (stream AudioStream)
-	  (frame-count unsigned-int)))
+	  (_ AudioStream)
+	  (_ unsigned-int)))
   (define load-sound0
 	(foreign-procedure "LoadSound" (string) (& Sound)))
   (define (load-sound file)
@@ -308,10 +308,10 @@
   (define-ftype Texture
 	(struct
 	  (id unsigned-int)
-	  (width int)
-	  (height int)
-	  (mipmaps int)
-	  (format int)))
+	  (_ int)
+	  (_ int)
+	  (_ int)
+	  (_ int)))
   (define load-texture0
 	(foreign-procedure "LoadTexture" (string) (& Texture)))
   (define (load-texture file)
@@ -328,7 +328,7 @@
 	(struct
 	  [id unsigned-int]
 	  [texture Texture]
-	  [depth Texture]))
+	  [_ Texture]))
 
   (define load-render-texture0
 	(foreign-procedure "LoadRenderTexture" (int int) (& RenderTexture)))
@@ -391,8 +391,7 @@
 	  (_ int)
 	  (_ Texture)
 	  (_ void*)
-	  (_ void*)
-	  (_ unsigned-int)))
+	  (_ void*)))
   (define load-font0
 	(foreign-procedure "LoadFont" (string) (& Font)))
   (define (load-font file)

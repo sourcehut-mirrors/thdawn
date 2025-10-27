@@ -787,7 +787,7 @@
 	#t]
    [else #f]))
 (define (title-render self textures fonts)
-  (raylib:draw-rectangle-gradient-h 0 0 1280 960 #xff0000ff #x0000ffff)
+  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
   (render-ingame-menu
    fonts
    (title-gui-menu-options self) (title-gui-selected-option self)
@@ -843,17 +843,51 @@
 	   (sub1 selected))
 	  (raylib:play-sound (sebundle-menuselect sounds)))
 	#t]
+   [(enum-set-member? (vkey left) edge-pressed)
+	(cond
+	 [(= selected 0) (decrease-sound-volume) #t]
+	 [(= selected 1) (decrease-music-volume) #t]
+	 [else #f])]
+   [(enum-set-member? (vkey right) edge-pressed)
+	(cond
+	 [(= selected 0) (increase-sound-volume) #t]
+	 [(= selected 1) (increase-music-volume) #t]
+	 [else #f])]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
 	((menu-item-on-select (vnth opts selected)))
 	#t]
    [else #f]))
 (define (setting-render self textures fonts)
-  (raylib:draw-rectangle-gradient-h 0 0 1280 960 #xff0000ff #x0000ffff)
-  (render-ingame-menu
-   fonts
-   (setting-gui-menu-options self) (setting-gui-selected-option self)
-   40.0 200 50 25.0 255))
+  (define items (setting-gui-menu-options self))
+  (define selected (setting-gui-selected-option self))
+  (define x 40.0)
+  (define start-y 200)
+  (define step-y 20)
+  (define size 25.0)
+  (define alpha 255)
+  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
+  (when (and (fx= selected 0) (fxzero? (fxmod true-frames 90)))
+	(raylib:play-sound (sebundle-playerdie sounds)))
+  (do [(i 0 (add1 i))]
+	  [(>= i (vlen items))]
+	(let* ([item (vnth items i)]
+		   [label (menu-item-label item)])
+	  (raylib:draw-text-ex
+	   (fontbundle-bubblegum fonts)
+	   (cond
+		[(= i 0)
+		 (string-append label ": < "
+						(number->string (cdr (assq 'sfx-vol config)))
+						" >")]
+		[(= i 1)
+		 (string-append label ": < "
+						(number->string (cdr (assq 'music-vol config)))
+						" >")]
+		[else label])
+	   x (+ start-y (* step-y i)) size 0.0
+	   (if (= i selected)
+		   (packcolor 200 122 255 alpha) (packcolor 255 255 255 alpha))))))
 (define (mk-setting-gui)
   (make-setting-gui
    setting-handle-input setting-render
@@ -4975,7 +5009,6 @@
 	(process-collisions)))
 
 (define (main)
-  (set! want-quit #f)
   (raylib:set-trace-log-level 4) ;; WARNING or above
   (raylib:init-window 1280 960 "thdawn")
   (raylib:set-target-fps 60)
@@ -5019,6 +5052,7 @@
 			(newline))
 		  ))
 	  (lambda ()
+		(display "Cleaning up\n")
 		(unload-fonts fonts)
 		(unload-textures textures)
 		(unload-sfx)
@@ -5034,6 +5068,7 @@
 (define (debug-launch)
   (set! current-stage-ctx #f)
   (set! gui-stack '())
+  (set! want-quit #f)
   (fork-thread main))
 
 (define (main-with-backtrace)
