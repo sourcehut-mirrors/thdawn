@@ -5028,36 +5028,36 @@
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
 	(set! gui-stack (list (mk-title-gui)))
+	
 	(dynamic-wind
 	  (thunk #f)
-	  (lambda ()
-		(do [] [(or (raylib:window-should-close) want-quit)]
-		  (handle-input)
-		  (when current-stage-ctx
-			(raylib:update-music-stream ojamajo-carnival)
-			(tick-game))
-		  (render-all render-texture render-texture-inner textures fonts)
-		  (when (and current-stage-ctx (not (paused?)))
-			(set! frames (fx1+ frames)))
-		  (set! true-frames (fx1+ true-frames))
-		  #;(when (fxzero? (fxmod true-frames 180))
-			(display (format "B ~,2f || "
-							 (/ (cost-center-allocation-count bullet-cc)
-								(* 1024.0 1024.0))))
-			(display (format "M ~,2f || "
-							 (/ (cost-center-allocation-count miscent-cc)
-								(* 1024.0 1024.0))))
-			(reset-cost-center! bullet-cc)
-			(reset-cost-center! miscent-cc)
-			(newline))
-		  ))
-	  (lambda ()
-		(display "Cleaning up\n")
-		(unload-fonts fonts)
-		(unload-textures textures)
-		(unload-sfx)
-		(unload-audio)
-		(raylib:close-window)))))
+	  (thunk
+	   (do [] [(or (raylib:window-should-close) want-quit)]
+		 (handle-input)
+		 (when current-stage-ctx
+		   (raylib:update-music-stream ojamajo-carnival)
+		   (tick-game))
+		 (render-all render-texture render-texture-inner textures fonts)
+		 (when (and current-stage-ctx (not (paused?)))
+		   (set! frames (fx1+ frames)))
+		 (set! true-frames (fx1+ true-frames))
+		 #;(when (fxzero? (fxmod true-frames 180))
+		 (display (format "B ~,2f || "
+		 (/ (cost-center-allocation-count bullet-cc)
+		 (* 1024.0 1024.0))))
+		 (display (format "M ~,2f || "
+		 (/ (cost-center-allocation-count miscent-cc)
+		 (* 1024.0 1024.0))))
+		 (reset-cost-center! bullet-cc)
+		 (reset-cost-center! miscent-cc)
+		 (newline))
+		 ))
+	  (thunk
+	   (unload-fonts fonts)
+	   (unload-textures textures)
+	   (unload-sfx)
+	   (unload-audio)
+	   (raylib:close-window)))))
 
 (define (reset-state)
   (set! current-stage-ctx (fresh-stage-ctx))
@@ -5069,6 +5069,7 @@
   (set! current-stage-ctx #f)
   (set! gui-stack '())
   (set! want-quit #f)
+  (kill-all-tasks)
   (fork-thread main))
 
 (define (main-with-backtrace)
