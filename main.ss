@@ -7,7 +7,7 @@
 		(coro) (geom) (funcutils) (config))
 
 (define-enumeration vkey
-  (up down left right shoot bomb focus pause screenshot quick-restart)
+  (up down left right shoot bomb focus pause screenshot quick-restart quick-quit)
   vkeys)
 
 (include "keyconsts.ss")
@@ -913,6 +913,12 @@
 	(raylib:resume-music-stream ojamajo-carnival)
 	(reset-to 0)
 	(set! gui-stack (remq gui gui-stack)))
+  (define (quit gui)
+	(raylib:stop-music-stream ojamajo-carnival)
+	(kill-all-tasks)
+	(vector-fill! live-particles #f)
+	(set! current-stage-ctx #f)
+	(set! gui-stack (list (mk-title-gui))))
   (define (pause-gui-handle-input self inputs)
 	(define edge-pressed (inputset-edge-pressed inputs))
 	(define opts (pause-gui-menu-options self))
@@ -928,6 +934,11 @@
 		  [(enum-set-member? (vkey quick-restart) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
 		   (pause-gui-close-fn-set! self (thunk (restart self)))
+		   (pause-gui-closing-set! self 1)
+		   #t]
+		  [(enum-set-member? (vkey quick-quit) edge-pressed)
+		   (raylib:play-sound (sebundle-menuselect sounds))
+		   (pause-gui-close-fn-set! self (thunk (quit self)))
 		   (pause-gui-closing-set! self 1)
 		   #t]
 		  [(enum-set-member? (vkey down) edge-pressed)
@@ -991,13 +1002,7 @@
 	(make-menu-item
 	 "Quit to Menu"
 	 (thunk
-	  (pause-gui-close-fn-set! result
-							   (thunk
-								(raylib:stop-music-stream ojamajo-carnival)
-								(kill-all-tasks)
-								(vector-fill! live-particles #f)
-								(set! current-stage-ctx #f)
-								(set! gui-stack (list (mk-title-gui)))))
+	  (pause-gui-close-fn-set! result (thunk (quit result)))
 	  (pause-gui-closing-set! result 1))))
   (pause-gui-menu-options-set!
    result

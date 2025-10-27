@@ -20,7 +20,8 @@
 					  (shoot . ,key-z)
 					  (bomb . ,key-x)
 					  (pause . ,key-escape)
-					  (quick-restart . ,key-r)))))
+					  (quick-restart . ,key-r)
+					  (quick-quit . ,key-q)))))
   (define config-path "config.dat")
 
   (define (read-config)
