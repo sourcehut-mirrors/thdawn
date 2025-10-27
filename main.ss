@@ -183,6 +183,45 @@
 	(save-config config)
 	(update-sound-volumes)))
 
+(define-record-type musbundle
+  (fields
+   ojamajo-carnival)
+  (sealed #t))
+(define music #f)
+(define (each-music proc)
+  (define rtd (record-type-descriptor musbundle))
+  (define num-music (vlen (record-type-field-names rtd)))
+  (when sounds
+	(do [(i 0 (1+ i))]
+		[(>= i num-music)]
+	  (proc ((record-accessor rtd i) music)))))
+(define (update-music-volumes)
+  (let ([vol-flt (inexact (/ (cdr (assq 'music-vol config)) 100.0))])
+	(each-music (lambda (mus) (raylib:set-music-volume mus vol-flt)))))
+(define (load-music)
+  (set! music
+		(apply
+		 make-musbundle
+		 (map (lambda (file) (raylib:load-music-stream
+							  (string-append "assets/bgm/" file)))
+			  '("ojamajo_carnival.wav"))))
+  (update-music-volumes))
+(define (unload-music)
+  (each-music raylib:unload-music-stream)
+  (set! music #f))
+(define (increase-music-volume)
+  (define pair (assq 'music-vol config))
+  (when (< (cdr pair) 100)
+	(set-cdr! pair (+ (cdr pair) 5))
+	(save-config config)
+	(update-music-volumes)))
+(define (decrease-music-volume)
+  (define pair (assq 'music-vol config))
+  (when (> (cdr pair) 0)
+	(set-cdr! pair (- (cdr pair) 5))
+	(save-config config)
+	(update-music-volumes)))
+
 (define-record-type txbundle
   (fields
    reimu
@@ -801,8 +840,8 @@
 	 "Game Start"
 	 (thunk
 	  (set! current-stage-ctx (fresh-stage-ctx))
-	  (raylib:seek-music-stream ojamajo-carnival 0.0)
-	  (raylib:play-music-stream ojamajo-carnival)
+	  (raylib:seek-music-stream (musbundle-ojamajo-carnival music) 0.0)
+	  (raylib:play-music-stream (musbundle-ojamajo-carnival music))
 	  (spawn-task "stage driver" chapter0 (constantly #t))
 	  (set! gui-stack '())))
 	(make-menu-item
@@ -907,14 +946,14 @@
 (define (mk-pause-gui gameover)
   (define (unpause gui)
 	(set! gui-stack (remq gui gui-stack))
-	(raylib:resume-music-stream ojamajo-carnival))
+	(raylib:resume-music-stream (musbundle-ojamajo-carnival music)))
   (define (restart gui)
 	(reset-state)
-	(raylib:resume-music-stream ojamajo-carnival)
+	(raylib:resume-music-stream (musbundle-ojamajo-carnival music))
 	(reset-to 0)
 	(set! gui-stack (remq gui gui-stack)))
   (define (quit gui)
-	(raylib:stop-music-stream ojamajo-carnival)
+	(raylib:stop-music-stream (musbundle-ojamajo-carnival music))
 	(kill-all-tasks)
 	(vector-fill! live-particles #f)
 	(set! current-stage-ctx #f)
@@ -1036,30 +1075,6 @@
 
 (define (paused?)
   (memp pause-gui? gui-stack))
-
-(define ojamajo-carnival #f)
-(define (load-audio)
-  (raylib:init-audio-device)
-  (set! ojamajo-carnival (raylib:load-music-stream "assets/bgm/ojamajo_carnival.wav"))
-  (raylib:set-music-looping ojamajo-carnival #f)
-  (raylib:set-music-volume ojamajo-carnival (inexact (/ (cdr (assq 'music-vol config)) 100.0))))
-(define (unload-audio)
-  (raylib:unload-music-stream ojamajo-carnival)
-  (set! ojamajo-carnival #f)
-  (raylib:close-audio-device))
-
-(define (increase-music-volume)
-  (define pair (assq 'music-vol config))
-  (when (< (cdr pair) 100)
-	(set-cdr! pair (+ (cdr pair) 5))
-	(save-config config)
-	(raylib:set-music-volume ojamajo-carnival (inexact (/ (cdr pair) 100.0)))))
-(define (decrease-music-volume)
-  (define pair (assq 'music-vol config))
-  (when (> (cdr pair) 0)
-	(set-cdr! pair (- (cdr pair) 5))
-	(save-config config)
-	(raylib:set-music-volume ojamajo-carnival (inexact (/ (cdr pair) 100.0)))))
 
 (define next-bullet-id 1)
 (define (get-next-bullet-id)
@@ -1849,7 +1864,7 @@
 
 	(if (< life-stock 1)
 		(begin
-		  (raylib:pause-music-stream ojamajo-carnival)
+		  (raylib:pause-music-stream (musbundle-ojamajo-carnival music))
 		  (set! gui-stack (list (mk-pause-gui #t))))
 		(begin
 		  (when (>= life-stock 1)
@@ -2993,7 +3008,7 @@
 	(when (null? gui-stack)
 	  (set! gui-stack (cons (mk-pause-gui #f) gui-stack))
 	  (raylib:play-sound (sebundle-pause sounds))
-	  (raylib:pause-music-stream ojamajo-carnival)))
+	  (raylib:pause-music-stream (musbundle-ojamajo-carnival music))))
   (when (and
 		 (enum-set-member? (vkey bomb) edge-pressed)
 		 (not (paused?))
@@ -5007,7 +5022,8 @@
   (kill-all-tasks)
   (spawn-task "stage driver" func (constantly #t))
   (set! frames timestamp)
-  (raylib:seek-music-stream ojamajo-carnival (inexact (/ frames 60.0))))
+  (raylib:seek-music-stream (musbundle-ojamajo-carnival music)
+							(inexact (/ frames 60.0))))
 
 (define (tick-game)
   (unless (paused?)
@@ -5034,7 +5050,8 @@
 				 (cons (ctor (list (car pair)))
 					   (cdr pair)))
 			   (cdr (assq 'keybindings config)))))
-  (load-audio)
+  (raylib:init-audio-device)
+  (load-music)
   (load-sfx)
   
   (let* ([textures (load-textures)]
@@ -5049,7 +5066,7 @@
 	   (do [] [(or (raylib:window-should-close) want-quit)]
 		 (handle-input)
 		 (when current-stage-ctx
-		   (raylib:update-music-stream ojamajo-carnival)
+		   (raylib:update-music-stream (musbundle-ojamajo-carnival music))
 		   (tick-game))
 		 (render-all render-texture render-texture-inner textures fonts)
 		 (when (and current-stage-ctx (not (paused?)))
@@ -5070,7 +5087,8 @@
 	   (unload-fonts fonts)
 	   (unload-textures textures)
 	   (unload-sfx)
-	   (unload-audio)
+	   (unload-music)
+	   (raylib:close-audio-device)
 	   (raylib:close-window)))))
 
 (define (reset-state)
