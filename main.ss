@@ -185,7 +185,8 @@
 
 (define-record-type musbundle
   (fields
-   ojamajo-carnival)
+   ojamajo-carnival
+   naisho-yo-ojamajo)
   (sealed #t))
 (define music #f)
 (define (each-music proc)
@@ -204,7 +205,7 @@
 		 make-musbundle
 		 (map (lambda (file) (raylib:load-music-stream
 							  (string-append "assets/bgm/" file)))
-			  '("ojamajo_carnival.wav"))))
+			  '("ojamajo_carnival.wav" "naisho_yo_ojamajo.mp3"))))
   (update-music-volumes))
 (define (unload-music)
   (each-music raylib:unload-music-stream)
