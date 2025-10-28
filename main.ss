@@ -3032,14 +3032,6 @@
 	(set! initial-bomb-sweep-y-down bomb-sweep-y-down)
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
-  (when (and (raylib:is-key-pressed key-left-bracket))
-	(if (raylib:is-key-down key-left-shift)
-		(decrease-music-volume)
-		(decrease-sound-volume)))
-  (when (and (raylib:is-key-pressed key-right-bracket))
-	(if (raylib:is-key-down key-left-shift)
-		(increase-music-volume)
-		(increase-sound-volume)))
   (when (raylib:is-key-pressed key-period)
 	(set! chapter-select (min (add1 chapter-select) 13)))
   (when (raylib:is-key-pressed key-comma)
@@ -3331,10 +3323,6 @@
 				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
   ;; todo: for prod release, hide this behind f3
-  (raylib:draw-text (format "VOL: ~d ~d"
-							(cdr (assq 'music-vol config))
-							(cdr (assq 'sfx-vol config)))
-					440 175 18 -1)
   (raylib:draw-text (format "SPLED: ~d of [0, ~d]" spline-editor-selected-position
 							(sub1 (vlen spline-editor-positions)))
 					440 200 18 -1)
@@ -4176,7 +4164,7 @@
 	  (loop (fl+ ang 35.0) (if (<= offset 38.0) offset (- offset 1.0)))))
   (common-spell-postlude bossinfo enm)
   (common-boss-postlude bossinfo enm #t)
-  (wait 60)
+  (wait 75)
   (ease-to values -100.0 -100.0 20 enm)
   (delete-enemy enm))
 
@@ -4891,7 +4879,7 @@
   (wait-while keep-running)
   (common-spell-postlude bossinfo enm)
   (common-boss-postlude bossinfo enm #t)
-  (wait 60)
+  (wait 75)
   (ease-to values -100.0 -100.0 20 enm)
   (delete-enemy enm))
 
