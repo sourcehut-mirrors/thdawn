@@ -863,7 +863,8 @@
   (parent gui)
   (fields
    (mutable menu-options)
-   (mutable selected-option)))
+   (mutable selected-option)
+   (mutable waiting-for-rebind)))
 (define (setting-handle-input self inputs)
   (define edge-pressed (inputset-edge-pressed inputs))
   (define opts (setting-gui-menu-options self))
@@ -931,17 +932,29 @@
 (define (mk-setting-gui)
   (make-setting-gui
    setting-handle-input setting-render
-   (vector
-	(make-menu-item
-	 "SFX Volume"
-	 (thunk (void)))
-	(make-menu-item
-	 "Music Volume"
-	 (thunk (void)))
-	(make-menu-item
-	 "Back"
-	 (thunk (set! gui-stack (list (mk-title-gui))))))
-   0))
+   (vector-append
+	(vector
+	 (make-menu-item
+	  "SFX Volume"
+	  (thunk (void)))
+	 (make-menu-item
+	  "Music Volume"
+	  (thunk (void)))
+	 (make-menu-item
+	  "Back"
+	  (thunk (set! gui-stack (list (mk-title-gui))))))
+	(list->vector
+	 (map
+	  (lambda (p)
+		(define vk (car (enum-set->list (car p))))
+		(make-menu-item
+		 (string-append (string-titlecase (symbol->string vk))
+						": "
+						(or (raylib:get-key-name (cdr p))
+							(number->string (cdr p))))
+		 (thunk (void))))
+	  keybindings)))
+   0 #f))
 
 (define +menu-animate-dur+ 10)
 (define (mk-pause-gui gameover)
@@ -1034,13 +1047,13 @@
 					'#() 0 +menu-animate-dur+ 0 #f))
   (define restart-opt
 	(make-menu-item
-	 "Restart"
+	 "Restart" ;; todo hint the keybind
 	 (thunk
 	  (pause-gui-close-fn-set! result (thunk (restart result)))
 	  (pause-gui-closing-set! result 1))))
   (define quit-opt
 	(make-menu-item
-	 "Quit to Menu"
+	 "Quit to Menu" ;; todo hint the keybind
 	 (thunk
 	  (pause-gui-close-fn-set! result (thunk (quit result)))
 	  (pause-gui-closing-set! result 1))))
