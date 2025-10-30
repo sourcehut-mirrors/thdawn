@@ -762,14 +762,14 @@
 (define-record-type menu-item
   (fields
    label ;; text to render
-   on-select ;; nullary function, run when selected
+   on-select ;; function of gui, run when selected
    )
   (sealed #t))
 
 (define-record-type pause-gui
   (parent gui)
   (fields
-   (mutable menu-options) ;; vector of menu-item
+   menu-options ;; vector of menu-item
    (mutable selected-option) ;; index into menu-options
    ;; counts down from 15 to 0 when playing opening animation
    (mutable opening)
@@ -817,12 +817,12 @@
 	#t]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
-	((menu-item-on-select (vnth opts selected)))
+	((menu-item-on-select (vnth opts selected)) self)
 	#t]
    [(enum-set-member? (vkey bomb) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
 	(if (= selected 4) ;; Quit
-		((menu-item-on-select (vnth opts selected)))
+		((menu-item-on-select (vnth opts selected)) self)
 		(title-gui-selected-option-set! self 4))
 	#t]
    [else #f]))
@@ -839,7 +839,7 @@
    (vector
 	(make-menu-item
 	 "Game Start"
-	 (thunk
+	 (lambda (gui)
 	  (set! current-stage-ctx (fresh-stage-ctx))
 	  (raylib:seek-music-stream (musbundle-ojamajo-carnival music) 0.0)
 	  (raylib:play-music-stream (musbundle-ojamajo-carnival music))
@@ -847,16 +847,16 @@
 	  (set! gui-stack '())))
 	(make-menu-item
 	 "Replay"
-	 (thunk (void)))
+	 (lambda (_gui) (void)))
 	(make-menu-item
 	 "Play Data"
-	 (thunk (void)))
+	 (lambda (_gui) (void)))
 	(make-menu-item
 	 "Setting"
-	 (thunk (set! gui-stack (list (mk-setting-gui)))))
+	 (lambda (_gui) (set! gui-stack (list (mk-setting-gui)))))
 	(make-menu-item
 	 "Quit"
-	 (thunk (set! want-quit #t))))
+	 (lambda (_gui) (set! want-quit #t))))
    0))
 
 (define-record-type setting-gui
@@ -896,7 +896,7 @@
 	 [else #f])]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
-	((menu-item-on-select (vnth opts selected)))
+	((menu-item-on-select (vnth opts selected)) self)
 	#t]
    [else #f]))
 (define (setting-render self textures fonts)
@@ -936,13 +936,13 @@
 	(vector
 	 (make-menu-item
 	  "SFX Volume"
-	  (thunk (void)))
+	  (lambda (_gui) (void)))
 	 (make-menu-item
 	  "Music Volume"
-	  (thunk (void)))
+	  (lambda (_gui) (void)))
 	 (make-menu-item
 	  "Back"
-	  (thunk (set! gui-stack (list (mk-title-gui))))))
+	  (lambda (_gui) (set! gui-stack (list (mk-title-gui))))))
 	(list->vector
 	 (map
 	  (lambda (p)
@@ -952,7 +952,7 @@
 						": "
 						(or (raylib:get-key-name (cdr p))
 							(number->string (cdr p))))
-		 (thunk (void))))
+		 (lambda (_gui) (void))))
 	  keybindings)))
    0 #f))
 
@@ -1010,7 +1010,7 @@
 		   #t]
 		  [(enum-set-member? (vkey shoot) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
-		   ((menu-item-on-select (vnth opts selected)))
+		   ((menu-item-on-select (vnth opts selected)) self)
 		   #t]
 		  [else #f])))
   (define (pause-gui-render self textures fonts)
@@ -1042,32 +1042,29 @@
 	  (pause-gui-closing-set! self (add1 closing))
 	  (when (= closing +menu-animate-dur+)
 	    ((pause-gui-close-fn self)))))
-  (define result
-	(make-pause-gui pause-gui-handle-input pause-gui-render
-					'#() 0 +menu-animate-dur+ 0 #f))
   (define restart-opt
 	(make-menu-item
 	 "Restart" ;; todo hint the keybind
-	 (thunk
-	  (pause-gui-close-fn-set! result (thunk (restart result)))
-	  (pause-gui-closing-set! result 1))))
+	 (lambda (gui)
+	  (pause-gui-close-fn-set! gui (thunk (restart gui)))
+	  (pause-gui-closing-set! gui 1))))
   (define quit-opt
 	(make-menu-item
 	 "Quit to Menu" ;; todo hint the keybind
-	 (thunk
-	  (pause-gui-close-fn-set! result (thunk (quit result)))
-	  (pause-gui-closing-set! result 1))))
-  (pause-gui-menu-options-set!
-   result
+	 (lambda (gui)
+	   (pause-gui-close-fn-set! gui (thunk (quit gui)))
+	   (pause-gui-closing-set! gui 1))))
+  (make-pause-gui
+   pause-gui-handle-input pause-gui-render
    (if gameover
 	   (vector restart-opt quit-opt)
 	   (vector (make-menu-item
 				"Resume"
-				(thunk
-				 (pause-gui-close-fn-set! result (thunk (unpause result)))
-				 (pause-gui-closing-set! result 1)))
-			   restart-opt quit-opt)))
-  result)
+				(lambda (gui)
+				  (pause-gui-close-fn-set! gui (thunk (unpause gui)))
+				  (pause-gui-closing-set! gui 1)))
+			   restart-opt quit-opt))
+   0 +menu-animate-dur+ 0 #f))
 
 (define (truncate-to-whole-spline v)
   (let*-values ([(quot rem) (div-and-mod (sub1 (vlen v)) 3)])
