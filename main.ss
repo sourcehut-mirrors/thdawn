@@ -2917,6 +2917,13 @@
 ;; initialized after config read
 ;; alist of vkey-enum-set (which should only have one vkey in it) -> key code
 (define keybindings '())
+(define (refresh-keybindings)
+  (let ([ctor (enum-set-constructor (vkeys))])
+	(set! keybindings
+		  (map (lambda (pair)
+				 (cons (ctor (list (car pair)))
+					   (cdr pair)))
+			   (cdr (assq 'keybindings config))))))
 
 (define-record-type inputset
   (fields
@@ -5046,12 +5053,7 @@
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)
   (set! config (read-config))
-  (let ([ctor (enum-set-constructor (vkeys))])
-	(set! keybindings
-		  (map (lambda (pair)
-				 (cons (ctor (list (car pair)))
-					   (cdr pair)))
-			   (cdr (assq 'keybindings config)))))
+  (refresh-keybindings)
   (raylib:init-audio-device)
   (load-music)
   (load-sfx)
