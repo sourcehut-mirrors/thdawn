@@ -867,9 +867,22 @@
    (mutable waiting-for-rebind)))
 (define (setting-handle-input self inputs)
   (define edge-pressed (inputset-edge-pressed inputs))
+  (define edge-pressed-raw (inputset-edge-pressed-raw inputs))
   (define opts (setting-gui-menu-options self))
   (define selected (setting-gui-selected-option self))
   (cond
+   [(and (setting-gui-waiting-for-rebind self)
+		 (not (eq? '() edge-pressed-raw))
+		 (keybind-menu-item? (vnth opts selected))) ;; xx: might leak to parent
+	(let* ([opt (vnth opts selected)]
+		   [vk (keybind-menu-item-vk opt)]
+		   [k (car edge-pressed-raw)]
+		   [pair (assq vk (cdr (assq 'keybindings config)))])
+	  (set-cdr! pair k))
+	(save-config config)
+	(refresh-keybindings)
+	(setting-gui-waiting-for-rebind-set! self #f)
+	#t]
    [(enum-set-member? (vkey down) edge-pressed)
 	(when (< selected (sub1 (vlen opts)))
 	  (setting-gui-selected-option-set!
@@ -928,6 +941,11 @@
 		 (packcolor 200 122 255 alpha)
 		 (packcolor 255 255 255 alpha)))))
 
+(define-record-type keybind-menu-item
+  (parent menu-item)
+  (fields vk)
+  (sealed #t))
+
 (define (mk-setting-gui)
   (make-setting-gui
    setting-handle-input setting-render
@@ -951,7 +969,7 @@
 	(list->vector
 	 (map
 	  (lambda (vk)
-		(make-menu-item
+		(make-keybind-menu-item
 		 (thunk
 		  (let ([binding (cdr (assq
 							   vk (cdr (assq 'keybindings config))))])
@@ -959,7 +977,8 @@
 						   ": "
 						   (or (raylib:get-key-name binding)
 							   (number->string binding)))))
-		 (lambda (gui) (setting-gui-waiting-for-rebind-set! gui #t))))
+		 (lambda (gui) (setting-gui-waiting-for-rebind-set! gui #t))
+		 vk))
 	  (enum-set->list (enum-set-universe (vkeys))))))
    0 #f))
 
@@ -1051,13 +1070,13 @@
 	    ((pause-gui-close-fn self)))))
   (define restart-opt
 	(make-menu-item
-	 "Restart" ;; todo hint the keybind
+	 (thunk "Restart") ;; todo hint the keybind
 	 (lambda (gui)
 	  (pause-gui-close-fn-set! gui (thunk (restart gui)))
 	  (pause-gui-closing-set! gui 1))))
   (define quit-opt
 	(make-menu-item
-	 "Quit to Menu" ;; todo hint the keybind
+	 (thunk "Quit to Menu") ;; todo hint the keybind
 	 (lambda (gui)
 	   (pause-gui-close-fn-set! gui (thunk (quit gui)))
 	   (pause-gui-closing-set! gui 1))))
@@ -1066,7 +1085,7 @@
    (if gameover
 	   (vector restart-opt quit-opt)
 	   (vector (make-menu-item
-				"Resume"
+				(thunk "Resume")
 				(lambda (gui)
 				  (pause-gui-close-fn-set! gui (thunk (unpause gui)))
 				  (pause-gui-closing-set! gui 1)))
