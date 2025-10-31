@@ -1102,13 +1102,23 @@
 	    ((pause-gui-close-fn self)))))
   (define restart-opt
 	(make-menu-item
-	 (thunk "Restart") ;; todo hint the keybind
+	 (let ([label (string-append "Restart ("
+								 (key-name (assqdr
+											(vkey quick-restart)
+											(assqdr 'keybindings config)))
+								 ")")])
+	   (thunk label))
 	 (lambda (gui)
 	  (pause-gui-close-fn-set! gui (thunk (restart gui)))
 	  (pause-gui-closing-set! gui 1))))
   (define quit-opt
 	(make-menu-item
-	 (thunk "Quit to Menu") ;; todo hint the keybind
+	 (let ([label (string-append "Quit to Menu ("
+								 (key-name (assqdr
+											(vkey quick-quit)
+											(assqdr 'keybindings config)))
+								 ")")])
+	   (thunk label))
 	 (lambda (gui)
 	   (pause-gui-close-fn-set! gui (thunk (quit gui)))
 	   (pause-gui-closing-set! gui 1))))
