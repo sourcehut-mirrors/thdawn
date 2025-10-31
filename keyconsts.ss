@@ -14,6 +14,7 @@
 (define key-d 68)
 (define key-f 70)
 (define key-g 71)
+(define key-p 80)
 (define key-q 81)
 (define key-r 82)
 (define key-s 83)

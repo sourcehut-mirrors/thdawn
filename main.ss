@@ -7,7 +7,8 @@
 		(coro) (geom) (funcutils) (config))
 
 (define-enumeration vkey
-  (up down left right shoot bomb focus pause screenshot quick-restart quick-quit)
+  (up down left right shoot bomb focus pause
+	  screenshot quick-restart quick-quit)
   vkeys)
 
 (include "keyconsts.ss")
@@ -763,8 +764,7 @@
   (fields
    label ;; text to render
    on-select ;; function of gui, run when selected
-   )
-  (sealed #t))
+   ))
 
 (define-record-type pause-gui
   (parent gui)
@@ -853,7 +853,7 @@
 	 (lambda (_gui) (void)))
 	(make-menu-item
 	 "Setting"
-	 (lambda (_gui) (set! gui-stack (list (mk-setting-gui)))))
+	 (lambda (_gui) (set! gui-stack (cons (mk-setting-gui) gui-stack))))
 	(make-menu-item
 	 "Quit"
 	 (lambda (_gui) (set! want-quit #t))))
@@ -886,17 +886,23 @@
 	#t]
    [(enum-set-member? (vkey left) edge-pressed)
 	(cond
-	 [(= selected 0) (decrease-sound-volume) #t]
-	 [(= selected 1) (decrease-music-volume) #t]
+	 [(= selected 1) (decrease-sound-volume) #t]
+	 [(= selected 2) (decrease-music-volume) #t]
 	 [else #f])]
    [(enum-set-member? (vkey right) edge-pressed)
 	(cond
-	 [(= selected 0) (increase-sound-volume) #t]
-	 [(= selected 1) (increase-music-volume) #t]
+	 [(= selected 1) (increase-sound-volume) #t]
+	 [(= selected 2) (increase-music-volume) #t]
 	 [else #f])]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
 	((menu-item-on-select (vnth opts selected)) self)
+	#t]
+   [(enum-set-member? (vkey bomb) edge-pressed)
+	(raylib:play-sound (sebundle-menuselect sounds))
+	(if (= selected 0) ;; Back
+		((menu-item-on-select (vnth opts selected)) self)
+		(setting-gui-selected-option-set! self 0))
 	#t]
    [else #f]))
 (define (setting-render self textures fonts)
@@ -908,7 +914,7 @@
   (define size 25.0)
   (define alpha 255)
   (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
-  (when (and (fx= selected 0) (fxzero? (fxmod true-frames 90)))
+  (when (and (fx= selected 1) (fxzero? (fxmod true-frames 90)))
 	(raylib:play-sound (sebundle-playerdie sounds)))
   (do [(i 0 (add1 i))]
 	  [(>= i (vlen items))]
@@ -917,43 +923,48 @@
 	  (raylib:draw-text-ex
 	   (fontbundle-bubblegum fonts)
 	   (cond
-		[(= i 0)
+		[(= i 1)
 		 (string-append label ": < "
 						(number->string (cdr (assq 'sfx-vol config)))
 						" >")]
-		[(= i 1)
+		[(= i 2)
 		 (string-append label ": < "
 						(number->string (cdr (assq 'music-vol config)))
 						" >")]
 		[else label])
 	   x (+ start-y (* step-y i)) size 0.0
-	   (if (= i selected)
-		   (packcolor 200 122 255 alpha) (packcolor 255 255 255 alpha))))))
+	   (if (and (= i selected)
+				(or (not (setting-gui-waiting-for-rebind self))
+					(fx< (fxmod true-frames 14) 7)))
+		   (packcolor 200 122 255 alpha)
+		   (packcolor 255 255 255 alpha))))))
+
 (define (mk-setting-gui)
   (make-setting-gui
    setting-handle-input setting-render
    (vector-append
 	(vector
 	 (make-menu-item
+	  "Back"
+	  (lambda (_gui) (set! gui-stack (cdr gui-stack))))
+	 (make-menu-item
 	  "SFX Volume"
 	  (lambda (_gui) (void)))
 	 (make-menu-item
 	  "Music Volume"
-	  (lambda (_gui) (void)))
-	 (make-menu-item
-	  "Back"
-	  (lambda (_gui) (set! gui-stack (list (mk-title-gui))))))
+	  (lambda (_gui) (void))))
 	(list->vector
 	 (map
-	  (lambda (p)
-		(define vk (car (enum-set->list (car p))))
+	  (lambda (vk)
+		(define binding (cdr (assq
+							  vk (cdr (assq 'keybindings config)))))
 		(make-menu-item
 		 (string-append (string-titlecase (symbol->string vk))
 						": "
-						(or (raylib:get-key-name (cdr p))
-							(number->string (cdr p))))
-		 (lambda (_gui) (void))))
-	  keybindings)))
+						(or (raylib:get-key-name binding)
+							(number->string binding)))
+		 (lambda (gui) (setting-gui-waiting-for-rebind-set! gui #t))))
+	  (enum-set->list (enum-set-universe (vkeys))))))
    0 #f))
 
 (define +menu-animate-dur+ 10)
@@ -2913,6 +2924,8 @@
 
 ;; initialized after config read
 ;; alist of vkey-enum-set (which should only have one vkey in it) -> key code
+;; not really a mapping, just a cache so we don't construct a new enumset
+;; every time we read input
 (define keybindings '())
 (define (refresh-keybindings)
   (let ([ctor (enum-set-constructor (vkeys))])

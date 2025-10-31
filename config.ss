@@ -20,6 +20,7 @@
 					  (shoot . ,key-z)
 					  (bomb . ,key-x)
 					  (pause . ,key-escape)
+					  (screenshot . ,key-p)
 					  (quick-restart . ,key-r)
 					  (quick-quit . ,key-q)))))
   (define config-path "config.dat")
