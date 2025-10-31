@@ -877,7 +877,11 @@
 	(let* ([opt (vnth opts selected)]
 		   [vk (keybind-menu-item-vk opt)]
 		   [k (car edge-pressed-raw)]
-		   [pair (assq vk (cdr (assq 'keybindings config)))])
+		   [binds (cdr (assq 'keybindings config))]
+		   [pair (assq vk binds)]
+		   [conflict (find (lambda (p) (= k (cdr p))) binds)])
+	  (when conflict ;; swap
+		(set-cdr! conflict (cdr pair)))
 	  (set-cdr! pair k))
 	(save-config config)
 	(refresh-keybindings)
