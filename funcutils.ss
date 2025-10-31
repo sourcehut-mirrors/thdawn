@@ -3,8 +3,11 @@
   (export constantly vector-for-each-truthy for-each-indexed
 		  dotimes curry vector-for-all vector-for-each-indexed
 		  vector-find vector-index vector-popcnt -> ->> thunk
-		  vector-add vector-pop vector-truncate when-let)
+		  vector-add vector-pop vector-truncate when-let assqdr)
   (import (chezscheme))
+
+  (define (assqdr key alist)
+	(cdr (assq key alist)))
 
   (define (curry proc . curry-args)
 	(lambda rest (apply proc (append curry-args rest))))

@@ -12,6 +12,35 @@
   vkeys)
 
 (include "keyconsts.ss")
+;; turns out glfwGetKeyName just doesn't work for non-printable keys which
+;; makes it pretty useless?
+(define (key-name k)
+  ;; copypasta from raylib.h KeyboardKey
+  (define nonprintables
+	'((32 . "Space") (256 . "Escape") (257 . "Enter")
+	  (258 . "Tab") (259 . "Backspace") (260 . "Insert")
+	  (261 . "Delete") (262 . "Right") (263 . "Left")
+	  (264 . "Down") (265 . "Up") (266 . "PageUp")
+	  (267 . "PageDown") (268 . "Home") (269 . "End")
+	  (280 . "CapsLock") (281 . "ScrollLock") (282 . "NumLock")
+	  (283 . "PrintScreen") (284 . "PauseBrk")
+	  (290 . "F1") (291 . "F2") (292 . "F3") (293 . "F4")
+	  (294 . "F5") (295 . "F6") (296 . "F7") (297 . "F8")
+	  (298 . "F9") (299 . "F10") (300 . "F11") (301 . "F12")
+	  (340 . "LShift") (341 . "LControl") (342 . "LAlt") (343 . "LSuper")
+	  (344 . "RShift") (345 . "RControl") (346 . "RAlt") (347 . "RSuper")
+	  (348 . "Menu")
+	  (320 . "NumPad0") (321 . "NumPad1") (322 . "NumPad2")
+	  (323 . "NumPad3") (324 . "NumPad4") (325 . "NumPad5")
+	  (326 . "NumPad6") (327 . "NumPad7") (328 . "NumPad8")
+	  (329 . "NumPad9") (330 . "NumPadDot") (331 . "NumPad/")
+	  (332 . "NumPad*") (333 . "NumPad-") (334 . "NumPad+")
+	  (335 . "NumPadEnter") (336 . "NumPadEqual")))
+  (or (raylib:get-key-name k)
+	  (let ([p (assq k nonprintables)])
+		(and p (cdr p)))
+	  (string-append "Unknown Key " (number->string k))))
+
 (define pi 3.141592)
 (define tau 6.28318)
 (alias vnth vector-ref)
@@ -148,7 +177,7 @@
 		[(>= i num-sounds)]
 	  (proc ((record-accessor rtd i) sounds)))))
 (define (update-sound-volumes)
-  (let ([vol-flt (inexact (/ (cdr (assq 'sfx-vol config)) 100.0))])
+  (let ([vol-flt (inexact (/ (assqdr 'sfx-vol config) 100.0))])
 	(each-sound (lambda (sound) (raylib:set-sound-volume sound vol-flt)))))
 (define (load-sfx)
   (set! sounds
@@ -198,7 +227,7 @@
 		[(>= i num-music)]
 	  (proc ((record-accessor rtd i) music)))))
 (define (update-music-volumes)
-  (let ([vol-flt (inexact (/ (cdr (assq 'music-vol config)) 100.0))])
+  (let ([vol-flt (inexact (/ (assqdr 'music-vol config) 100.0))])
 	(each-music (lambda (mus) (raylib:set-music-volume mus vol-flt)))))
 (define (load-music)
   (set! music
@@ -877,7 +906,7 @@
 	(let* ([opt (vnth opts selected)]
 		   [vk (keybind-menu-item-vk opt)]
 		   [k (car edge-pressed-raw)]
-		   [binds (cdr (assq 'keybindings config))]
+		   [binds (assqdr 'keybindings config)]
 		   [pair (assq vk binds)]
 		   [conflict (find (lambda (p) (= k (cdr p))) binds)])
 	  (when conflict ;; swap
@@ -961,13 +990,13 @@
 	 (make-menu-item
 	  (thunk
 	   (string-append "SFX Volume: < "
-					  (number->string (cdr (assq 'sfx-vol config)))
+					  (number->string (assqdr 'sfx-vol config))
 					  " >"))
 	  (lambda (_gui) (void)))
 	 (make-menu-item
 	  (thunk
 	   (string-append "Music Volume: < "
-					  (number->string (cdr (assq 'music-vol config)))
+					  (number->string (assqdr 'music-vol config))
 					  " >"))
 	  (lambda (_gui) (void))))
 	(list->vector
@@ -975,12 +1004,11 @@
 	  (lambda (vk)
 		(make-keybind-menu-item
 		 (thunk
-		  (let ([binding (cdr (assq
-							   vk (cdr (assq 'keybindings config))))])
+		  (let ()
 			(string-append (string-titlecase (symbol->string vk))
 						   ": "
-						   (or (raylib:get-key-name binding)
-							   (number->string binding)))))
+						   (key-name
+							(assqdr vk (assqdr 'keybindings config))))))
 		 (lambda (gui) (setting-gui-waiting-for-rebind-set! gui #t))
 		 vk))
 	  (enum-set->list (enum-set-universe (vkeys))))))
@@ -2316,8 +2344,8 @@
 	(particle-age-set! p (fx1+ (particle-age p)))
 	(case (particle-type p)
 	  ([graze maple maple-grayscale]
-	   (let ([dir (cdr (assq 'dir (particle-extra-data p)))]
-			 [speed (cdr (assq 'speed (particle-extra-data p)))])
+	   (let ([dir (assqdr 'dir (particle-extra-data p))]
+			 [speed (assqdr 'speed (particle-extra-data p))])
 		 (particle-x-set! p (+ (particle-x p) (* speed (cos dir))))
 		 (particle-y-set! p (+ (particle-y p) (* speed (sin dir))))))
 	  ([itemvalue]
@@ -2334,8 +2362,8 @@
 	(case (particle-type p)
 	  ([maple maple-grayscale]
 	   (let* ([t (/ (particle-age p) (particle-max-age p))]
-			  [sz (lerp (cdr (assq 'initsz extra-data)) 16 t)]
-			  [rot (cdr (assq 'rot extra-data))])
+			  [sz (lerp (assqdr 'initsz extra-data) 16 t)]
+			  [rot (assqdr 'rot extra-data)])
 		 (draw-sprite-pro-with-rotation
 		  textures (particle-type p)
 		  (fl+ rot (flmod (* frames 3.0) 360.0))
@@ -2344,7 +2372,7 @@
 	  ([graze]
 	   (let* ([t (/ (particle-age p) (particle-max-age p))]
 			  [sz (lerp 6 0 t)]
-			  [rot (cdr (assq 'rot (particle-extra-data p)))])
+			  [rot (assqdr 'rot (particle-extra-data p))])
 		 (raylib:draw-rectangle-pro render-x render-y sz sz
 									(/ sz 2) (/ sz 2)
 									rot #xf5f5f5f5)))
@@ -2352,8 +2380,8 @@
 	   (let ([age (/ (particle-age p) (particle-max-age p))])
 		 (raylib:draw-circle-lines-v
 		  render-x render-y
-		  (inexact (lerp (cdr (assq 'start-radius extra-data))
-						 (cdr (assq 'end-radius extra-data))
+		  (inexact (lerp (assqdr 'start-radius extra-data)
+						 (assqdr 'end-radius extra-data)
 						 age))
 		  (packcolor 255 255 255 (eround (lerp 255 0 age))))))
 	  ([cancel]
@@ -2387,9 +2415,9 @@
 			(eround render-y)
 			16.0 0.0 (bitwise-ior color alpha)))))
 	  ([circle-hint]
-	   (let ([color (cdr (assq 'color extra-data))]
-			 [r1 (cdr (assq 'r1 extra-data))]
-			 [r2 (cdr (assq 'r2 extra-data))])
+	   (let ([color (assqdr 'color extra-data)]
+			 [r1 (assqdr 'r1 extra-data)]
+			 [r2 (assqdr 'r2 extra-data)])
 		 (raylib:draw-circle-lines-v
 		  render-x render-y
 		  (lerp r1 r2 (/ (particle-age p) (particle-max-age p)))
@@ -2952,7 +2980,7 @@
 		  (map (lambda (pair)
 				 (cons (ctor (list (car pair)))
 					   (cdr pair)))
-			   (cdr (assq 'keybindings config))))))
+			   (assqdr 'keybindings config)))))
 
 (define-record-type inputset
   (fields
