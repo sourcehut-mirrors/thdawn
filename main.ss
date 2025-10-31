@@ -762,7 +762,7 @@
 
 (define-record-type menu-item
   (fields
-   label ;; text to render
+   label ;; nullary function -> text to render
    on-select ;; function of gui, run when selected
    ))
 
@@ -786,7 +786,7 @@
 	(let ([item (vnth items i)])
 	  (raylib:draw-text-ex
 	   (fontbundle-bubblegum fonts)
-	   (menu-item-label item)
+	   ((menu-item-label item))
 	   x (+ start-y (* step-y i)) size 0.0
 	   (if (= i selected)
 		   (packcolor 200 122 255 alpha) (packcolor 255 255 255 alpha))))))
@@ -838,7 +838,7 @@
    title-handle-input title-render
    (vector
 	(make-menu-item
-	 "Game Start"
+	 (thunk "Game Start")
 	 (lambda (gui)
 	  (set! current-stage-ctx (fresh-stage-ctx))
 	  (raylib:seek-music-stream (musbundle-ojamajo-carnival music) 0.0)
@@ -846,16 +846,16 @@
 	  (spawn-task "stage driver" chapter0 (constantly #t))
 	  (set! gui-stack '())))
 	(make-menu-item
-	 "Replay"
+	 (thunk "Replay")
 	 (lambda (_gui) (void)))
 	(make-menu-item
-	 "Play Data"
+	 (thunk "Play Data")
 	 (lambda (_gui) (void)))
 	(make-menu-item
-	 "Setting"
+	 (thunk "Setting")
 	 (lambda (_gui) (set! gui-stack (cons (mk-setting-gui) gui-stack))))
 	(make-menu-item
-	 "Quit"
+	 (thunk "Quit")
 	 (lambda (_gui) (set! want-quit #t))))
    0))
 
@@ -918,26 +918,15 @@
 	(raylib:play-sound (sebundle-playerdie sounds)))
   (do [(i 0 (add1 i))]
 	  [(>= i (vlen items))]
-	(let* ([item (vnth items i)]
-		   [label (menu-item-label item)])
-	  (raylib:draw-text-ex
-	   (fontbundle-bubblegum fonts)
-	   (cond
-		[(= i 1)
-		 (string-append label ": < "
-						(number->string (cdr (assq 'sfx-vol config)))
-						" >")]
-		[(= i 2)
-		 (string-append label ": < "
-						(number->string (cdr (assq 'music-vol config)))
-						" >")]
-		[else label])
-	   x (+ start-y (* step-y i)) size 0.0
-	   (if (and (= i selected)
-				(or (not (setting-gui-waiting-for-rebind self))
-					(fx< (fxmod true-frames 14) 7)))
-		   (packcolor 200 122 255 alpha)
-		   (packcolor 255 255 255 alpha))))))
+	(raylib:draw-text-ex
+	 (fontbundle-bubblegum fonts)
+	 ((menu-item-label (vnth items i)))
+	 x (+ start-y (* step-y i)) size 0.0
+	 (if (and (= i selected)
+			  (or (not (setting-gui-waiting-for-rebind self))
+				  (fx< (fxmod true-frames 14) 7)))
+		 (packcolor 200 122 255 alpha)
+		 (packcolor 255 255 255 alpha)))))
 
 (define (mk-setting-gui)
   (make-setting-gui
@@ -945,24 +934,31 @@
    (vector-append
 	(vector
 	 (make-menu-item
-	  "Back"
+	  (thunk "Back")
 	  (lambda (_gui) (set! gui-stack (cdr gui-stack))))
 	 (make-menu-item
-	  "SFX Volume"
+	  (thunk
+	   (string-append "SFX Volume: < "
+					  (number->string (cdr (assq 'sfx-vol config)))
+					  " >"))
 	  (lambda (_gui) (void)))
 	 (make-menu-item
-	  "Music Volume"
+	  (thunk
+	   (string-append "Music Volume: < "
+					  (number->string (cdr (assq 'music-vol config)))
+					  " >"))
 	  (lambda (_gui) (void))))
 	(list->vector
 	 (map
 	  (lambda (vk)
-		(define binding (cdr (assq
-							  vk (cdr (assq 'keybindings config)))))
 		(make-menu-item
-		 (string-append (string-titlecase (symbol->string vk))
-						": "
-						(or (raylib:get-key-name binding)
-							(number->string binding)))
+		 (thunk
+		  (let ([binding (cdr (assq
+							   vk (cdr (assq 'keybindings config))))])
+			(string-append (string-titlecase (symbol->string vk))
+						   ": "
+						   (or (raylib:get-key-name binding)
+							   (number->string binding)))))
 		 (lambda (gui) (setting-gui-waiting-for-rebind-set! gui #t))))
 	  (enum-set->list (enum-set-universe (vkeys))))))
    0 #f))
