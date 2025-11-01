@@ -1044,11 +1044,15 @@
 		   #t]
 		  [(enum-set-member? (vkey quick-restart) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
+		   ;; Highlight the selected one just so it's obvious what happened
+		   (pause-gui-selected-option-set! self (if gameover 0 1))
 		   (pause-gui-close-fn-set! self (thunk (restart self)))
 		   (pause-gui-closing-set! self 1)
 		   #t]
 		  [(enum-set-member? (vkey quick-quit) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
+		   ;; Highlight the selected one just so it's obvious what happened
+		   (pause-gui-selected-option-set! self (if gameover 1 2))
 		   (pause-gui-close-fn-set! self (thunk (quit self)))
 		   (pause-gui-closing-set! self 1)
 		   #t]
