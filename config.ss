@@ -8,7 +8,6 @@
   (include "keyconsts.ss")
   
   (define default-config
-	;; todo: key-config, 
 	`((music-vol . 100)
 	  (sfx-vol . 85)
 	  ;; meh, too lazy to get the typed wrappers, punt the checks to runtime

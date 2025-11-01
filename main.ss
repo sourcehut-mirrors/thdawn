@@ -252,6 +252,12 @@
 	(set-cdr! pair (- (cdr pair) 5))
 	(save-config config)
 	(update-music-volumes)))
+(define current-music #f)
+(define (play-music m)
+  (when current-music
+	(raylib:stop-music-stream current-music))
+  (set! current-music m)
+  (raylib:play-music-stream m))
 
 (define-record-type txbundle
   (fields
@@ -869,11 +875,10 @@
 	(make-menu-item
 	 (thunk "Game Start")
 	 (lambda (gui)
-	  (set! current-stage-ctx (fresh-stage-ctx))
-	  (raylib:seek-music-stream (musbundle-ojamajo-carnival music) 0.0)
-	  (raylib:play-music-stream (musbundle-ojamajo-carnival music))
-	  (spawn-task "stage driver" chapter0 (constantly #t))
-	  (set! gui-stack '())))
+	   (set! current-stage-ctx (fresh-stage-ctx))
+	   (play-music (musbundle-ojamajo-carnival music))
+	   (spawn-task "stage driver" chapter0 (constantly #t))
+	   (set! gui-stack '())))
 	(make-menu-item
 	 (thunk "Replay")
 	 (lambda (_gui) (void)))
@@ -1018,14 +1023,17 @@
 (define (mk-pause-gui gameover)
   (define (unpause gui)
 	(set! gui-stack (remq gui gui-stack))
-	(raylib:resume-music-stream (musbundle-ojamajo-carnival music)))
+	(when current-music
+	  (raylib:resume-music-stream current-music)))
   (define (restart gui)
 	(reset-state)
-	(raylib:resume-music-stream (musbundle-ojamajo-carnival music))
+	(play-music (musbundle-ojamajo-carnival music))
 	(reset-to 0)
 	(set! gui-stack (remq gui gui-stack)))
   (define (quit gui)
-	(raylib:stop-music-stream (musbundle-ojamajo-carnival music))
+	;; TODO: This can be simplified once we have a title theme
+	(raylib:stop-music-stream current-music)
+	(set! current-music #f)
 	(kill-all-tasks)
 	(vector-fill! live-particles #f)
 	(set! current-stage-ctx #f)
@@ -1947,7 +1955,8 @@
 
 	(if (< life-stock 1)
 		(begin
-		  (raylib:pause-music-stream (musbundle-ojamajo-carnival music))
+		  (when current-music
+			(raylib:pause-music-stream current-music))
 		  (set! gui-stack (list (mk-pause-gui #t))))
 		(begin
 		  (when (>= life-stock 1)
@@ -3100,7 +3109,8 @@
 	(when (null? gui-stack)
 	  (set! gui-stack (cons (mk-pause-gui #f) gui-stack))
 	  (raylib:play-sound (sebundle-pause sounds))
-	  (raylib:pause-music-stream (musbundle-ojamajo-carnival music))))
+	  (when current-music
+		(raylib:pause-music-stream current-music))))
   (when (and
 		 (enum-set-member? (vkey bomb) edge-pressed)
 		 (not (paused?))
@@ -5102,8 +5112,9 @@
   (kill-all-tasks)
   (spawn-task "stage driver" func (constantly #t))
   (set! frames timestamp)
-  (raylib:seek-music-stream (musbundle-ojamajo-carnival music)
-							(inexact (/ frames 60.0))))
+  (when current-music
+	(raylib:seek-music-stream current-music
+							  (inexact (/ frames 60.0)))))
 
 (define (tick-game)
   (unless (paused?)
@@ -5140,8 +5151,9 @@
 	  (thunk
 	   (do [] [(or (raylib:window-should-close) want-quit)]
 		 (handle-input)
+		 (when current-music
+		   (raylib:update-music-stream current-music))
 		 (when current-stage-ctx
-		   (raylib:update-music-stream (musbundle-ojamajo-carnival music))
 		   (tick-game))
 		 (render-all render-texture render-texture-inner textures fonts)
 		 (when (and current-stage-ctx (not (paused?)))
