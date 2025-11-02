@@ -937,7 +937,7 @@
 	 0.0 0.0 1280.0 960.0 (packcolor 96 96 96 (eround (lerp 0 160 progress))))
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
-	 (if gameover "Game Over :(" "Paused")
+	 (if gameover "Game Over..." "Paused")
 	 175 (eround (lerp 120 150 progress))
 	 32.0 0.0 (packcolor 200 122 255 alpha))
 	(render-ingame-menu fonts opts selected
@@ -1611,7 +1611,7 @@
    [(bossinfo-active-attack-failed bossinfo)
 	0]
    [(or (= -1 (bossinfo-max-health bossinfo))
-		(fx<= (fx- total-time remaining-time) 180))
+		(fx<= (fx- total-time remaining-time) grace-period))
 	max-bonus]
    [else
 	(round-score (lerp (eround (/ max-bonus 2)) max-bonus
@@ -1835,7 +1835,7 @@
 		  (check-collision-circles
 		   player-x player-y player-radius
 		   (bullet-x bullet) (bullet-y bullet)
-		   (bullet-hit-radius (bullet-type bullet)))))))
+		   radius)))))
 
 (define (process-collisions)
   (define (each-bullet bullet)
