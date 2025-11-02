@@ -416,6 +416,7 @@
 	   (define-stage-accessor f)
 	   (define-stage-accessors g rest ...))]))
 (define-stage-accessors
+  is-replay
   live-bullets live-enm live-misc-ents
   frames iframes respawning start-shot-frames
   bombing death-timer graze player-x player-y item-value current-score
@@ -538,6 +539,7 @@
 
 (define-record-type stage-ctx
   (fields
+   is-replay
    live-bullets
    live-enm
    live-misc-ents
@@ -581,8 +583,9 @@
    option-xs
    option-ys)
   (sealed #t))
-(define (fresh-stage-ctx)
+(define (fresh-stage-ctx replay)
   (make-stage-ctx
+   replay
    (make-vector 4096 #f)
    (make-vector 256 #f)
    (make-vector 4096 #f)
@@ -714,7 +717,10 @@
 	(make-menu-item
 	 (thunk "Game Start")
 	 (lambda (gui)
-	   (set! current-stage-ctx (fresh-stage-ctx))
+	   (let ([pair (assq 'games-started play-data)])
+		 (set-cdr! pair (add1 (cdr pair)))
+		 (save-play-data play-data))
+	   (set! current-stage-ctx (fresh-stage-ctx #f))
 	   (play-music (musbundle-ojamajo-carnival music))
 	   (spawn-task "stage driver" chapter0 (constantly #t))
 	   (set! gui-stack '())))
@@ -864,12 +870,20 @@
 	(set! gui-stack (remq gui gui-stack))
 	(when current-music
 	  (raylib:resume-music-stream current-music)))
+  (define (update-play-time)
+	(let ([pair (assq 'play-frames play-data)])
+	  (set-cdr! pair (+ (cdr pair) frames)))
+	(save-play-data play-data))
   (define (restart gui)
+	(unless is-replay
+	  (update-play-time))
 	(reset-state)
 	(play-music (musbundle-ojamajo-carnival music))
 	(reset-to 0)
 	(set! gui-stack (remq gui gui-stack)))
   (define (quit gui)
+	(unless is-replay
+	  (update-play-time))
 	(kill-all-tasks)
 	(vector-fill! live-particles #f)
 	(set! current-stage-ctx #f)
@@ -1514,6 +1528,37 @@
 								  (fl+ y (fl* offset (flsin facing)))
 								  delay (curry control-function facing speed))
 					(bullet-facing-set! facing))))]))
+
+(define-record-type spell-descriptor
+  (fields
+   name
+   duration
+   health
+   bonus)
+  (sealed #t))
+(define spells
+  (vector
+   (make-spell-descriptor "\"My First Spell Card!\"" 1430 -1 3000000)
+   (make-spell-descriptor "Natural Sign \"Butterfly Smelling the Flowers\""
+						  720 -1 5000000)))
+(define play-data #f)
+(define +playdata-path+ "playdata.dat")
+(define (load-play-data)
+  (guard (e [(i/o-file-does-not-exist-error? e)
+			 (with-output-to-file +playdata-path+
+			   (thunk (pretty-print
+					   `((spell-history . ,(vector-map (lambda (_) (cons 0 0))
+													   spells))
+						 (play-frames . 0)
+						 (games-started . 0)
+						 (games-cleared . 0)))))
+			 (load-player-data)])
+	(with-input-from-file +playdata-path+
+	  read)))
+(define (save-play-data data)
+  (with-output-to-file +playdata-path+
+	(thunk (pretty-print data))
+	'truncate))
 
 (define +boss-lazy-spellcircle-context+ 30)
 (define-record-type bossinfo
@@ -2565,15 +2610,15 @@
 		  (enm-y-set! enm (v2y p)))
 		(yield)))))
 
-(define (declare-spell boss spell-name duration-frames health bonus)
+(define (declare-spell boss descriptor)
   (define bossinfo (enm-extras boss))
-  (bossinfo-active-spell-name-set! bossinfo spell-name)
-  (bossinfo-active-spell-bonus-set! bossinfo bonus)
-  (bossinfo-remaining-timer-set! bossinfo duration-frames)
-  (bossinfo-total-timer-set! bossinfo duration-frames)
-  (bossinfo-max-health-set! bossinfo health)
+  (bossinfo-active-spell-name-set! bossinfo (spell-descriptor-name descriptor))
+  (bossinfo-active-spell-bonus-set! bossinfo (spell-descriptor-bonus descriptor))
+  (bossinfo-remaining-timer-set! bossinfo (spell-descriptor-duration descriptor))
+  (bossinfo-total-timer-set! bossinfo (spell-descriptor-duration descriptor))
+  (bossinfo-max-health-set! bossinfo (spell-descriptor-health descriptor))
   (enm-superarmor-set! boss 120)
-  (enm-health-set! boss health)
+  (enm-health-set! boss (spell-descriptor-health descriptor))
   (raylib:play-sound (sebundle-spelldeclare sounds))
   (bossinfo-active-attack-failed-set! bossinfo #f))
 
@@ -2706,7 +2751,7 @@
 	(lambda () (and (positive? (enm-health enm))
 					(positive? (bossinfo-remaining-timer bossinfo)))))
   (bossinfo-dummy-healthbars-set! bossinfo (immutable-vector))
-  (declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000 2000000)
+  ;(declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000 2000000)
   (wait 120)
   (spawn-subtask "spam"
 	(lambda (_task)
@@ -4036,7 +4081,7 @@
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 40)
 
-  (declare-spell enm "\"My First Spell Card!\"" 1540 -1 3000000)
+  (declare-spell enm (vnth spells 0))
   (enm-addflags enm (enmflags invincible))
   (cancel-all #f)
   (ease-to values 0.0 100.0 20 enm)
@@ -4762,7 +4807,7 @@
 	   (kill-enemy enm)))
    live-enm)
   (autocollect-all-items)
-  (declare-spell enm "Natural Sign \"Butterfly Smelling the Flowers\"" 720 -1 5000000)
+  (declare-spell enm (vnth spells 1))
   (enm-addflags enm (enmflags invincible))
   (cancel-all #f)
   (wait 60)
@@ -4975,6 +5020,7 @@
   (raylib:init-audio-device)
   (load-music)
   (load-sfx)
+  (set! play-data (load-play-data))
   
   (let* ([textures (load-textures)]
 		 [fonts (load-fonts)]
@@ -5016,7 +5062,7 @@
 	   (raylib:close-window)))))
 
 (define (reset-state)
-  (set! current-stage-ctx (fresh-stage-ctx))
+  (set! current-stage-ctx (fresh-stage-ctx #f))
   (set! iframes 180)
   (vector-fill! live-particles #f)
   (kill-all-tasks))

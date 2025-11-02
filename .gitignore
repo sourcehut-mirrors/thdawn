@@ -1,4 +1,4 @@
 *.so
 *.wpo
 *.boot
-config.dat
+*.dat
