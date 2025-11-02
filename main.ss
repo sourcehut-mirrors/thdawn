@@ -3293,7 +3293,12 @@
 						  [else -1]))
 	(when spname
 	  (let*-values ([(bonus) (calculate-spell-bonus bossinfo)]
-					[(bonus-txt) (format "Bonus: ~11:d" bonus)]
+					[(spidx) (vector-find-index
+							  (lambda (s) (eq? spname (spell-descriptor-name s)))
+							  spells)]
+					[(history) (vnth (assqdr 'spell-history play-data) spidx)]
+					[(bonus-txt) (format "Bonus: ~11:d | History: ~2,'0d/~2,'0d"
+										 bonus (car history) (cdr history))]
 					[(bonus-width _) (raylib:measure-text-ex
 									  (fontbundle-sharetechmono fonts)
 									  bonus-txt 15.0 0.0)]
