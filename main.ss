@@ -697,7 +697,7 @@
 	((menu-item-on-select (vnth opts selected)) self)
 	#t]
    [(enum-set-member? (vkey bomb) edge-pressed)
-	(raylib:play-sound (sebundle-menuselect sounds))
+	(raylib:play-sound (sebundle-menuback sounds))
 	(if (= selected 4) ;; Quit
 		((menu-item-on-select (vnth opts selected)) self)
 		(title-gui-selected-option-set! self 4))
@@ -795,7 +795,7 @@
 	((menu-item-on-select (vnth opts selected)) self)
 	#t]
    [(enum-set-member? (vkey bomb) edge-pressed)
-	(raylib:play-sound (sebundle-menuselect sounds))
+	(raylib:play-sound (sebundle-menuback sounds))
 	(if (= selected 0) ;; Back
 		((menu-item-on-select (vnth opts selected)) self)
 		(setting-gui-selected-option-set! self 0))

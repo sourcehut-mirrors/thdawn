@@ -7,7 +7,7 @@
    shoot0 shoot1 shoot2
    extend graze bell
    oldvwoopfast oldvwoopslow
-   pause menuselect
+   pause menuselect menuback
    timeout timeoutwarn item damage0 damage1
    dropbomb droplife
    laser damageresist)
@@ -35,7 +35,7 @@
 				"se_tan00.wav" "se_tan01.wav" "se_tan02.wav"
 				"se_extend.wav" "se_graze.wav" "se_kira00.wav"
 				"se_power1.wav" "se_power2.wav"
-				"se_pause.wav" "se_select00.wav"
+				"se_pause.wav" "se_select00.wav" "se_cancel00.wav"
 				"se_timeout.wav" "se_timeout2.wav"
 				"se_item00.wav" "se_damage00.wav" "se_damage01.wav"
 				"se_bonus2.wav" "se_bonus.wav"
