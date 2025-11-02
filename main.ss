@@ -729,7 +729,7 @@
 	 (lambda (_gui) (void)))
 	(make-menu-item
 	 (thunk "Play Data")
-	 (lambda (_gui) (void)))
+	 (lambda (_gui) (set! gui-stack (cons (mk-playdata-gui) gui-stack))))
 	(make-menu-item
 	 (thunk "Setting")
 	 (lambda (_gui) (set! gui-stack (cons (mk-setting-gui) gui-stack))))
@@ -737,6 +737,84 @@
 	 (thunk "Quit")
 	 (lambda (_gui) (set! want-quit #t))))
    0))
+
+(define-record-type playdata-gui
+  (parent gui)
+  (fields)
+  (sealed #t))
+(define (playdata-handle-input self inputs)
+  (define edge-pressed (inputset-edge-pressed inputs))
+  (cond
+   [(or (enum-set-member? (vkey bomb) edge-pressed)
+		(enum-set-member? (vkey pause) edge-pressed))
+	(raylib:play-sound (sebundle-menuback sounds))
+	(set! gui-stack (cdr gui-stack))
+	#t]
+   [(exists (lambda (vk) (enum-set-member? vk edge-pressed))
+			'(up down left right shoot))
+	;; eat to avoid leaking to parent
+	#t]
+   [else #f]))
+(define (playdata-render self textures fonts)
+  (define bubblegum (fontbundle-bubblegum fonts))
+  (define cabin (fontbundle-cabin fonts))
+  (define-values (title-width title-height)
+	(raylib:measure-text-ex bubblegum "Play Data" 40.0 0.0))
+  (define play-secs0 (eround (/ (assqdr 'play-frames play-data) 60)))
+  (define-values (play-mins0 play-secs)
+	(div-and-mod play-secs0 60))
+  (define-values (play-hrs play-mins)
+	(div-and-mod play-mins0 60))
+  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
+  (raylib:draw-text-ex bubblegum "Play Data"
+					   (fl- (/ 640.0 2.0) (fl/ title-width 2.0))
+					   15.0 40.0 0.0 -1)
+  (raylib:draw-rectangle-lines 20 70 (- 640 40) (- 480 200) -1)
+  (let*-values ([(playtime-str) (format "Play Time: ~2,'0d:~2,'0d:~2,'0d"
+										play-hrs play-mins play-secs)]
+				[(pwidth pheight)
+				 (raylib:measure-text-ex cabin playtime-str
+										 20.0 0.0)]
+				[(started-str) (format "Games Started: ~d"
+									   (assqdr 'games-started play-data))]
+				[(swidth sheight)
+				 (raylib:measure-text-ex cabin started-str
+										 20.0 0.0)]
+				[(clr-str) (format "Games Cleared: ~d"
+								   (assqdr 'games-cleared play-data))]
+				[(cwidth _)
+				 (raylib:measure-text-ex cabin clr-str
+										 20.0 0.0)])
+	(raylib:draw-text-ex cabin playtime-str
+						 (fl- (/ 640.0 2.0) (fl/ pwidth 2.0))
+						 370.0 20.0 0.0 -1)
+	(raylib:draw-text-ex cabin started-str
+						 (fl- (/ 640.0 2.0) (fl/ swidth 2.0))
+						 (fl+ 370.0 pheight) 20.0 0.0 -1)
+	(raylib:draw-text-ex cabin clr-str
+						 (fl- (/ 640.0 2.0) (fl/ cwidth 2.0))
+						 (fl+ 370.0 pheight sheight) 20.0 0.0 -1))
+  (let loop ([i 0]
+			 [y 90.0])
+	(let*-values ([(name) (spell-descriptor-name (vnth spells i))]
+				  [(_ height)
+				   (raylib:measure-text-ex bubblegum name 20.0 0.0)]
+				  [(history)
+				   (vnth (assqdr 'spell-history play-data) i)]
+				  [(history-str) (format "~2,'0d / ~2,'0d"
+										 (car history) (cdr history))]
+				  [(hwidth _)
+				   (raylib:measure-text-ex cabin history-str 20.0 0.0)])
+	  (raylib:draw-text-ex bubblegum name
+						   40.0 y 20.0 0.0 -1)
+	  (raylib:draw-text-ex cabin history-str
+						   ;; screenwidth - to box - within box - text width
+						   (fl- 640.0 20.0 20.0 hwidth)
+						   y 20.0 0.0 -1)
+	  (when (< i (sub1 (vlen spells)))
+		(loop (add1 i) (+ y height))))))
+(define (mk-playdata-gui)
+  (make-playdata-gui playdata-handle-input playdata-render))
 
 (define-record-type setting-gui
   (parent gui)
@@ -1540,7 +1618,17 @@
   (vector
    (make-spell-descriptor "\"My First Spell Card!\"" 1430 -1 3000000)
    (make-spell-descriptor "Natural Sign \"Butterfly Smelling the Flowers\""
-						  720 -1 5000000)))
+						  720 -1 5000000)
+   (make-spell-descriptor "Placeholder Sp1" 1 -1 1000)
+   (make-spell-descriptor "Placeholder Sp2" 1 -1 1000)
+   (make-spell-descriptor "Placeholder Sp3" 1 -1 1000)
+   (make-spell-descriptor "Placeholder Sp4" 1 -1 1000)
+   (make-spell-descriptor "Placeholder Sp5" 1 -1 1000)
+   (make-spell-descriptor "Placeholder Sp6" 1 -1 1000)
+   (make-spell-descriptor "Placeholder Sp7" 1 -1 1000)
+   (make-spell-descriptor "Placeholder Sp8" 1 -1 1000)
+   (make-spell-descriptor "Placeholder Sp9" 1 -1 1000)
+   (make-spell-descriptor "Placeholder Sp10" 1 -1 1000)))
 (define play-data #f)
 (define +playdata-path+ "playdata.dat")
 (define (load-play-data)
@@ -1552,7 +1640,7 @@
 						 (play-frames . 0)
 						 (games-started . 0)
 						 (games-cleared . 0)))))
-			 (load-player-data)])
+			 (load-play-data)])
 	(with-input-from-file +playdata-path+
 	  read)))
 (define (save-play-data data)

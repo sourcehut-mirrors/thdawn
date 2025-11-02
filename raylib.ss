@@ -8,7 +8,7 @@
 		  begin-drawing end-drawing clear-background draw-circle-v draw-line
 		  draw-circle-lines-v
 		  draw-text draw-text-ex measure-text-ex draw-fps
-		  draw-rectangle-rec draw-rectangle-pro
+		  draw-rectangle-rec draw-rectangle-pro draw-rectangle-lines
 		  draw-rectangle-gradient-h draw-rectangle-gradient-v
 		  draw-ring draw-ring-lines
 		  init-audio-device close-audio-device
@@ -265,7 +265,12 @@
   (define (unload-sound sound)
 	(unload-sound0 sound)
 	(foreign-free (ftype-pointer-address sound)))
-  
+
+  (define draw-rectangle-lines0
+	(foreign-procedure "DrawRectangleLines" (int int int int (& Color)) void))
+  (define (draw-rectangle-lines x y w h rgba)
+	(load-global-color global-color rgba)
+	(draw-rectangle-lines0 x y w h global-color))
   (define draw-rectangle-rec0
 	(foreign-procedure "DrawRectangleRec" ((& RayRect) (& Color)) void))
   (define (draw-rectangle-rec x y width height rgba)
