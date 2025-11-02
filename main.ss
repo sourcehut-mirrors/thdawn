@@ -954,7 +954,10 @@
 	(save-play-data play-data))
   (define (restart gui)
 	(unless is-replay
-	  (update-play-time))
+	  (update-play-time)
+	  (let ([pair (assq 'games-started play-data)])
+		(set-cdr! pair (add1 (cdr pair)))
+		(save-play-data play-data)))
 	(reset-state)
 	(play-music (musbundle-ojamajo-carnival music))
 	(reset-to 0)
