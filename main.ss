@@ -796,13 +796,16 @@
 						 (fl+ 370.0 pheight sheight) 20.0 0.0 -1))
   (let loop ([i 0]
 			 [y 90.0])
-	(let*-values ([(name) (spell-descriptor-name (vnth spells i))]
-				  [(_ height)
-				   (raylib:measure-text-ex bubblegum name 20.0 0.0)]
-				  [(history)
+	(let*-values ([(history)
 				   (vnth (assqdr 'spell-history play-data) i)]
 				  [(history-str) (format "~2,'0d / ~2,'0d"
 										 (car history) (cdr history))]
+				  [(name)
+				   (if (zero? (cdr history))
+					   "???"
+					   (spell-descriptor-name (vnth spells i)))]
+				  [(_ height)
+				   (raylib:measure-text-ex bubblegum name 20.0 0.0)]
 				  [(hwidth _)
 				   (raylib:measure-text-ex cabin history-str 20.0 0.0)])
 	  (raylib:draw-text-ex bubblegum name
