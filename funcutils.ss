@@ -2,7 +2,7 @@
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
 		  dotimes curry vector-for-all vector-for-each-indexed
-		  vector-find vector-index vector-popcnt -> ->> thunk
+		  vector-find vector-find-index vector-index vector-popcnt -> ->> thunk
 		  vector-add vector-pop vector-truncate when-let assqdr)
   (import (chezscheme))
 
@@ -89,6 +89,16 @@
 		  #f
 		  (let ([elemi (vector-ref v i)])
 			(if (eq? elem elemi)
+				i
+				(loop (fx1+ i)))))))
+
+  (define (vector-find-index proc v)
+	(define len (vector-length v))
+	(let loop ([i 0])
+	  (if (fx= i len)
+		  #f
+		  (let ([elem (vector-ref v i)])
+			(if (proc elem)
 				i
 				(loop (fx1+ i)))))))
 

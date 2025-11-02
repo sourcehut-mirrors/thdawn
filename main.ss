@@ -2698,8 +2698,13 @@
 		  (enm-y-set! enm (v2y p)))
 		(yield)))))
 
-(define (declare-spell boss descriptor)
+(define (declare-spell boss idx)
+  (define descriptor (vnth spells idx))
   (define bossinfo (enm-extras boss))
+  (unless is-replay
+	(let ([history (vnth (assqdr 'spell-history play-data) idx)])
+	  (set-cdr! history (add1 (cdr history))))
+	(save-play-data play-data))
   (bossinfo-active-spell-name-set! bossinfo (spell-descriptor-name descriptor))
   (bossinfo-active-spell-bonus-set! bossinfo (spell-descriptor-bonus descriptor))
   (bossinfo-remaining-timer-set! bossinfo (spell-descriptor-duration descriptor))
@@ -2756,7 +2761,16 @@
   (raylib:play-sound (sebundle-shoot0 sounds))
   (unless failed
 	(raylib:play-sound (sebundle-spellcapture sounds))
-	(set! current-score (+ current-score bonus)))
+	(set! current-score (+ current-score bonus))
+	(unless is-replay
+	  ;; this kinda dumb but whatever
+	  (let* ([idx (vector-find-index
+				   (lambda (s) (eq? (bossinfo-active-spell-name bossinfo)
+									(spell-descriptor-name s)))
+				   spells)]
+			 [history (vnth (assqdr 'spell-history play-data) idx)])
+		(set-car! history (add1 (car history))))
+	  (save-play-data play-data)))
   (spawn-particle
    (make-particle
 	(particletype spellbonus)
@@ -4169,7 +4183,7 @@
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 40)
 
-  (declare-spell enm (vnth spells 0))
+  (declare-spell enm 0)
   (enm-addflags enm (enmflags invincible))
   (cancel-all #f)
   (ease-to values 0.0 100.0 20 enm)
@@ -4895,7 +4909,7 @@
 	   (kill-enemy enm)))
    live-enm)
   (autocollect-all-items)
-  (declare-spell enm (vnth spells 1))
+  (declare-spell enm 1)
   (enm-addflags enm (enmflags invincible))
   (cancel-all #f)
   (wait 60)
