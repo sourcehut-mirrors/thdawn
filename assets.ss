@@ -59,8 +59,10 @@
 
 (define-record-type musbundle
   (fields
+   ojamajo-wa-koko-ni-iru
    ojamajo-carnival
-   naisho-yo-ojamajo)
+   naisho-yo-ojamajo
+   lupinasu-no-komoriuta-piano)
   (sealed #t))
 (define music #f)
 (define (each-music proc)
@@ -79,7 +81,8 @@
 		 make-musbundle
 		 (map (lambda (file) (raylib:load-music-stream
 							  (string-append "assets/bgm/" file)))
-			  '("ojamajo_carnival.wav" "naisho_yo_ojamajo.mp3"))))
+			  '("ojamajo_wa_kokoni_iru.mp3" "ojamajo_carnival.wav"
+				"naisho_yo_ojamajo.mp3" "lupinasu_no_komoriuta_piano.mp3"))))
   (update-music-volumes))
 (define (unload-music)
   (each-music raylib:unload-music-stream)

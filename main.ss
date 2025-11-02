@@ -870,13 +870,11 @@
 	(reset-to 0)
 	(set! gui-stack (remq gui gui-stack)))
   (define (quit gui)
-	;; TODO: This can be simplified once we have a title theme
-	(raylib:stop-music-stream current-music)
-	(set! current-music #f)
 	(kill-all-tasks)
 	(vector-fill! live-particles #f)
 	(set! current-stage-ctx #f)
-	(set! gui-stack (list (mk-title-gui))))
+	(set! gui-stack (list (mk-title-gui)))
+	(play-music (musbundle-ojamajo-wa-koko-ni-iru music)))
   (define (pause-gui-handle-input self inputs)
 	(define edge-pressed (inputset-edge-pressed inputs))
 	(define opts (pause-gui-menu-options self))
@@ -1794,8 +1792,7 @@
 
 	(if (< life-stock 1)
 		(begin
-		  (when current-music
-			(raylib:pause-music-stream current-music))
+		  (play-music (musbundle-lupinasu-no-komoriuta-piano music))
 		  (set! gui-stack (list (mk-pause-gui #t))))
 		(begin
 		  (when (>= life-stock 1)
@@ -4984,6 +4981,7 @@
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
 	(set! gui-stack (list (mk-title-gui)))
+	(play-music (musbundle-ojamajo-wa-koko-ni-iru music))
 	
 	(dynamic-wind
 	  (thunk #f)
