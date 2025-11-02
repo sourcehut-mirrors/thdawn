@@ -9,13 +9,10 @@ Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 Boss: Doremi/Hazuki/Aiko/Onpu. BGM: Naisho yo ojamajo (no syncing)
 
 ## Immediate TODOs
-* settings menu
-  * control remapping
 * replay saving/playback
 * replay menu
 * dialogue system (localization support)
 * player and boss portraits
-* playerdata/spell history tracking
 * make sure we're doing proper alpha blending (premultiplication and such)
 * find a way to avoid having to add render-offset-x and y everywhere.
   * for example, draw to a separate framebuffer for gameplay area then move that whole thing
