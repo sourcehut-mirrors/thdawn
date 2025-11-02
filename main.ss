@@ -1552,7 +1552,7 @@
   (red-fairy green-fairy blue-fairy yellow-fairy
 			 red-yinyang green-yinyang blue-yinyang magenta-yinyang
 			 medium-red-fairy medium-blue-fairy
-			 big-fairy boss-doremi boss-hazuki boss-aiko boss-onpu)
+			 big-fairy boss-doremi boss-hazuki boss-aiko)
   make-enmtype-set)
 (define-record-type enm
   (fields
@@ -1598,7 +1598,7 @@
   enm)
 
 (define (is-boss? enm)
-  (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko boss-onpu)))
+  (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko)))
 (define (first-boss)
   (vector-find
    (lambda (e) (and e (is-boss? e)))
@@ -1890,7 +1890,7 @@
 	 (values (- (enm-x enm) 8)
 			 (- (enm-y enm) 8)
 			 16 16))
-	([boss-doremi boss-hazuki boss-aiko boss-onpu]
+	([boss-doremi boss-hazuki boss-aiko]
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))
@@ -1910,7 +1910,7 @@
 	 (values (- (enm-x enm) 16)
 			 (- (enm-y enm) 16)
 			 32 32))
-	([boss-doremi boss-hazuki boss-aiko boss-onpu]
+	([boss-doremi boss-hazuki boss-aiko]
 	 (values (- (enm-x enm) 24)
 			 (- (enm-y enm) 24)
 			 48 48))
@@ -2019,7 +2019,7 @@
 				  damage-flash]
 				 [else -1])])
 	  (case type
-		([boss-doremi boss-hazuki boss-aiko boss-onpu]
+		([boss-doremi boss-hazuki boss-aiko]
 		 (draw-boss textures enm render-x render-y))
 		([red-yinyang green-yinyang blue-yinyang magenta-yinyang]
 		 (draw-sprite textures type render-x render-y -1)
