@@ -68,7 +68,7 @@
 (define (each-music proc)
   (define rtd (record-type-descriptor musbundle))
   (define num-music (vlen (record-type-field-names rtd)))
-  (when sounds
+  (when music
 	(do [(i 0 (1+ i))]
 		[(>= i num-music)]
 	  (proc ((record-accessor rtd i) music)))))

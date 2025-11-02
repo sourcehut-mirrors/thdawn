@@ -1616,7 +1616,7 @@
   (sealed #t))
 (define spells
   (vector
-   (make-spell-descriptor "\"My First Spell Card!\"" 1430 -1 3000000)
+   (make-spell-descriptor "\"My First Spell Card!\"" 1540 -1 3000000)
    (make-spell-descriptor "Natural Sign \"Butterfly Smelling the Flowers\""
 						  720 -1 5000000)
    (make-spell-descriptor "Placeholder Sp1" 1 -1 1000)
