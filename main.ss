@@ -729,13 +729,134 @@
 	 (lambda (_gui) (void)))
 	(make-menu-item
 	 (thunk "Play Data")
-	 (lambda (_gui) (set! gui-stack (cons (mk-playdata-gui) gui-stack))))
+	 (lambda (_gui) (set! gui-stack (cons (mk-nameinput-gui (lambda (_) (void)))
+										  #;(mk-playdata-gui) gui-stack))))
 	(make-menu-item
 	 (thunk "Setting")
 	 (lambda (_gui) (set! gui-stack (cons (mk-setting-gui) gui-stack))))
 	(make-menu-item
 	 (thunk "Quit")
 	 (lambda (_gui) (set! want-quit #t))))
+   0))
+
+(define +name-max+ 8)
+(define +nameinput-per-row+ 13)
+(define-record-type nameinput-gui
+  (parent gui)
+  (fields
+   name
+   ;; position of the next char. If pointing past end of name, then no more chars
+   ;; can be added.
+   (mutable position)
+   menu-options
+   (mutable selected-option))
+  (sealed #t))
+(define (nameinput-handle-input self inputs)
+  (define edge-pressed (inputset-edge-pressed inputs))
+  (define opts (nameinput-gui-menu-options self))
+  (define selected (nameinput-gui-selected-option self))
+  (cond
+   [(enum-set-member? (vkey right) edge-pressed)
+	(when (< selected (sub1 (vlen opts)))
+	  (nameinput-gui-selected-option-set!
+	   self
+	   (add1 selected))
+	  (raylib:play-sound (sebundle-menuselect sounds)))
+	#t]
+   [(enum-set-member? (vkey left) edge-pressed)
+	(when (> selected 0)
+	  (nameinput-gui-selected-option-set!
+	   self
+	   (sub1 selected))
+	  (raylib:play-sound (sebundle-menuselect sounds)))
+	#t]
+   [(enum-set-member? (vkey up) edge-pressed)
+	(nameinput-gui-selected-option-set!
+	 self
+	 (max 0 (- selected +nameinput-per-row+)))
+	(raylib:play-sound (sebundle-menuselect sounds))
+	#t]
+   [(enum-set-member? (vkey down) edge-pressed)
+	(nameinput-gui-selected-option-set!
+	 self
+	 (min (sub1 (vlen opts)) (+ selected +nameinput-per-row+)))
+	(raylib:play-sound (sebundle-menuselect sounds))
+	#t]
+   [(enum-set-member? (vkey shoot) edge-pressed)
+	(raylib:play-sound (sebundle-menuselect sounds))
+	((menu-item-on-select (vnth opts selected)) self)
+	#t]
+   [(enum-set-member? (vkey bomb) edge-pressed)
+	(raylib:play-sound (sebundle-menuback sounds))
+	(let ([pos (nameinput-gui-position self)])
+	  (when (> pos 0)
+		(string-set! (nameinput-gui-name self) (sub1 pos) #\nul)
+		(nameinput-gui-position-set! self (sub1 pos))))
+	#t]
+   [else #f]))
+(define (nameinput-render self textures fonts)
+  (define name
+	(if (= (nameinput-gui-position self) +name-max+)
+		(nameinput-gui-name self)
+		(string-append
+		 (substring (nameinput-gui-name self)
+					0 (nameinput-gui-position self))
+		 "_")))
+  (define selected (nameinput-gui-selected-option self))
+  (define-values (width _)
+	(raylib:measure-text-ex
+	 (fontbundle-sharetechmono fonts)
+	 (make-string +name-max+ #\*)
+	 40.0 0.0))
+  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
+  (raylib:draw-text-ex
+   (fontbundle-sharetechmono fonts) name
+   (fl- 320.0 (fl/ width 2.0)) 100.0 40.0 0.0 -1)
+  (vector-for-each-indexed
+   (lambda (i opt)
+	 (define-values (row col) (div-and-mod i +nameinput-per-row+))
+	 (define label ((menu-item-label opt)))
+	 (raylib:draw-text-ex
+	  (fontbundle-sharetechmono fonts)
+	  (if (string=? " " label) "SP" label)
+	  (fl+ 162.0 (fl* (inexact col) 25.0))
+	  (fl+ 200.0 (fl* (inexact row) 25.0))
+	  30.0 0.0 (if (= selected i) #xc87affff -1)))
+   (nameinput-gui-menu-options self)))
+;; on-complete: function of the gui that runs when player submits the name
+(define (mk-nameinput-gui on-complete)
+  (define (mk-option ch)
+	(define label (string ch))
+	(make-menu-item
+	 (thunk label)
+	 (lambda (gui)
+	   (define pos (nameinput-gui-position gui))
+	   (when (< pos +name-max+)
+		 (string-set! (nameinput-gui-name gui) pos ch)
+		 (nameinput-gui-position-set! gui (add1 pos))
+		 (when (= (add1 pos) +name-max+)
+		   (nameinput-gui-selected-option-set!
+			gui (sub1 (vlen (nameinput-gui-menu-options gui)))))))))
+  (make-nameinput-gui
+   nameinput-handle-input nameinput-render
+   (make-string +name-max+ #\nul)
+   0
+   (vector-append
+	(list->vector (map (lambda (i)
+						 (mk-option (integer->char (+ i (char->integer #\A)))))
+					   (iota 26)))
+	(list->vector (map (lambda (i)
+						 (mk-option (integer->char (+ i (char->integer #\a)))))
+					   (iota 26)))
+	(list->vector (map (lambda (i)
+						 (mk-option (integer->char (+ i (char->integer #\0)))))
+					   (iota 10)))
+	(vector-map mk-option '#(#\? #\! #\# #\* #\. #\[ #\]
+							 #\+ #\- #\= #\< #\> #\/ #\\ #\~
+							 #\space))
+	(vector (make-menu-item
+			 (thunk "Done")
+			 on-complete)))
    0))
 
 (define-record-type playdata-gui
@@ -1643,6 +1764,7 @@
 			   (thunk (pretty-print
 					   `((spell-history . ,(vector-map (lambda (_) (cons 0 0))
 													   spells))
+						 (hiscore . #())
 						 (play-frames . 0)
 						 (games-started . 0)
 						 (games-cleared . 0)))))
