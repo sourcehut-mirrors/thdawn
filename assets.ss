@@ -104,7 +104,8 @@
   (when current-music
 	(raylib:stop-music-stream current-music))
   (set! current-music m)
-  (raylib:play-music-stream m))
+  (when m
+	(raylib:play-music-stream m)))
 
 (define-record-type txbundle
   (fields

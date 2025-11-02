@@ -5164,6 +5164,7 @@
 	   (unload-fonts fonts)
 	   (unload-textures textures)
 	   (unload-sfx)
+	   (play-music #f)
 	   (unload-music)
 	   (raylib:close-audio-device)
 	   (raylib:close-window)))))
