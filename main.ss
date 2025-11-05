@@ -871,6 +871,7 @@
 	(set! gui-stack (cdr gui-stack))
 	#t]
    [(enum-set-member? (vkey shoot) edge-pressed)
+	(raylib:play-sound (sebundle-menuselect sounds))
 	(playdata-gui-spellhist-set!
 	 self
 	 (not (playdata-gui-spellhist self)))
@@ -925,18 +926,18 @@
 						  "(C)")
 						 (number->string (score-entry-score entry)))]
 					[(_ nheight)
-					 (raylib:measure-text-ex bubblegum name 20.0 0.0)]
+					 (raylib:measure-text-ex bubblegum name 25.0 0.0)]
 					[(swidth _)
-					 (raylib:measure-text-ex cabin score 20.0 0.0)])
+					 (raylib:measure-text-ex cabin score 25.0 0.0)])
 		(raylib:draw-text-ex bubblegum name
-							 40.0 y 20.0 0.0 -1)
+							 40.0 y 25.0 0.0 -1)
 		(raylib:draw-text-ex cabin time
 							 200.0
-							 y 20.0 0.0 -1)
+							 y 25.0 0.0 -1)
 		(raylib:draw-text-ex cabin score
 							 ;; screenwidth - to box - within box - text width
 							 (fl- 640.0 20.0 20.0 swidth)
-							 y 20.0 0.0 -1)
+							 y 25.0 0.0 -1)
 		(loop (cdr cur) (add1 i) (+ y nheight))))))
 (define (playdata-render self textures fonts)
   (define bubblegum (fontbundle-bubblegum fonts))
@@ -957,26 +958,26 @@
 										play-hrs play-mins play-secs)]
 				[(pwidth pheight)
 				 (raylib:measure-text-ex cabin playtime-str
-										 20.0 0.0)]
+										 25.0 0.0)]
 				[(started-str) (format "Games Started: ~d"
 									   (assqdr 'games-started play-data))]
 				[(swidth sheight)
 				 (raylib:measure-text-ex cabin started-str
-										 20.0 0.0)]
+										 25.0 0.0)]
 				[(clr-str) (format "Games Cleared: ~d"
 								   (assqdr 'games-cleared play-data))]
 				[(cwidth _)
 				 (raylib:measure-text-ex cabin clr-str
-										 20.0 0.0)])
+										 25.0 0.0)])
 	(raylib:draw-text-ex cabin playtime-str
 						 (fl- (/ 640.0 2.0) (fl/ pwidth 2.0))
-						 370.0 20.0 0.0 -1)
+						 370.0 25.0 0.0 -1)
 	(raylib:draw-text-ex cabin started-str
 						 (fl- (/ 640.0 2.0) (fl/ swidth 2.0))
-						 (fl+ 370.0 pheight) 20.0 0.0 -1)
+						 (fl+ 370.0 pheight) 25.0 0.0 -1)
 	(raylib:draw-text-ex cabin clr-str
 						 (fl- (/ 640.0 2.0) (fl/ cwidth 2.0))
-						 (fl+ 370.0 pheight sheight) 20.0 0.0 -1))
+						 (fl+ 370.0 pheight sheight) 25.0 0.0 -1))
   (if (playdata-gui-spellhist self)
 	  (playdata-draw-spellhist self textures fonts)
 	  (playdata-draw-scores self textures fonts)))
@@ -1158,6 +1159,7 @@
 									   #f)
 					 (cdr hiscore))))
 				  (save-play-data play-data)
+				  (raylib:play-sound (sebundle-extend sounds))
 				  (set! gui-stack (list (mk-title-gui)))
 				  (play-music (musbundle-ojamajo-wa-koko-ni-iru music))))))
 		(begin
