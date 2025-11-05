@@ -1211,15 +1211,14 @@
 		  [(enum-set-member? (vkey quick-restart) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
 		   ;; Highlight the selected one just so it's obvious what happened
-		   (pause-gui-selected-option-set! self (if gameover 0 1))
-		   (pause-gui-close-fn-set! self (thunk (restart self)))
-		   (pause-gui-closing-set! self 1)
+		   (pause-gui-selected-option-set! self (if gameover 2 3))
+		   ((menu-item-on-select (vnth opts (if gameover 2 3))) self)
 		   #t]
 		  [(enum-set-member? (vkey quick-quit) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
 		   ;; Highlight the selected one just so it's obvious what happened
-		   (pause-gui-selected-option-set! self (if gameover 1 2))
-		   ((menu-item-on-select (vnth opts (if gameover 1 2))) self)
+		   (pause-gui-selected-option-set! self (if gameover 0 1))
+		   ((menu-item-on-select (vnth opts (if gameover 0 1))) self)
 		   #t]
 		  [(enum-set-member? (vkey down) edge-pressed)
 		   (when (< selected (sub1 (vlen opts)))
@@ -1300,13 +1299,13 @@
   (make-pause-gui
    pause-gui-handle-input pause-gui-render
    (if gameover
-	   (vector restart-opt quit-opt quit-nosave-opt)
+	   (vector quit-opt quit-nosave-opt restart-opt)
 	   (vector (make-menu-item
 				(thunk "Resume")
 				(lambda (gui)
 				  (pause-gui-close-fn-set! gui (thunk (unpause gui)))
 				  (pause-gui-closing-set! gui 1)))
-			   restart-opt quit-opt quit-nosave-opt))
+			   quit-opt quit-nosave-opt restart-opt))
    0 +menu-animate-dur+ 0 #f))
 
 (define (truncate-to-whole-spline v)
