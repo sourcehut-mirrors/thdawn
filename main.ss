@@ -537,8 +537,34 @@
 (define +poc-y+ 160)
 (define +oob-bullet-despawn-fuzz+ 80)
 
+
+;; This is the general shape of replay records, except instead of a record
+;; We'll store it as a plain vector to save space from having to serialize
+;; the RTD over and over again.
+#;(define-record-type replay-record
+  (fields
+   edge-pressed
+   edge-released
+   level-pressed
+   rng-state
+   unpaused
+   earlyend)
+  (sealed #t))
+(define (make-replay-record edge-pressed edge-released level-pressed)
+  (vector edge-pressed edge-released level-pressed #f #f #f))
+(define (save-rng-state reprecord)
+  (vector-set! reprecord 3 (pseudo-random-generator->vector game-rng)))
+(define (save-pause-duration reprecord seconds)
+  (vector-set! reprecord 4 seconds))
+(define (mark-early-end reprecord)
+  (vector-set! reprecord 5 #t))
+
 (define-record-type stage-ctx
   (fields
+   ;; (future) either an output port or a list. If an output port, this is a
+   ;; real run and the replay is being saved to that port. Otherwise,
+   ;; it's a list of replay records over the course of the run, with the next
+   ;; record to be processed at the front.
    is-replay
    live-bullets
    live-enm

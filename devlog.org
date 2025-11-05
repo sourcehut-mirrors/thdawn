@@ -1,3 +1,39 @@
+* [2025-11-04 Tue]
+Some brief brainstorming/planning for replays. I tend to just go for it when
+coding on this project but i think it's worth planning just a bit for this
+so I don't have to do too much backtracking.
+
+Replays will be plaintext (potentially with extra compression later but it will
+be optional/layered on top s.t. plaintext ones are still loadable).
+This makes it easy to debug when things go wrong.
+
+It'll be line-based. First line will be a score-entry record to carry the
+score/timestamp/signature/clear state of the replay. Easy to reuse the existing
+struct here.
+
+Each subsequent line will be a vector of the following fields
+
+- frame number
+- edge-pressed vkeys
+- edge-released vkeys
+- level-pressed vkeys
+- (no edge pressed raw since no gameplay should ever read that)
+- (optional) whether an unpause happened this frame and if so how long paused in realtime
+- (optional) game-rng checkpoint state. should be verified at the beginning of the frame
+- (optional) END flag marking the end of the replay, for replays that quit out
+  in the middle of the stage
+  
+The file should naturally be sorted by frame. We'll sort on load so that we can
+naturally progress to the next entry without having to build a hashmap of
+frame number -> entry.
+
+We should write a line to the file each frame so we can at least attempt to have
+failure recovery (?) though probably won't provide that as a feature.
+But savvy people can edit the replay to salveage partial replays.
+
+If there are no pressed or released keys and none of the optional fields are set,
+then we can omit the record completely for that frame to save space.
+
 * [2025-09-26 Fri]
 Back from vacation. The entire stage portion is completely done. Assessing where we are
 now, I think I want to work on the dialogue system next, then replays. So it'll be a bit
