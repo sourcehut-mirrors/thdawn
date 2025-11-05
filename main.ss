@@ -729,8 +729,7 @@
 	 (lambda (_gui) (void)))
 	(make-menu-item
 	 (thunk "Play Data")
-	 (lambda (_gui) (set! gui-stack (cons (mk-nameinput-gui (lambda (_) (void)))
-										  #;(mk-playdata-gui) gui-stack))))
+	 (lambda (_gui) (set! gui-stack (cons (mk-playdata-gui) gui-stack))))
 	(make-menu-item
 	 (thunk "Setting")
 	 (lambda (_gui) (set! gui-stack (cons (mk-setting-gui) gui-stack))))
@@ -861,7 +860,7 @@
 
 (define-record-type playdata-gui
   (parent gui)
-  (fields)
+  (fields (mutable spellhist))
   (sealed #t))
 (define (playdata-handle-input self inputs)
   (define edge-pressed (inputset-edge-pressed inputs))
@@ -871,11 +870,74 @@
 	(raylib:play-sound (sebundle-menuback sounds))
 	(set! gui-stack (cdr gui-stack))
 	#t]
+   [(enum-set-member? (vkey shoot) edge-pressed)
+	(playdata-gui-spellhist-set!
+	 self
+	 (not (playdata-gui-spellhist self)))
+	#t]
    [(exists (lambda (vk) (enum-set-member? vk edge-pressed))
-			'(up down left right shoot))
+			'(up down left right))
 	;; eat to avoid leaking to parent
 	#t]
    [else #f]))
+(define (playdata-draw-spellhist self textures fonts)
+  (define bubblegum (fontbundle-bubblegum fonts))
+  (define cabin (fontbundle-cabin fonts))
+  (let loop ([i 0]
+			 [y 90.0])
+	(let*-values ([(history)
+				   (vnth (assqdr 'spell-history play-data) i)]
+				  [(history-str) (format "~2,'0d / ~2,'0d"
+										 (car history) (cdr history))]
+				  [(name)
+				   (if (zero? (cdr history))
+					   "???"
+					   (spell-descriptor-name (vnth spells i)))]
+				  [(_ height)
+				   (raylib:measure-text-ex bubblegum name 20.0 0.0)]
+				  [(hwidth _)
+				   (raylib:measure-text-ex cabin history-str 20.0 0.0)])
+	  (raylib:draw-text-ex bubblegum name
+						   40.0 y 20.0 0.0 -1)
+	  (raylib:draw-text-ex cabin history-str
+						   ;; screenwidth - to box - within box - text width
+						   (fl- 640.0 20.0 20.0 hwidth)
+						   y 20.0 0.0 -1)
+	  (when (< i (sub1 (vlen spells)))
+		(loop (add1 i) (+ y height))))))
+(define (playdata-draw-scores self textures fonts)
+  (define bubblegum (fontbundle-bubblegum fonts))
+  (define cabin (fontbundle-cabin fonts))
+  (let loop ([cur (assqdr 'hiscore play-data)]
+			 [i 0]
+			 [y 90.0])
+	(unless (or (>= i 10) (null? cur))
+	  (let*-values ([(entry) (car cur)]
+					[(name) (score-entry-name entry)]
+					[(time) (->> (score-entry-unixtime entry)
+								 (make-time 'time-utc 0)
+								 (time-utc->date)
+								 (date-and-time))]
+					[(score)
+					 (if (score-entry-cleared entry)
+						 (string-append
+						  (score-entry-score entry)
+						  "(C)")
+						 (number->string (score-entry-score entry)))]
+					[(_ nheight)
+					 (raylib:measure-text-ex bubblegum name 20.0 0.0)]
+					[(swidth _)
+					 (raylib:measure-text-ex cabin score 20.0 0.0)])
+		(raylib:draw-text-ex bubblegum name
+							 40.0 y 20.0 0.0 -1)
+		(raylib:draw-text-ex cabin time
+							 200.0
+							 y 20.0 0.0 -1)
+		(raylib:draw-text-ex cabin score
+							 ;; screenwidth - to box - within box - text width
+							 (fl- 640.0 20.0 20.0 swidth)
+							 y 20.0 0.0 -1)
+		(loop (cdr cur) (add1 i) (+ y nheight))))))
 (define (playdata-render self textures fonts)
   (define bubblegum (fontbundle-bubblegum fonts))
   (define cabin (fontbundle-cabin fonts))
@@ -915,30 +977,11 @@
 	(raylib:draw-text-ex cabin clr-str
 						 (fl- (/ 640.0 2.0) (fl/ cwidth 2.0))
 						 (fl+ 370.0 pheight sheight) 20.0 0.0 -1))
-  (let loop ([i 0]
-			 [y 90.0])
-	(let*-values ([(history)
-				   (vnth (assqdr 'spell-history play-data) i)]
-				  [(history-str) (format "~2,'0d / ~2,'0d"
-										 (car history) (cdr history))]
-				  [(name)
-				   (if (zero? (cdr history))
-					   "???"
-					   (spell-descriptor-name (vnth spells i)))]
-				  [(_ height)
-				   (raylib:measure-text-ex bubblegum name 20.0 0.0)]
-				  [(hwidth _)
-				   (raylib:measure-text-ex cabin history-str 20.0 0.0)])
-	  (raylib:draw-text-ex bubblegum name
-						   40.0 y 20.0 0.0 -1)
-	  (raylib:draw-text-ex cabin history-str
-						   ;; screenwidth - to box - within box - text width
-						   (fl- 640.0 20.0 20.0 hwidth)
-						   y 20.0 0.0 -1)
-	  (when (< i (sub1 (vlen spells)))
-		(loop (add1 i) (+ y height))))))
+  (if (playdata-gui-spellhist self)
+	  (playdata-draw-spellhist self textures fonts)
+	  (playdata-draw-scores self textures fonts)))
 (define (mk-playdata-gui)
-  (make-playdata-gui playdata-handle-input playdata-render))
+  (make-playdata-gui playdata-handle-input playdata-render #f))
 
 (define-record-type setting-gui
   (parent gui)
@@ -1086,14 +1129,40 @@
 	(play-music (musbundle-ojamajo-carnival music))
 	(reset-to 0)
 	(set! gui-stack (remq gui gui-stack)))
-  (define (quit gui)
+  (define (quit gui score-input replay-input)
+	(define score current-score)
+	(define time (time-second (current-time 'time-utc)))
 	(unless is-replay
 	  (update-play-time))
 	(kill-all-tasks)
 	(vector-fill! live-particles #f)
 	(set! current-stage-ctx #f)
-	(set! gui-stack (list (mk-title-gui)))
-	(play-music (musbundle-ojamajo-wa-koko-ni-iru music)))
+	;; todo: support replay saving
+	(if score-input
+		(set! gui-stack
+			  (list
+			   (mk-nameinput-gui
+				(lambda (ni-gui)
+				  (define hiscore (assq 'hiscore play-data))
+				  (set-cdr!
+				   hiscore
+				   (list-sort
+					(lambda (a b) (> (score-entry-score a)
+									 (score-entry-score b)))
+					(cons
+					 (make-score-entry (substring
+										(nameinput-gui-name ni-gui)
+										0 (nameinput-gui-position ni-gui))
+									   score time
+									   ;; TODO cleared
+									   #f)
+					 (cdr hiscore))))
+				  (save-play-data play-data)
+				  (set! gui-stack (list (mk-title-gui)))
+				  (play-music (musbundle-ojamajo-wa-koko-ni-iru music))))))
+		(begin
+		  (set! gui-stack (list (mk-title-gui)))
+		  (play-music (musbundle-ojamajo-wa-koko-ni-iru music)))))
   (define (pause-gui-handle-input self inputs)
 	(define edge-pressed (inputset-edge-pressed inputs))
 	(define opts (pause-gui-menu-options self))
@@ -1117,8 +1186,7 @@
 		   (raylib:play-sound (sebundle-menuselect sounds))
 		   ;; Highlight the selected one just so it's obvious what happened
 		   (pause-gui-selected-option-set! self (if gameover 1 2))
-		   (pause-gui-close-fn-set! self (thunk (quit self)))
-		   (pause-gui-closing-set! self 1)
+		   ((menu-item-on-select (vnth opts (if gameover 1 2))) self)
 		   #t]
 		  [(enum-set-member? (vkey down) edge-pressed)
 		   (when (< selected (sub1 (vlen opts)))
@@ -1181,25 +1249,31 @@
 	  (pause-gui-closing-set! gui 1))))
   (define quit-opt
 	(make-menu-item
-	 (let ([label (string-append "Quit to Menu ("
+	 (let ([label (string-append "Save and Quit ("
 								 (key-name (assqdr
 											(vkey quick-quit)
 											(assqdr 'keybindings config)))
 								 ")")])
 	   (thunk label))
 	 (lambda (gui)
-	   (pause-gui-close-fn-set! gui (thunk (quit gui)))
+	   (pause-gui-close-fn-set! gui (thunk (quit gui #t #f)))
+	   (pause-gui-closing-set! gui 1))))
+    (define quit-nosave-opt
+	(make-menu-item
+	 (thunk "Quit to Menu (no save)")
+	 (lambda (gui)
+	   (pause-gui-close-fn-set! gui (thunk (quit gui #f #f)))
 	   (pause-gui-closing-set! gui 1))))
   (make-pause-gui
    pause-gui-handle-input pause-gui-render
    (if gameover
-	   (vector restart-opt quit-opt)
+	   (vector restart-opt quit-opt quit-nosave-opt)
 	   (vector (make-menu-item
 				(thunk "Resume")
 				(lambda (gui)
 				  (pause-gui-close-fn-set! gui (thunk (unpause gui)))
 				  (pause-gui-closing-set! gui 1)))
-			   restart-opt quit-opt))
+			   restart-opt quit-opt quit-nosave-opt))
    0 +menu-animate-dur+ 0 #f))
 
 (define (truncate-to-whole-spline v)
@@ -1756,6 +1830,10 @@
    (make-spell-descriptor "Placeholder Sp8" 1 -1 1000)
    (make-spell-descriptor "Placeholder Sp9" 1 -1 1000)
    (make-spell-descriptor "Placeholder Sp10" 1 -1 1000)))
+(define-record-type score-entry
+  (fields name score unixtime cleared)
+  (sealed #t)
+  (nongenerative #{score-entry byl66r2aw4bzvb0i8cr54d58t-3}))
 (define play-data #f)
 (define +playdata-path+ "playdata.dat")
 (define (load-play-data)
@@ -1764,7 +1842,8 @@
 			   (thunk (pretty-print
 					   `((spell-history . ,(vector-map (lambda (_) (cons 0 0))
 													   spells))
-						 (hiscore . #())
+						 ;; sorted by score descending
+						 (hiscore . ())
 						 (play-frames . 0)
 						 (games-started . 0)
 						 (games-cleared . 0)))))
@@ -1772,6 +1851,7 @@
 	(with-input-from-file +playdata-path+
 	  read)))
 (define (save-play-data data)
+  ;; todo: consider tmpfile+atomic rename
   (with-output-to-file +playdata-path+
 	(thunk (pretty-print data))
 	'truncate))
