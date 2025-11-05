@@ -946,11 +946,8 @@
 								 (time-utc->date)
 								 (date-and-time))]
 					[(score)
-					 (if (score-entry-cleared entry)
-						 (string-append
-						  (score-entry-score entry)
-						  "(C)")
-						 (number->string (score-entry-score entry)))]
+					 (format "~:d~a" (score-entry-score entry)
+							 (if (score-entry-cleared entry) " (C)" ""))]
 					[(_ nheight)
 					 (raylib:measure-text-ex bubblegum name 25.0 0.0)]
 					[(swidth _)
