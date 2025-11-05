@@ -1140,28 +1140,33 @@
 	(set! current-stage-ctx #f)
 	;; todo: support replay saving
 	(if score-input
-		(set! gui-stack
-			  (list
-			   (mk-nameinput-gui
-				(lambda (ni-gui)
-				  (define hiscore (assq 'hiscore play-data))
-				  (set-cdr!
-				   hiscore
-				   (list-sort
-					(lambda (a b) (> (score-entry-score a)
-									 (score-entry-score b)))
-					(cons
-					 (make-score-entry (substring
-										(nameinput-gui-name ni-gui)
-										0 (nameinput-gui-position ni-gui))
-									   score time
-									   ;; TODO cleared
-									   #f)
-					 (cdr hiscore))))
-				  (save-play-data play-data)
-				  (raylib:play-sound (sebundle-extend sounds))
-				  (set! gui-stack (list (mk-title-gui)))
-				  (play-music (musbundle-ojamajo-wa-koko-ni-iru music))))))
+		(begin
+		  (set!
+		   gui-stack
+		   (list
+			(mk-nameinput-gui
+			 (lambda (ni-gui)
+			   (define hiscore (assq 'hiscore play-data))
+			   (set-cdr!
+				hiscore
+				(list-sort
+				 (lambda (a b) (> (score-entry-score a)
+								  (score-entry-score b)))
+				 (cons
+				  (make-score-entry (substring
+									 (nameinput-gui-name ni-gui)
+									 0 (nameinput-gui-position ni-gui))
+									score time
+									;; TODO cleared
+									#f)
+				  (cdr hiscore))))
+			   (save-play-data play-data)
+			   (raylib:play-sound (sebundle-extend sounds))
+			   (set! gui-stack (list (mk-title-gui)))
+			   (play-music (musbundle-ojamajo-wa-koko-ni-iru music))))))
+		  (unless gameover
+			;; Gameover will have already started playing the music
+			(play-music (musbundle-lupinasu-no-komoriuta-piano music))))
 		(begin
 		  (set! gui-stack (list (mk-title-gui)))
 		  (play-music (musbundle-ojamajo-wa-koko-ni-iru music)))))
