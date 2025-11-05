@@ -1170,18 +1170,20 @@
 			(mk-nameinput-gui
 			 (lambda (ni-gui)
 			   (define hiscore (assq 'hiscore play-data))
+			   (define name
+				 (if (zero? (nameinput-gui-position ni-gui))
+					 "Nanashi"
+					 (substring
+					  (nameinput-gui-name ni-gui)
+					  0 (nameinput-gui-position ni-gui))))
 			   (set-cdr!
 				hiscore
 				(list-sort
 				 (lambda (a b) (> (score-entry-score a)
 								  (score-entry-score b)))
 				 (cons
-				  (make-score-entry (substring
-									 (nameinput-gui-name ni-gui)
-									 0 (nameinput-gui-position ni-gui))
-									score time
-									;; TODO cleared
-									#f)
+				  ;; TODO cleared
+				  (make-score-entry name score time #f)
 				  (cdr hiscore))))
 			   (save-play-data play-data)
 			   (raylib:play-sound (sebundle-extend sounds))
