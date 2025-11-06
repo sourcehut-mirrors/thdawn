@@ -627,12 +627,13 @@
    (make-vector 4096 #f)
    (make-vector 256 #f)
    (make-vector 4096 #f)
-   0 0 0 -1 0 0 0 0.0 +initial-player-y+ 10000 0 2 3
-				  (make-pseudo-random-generator)
-				  0.0 0.0 0.0 0.0
-				  0.0 0.0 0.0 0.0
-				  0 0 #f
-				  (make-vector 4 0.0) (make-vector 4 0.0)))
+   0 180 +respawning-max+
+   -1 0 0 0 0.0 +initial-player-y+ 10000 0 2 3
+   (make-pseudo-random-generator)
+   0.0 0.0 0.0 0.0
+   0.0 0.0 0.0 0.0
+   0 0 #f
+   (make-vector 4 0.0) (make-vector 4 0.0)))
 
 (define frame-save 0)
 (define frame-save-diff 0)
@@ -3964,7 +3965,6 @@
 (define (reset-state)
   (set! current-stage-ctx
 		(fresh-stage-ctx (open-output-file "replay.tmp" 'truncate)))
-  (set! iframes 180)
   (vector-fill! live-particles #f)
   (kill-all-tasks))
 
@@ -3981,7 +3981,6 @@
   (assert (= 1 (vnth first 0)))
   (set! current-stage-ctx (fresh-stage-ctx records))
   (vector->pseudo-random-generator! game-rng (vnth first 4))
-  (set! iframes 180)
   (vector-fill! live-particles #f)
   (kill-all-tasks)
   (play-music (musbundle-ojamajo-carnival music))
