@@ -635,8 +635,6 @@
    0 0 #f
    (make-vector 4 0.0) (make-vector 4 0.0)))
 
-(define frame-save 0)
-(define frame-save-diff 0)
 (define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
 (define true-frames 0)
@@ -3644,8 +3642,6 @@
   ;; todo: for prod release, hide this behind f3
   (raylib:draw-text (format "SPLED: ~d of [0, ~d]" spline-editor-selected-position
 							(sub1 (vlen spline-editor-positions)))
-					440 200 18 -1)
-  (raylib:draw-text (format "FRSAV: ~d (~d)" frame-save frame-save-diff)
 					440 225 18 -1)
   (raylib:draw-text (format "CHAP: ~d / GOTO: ~d" current-chapter chapter-select)
 					440 250 18 -1)
@@ -3753,10 +3749,6 @@
 						   (make-rectangle 0.0 bg3-scroll 256.0 224.0)
 						   background-draw-bounds
 						   v2zero 0.0 #xc0c0c0ff)
-  ;; (raylib:draw-texture-pro (txbundle-bg4 textures)
-  ;; 						   (make-rectangle 0.0 (mod (* frames -0.5) 224.0) 256.0 224.0)
-  ;; 						   background-draw-bounds
-  ;; 						   v2zero 0.0 -1)
   (when show-hitboxes
 	(raylib:draw-line (+ +playfield-render-offset-x+ +playfield-min-x+)
 					  (+ +playfield-render-offset-y+ +poc-y+)
@@ -3800,11 +3792,6 @@
   (when (positive? bombing)
 	(draw-bomb textures))
 
-  ;; (when (and paused (< (mod true-frames 60) 30))
-  ;; 	(raylib:draw-text-ex
-  ;; 	 (fontbundle-bubblegum fonts)
-  ;; 	 "Paused"
-  ;; 	 175 150 32.0 0.0 (packcolor 200 122 255 255)))
   (draw-hud textures fonts)
 
   (let ([render-positions (vector-map
