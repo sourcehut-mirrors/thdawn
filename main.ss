@@ -1115,7 +1115,12 @@
    0 #f))
 
 (define +menu-animate-dur+ 10)
-(define (mk-pause-gui gameover)
+(define-enumeration pausetype
+  (normal gameover replay replaydone) ;; replay gameover is also replaydone
+  pausetypes)
+(define replay-pausetypes (pausetypes replay replaydone))
+
+(define (mk-pause-gui type)
   (define (unpause gui)
 	(set! gui-stack (remq gui gui-stack))
 	(when current-music
@@ -1123,7 +1128,7 @@
   (define (restart gui)
 	(start-game)
 	(set! gui-stack (remq gui gui-stack)))
-  (define (quit gui score-input replay-input)
+  (define (quit gui save)
 	(define score current-score)
 	(define time (time-second (current-time 'time-utc)))
 	(when (is-liveplay)
@@ -1132,8 +1137,7 @@
 	(kill-all-tasks)
 	(vector-fill! live-particles #f)
 	(set! current-stage-ctx #f)
-	;; todo: support replay saving
-	(if score-input
+	(if save
 		(begin
 		  (set!
 		   gui-stack
@@ -1160,7 +1164,7 @@
 			   (raylib:play-sound (sebundle-extend sounds))
 			   (set! gui-stack (list (mk-title-gui)))
 			   (play-music (musbundle-ojamajo-wa-koko-ni-iru music))))))
-		  (unless gameover
+		  (unless (eq? (pausetype gameover) type)
 			;; Gameover will have already started playing the music
 			(play-music (musbundle-lupinasu-no-komoriuta-piano music))))
 		(begin
@@ -1174,19 +1178,27 @@
 				  (> (pause-gui-closing self) 0)))
 		 (cond
 		  [(and (enum-set-member? (vkey pause) edge-pressed)
-				(not gameover))
+				(not (eq? (pausetype gameover) type)))
 		   (pause-gui-close-fn-set! self (thunk (unpause self)))
 		   (pause-gui-closing-set! self 1)]
 		  [(enum-set-member? (vkey quick-restart) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
 		   ;; Highlight the selected one just so it's obvious what happened
-		   (pause-gui-selected-option-set! self (if gameover 2 3))
-		   ((menu-item-on-select (vnth opts (if gameover 2 3))) self)]
+		   (pause-gui-selected-option-set!
+			self
+			(if (eq? (pausetype gameover) type) 2 3))
+		   ((menu-item-on-select
+			 (vnth opts (pause-gui-selected-option self)))
+			self)]
 		  [(enum-set-member? (vkey quick-quit) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
 		   ;; Highlight the selected one just so it's obvious what happened
-		   (pause-gui-selected-option-set! self (if gameover 0 1))
-		   ((menu-item-on-select (vnth opts (if gameover 0 1))) self)]
+		   (pause-gui-selected-option-set!
+			self
+			(if (eq? (pausetype gameover) type) 0 1))
+		   ((menu-item-on-select
+			 (vnth opts (pause-gui-selected-option self)))
+			self)]
 		  [(enum-set-member? (vkey down) edge-pressed)
 		   (when (< selected (sub1 (vlen opts)))
 			 (pause-gui-selected-option-set!
@@ -1219,7 +1231,8 @@
 	 0.0 0.0 1280.0 960.0 (packcolor 96 96 96 (eround (lerp 0 160 progress))))
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
-	 (if gameover "Game Over..." "Paused")
+	 (if (eq? (pausetype gameover) type) 
+		 "Game Over..." "Paused")
 	 175 (eround (lerp 120 150 progress))
 	 32.0 0.0 (packcolor 200 122 255 alpha))
 	(render-ingame-menu fonts opts selected
@@ -1251,17 +1264,17 @@
 								 ")")])
 	   (thunk label))
 	 (lambda (gui)
-	   (pause-gui-close-fn-set! gui (thunk (quit gui #t #f)))
+	   (pause-gui-close-fn-set! gui (thunk (quit gui #t)))
 	   (pause-gui-closing-set! gui 1))))
     (define quit-nosave-opt
 	(make-menu-item
 	 (thunk "Quit to Menu (no save)")
 	 (lambda (gui)
-	   (pause-gui-close-fn-set! gui (thunk (quit gui #f #f)))
+	   (pause-gui-close-fn-set! gui (thunk (quit gui #f)))
 	   (pause-gui-closing-set! gui 1))))
   (make-pause-gui
    pause-gui-handle-input pause-gui-render
-   (if gameover
+   (if (eq? (pausetype gameover) type)
 	   (vector quit-opt quit-nosave-opt restart-opt)
 	   (vector (make-menu-item
 				(thunk "Resume")
@@ -2129,7 +2142,10 @@
 	(if (< life-stock 1)
 		(begin
 		  (play-music (musbundle-lupinasu-no-komoriuta-piano music))
-		  (set! gui-stack (list (mk-pause-gui #t))))
+		  (set! gui-stack (list (mk-pause-gui
+								 (if (is-liveplay)
+									 (pausetype gameover)
+									 (pausetype replaydone))))))
 		(begin
 		  (when (>= life-stock 1)
 			(set! life-stock (sub1 life-stock)))
@@ -3331,7 +3347,11 @@
    [(not (null? gui-stack))
 	((gui-handle-input (car gui-stack)) (car gui-stack) inputs)]
    [(enum-set-member? (vkey pause) ep)
-	(set! gui-stack (cons (mk-pause-gui #f) gui-stack))
+	(set! gui-stack (cons (mk-pause-gui
+						   (if (is-liveplay)
+							   (pausetype normal)
+							   (pausetype replay)))
+						  gui-stack))
 	(raylib:play-sound (sebundle-pause sounds))
 	(when current-music
 	  (raylib:pause-music-stream current-music))]
