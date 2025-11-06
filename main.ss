@@ -758,7 +758,7 @@
 	(make-menu-item
 	 (thunk "Replay")
 	 (lambda (_gui)
-	   (start-replay "replay.tmp")
+	   (start-replay (list->vector (read-replay "replay.tmp")))
 	   (set! gui-stack '())))
 	(make-menu-item
 	 (thunk "Play Data")
@@ -1130,7 +1130,9 @@
 	(when current-music
 	  (raylib:resume-music-stream current-music)))
   (define (restart gui)
-	(start-game)
+	(if (is-liveplay)
+		(start-game)
+		(start-replay (stage-ctx-replay-records current-stage-ctx)))
 	(set! gui-stack (remq gui gui-stack)))
   (define (quit gui save)
 	(define score current-score)
@@ -4003,8 +4005,7 @@
   (guard (e [(condition? e) #f])
 	(do-read)))
 
-(define (start-replay path)
-  (define records (list->vector (read-replay path)))
+(define (start-replay records)
   (define first (vnth records 0))
   (assert (= 1 (vnth first 0)))
   (set! current-stage-ctx (fresh-stage-ctx records))
