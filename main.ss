@@ -11,6 +11,7 @@
 	  screenshot quick-restart quick-quit)
   vkeys)
 (define empty-vkeys (vkeys))
+(define vkeys-proc (enum-set-constructor empty-vkeys))
 
 (include "keyconsts.ss")
 ;; turns out glfwGetKeyName just doesn't work for non-printable keys which
@@ -426,9 +427,9 @@
   initial-bomb-sweep-y-up initial-bomb-sweep-y-down
   player-dx-render focus-frames focused-immediate option-xs option-ys)
 (define (is-replay)
-  (list? (stage-ctx-replay current-stage-ctx)))
+  (box? (stage-ctx-replay current-stage-ctx)))
 (define (is-liveplay)
-  (not (is-replay)))
+  (output-port? (stage-ctx-replay current-stage-ctx)))
 
 (define (draw-laser-sprite textures sprite-id x y length radius
 						   rotation shine-sprite)
@@ -571,7 +572,7 @@
 
 (define-record-type stage-ctx
   (fields
-   ;; output port, list, or #f. If an output port, this is a
+   ;; output port, box of list, or #f. If an output port, this is a
    ;; real run and the replay is being saved to that port. Otherwise,
    ;; it's a list of replay records over the course of the run, with the next
    ;; record to be processed at the front. If #f, it's a liveplay but no
@@ -753,7 +754,9 @@
 	   (set! gui-stack '())))
 	(make-menu-item
 	 (thunk "Replay")
-	 (lambda (_gui) (void)))
+	 (lambda (_gui)
+	   (start-replay)
+	   (set! gui-stack '())))
 	(make-menu-item
 	 (thunk "Play Data")
 	 (lambda (_gui) (set! gui-stack (cons (mk-playdata-gui) gui-stack))))
@@ -3350,8 +3353,24 @@
 					(enum-set->list er) (enum-set->list lp))])
 			(when (= 1 (fxmod frames 100))
 			  (save-rng-state r))
-			(write r (stage-ctx-replay current-stage-ctx))))
-		(handle-game-input inputs))
+			(write r (stage-ctx-replay current-stage-ctx))
+			(newline (stage-ctx-replay current-stage-ctx))))
+		(if (is-liveplay)
+			(handle-game-input inputs)
+			;; todo handle reaching the end
+			(let* ([lst (unbox (stage-ctx-replay current-stage-ctx))]
+				   [r (car lst)])
+			  (if (= (vector-ref r 0) frames)
+				  (begin
+					(handle-game-input
+					 (make-inputset '()
+									(vkeys-proc (vector-ref r 1))
+									(vkeys-proc (vector-ref r 2))
+									(vkeys-proc (vector-ref r 3))))
+					(set-box! (stage-ctx-replay current-stage-ctx)
+							  (cdr lst)))
+				  (handle-game-input (make-inputset '() (vkeys)
+													(vkeys) (vkeys)))))))
 	  ((gui-handle-input (car gui-stack)) (car gui-stack) inputs)))
 
 (define (handle-player-movement level-pressed)
@@ -3947,6 +3966,25 @@
   (set! iframes 180)
   (vector-fill! live-particles #f)
   (kill-all-tasks))
+
+(define (start-replay)
+  (define records
+	(with-input-from-file "replay.tmp"
+	  (thunk
+	   (let loop ([acc '()])
+		 (let ([r (read)])
+		   (if (eof-object? r)
+			   (box (reverse! acc))
+			   (loop (cons r acc))))))))
+  (define first (car (unbox records)))
+  (assert (= 1 (vnth first 0)))
+  (set! current-stage-ctx (fresh-stage-ctx records))
+  (vector->pseudo-random-generator! game-rng (vnth first 4))
+  (set! iframes 180)
+  (vector-fill! live-particles #f)
+  (kill-all-tasks)
+  (play-music (musbundle-ojamajo-carnival music))
+  (reset-to 0))
 
 (define (debug-launch)
   (set! current-stage-ctx #f)
