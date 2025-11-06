@@ -427,9 +427,9 @@
   initial-bomb-sweep-y-up initial-bomb-sweep-y-down
   player-dx-render focus-frames focused-immediate option-xs option-ys)
 (define (is-replay)
-  (box? (stage-ctx-replay current-stage-ctx)))
+  (fxnonnegative? (stage-ctx-replay-idx current-stage-ctx)))
 (define (is-liveplay)
-  (output-port? (stage-ctx-replay current-stage-ctx)))
+  (output-port? (stage-ctx-replay-output current-stage-ctx)))
 
 (define (draw-laser-sprite textures sprite-id x y length radius
 						   rotation shine-sprite)
@@ -565,19 +565,19 @@
 (define (mark-early-end reprecord)
   (vector-set! reprecord 6 #t))
 (define (flush-replay)
-  (when (and current-stage-ctx
-			 (output-port? (stage-ctx-replay current-stage-ctx)))
-	(flush-output-port (stage-ctx-replay current-stage-ctx))
-	(close-output-port (stage-ctx-replay current-stage-ctx))))
+  (when (and current-stage-ctx (is-liveplay))
+	(flush-output-port (stage-ctx-replay-output current-stage-ctx))
+	(close-output-port (stage-ctx-replay-output current-stage-ctx))))
 
 (define-record-type stage-ctx
   (fields
-   ;; output port, box of list, or #f. If an output port, this is a
-   ;; real run and the replay is being saved to that port. Otherwise,
-   ;; it's a list of replay records over the course of the run, with the next
-   ;; record to be processed at the front. If #f, it's a liveplay but no
-   ;; replay is being saved.
-   replay
+   ;; output port for live plays, otherwise #f
+   replay-output
+   ;; if playing a replay, the vector of replay records, otherwise #f
+   replay-records
+   ;; if playing a replay, the index into replay-records of the next
+   ;; record pending processing, otherwise -1
+   (mutable replay-idx)
    live-bullets
    live-enm
    live-misc-ents
@@ -621,9 +621,13 @@
    option-xs
    option-ys)
   (sealed #t))
+
+;; replay: either output port (for liveplays) or a vector (for replays)
 (define (fresh-stage-ctx replay)
   (make-stage-ctx
-   replay
+   (and (output-port? replay) replay)
+   (and (vector? replay) replay)
+   (if (vector? replay) 0 -1)
    (make-vector 4096 #f)
    (make-vector 256 #f)
    (make-vector 4096 #f)
@@ -754,7 +758,7 @@
 	(make-menu-item
 	 (thunk "Replay")
 	 (lambda (_gui)
-	   (start-replay)
+	   (start-replay "replay.tmp")
 	   (set! gui-stack '())))
 	(make-menu-item
 	 (thunk "Play Data")
@@ -1266,7 +1270,7 @@
 	 (lambda (gui)
 	   (pause-gui-close-fn-set! gui (thunk (quit gui #t)))
 	   (pause-gui-closing-set! gui 1))))
-    (define quit-nosave-opt
+  (define quit-nosave-opt
 	(make-menu-item
 	 (thunk "Quit to Menu (no save)")
 	 (lambda (gui)
@@ -3374,14 +3378,15 @@
 				  (enum-set->list er) (enum-set->list lp))])
 		  (when (= 1 (fxmod frames 100))
 			(save-rng-state r))
-		  (write r (stage-ctx-replay current-stage-ctx))
-		  (newline (stage-ctx-replay current-stage-ctx))))
+		  (write r (stage-ctx-replay-output current-stage-ctx))
+		  (newline (stage-ctx-replay-output current-stage-ctx))))
 	  (if (is-liveplay)
 		  (handle-game-input inputs)
 		  ;; todo handle reaching the end
-		  (let* ([lst (unbox (stage-ctx-replay current-stage-ctx))]
-				 [r (car lst)])
-			(if (= (vector-ref r 0) frames)
+		  (let* ([v (stage-ctx-replay-records current-stage-ctx)]
+				 [idx (stage-ctx-replay-idx current-stage-ctx)]
+				 [r (vnth v idx)])
+			(if (= (vnth r 0) frames)
 				(begin
 				  (when (vnth r 4)
 					(assert (equal? (vnth r 4)
@@ -3391,8 +3396,8 @@
 								  (vkeys-proc (vector-ref r 1))
 								  (vkeys-proc (vector-ref r 2))
 								  (vkeys-proc (vector-ref r 3))))
-				  (set-box! (stage-ctx-replay current-stage-ctx)
-							(cdr lst)))
+				  (stage-ctx-replay-idx-set! current-stage-ctx
+											 (fx1+ idx)))
 				(handle-game-input (make-inputset '() (vkeys)
 												  (vkeys) (vkeys)))))))]))
 
@@ -3998,9 +4003,9 @@
   (guard (e [(condition? e) #f])
 	(do-read)))
 
-(define (start-replay)
-  (define records (box (read-replay "replay.tmp")))
-  (define first (car (unbox records)))
+(define (start-replay path)
+  (define records (list->vector (read-replay path)))
+  (define first (vnth records 0))
   (assert (= 1 (vnth first 0)))
   (set! current-stage-ctx (fresh-stage-ctx records))
   (vector->pseudo-random-generator! game-rng (vnth first 4))
