@@ -3363,6 +3363,9 @@
 				 [r (car lst)])
 			(if (= (vector-ref r 0) frames)
 				(begin
+				  (when (vnth r 4)
+					(assert (equal? (vnth r 4)
+									(pseudo-random-generator->vector game-rng))))
 				  (handle-game-input
 				   (make-inputset '()
 								  (vkeys-proc (vector-ref r 1))
