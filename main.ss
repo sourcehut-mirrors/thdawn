@@ -3279,17 +3279,8 @@
 	(set! start-shot-frames -1))
   (when (raylib:is-key-pressed key-f1)
 	(set! force-invincible (not force-invincible)))
-  (when (raylib:is-key-pressed key-f2)
-	(raylib:take-screenshot (string-append "screenshot-" (date-and-time)
-										   ".png")))
   (when (raylib:is-key-pressed key-f3)
 	(set! show-hitboxes (not show-hitboxes)))
-  (when (enum-set-member? (vkey pause) edge-pressed)
-	(when (null? gui-stack)
-	  (set! gui-stack (cons (mk-pause-gui #f) gui-stack))
-	  (raylib:play-sound (sebundle-pause sounds))
-	  (when current-music
-		(raylib:pause-music-stream current-music))))
   (when (and
 		 (enum-set-member? (vkey bomb) edge-pressed)
 		 (not (paused?))
@@ -3336,42 +3327,52 @@
 
 (define (handle-input)
   (define inputs (gather-input))
-  (if (null? gui-stack)
-	  (let ([ep (inputset-edge-pressed inputs)]
-			[er (inputset-edge-released inputs)]
-			[lp (inputset-level-pressed inputs)])
-		(when (and (is-liveplay)
-				   ;; always write replay on first frame so we get the
-				   ;; rng state, otherwise write if any input was
-				   ;; given this frame
-				   (or (= frames 1)
-					   (not (enum-set=? ep empty-vkeys))
-					   (not (enum-set=? er empty-vkeys))
-					   (not (enum-set=? lp empty-vkeys))))
-		  (let ([r (make-replay-record
-					frames (enum-set->list ep)
-					(enum-set->list er) (enum-set->list lp))])
-			(when (= 1 (fxmod frames 100))
-			  (save-rng-state r))
-			(write r (stage-ctx-replay current-stage-ctx))
-			(newline (stage-ctx-replay current-stage-ctx))))
-		(if (is-liveplay)
-			(handle-game-input inputs)
-			;; todo handle reaching the end
-			(let* ([lst (unbox (stage-ctx-replay current-stage-ctx))]
-				   [r (car lst)])
-			  (if (= (vector-ref r 0) frames)
-				  (begin
-					(handle-game-input
-					 (make-inputset '()
-									(vkeys-proc (vector-ref r 1))
-									(vkeys-proc (vector-ref r 2))
-									(vkeys-proc (vector-ref r 3))))
-					(set-box! (stage-ctx-replay current-stage-ctx)
-							  (cdr lst)))
-				  (handle-game-input (make-inputset '() (vkeys)
-													(vkeys) (vkeys)))))))
-	  ((gui-handle-input (car gui-stack)) (car gui-stack) inputs)))
+  (define ep (inputset-edge-pressed inputs))
+  (cond
+   [(not (null? gui-stack))
+	((gui-handle-input (car gui-stack)) (car gui-stack) inputs)]
+   [(enum-set-member? (vkey pause) ep)
+	(set! gui-stack (cons (mk-pause-gui #f) gui-stack))
+	(raylib:play-sound (sebundle-pause sounds))
+	(when current-music
+	  (raylib:pause-music-stream current-music))]
+   [(enum-set-member? (vkey screenshot) ep)
+	(raylib:take-screenshot
+	 (string-append "screenshot-" (date-and-time) ".png"))]
+   [else
+	(let ([er (inputset-edge-released inputs)]
+		  [lp (inputset-level-pressed inputs)])
+	  (when (and (is-liveplay)
+				 ;; always write replay on first frame so we get the
+				 ;; rng state, otherwise write if any input was
+				 ;; given this frame
+				 (or (= frames 1)
+					 (not (enum-set=? ep empty-vkeys))
+					 (not (enum-set=? er empty-vkeys))
+					 (not (enum-set=? lp empty-vkeys))))
+		(let ([r (make-replay-record
+				  frames (enum-set->list ep)
+				  (enum-set->list er) (enum-set->list lp))])
+		  (when (= 1 (fxmod frames 100))
+			(save-rng-state r))
+		  (write r (stage-ctx-replay current-stage-ctx))
+		  (newline (stage-ctx-replay current-stage-ctx))))
+	  (if (is-liveplay)
+		  (handle-game-input inputs)
+		  ;; todo handle reaching the end
+		  (let* ([lst (unbox (stage-ctx-replay current-stage-ctx))]
+				 [r (car lst)])
+			(if (= (vector-ref r 0) frames)
+				(begin
+				  (handle-game-input
+				   (make-inputset '()
+								  (vkeys-proc (vector-ref r 1))
+								  (vkeys-proc (vector-ref r 2))
+								  (vkeys-proc (vector-ref r 3))))
+				  (set-box! (stage-ctx-replay current-stage-ctx)
+							(cdr lst)))
+				(handle-game-input (make-inputset '() (vkeys)
+												  (vkeys) (vkeys)))))))]))
 
 (define (handle-player-movement level-pressed)
   (define left-down (enum-set-member? (vkey left) level-pressed))
