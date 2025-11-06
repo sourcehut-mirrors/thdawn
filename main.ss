@@ -3465,7 +3465,7 @@
 
   (when show-hitboxes
 	(raylib:draw-circle-v render-player-x render-player-y +graze-radius+
-						  (packcolor 0 228 48 255))
+						  green)
 	(raylib:draw-circle-v render-player-x render-player-y +hit-radius+
 						  red)))
 
