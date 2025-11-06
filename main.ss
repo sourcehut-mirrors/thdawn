@@ -652,18 +652,15 @@
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
 
-;; stack of active guis, front of the list is highest priority w.r.t input.
+;; stack of active guis, front of the list always receives all input
 ;; rendered bottom to top (reverse order)
 ;; if a stage is active, it is rendered before any gui
 (define gui-stack '())
 (define-record-type gui
   (fields
-   ;; function (self level-pressed, edge-pressed, edge-released) -> boolish
-   ;;
-   ;; if returns truthy, the gui handled the input and it should not pass on to
-   ;; lower guis or the gameplay itself. Otherwise, it will be.
+   ;; function (self level-pressed, edge-pressed, edge-released) -> void
    handle-input
-   ;; function (self textures fonts) -> any. Draws the gui.
+   ;; function (self textures fonts) -> void. Draws the gui.
    ;; I guess you can do any per-frame logic in here too...
    render))
 
@@ -713,26 +710,21 @@
 	  (title-gui-selected-option-set!
 	   self
 	   (add1 selected))
-	  (raylib:play-sound (sebundle-menuselect sounds)))
-	#t]
+	  (raylib:play-sound (sebundle-menuselect sounds)))]
    [(enum-set-member? (vkey up) edge-pressed)
 	(when (> selected 0)
 	  (title-gui-selected-option-set!
 	   self
 	   (sub1 selected))
-	  (raylib:play-sound (sebundle-menuselect sounds)))
-	#t]
+	  (raylib:play-sound (sebundle-menuselect sounds)))]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
-	((menu-item-on-select (vnth opts selected)) self)
-	#t]
+	((menu-item-on-select (vnth opts selected)) self)]
    [(enum-set-member? (vkey bomb) edge-pressed)
 	(raylib:play-sound (sebundle-menuback sounds))
 	(if (= selected 4) ;; Quit
 		((menu-item-on-select (vnth opts selected)) self)
-		(title-gui-selected-option-set! self 4))
-	#t]
-   [else #f]))
+		(title-gui-selected-option-set! self 4))]))
 (define (title-render self textures fonts)
   (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
   (render-ingame-menu
@@ -788,39 +780,32 @@
 	  (nameinput-gui-selected-option-set!
 	   self
 	   (add1 selected))
-	  (raylib:play-sound (sebundle-menuselect sounds)))
-	#t]
+	  (raylib:play-sound (sebundle-menuselect sounds)))]
    [(enum-set-member? (vkey left) edge-pressed)
 	(when (> selected 0)
 	  (nameinput-gui-selected-option-set!
 	   self
 	   (sub1 selected))
-	  (raylib:play-sound (sebundle-menuselect sounds)))
-	#t]
+	  (raylib:play-sound (sebundle-menuselect sounds)))]
    [(enum-set-member? (vkey up) edge-pressed)
 	(nameinput-gui-selected-option-set!
 	 self
 	 (max 0 (- selected +nameinput-per-row+)))
-	(raylib:play-sound (sebundle-menuselect sounds))
-	#t]
+	(raylib:play-sound (sebundle-menuselect sounds))]
    [(enum-set-member? (vkey down) edge-pressed)
 	(nameinput-gui-selected-option-set!
 	 self
 	 (min (sub1 (vlen opts)) (+ selected +nameinput-per-row+)))
-	(raylib:play-sound (sebundle-menuselect sounds))
-	#t]
+	(raylib:play-sound (sebundle-menuselect sounds))]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
-	((menu-item-on-select (vnth opts selected)) self)
-	#t]
+	((menu-item-on-select (vnth opts selected)) self)]
    [(enum-set-member? (vkey bomb) edge-pressed)
 	(raylib:play-sound (sebundle-menuback sounds))
 	(let ([pos (nameinput-gui-position self)])
 	  (when (> pos 0)
 		(string-set! (nameinput-gui-name self) (sub1 pos) #\nul)
-		(nameinput-gui-position-set! self (sub1 pos))))
-	#t]
-   [else #f]))
+		(nameinput-gui-position-set! self (sub1 pos))))]))
 (define (nameinput-render self textures fonts)
   (define name
 	(if (= (nameinput-gui-position self) +name-max+)
@@ -896,19 +881,12 @@
    [(or (enum-set-member? (vkey bomb) edge-pressed)
 		(enum-set-member? (vkey pause) edge-pressed))
 	(raylib:play-sound (sebundle-menuback sounds))
-	(set! gui-stack (cdr gui-stack))
-	#t]
+	(set! gui-stack (cdr gui-stack))]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
 	(playdata-gui-spellhist-set!
 	 self
-	 (not (playdata-gui-spellhist self)))
-	#t]
-   [(exists (lambda (vk) (enum-set-member? vk edge-pressed))
-			'(up down left right))
-	;; eat to avoid leaking to parent
-	#t]
-   [else #f]))
+	 (not (playdata-gui-spellhist self)))]))
 (define (playdata-draw-spellhist self textures fonts)
   (define bubblegum (fontbundle-bubblegum fonts))
   (define cabin (fontbundle-cabin fonts))
@@ -1023,7 +1001,7 @@
   (cond
    [(and (setting-gui-waiting-for-rebind self)
 		 (not (eq? '() edge-pressed-raw))
-		 (keybind-menu-item? (vnth opts selected))) ;; xx: might leak to parent
+		 (keybind-menu-item? (vnth opts selected)))
 	(let* ([opt (vnth opts selected)]
 		   [vk (keybind-menu-item-vk opt)]
 		   [k (car edge-pressed-raw)]
@@ -1035,43 +1013,35 @@
 	  (set-cdr! pair k))
 	(save-config config)
 	(refresh-keybindings)
-	(setting-gui-waiting-for-rebind-set! self #f)
-	#t]
+	(setting-gui-waiting-for-rebind-set! self #f)]
    [(enum-set-member? (vkey down) edge-pressed)
 	(when (< selected (sub1 (vlen opts)))
 	  (setting-gui-selected-option-set!
 	   self
 	   (add1 selected))
-	  (raylib:play-sound (sebundle-menuselect sounds)))
-	#t]
+	  (raylib:play-sound (sebundle-menuselect sounds)))]
    [(enum-set-member? (vkey up) edge-pressed)
 	(when (> selected 0)
 	  (setting-gui-selected-option-set!
 	   self
 	   (sub1 selected))
-	  (raylib:play-sound (sebundle-menuselect sounds)))
-	#t]
+	  (raylib:play-sound (sebundle-menuselect sounds)))]
    [(enum-set-member? (vkey left) edge-pressed)
 	(cond
-	 [(= selected 1) (decrease-sound-volume) #t]
-	 [(= selected 2) (decrease-music-volume) #t]
-	 [else #f])]
+	 [(= selected 1) (decrease-sound-volume)]
+	 [(= selected 2) (decrease-music-volume)])]
    [(enum-set-member? (vkey right) edge-pressed)
 	(cond
-	 [(= selected 1) (increase-sound-volume) #t]
-	 [(= selected 2) (increase-music-volume) #t]
-	 [else #f])]
+	 [(= selected 1) (increase-sound-volume)]
+	 [(= selected 2) (increase-music-volume)])]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
-	((menu-item-on-select (vnth opts selected)) self)
-	#t]
+	((menu-item-on-select (vnth opts selected)) self)]
    [(enum-set-member? (vkey bomb) edge-pressed)
 	(raylib:play-sound (sebundle-menuback sounds))
 	(if (= selected 0) ;; Back
 		((menu-item-on-select (vnth opts selected)) self)
-		(setting-gui-selected-option-set! self 0))
-	#t]
-   [else #f]))
+		(setting-gui-selected-option-set! self 0))]))
 (define (setting-render self textures fonts)
   (define items (setting-gui-menu-options self))
   (define selected (setting-gui-selected-option self))
@@ -1196,39 +1166,32 @@
 		  [(and (enum-set-member? (vkey pause) edge-pressed)
 				(not gameover))
 		   (pause-gui-close-fn-set! self (thunk (unpause self)))
-		   (pause-gui-closing-set! self 1)
-		   #t]
+		   (pause-gui-closing-set! self 1)]
 		  [(enum-set-member? (vkey quick-restart) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
 		   ;; Highlight the selected one just so it's obvious what happened
 		   (pause-gui-selected-option-set! self (if gameover 2 3))
-		   ((menu-item-on-select (vnth opts (if gameover 2 3))) self)
-		   #t]
+		   ((menu-item-on-select (vnth opts (if gameover 2 3))) self)]
 		  [(enum-set-member? (vkey quick-quit) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
 		   ;; Highlight the selected one just so it's obvious what happened
 		   (pause-gui-selected-option-set! self (if gameover 0 1))
-		   ((menu-item-on-select (vnth opts (if gameover 0 1))) self)
-		   #t]
+		   ((menu-item-on-select (vnth opts (if gameover 0 1))) self)]
 		  [(enum-set-member? (vkey down) edge-pressed)
 		   (when (< selected (sub1 (vlen opts)))
 			 (pause-gui-selected-option-set!
 			  self
 			  (add1 selected))
-			 (raylib:play-sound (sebundle-menuselect sounds)))
-		   #t]
+			 (raylib:play-sound (sebundle-menuselect sounds)))]
 		  [(enum-set-member? (vkey up) edge-pressed)
 		   (when (> selected 0)
 			 (pause-gui-selected-option-set!
 			  self
 			  (sub1 selected))
-			 (raylib:play-sound (sebundle-menuselect sounds)))
-		   #t]
+			 (raylib:play-sound (sebundle-menuselect sounds)))]
 		  [(enum-set-member? (vkey shoot) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
-		   ((menu-item-on-select (vnth opts selected)) self)
-		   #t]
-		  [else #f])))
+		   ((menu-item-on-select (vnth opts selected)) self)])))
   (define (pause-gui-render self textures fonts)
 	(define opts (pause-gui-menu-options self))
 	(define selected (pause-gui-selected-option self))
@@ -3270,14 +3233,6 @@
 	 keybindings))
   (make-inputset edge-pressed-raw edge-pressed edge-released level-pressed))
 
-(define (handle-gui-input inputs)
-  (let loop ([lst gui-stack])
-	(if (null? lst)
-		#f
-		(let* ([cur (car lst)]
-			   [handled ((gui-handle-input cur) cur inputs)])
-		  (or handled (loop (cdr lst)))))))
-
 (define (handle-game-input inputs)
   (define level-pressed (inputset-level-pressed inputs))
   (define edge-pressed (inputset-edge-pressed inputs))
@@ -3370,10 +3325,10 @@
 
 (define (handle-input)
   (define inputs (gather-input))
-  (unless (handle-gui-input inputs)
-	;; todo save to replay here
-	(when current-stage-ctx
-	  (handle-game-input inputs))))
+  (if (null? gui-stack)
+	  (when current-stage-ctx ;; if there's no gui should always be a game but whatever let's check it again
+		(handle-game-input inputs))
+	  ((gui-handle-input (car gui-stack)) (car gui-stack) inputs)))
 
 (define (handle-player-movement level-pressed)
   (define left-down (enum-set-member? (vkey left) level-pressed))
