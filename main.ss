@@ -10,6 +10,7 @@
   (up down left right shoot bomb focus pause
 	  screenshot quick-restart quick-quit)
   vkeys)
+(define empty-vkeys (vkeys))
 
 (include "keyconsts.ss")
 ;; turns out glfwGetKeyName just doesn't work for non-printable keys which
@@ -546,6 +547,7 @@
 ;; the RTD over and over again.
 #;(define-record-type replay-record
   (fields
+   frame
    edge-pressed
    edge-released
    level-pressed
@@ -553,14 +555,19 @@
    unpaused
    earlyend)
   (sealed #t))
-(define (make-replay-record edge-pressed edge-released level-pressed)
-  (vector edge-pressed edge-released level-pressed #f #f #f))
+(define (make-replay-record frame edge-pressed edge-released level-pressed)
+  (vector frame edge-pressed edge-released level-pressed #f #f #f))
 (define (save-rng-state reprecord)
-  (vector-set! reprecord 3 (pseudo-random-generator->vector game-rng)))
+  (vector-set! reprecord 4 (pseudo-random-generator->vector game-rng)))
 (define (save-pause-duration reprecord seconds)
-  (vector-set! reprecord 4 seconds))
+  (vector-set! reprecord 5 seconds))
 (define (mark-early-end reprecord)
-  (vector-set! reprecord 5 #t))
+  (vector-set! reprecord 6 #t))
+(define (flush-replay)
+  (when (and current-stage-ctx
+			 (output-port? (stage-ctx-replay current-stage-ctx)))
+	(flush-output-port (stage-ctx-replay current-stage-ctx))
+	(close-output-port (stage-ctx-replay current-stage-ctx))))
 
 (define-record-type stage-ctx
   (fields
@@ -1118,7 +1125,8 @@
 	(define score current-score)
 	(define time (time-second (current-time 'time-utc)))
 	(when (is-liveplay)
-	  (update-play-time))
+	  (update-play-time)
+	  (flush-replay))
 	(kill-all-tasks)
 	(vector-fill! live-particles #f)
 	(set! current-stage-ctx #f)
@@ -3326,7 +3334,23 @@
 (define (handle-input)
   (define inputs (gather-input))
   (if (null? gui-stack)
-	  (when current-stage-ctx ;; if there's no gui should always be a game but whatever let's check it again
+	  (let ([ep (inputset-edge-pressed inputs)]
+			[er (inputset-edge-released inputs)]
+			[lp (inputset-level-pressed inputs)])
+		(when (and (is-liveplay)
+				   ;; always write replay on first frame so we get the
+				   ;; rng state, otherwise write if any input was
+				   ;; given this frame
+				   (or (= frames 1)
+					   (not (enum-set=? ep empty-vkeys))
+					   (not (enum-set=? er empty-vkeys))
+					   (not (enum-set=? lp empty-vkeys))))
+		  (let ([r (make-replay-record
+					frames (enum-set->list ep)
+					(enum-set->list er) (enum-set->list lp))])
+			(when (= 1 (fxmod frames 100))
+			  (save-rng-state r))
+			(write r (stage-ctx-replay current-stage-ctx))))
 		(handle-game-input inputs))
 	  ((gui-handle-input (car gui-stack)) (car gui-stack) inputs)))
 
@@ -3918,8 +3942,8 @@
   (reset-to 0))
 
 (define (reset-state)
-  (define port (open-output-file "replay.tmp" 'truncate))
-  (set! current-stage-ctx (fresh-stage-ctx port))
+  (set! current-stage-ctx
+		(fresh-stage-ctx (open-output-file "replay.tmp" 'truncate)))
   (set! iframes 180)
   (vector-fill! live-particles #f)
   (kill-all-tasks))
