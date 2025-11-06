@@ -3958,15 +3958,28 @@
   (vector-fill! live-particles #f)
   (kill-all-tasks))
 
-(define (start-replay)
-  (define records
-	(with-input-from-file "replay.tmp"
+;; read the given replay file and return its records as a list, or #f
+;; if there was an error
+(define (read-replay path)
+  (define (do-read)
+	(define port (open-input-file path))
+	(when (> (file-length port) (* 10 1024 1024))
+	  (error 'read-replay "Replay file exceeds 10 MiB"))
+	(dynamic-wind
+	  void
 	  (thunk
 	   (let loop ([acc '()])
-		 (let ([r (read)])
+		 (let ([r (read port)])
 		   (if (eof-object? r)
-			   (box (reverse! acc))
-			   (loop (cons r acc))))))))
+			   (reverse! acc)
+			   (loop (cons r acc))))))
+	  (thunk (close-input-port port))))
+
+  (guard (e [(condition? e) #f])
+	(do-read)))
+
+(define (start-replay)
+  (define records (box (read-replay "replay.tmp")))
   (define first (car (unbox records)))
   (assert (= 1 (vnth first 0)))
   (set! current-stage-ctx (fresh-stage-ctx records))
