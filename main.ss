@@ -416,7 +416,6 @@
 	   (define-stage-accessor f)
 	   (define-stage-accessors g rest ...))]))
 (define-stage-accessors
-  is-replay
   live-bullets live-enm live-misc-ents
   frames iframes respawning start-shot-frames
   bombing death-timer graze player-x player-y item-value current-score
@@ -425,6 +424,10 @@
   initial-bomb-sweep-x-left initial-bomb-sweep-x-right
   initial-bomb-sweep-y-up initial-bomb-sweep-y-down
   player-dx-render focus-frames focused-immediate option-xs option-ys)
+(define (is-replay)
+  (list? (stage-ctx-replay current-stage-ctx)))
+(define (is-liveplay)
+  (not (is-replay)))
 
 (define (draw-laser-sprite textures sprite-id x y length radius
 						   rotation shine-sprite)
@@ -561,11 +564,12 @@
 
 (define-record-type stage-ctx
   (fields
-   ;; (future) either an output port or a list. If an output port, this is a
+   ;; output port, list, or #f. If an output port, this is a
    ;; real run and the replay is being saved to that port. Otherwise,
    ;; it's a list of replay records over the course of the run, with the next
-   ;; record to be processed at the front.
-   is-replay
+   ;; record to be processed at the front. If #f, it's a liveplay but no
+   ;; replay is being saved.
+   replay
    live-bullets
    live-enm
    live-misc-ents
@@ -746,9 +750,7 @@
 	   (let ([pair (assq 'games-started play-data)])
 		 (set-cdr! pair (add1 (cdr pair)))
 		 (save-play-data play-data))
-	   (set! current-stage-ctx (fresh-stage-ctx #f))
-	   (play-music (musbundle-ojamajo-carnival music))
-	   (spawn-task "stage driver" chapter0 (constantly #t))
+	   (start-game)
 	   (set! gui-stack '())))
 	(make-menu-item
 	 (thunk "Replay")
@@ -1139,24 +1141,13 @@
 	(set! gui-stack (remq gui gui-stack))
 	(when current-music
 	  (raylib:resume-music-stream current-music)))
-  (define (update-play-time)
-	(let ([pair (assq 'play-frames play-data)])
-	  (set-cdr! pair (+ (cdr pair) frames)))
-	(save-play-data play-data))
   (define (restart gui)
-	(unless is-replay
-	  (update-play-time)
-	  (let ([pair (assq 'games-started play-data)])
-		(set-cdr! pair (add1 (cdr pair)))
-		(save-play-data play-data)))
-	(reset-state)
-	(play-music (musbundle-ojamajo-carnival music))
-	(reset-to 0)
+	(start-game)
 	(set! gui-stack (remq gui gui-stack)))
   (define (quit gui score-input replay-input)
 	(define score current-score)
 	(define time (time-second (current-time 'time-utc)))
-	(unless is-replay
+	(when (is-liveplay)
 	  (update-play-time))
 	(kill-all-tasks)
 	(vector-fill! live-particles #f)
@@ -2940,7 +2931,7 @@
 (define (declare-spell boss idx)
   (define descriptor (vnth spells idx))
   (define bossinfo (enm-extras boss))
-  (unless is-replay
+  (when (is-liveplay)
 	(let ([history (vnth (assqdr 'spell-history play-data) idx)])
 	  (set-cdr! history (add1 (cdr history))))
 	(save-play-data play-data))
@@ -3001,7 +2992,7 @@
   (unless failed
 	(raylib:play-sound (sebundle-spellcapture sounds))
 	(set! current-score (+ current-score bonus))
-	(unless is-replay
+	(when (is-liveplay)
 	  ;; this kinda dumb but whatever
 	  (let* ([idx (vector-find-index
 				   (lambda (s) (eq? (bossinfo-active-spell-name bossinfo)
@@ -3955,8 +3946,25 @@
 	   (raylib:close-audio-device)
 	   (raylib:close-window)))))
 
+(define (update-play-time)
+  (let ([pair (assq 'play-frames play-data)])
+	(set-cdr! pair (+ (cdr pair) frames)))
+  (save-play-data play-data))
+
+(define (start-game)
+  ;; save play data if an existing game is already in progress
+  (when current-stage-ctx (is-liveplay)
+	(update-play-time)
+	(let ([pair (assq 'games-started play-data)])
+	  (set-cdr! pair (add1 (cdr pair)))
+	  (save-play-data play-data)))
+  (reset-state)
+  (play-music (musbundle-ojamajo-carnival music))
+  (reset-to 0))
+
 (define (reset-state)
-  (set! current-stage-ctx (fresh-stage-ctx #f))
+  (define port (open-output-file "replay.tmp" 'truncate))
+  (set! current-stage-ctx (fresh-stage-ctx port))
   (set! iframes 180)
   (vector-fill! live-particles #f)
   (kill-all-tasks))
