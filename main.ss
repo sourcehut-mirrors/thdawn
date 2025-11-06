@@ -1233,13 +1233,23 @@
 	    (- 1 (/ closing +menu-animate-dur+))]
 	   [else 1]))
 	(define alpha (eround (lerp 0 255 progress)))
+	(define title
+	  (case type
+	   [(normal) "Paused"]
+	   [(gameover) "Game Over..."]
+	   [(replay) "Replay Paused"]
+	   [(replaydone) "Playback Complete"]))
+	(define-values (twidth _)
+	  (raylib:measure-text-ex
+	   (fontbundle-bubblegum fonts)
+	   title 32.0 0.0))
 	(raylib:draw-rectangle-rec
 	 0.0 0.0 1280.0 960.0 (packcolor 96 96 96 (eround (lerp 0 160 progress))))
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
-	 (if (eq? (pausetype gameover) type) 
-		 "Game Over..." "Paused")
-	 175 (eround (lerp 120 150 progress))
+	 title
+	 (+ (/ twidth -2.0) +playfield-render-offset-x+)
+	 (eround (lerp 120 150 progress))
 	 32.0 0.0 (packcolor 200 122 255 alpha))
 	(render-ingame-menu fonts opts selected
 						(eround (lerp 80 100 progress))
