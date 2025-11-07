@@ -1,3 +1,24 @@
+* [2025-11-06 Thu]
+Basic replays exist but they're pretty buggy and there's no UI.
+Main problems:
+
+1. In the transition from gui to game, things can get wonky because technically a
+   frame can be skipped or happen twice. This can be reproed by just trying to
+   pause a replay during playback, it'll crash right when you unpause. Also
+   pausing during a real run will cause the replay output stream to skip a frame.
+2. More concerning bug is if a replay is restarted from the pause menu, it
+   mysteriously desyncs, but only 1k-2k frames after. The beginning of the replay
+   still works properly. This is the scariest case since it passes some of the
+   sanity checks but not all, which means I'm leaking some sort of state across
+   playback instances...but not sure what.
+3. Not having UI for saving the replays and such makes testing annoying as I can
+   only have one test replay at once and it gets blown away when I do a full run.
+4. Still don't have a way to mark replays that "end early" via pause->save and quit.
+   These just crash after the playback runs out of data to read.
+   
+I'll probably actually ignore the bugs for now and implement the UI parts first
+just to make debugging less of a pain.
+
 * [2025-11-04 Tue]
 Some brief brainstorming/planning for replays. I tend to just go for it when
 coding on this project but i think it's worth planning just a bit for this
