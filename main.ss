@@ -3982,12 +3982,13 @@
   (save-play-data play-data))
 
 (define (start-game)
-  ;; save play data if an existing game is already in progress
-  (when current-stage-ctx (is-liveplay)
-	(update-play-time)
-	(let ([pair (assq 'games-started play-data)])
-	  (set-cdr! pair (add1 (cdr pair)))
-	  (save-play-data play-data)))
+  ;; update playtime if an existing game is already in progress, e.g.
+  ;; if this was called from pause->restart
+  (when current-stage-ctx
+	(update-play-time))
+  (let ([pair (assq 'games-started play-data)])
+	(set-cdr! pair (add1 (cdr pair)))
+	(save-play-data play-data))
   (reset-state)
   (play-music (musbundle-ojamajo-carnival music))
   (reset-to 0))
