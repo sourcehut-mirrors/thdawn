@@ -1192,7 +1192,8 @@
 		   ;; Highlight the selected one just so it's obvious what happened
 		   (pause-gui-selected-option-set!
 			self
-			(if (eq? (pausetype gameover) type) 2 3))
+			;; restart is always the last option on the menu
+		    (sub1 (vlen opts)))
 		   ((menu-item-on-select
 			 (vnth opts (pause-gui-selected-option self)))
 			self)]
@@ -1201,7 +1202,9 @@
 		   ;; Highlight the selected one just so it's obvious what happened
 		   (pause-gui-selected-option-set!
 			self
-			(if (eq? (pausetype gameover) type) 0 1))
+			(case type
+			  [(normal replay) 1]
+			  [(gameover replaydone) 0]))
 		   ((menu-item-on-select
 			 (vnth opts (pause-gui-selected-option self)))
 			self)]
@@ -1271,33 +1274,44 @@
 	 (lambda (gui)
 	  (pause-gui-close-fn-set! gui (thunk (restart gui)))
 	  (pause-gui-closing-set! gui 1))))
+  (define quick-quit-key
+	(format " (~a)" (key-name (assqdr
+							   (vkey quick-quit)
+							   (assqdr 'keybindings config)))))
   (define quit-opt
 	(make-menu-item
-	 (let ([label (string-append "Save and Quit ("
-								 (key-name (assqdr
-											(vkey quick-quit)
-											(assqdr 'keybindings config)))
-								 ")")])
+	 (let ([label (string-append "Save and Quit" quick-quit-key)])
 	   (thunk label))
 	 (lambda (gui)
 	   (pause-gui-close-fn-set! gui (thunk (quit gui #t)))
 	   (pause-gui-closing-set! gui 1))))
   (define quit-nosave-opt
 	(make-menu-item
-	 (thunk "Quit to Menu (no save)")
+	 (let ([label (case type
+					[(normal gameover) "Quit to Menu"]
+					[(replay replaydone)
+					 (string-append "Quit to Menu" quick-quit-key)])])
+	   (thunk label))
 	 (lambda (gui)
 	   (pause-gui-close-fn-set! gui (thunk (quit gui #f)))
 	   (pause-gui-closing-set! gui 1))))
+  (define resume-opt
+	(make-menu-item
+	 (thunk "Resume")
+	 (lambda (gui)
+	   (pause-gui-close-fn-set! gui (thunk (unpause gui)))
+	   (pause-gui-closing-set! gui 1))))
   (make-pause-gui
    pause-gui-handle-input pause-gui-render
-   (if (eq? (pausetype gameover) type)
-	   (vector quit-opt quit-nosave-opt restart-opt)
-	   (vector (make-menu-item
-				(thunk "Resume")
-				(lambda (gui)
-				  (pause-gui-close-fn-set! gui (thunk (unpause gui)))
-				  (pause-gui-closing-set! gui 1)))
-			   quit-opt quit-nosave-opt restart-opt))
+   (case type
+	 [(normal)
+	  (vector resume-opt quit-opt quit-nosave-opt restart-opt)]
+	 [(gameover)
+	  (vector quit-opt quit-nosave-opt restart-opt)]
+	 [(replay)
+	  (vector resume-opt quit-nosave-opt restart-opt)]
+	 [(replaydone)
+	  (vector quit-nosave-opt restart-opt)])
    0 +menu-animate-dur+ 0 #f))
 
 (define (truncate-to-whole-spline v)

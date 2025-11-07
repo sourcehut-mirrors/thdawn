@@ -43,7 +43,10 @@ All these steps are one time
 ## Run Interactively with a REPL
 1. Install geiser and geiser-chez in emacs
 1. C-c C-z to start a REPL
-1. C-c C-b to eval the main.ss buffer
+1. Evaluate `(load "main.ss")`. You could also just do C-c C-b in the main.ss
+   buffer to send the entire buffer to the repl, but doing `load` allows
+   Chez to know what approximate line numbers things came from,
+   which is useful when debugging.
 1. Spawn a game window in a thread by evaluating in the REPL `(debug-launch)`.
    XXX: this won't work on macOS which requires first thread to be the one that does GUI stuff.
 
