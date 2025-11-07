@@ -3389,43 +3389,32 @@
 	(raylib:take-screenshot
 	 (string-append "screenshot-" (date-and-time) ".png"))]
    [else
-	(let ([er (inputset-edge-released inputs)]
-		  [lp (inputset-level-pressed inputs)])
-	  (when (and (is-liveplay)
-				 ;; always write replay on first frame so we get the
-				 ;; rng state, otherwise write if any input was
-				 ;; given this frame
-				 (or (= frames 1)
-					 (not (enum-set=? ep empty-vkeys))
-					 (not (enum-set=? er empty-vkeys))
-					 (not (enum-set=? lp empty-vkeys))))
-		(let ([r (make-replay-record
-				  frames (enum-set->list ep)
-				  (enum-set->list er) (enum-set->list lp))])
-		  (when (= 1 (fxmod frames 100))
-			(save-rng-state r))
-		  (write r (stage-ctx-replay-output current-stage-ctx))
-		  (newline (stage-ctx-replay-output current-stage-ctx))))
-	  (if (is-liveplay)
-		  (handle-game-input inputs)
-		  ;; todo handle reaching the end
-		  (let* ([v (stage-ctx-replay-records current-stage-ctx)]
-				 [idx (stage-ctx-replay-idx current-stage-ctx)]
-				 [r (vnth v idx)])
-			(if (= (vnth r 0) frames)
-				(begin
-				  (when (vnth r 4)
-					(assert (equal? (vnth r 4)
-									(pseudo-random-generator->vector game-rng))))
-				  (handle-game-input
-				   (make-inputset '()
-								  (vkeys-proc (vector-ref r 1))
-								  (vkeys-proc (vector-ref r 2))
-								  (vkeys-proc (vector-ref r 3))))
-				  (stage-ctx-replay-idx-set! current-stage-ctx
-											 (fx1+ idx)))
-				(handle-game-input (make-inputset '() (vkeys)
-												  (vkeys) (vkeys)))))))]))
+	(if (is-liveplay)
+		(begin
+		  (let ([r (make-replay-record
+					frames (enum-set->list ep)
+					(enum-set->list (inputset-edge-released inputs))
+					(enum-set->list (inputset-level-pressed inputs)))])
+			(when (= 1 (fxmod frames 100))
+			  (save-rng-state r))
+			(write r (stage-ctx-replay-output current-stage-ctx))
+			(newline (stage-ctx-replay-output current-stage-ctx)))
+		  (handle-game-input inputs))
+		;; todo handle reaching the end
+		(let* ([v (stage-ctx-replay-records current-stage-ctx)]
+			   [idx (stage-ctx-replay-idx current-stage-ctx)]
+			   [r (vnth v idx)])
+		  (assert (= (vnth r 0) frames))
+		  (when (vnth r 4)
+			(assert (equal? (vnth r 4)
+							(pseudo-random-generator->vector game-rng))))
+		  (handle-game-input
+		   (make-inputset '()
+						  (vkeys-proc (vector-ref r 1))
+						  (vkeys-proc (vector-ref r 2))
+						  (vkeys-proc (vector-ref r 3))))
+		  (stage-ctx-replay-idx-set! current-stage-ctx
+									 (fx1+ idx))))]))
 
 (define (handle-player-movement level-pressed)
   (define left-down (enum-set-member? (vkey left) level-pressed))
