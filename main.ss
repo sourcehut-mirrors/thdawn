@@ -429,7 +429,7 @@
 (define (is-replay)
   (fxnonnegative? (stage-ctx-replay-idx current-stage-ctx)))
 (define (is-liveplay)
-  (output-port? (stage-ctx-replay-output current-stage-ctx)))
+  (not (is-replay)))
 
 (define (draw-laser-sprite textures sprite-id x y length radius
 						   rotation shine-sprite)
@@ -565,15 +565,12 @@
   (vector-set! reprecord 5 seconds))
 (define (mark-early-end reprecord)
   (vector-set! reprecord 6 #t))
-(define (flush-replay)
-  (when (and current-stage-ctx (is-liveplay))
-	(flush-output-port (stage-ctx-replay-output current-stage-ctx))
-	(close-output-port (stage-ctx-replay-output current-stage-ctx))))
 
 (define-record-type stage-ctx
   (fields
-   ;; output port for live plays, otherwise #f
-   replay-output
+   ;; list of accumulated replay records for live plays, otherwise empty list
+   ;; consed onto, will only be reversed at the end when we write out the replay
+   (mutable replay-output)
    ;; if playing a replay, the vector of replay records, otherwise #f
    replay-records
    ;; if playing a replay, the index into replay-records of the next
@@ -623,10 +620,9 @@
    option-ys)
   (sealed #t))
 
-;; replay: either output port (for liveplays) or a vector (for replays)
 (define (fresh-stage-ctx replay)
   (make-stage-ctx
-   (and (output-port? replay) replay)
+   '()
    (and (vector? replay) replay)
    (if (vector? replay) 0 -1)
    (make-vector 4096 #f)
@@ -1243,9 +1239,9 @@
   (define (quit gui save)
 	(define score current-score)
 	(define time (time-second (current-time 'time-utc)))
+	(define records (reverse! (stage-ctx-replay-output current-stage-ctx)))
 	(when (is-liveplay)
-	  (update-play-time)
-	  (flush-replay))
+	  (update-play-time))
 	(kill-all-tasks)
 	(vector-fill! live-particles #f)
 	(set! current-stage-ctx #f)
@@ -1263,16 +1259,21 @@
 					 (substring
 					  (nameinput-gui-name ni-gui)
 					  0 (nameinput-gui-position ni-gui))))
+			   ;; TODO cleared flag
+			   (define entry (make-score-entry name score time #f))
 			   (set-cdr!
 				hiscore
 				(list-sort
 				 (lambda (a b) (> (score-entry-score a)
 								  (score-entry-score b)))
-				 (cons
-				  ;; TODO cleared
-				  (make-score-entry name score time #f)
-				  (cdr hiscore))))
+				 (cons entry (cdr hiscore))))
 			   (save-play-data play-data)
+			   ;; todo: pop the replist gui here
+			   (with-output-to-file "replays/slot00.rep"
+				 (thunk
+				  (write entry)
+				  (for-each write records))
+				 'truncate)
 			   (raylib:play-sound (sebundle-extend sounds))
 			   (set! gui-stack (list (mk-title-gui)))
 			   (play-music (musbundle-ojamajo-wa-koko-ni-iru music))))))
@@ -3503,8 +3504,9 @@
 					(enum-set->list (inputset-level-pressed inputs)))])
 			(when (= 1 (fxmod frames 100))
 			  (save-rng-state r))
-			(write r (stage-ctx-replay-output current-stage-ctx))
-			(newline (stage-ctx-replay-output current-stage-ctx)))
+			(stage-ctx-replay-output-set!
+			 current-stage-ctx
+			 (cons r (stage-ctx-replay-output current-stage-ctx))))
 		  (handle-game-input inputs))
 		;; todo handle reaching the end
 		(let* ([v (stage-ctx-replay-records current-stage-ctx)]
@@ -4100,8 +4102,7 @@
   (reset-to 0))
 
 (define (reset-state)
-  (set! current-stage-ctx
-		(fresh-stage-ctx (open-output-file "replay.tmp" 'truncate)))
+  (set! current-stage-ctx (fresh-stage-ctx #f))
   (vector-fill! live-particles #f)
   (kill-all-tasks))
 
