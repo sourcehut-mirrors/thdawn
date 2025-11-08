@@ -3,4 +3,4 @@
 *.boot
 *.dat
 *.png
-replay.tmp
+*.rep
