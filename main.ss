@@ -895,17 +895,21 @@
    ;; replay header.
    (mutable cached-data))
   (sealed #t))
+(define (rep-path page row)
+  (define id (+ row (* page +replays-per-page+)))
+  (format "replays/slot~2,'0d.rep" id))
+
 (define (replist-refresh self)
   (define page (replist-gui-selected-page self))
   (replist-gui-cached-data-set!
    self
    (map
 	(lambda (i)
-	  (define id (+ i (* page +replays-per-page+)))
-	  (define path (format "replays/slot~2,'0d.rep" id))
+	  (define path (rep-path page i))
 	  (and (file-exists? path)
-		   ;; TODO metadata saving/reading not done yet
-		   (make-score-entry path 0 0 #f)))
+		   ;; read the score entry from the first datum of the replay
+		   (guard (_ [else #f])
+			 (with-input-from-file path read))))
 	(iota +replays-per-page+))))
 (define (replist-handle-input self inputs)
   (cond
@@ -937,7 +941,14 @@
 	  (raylib:play-sound (sebundle-menuselect sounds))
 	  (replist-gui-selected-row-set!
 	   self
-	   (add1 (replist-gui-selected-row self))))]))
+	   (add1 (replist-gui-selected-row self))))]
+   [(enum-set-member? (vkey shoot) (inputset-edge-pressed inputs))
+	(if (replist-gui-for-save self)
+		(void) ;; todo
+		(let ([path (rep-path (replist-gui-selected-page self)
+							  (replist-gui-selected-row self))])
+		  (start-replay (read-replay path))
+		  (set! gui-stack '())))]))
 (define (replist-render self textures fonts)
   (define title (if (replist-gui-for-save self)
 					"Select Slot" "Watch Elegant Replays"))
@@ -1272,7 +1283,9 @@
 			   (with-output-to-file "replays/slot00.rep"
 				 (thunk
 				  (write entry)
-				  (for-each write records))
+				  (newline)
+				  (for-each (lambda (r) (write r) (newline))
+							records))
 				 'truncate)
 			   (raylib:play-sound (sebundle-extend sounds))
 			   (set! gui-stack (list (mk-title-gui)))
@@ -4106,7 +4119,7 @@
   (vector-fill! live-particles #f)
   (kill-all-tasks))
 
-;; read the given replay file and return its records as a list, or #f
+;; read the given replay file and return its records as a vector, or #f
 ;; if there was an error
 (define (read-replay path)
   (define (do-read)
@@ -4116,10 +4129,11 @@
 	(dynamic-wind
 	  void
 	  (thunk
+	   (read port) ;; read and discard the score entry at the start
 	   (let loop ([acc '()])
 		 (let ([r (read port)])
 		   (if (eof-object? r)
-			   (reverse! acc)
+			   (list->vector (reverse! acc))
 			   (loop (cons r acc))))))
 	  (thunk (close-input-port port))))
 
