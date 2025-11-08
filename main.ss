@@ -519,6 +519,7 @@
 (define green (packcolor 0 228 48 255))
 (define invincible-flash (packcolor 64 64 255 255))
 (define damage-flash (packcolor 255 64 64 255))
+(define selected-color #xc87affff)
 
 ;; [31-416] x bounds of playfield in the hud texture
 ;; [15-463] y bounds of playfield in the hud texture
@@ -757,9 +758,7 @@
 	   (set! gui-stack '())))
 	(make-menu-item
 	 (thunk "Replay")
-	 (lambda (_gui)
-	   (start-replay (list->vector (read-replay "replay.tmp")))
-	   (set! gui-stack '())))
+	 (lambda (_gui) (set! gui-stack (cons (mk-replist-gui #f) gui-stack))))
 	(make-menu-item
 	 (thunk "Play Data")
 	 (lambda (_gui) (set! gui-stack (cons (mk-playdata-gui) gui-stack))))
@@ -846,7 +845,7 @@
 	  (if (string=? " " label) "SP" label)
 	  (fl+ 162.0 (fl* (inexact col) 25.0))
 	  (fl+ 200.0 (fl* (inexact row) 25.0))
-	  30.0 0.0 (if (= selected i) #xc87affff -1)))
+	  30.0 0.0 (if (= selected i) selected-color -1)))
    (nameinput-gui-menu-options self)))
 ;; on-complete: function of the gui that runs when player submits the name
 (define (mk-nameinput-gui on-complete)
@@ -883,6 +882,104 @@
 			 (thunk "Done")
 			 on-complete)))
    0))
+
+(define +replay-pages+ 10)
+(define +replays-per-page+ 10)
+(define-record-type replist-gui
+  (parent gui)
+  (fields
+   ;; if #t then this is to pick a slot to save a replay in, otherwise
+   ;; this is to pick a slot to playback a replay
+   for-save
+   (mutable selected-page)
+   (mutable selected-row)
+   ;; when the page is changed, we read in the data for the page of replays
+   ;; and populate it here. List of length replays-per-page, each value
+   ;; is either #f (nothing in the slot) or the score-entry struct from the
+   ;; replay header.
+   (mutable cached-data))
+  (sealed #t))
+(define (replist-refresh self)
+  (define page (replist-gui-selected-page self))
+  (replist-gui-cached-data-set!
+   self
+   (map
+	(lambda (i)
+	  (define id (+ i (* page +replays-per-page+)))
+	  (define path (format "replays/slot~2,'0d.rep" id))
+	  (and (file-exists? path)
+		   ;; TODO metadata saving/reading not done yet
+		   (make-score-entry path 0 0 #f)))
+	(iota +replays-per-page+))))
+(define (replist-handle-input self inputs)
+  (cond
+   [(enum-set-member? (vkey bomb) (inputset-edge-pressed inputs))
+	(raylib:play-sound (sebundle-menuback sounds))
+	(set! gui-stack (remq self gui-stack))]
+   [(enum-set-member? (vkey left) (inputset-edge-pressed inputs))
+	(when (> (replist-gui-selected-page self) 0)
+	  (raylib:play-sound (sebundle-menuselect sounds))
+	  (replist-gui-selected-page-set!
+	   self
+	   (sub1 (replist-gui-selected-page self)))
+	  (replist-refresh self))]
+   [(enum-set-member? (vkey right) (inputset-edge-pressed inputs))
+	(when (< (replist-gui-selected-page self) (sub1 +replay-pages+))
+	  (raylib:play-sound (sebundle-menuselect sounds))
+	  (replist-gui-selected-page-set!
+	   self
+	   (add1 (replist-gui-selected-page self)))
+	  (replist-refresh self))]
+   [(enum-set-member? (vkey up) (inputset-edge-pressed inputs))
+	(when (> (replist-gui-selected-row self) 0)
+	  (raylib:play-sound (sebundle-menuselect sounds))
+	  (replist-gui-selected-row-set!
+	   self
+	   (sub1 (replist-gui-selected-row self))))]
+   [(enum-set-member? (vkey down) (inputset-edge-pressed inputs))
+	(when (< (replist-gui-selected-row self) (sub1 +replays-per-page+))
+	  (raylib:play-sound (sebundle-menuselect sounds))
+	  (replist-gui-selected-row-set!
+	   self
+	   (add1 (replist-gui-selected-row self))))]))
+(define (replist-render self textures fonts)
+  (define title (if (replist-gui-for-save self)
+					"Select Slot" "Watch Elegant Replays"))
+  (define-values (twidth _theight)
+	(raylib:measure-text-ex
+	 (fontbundle-bubblegum fonts)
+	 title
+	 40.0 0.0))
+  (define page (replist-gui-selected-page self))
+  (define page-str
+	(format "~a ~2,'0d / ~2,'0d ~a"
+			(if (positive? page) "<--" "   ")
+			(add1 page)
+			+replay-pages+
+			(if (< page (sub1 +replay-pages+)) "-->" "   ")))
+  (define-values (pgwidth _pgheight)
+	(raylib:measure-text-ex
+	 (fontbundle-sharetechmono fonts)
+	 page-str 20.0 0.0))
+  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
+  (raylib:draw-rectangle-lines 20 70 (- 640 40) (- 480 200) -1)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum fonts) title
+   (fl- 320.0 (fl/ twidth 2.0)) 15.0 40.0 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-sharetechmono fonts) page-str
+   (fl- 320.0 (fl/ pgwidth 2.0)) 370.0 20.0 0.0 -1)
+  (draw-scores fonts (replist-gui-cached-data self)
+			   (replist-gui-selected-row self)))
+(define (mk-replist-gui for-save)
+  (define result
+	(make-replist-gui
+	 replist-handle-input
+	 replist-render
+	 for-save
+	 0 0 '()))
+  (replist-refresh result)
+  result)
 
 (define-record-type playdata-gui
   (parent gui)
@@ -925,35 +1022,44 @@
 						   y 20.0 0.0 -1)
 	  (when (< i (sub1 (vlen spells)))
 		(loop (add1 i) (+ y height))))))
-(define (playdata-draw-scores self textures fonts)
+(define (draw-scores fonts score-entries selected)
   (define bubblegum (fontbundle-bubblegum fonts))
   (define cabin (fontbundle-cabin fonts))
-  (let loop ([cur (assqdr 'hiscore play-data)]
+  (let loop ([cur score-entries]
 			 [i 0]
 			 [y 90.0])
 	(unless (or (>= i 10) (null? cur))
-	  (let*-values ([(entry) (car cur)]
-					[(name) (score-entry-name entry)]
-					[(time) (->> (score-entry-unixtime entry)
-								 (make-time 'time-utc 0)
-								 (time-utc->date)
-								 (date-and-time))]
+	  (let*-values ([(color) (if (eq? selected i) selected-color -1)]
+					[(entry) (car cur)]
+					[(name)
+					 (if entry
+						 (score-entry-name entry)
+						 "--------")]
+					[(time) (if entry
+								(->> (score-entry-unixtime entry)
+									 (make-time 'time-utc 0)
+									 (time-utc->date)
+									 (date-and-time))
+								"")]
 					[(score)
-					 (format "~:d~a" (score-entry-score entry)
-							 (if (score-entry-cleared entry) " (C)" ""))]
+					 (if entry
+						 (format "~:d~a" (score-entry-score entry)
+								 (if (score-entry-cleared entry) " (C)" ""))
+						 "000,000,000")]
 					[(_ nheight)
 					 (raylib:measure-text-ex bubblegum name 25.0 0.0)]
 					[(swidth _)
 					 (raylib:measure-text-ex cabin score 25.0 0.0)])
 		(raylib:draw-text-ex bubblegum name
-							 40.0 y 25.0 0.0 -1)
-		(raylib:draw-text-ex cabin time
-							 200.0
-							 y 25.0 0.0 -1)
+							 40.0 y 25.0 0.0 color)
+		(unless (zero? (string-length time))
+		  (raylib:draw-text-ex cabin time
+							   200.0
+							   y 25.0 0.0 color))
 		(raylib:draw-text-ex cabin score
 							 ;; screenwidth - to box - within box - text width
 							 (fl- 640.0 20.0 20.0 swidth)
-							 y 25.0 0.0 -1)
+							 y 25.0 0.0 color)
 		(loop (cdr cur) (add1 i) (+ y nheight))))))
 (define (playdata-render self textures fonts)
   (define bubblegum (fontbundle-bubblegum fonts))
@@ -996,7 +1102,7 @@
 						 (fl+ 370.0 pheight sheight) 25.0 0.0 -1))
   (if (playdata-gui-spellhist self)
 	  (playdata-draw-spellhist self textures fonts)
-	  (playdata-draw-scores self textures fonts)))
+	  (draw-scores fonts (assqdr 'hiscore play-data) #f)))
 (define (mk-playdata-gui)
   (make-playdata-gui playdata-handle-input playdata-render #f))
 
