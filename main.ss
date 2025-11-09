@@ -4122,23 +4122,17 @@
 ;; read the given replay file and return its records as a vector, or #f
 ;; if there was an error
 (define (read-replay path)
-  (define (do-read)
-	(define port (open-input-file path))
-	(when (> (file-length port) (* 10 1024 1024))
-	  (error 'read-replay "Replay file exceeds 10 MiB"))
-	(dynamic-wind
-	  void
+  (guard (e [(condition? e) #f])
+	(with-input-from-file path
 	  (thunk
-	   (read port) ;; read and discard the score entry at the start
+	   (when (> (file-length (current-input-port)) (* 10 1024 1024))
+		 (error 'read-replay "Replay file exceeds 10 MiB"))
+	   (read) ;; read and discard the score entry at the start
 	   (let loop ([acc '()])
-		 (let ([r (read port)])
+		 (let ([r (read)])
 		   (if (eof-object? r)
 			   (list->vector (reverse! acc))
-			   (loop (cons r acc))))))
-	  (thunk (close-input-port port))))
-
-  (guard (e [(condition? e) #f])
-	(do-read)))
+			   (loop (cons r acc)))))))))
 
 (define (start-replay records)
   (define first (vnth records 0))
