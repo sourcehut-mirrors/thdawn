@@ -3770,6 +3770,12 @@
    (format "Value: ~:d" item-value)
    440 135
    24.0 0.0 #x49D0FFFF)
+  (when (is-replay)
+	(raylib:draw-text-ex
+	 (fontbundle-bubblegum fonts)
+	 "REPLAY"
+	 440 165
+	 24.0 0.0 red))
   (when-let ([boss (first-boss)])
 	(draw-boss-hud boss textures fonts))
 
