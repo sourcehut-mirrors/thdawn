@@ -104,74 +104,74 @@
 					(ftype-ref RayRect (height) src)))
 
   (define init-window
-	(foreign-procedure "InitWindow" (int int string) void))
+	(foreign-procedure __atomic "InitWindow" (int int string) void))
 
   (define close-window
-	(foreign-procedure "CloseWindow" () void))
+	(foreign-procedure __atomic "CloseWindow" () void))
 
   (define toggle-borderless-windowed
-	(foreign-procedure "ToggleBorderlessWindowed" () void))
+	(foreign-procedure __atomic "ToggleBorderlessWindowed" () void))
   (define toggle-fullscreen
-	(foreign-procedure "ToggleFullscreen" () void))
+	(foreign-procedure __atomic "ToggleFullscreen" () void))
   (define set-window-min-size
-	(foreign-procedure "SetWindowMinSize" (int int) void))
+	(foreign-procedure __atomic "SetWindowMinSize" (int int) void))
   (define get-screen-width
-	(foreign-procedure "GetScreenWidth" () int))
+	(foreign-procedure __atomic "GetScreenWidth" () int))
   (define get-screen-height
-	(foreign-procedure "GetScreenHeight" () int))
+	(foreign-procedure __atomic "GetScreenHeight" () int))
 
   (define window-should-close
-	(foreign-procedure "WindowShouldClose" () stdbool))
+	(foreign-procedure __atomic "WindowShouldClose" () stdbool))
 
   (define set-target-fps
-	(foreign-procedure "SetTargetFPS" (int) void))
+	(foreign-procedure __atomic "SetTargetFPS" (int) void))
 
   (define begin-drawing
-	(foreign-procedure "BeginDrawing" () void))
+	(foreign-procedure __atomic "BeginDrawing" () void))
 
   (define end-drawing
-	(foreign-procedure "EndDrawing" () void))
+	(foreign-procedure __atomic "EndDrawing" () void))
 
   (define begin-texture-mode
-	(foreign-procedure "BeginTextureMode" ((& RenderTexture)) void))
+	(foreign-procedure __atomic "BeginTextureMode" ((& RenderTexture)) void))
   (define end-texture-mode
-	(foreign-procedure "EndTextureMode" () void))
+	(foreign-procedure __atomic "EndTextureMode" () void))
 
   (define clear-background0
-	(foreign-procedure "ClearBackground" ((& Color)) void))
+	(foreign-procedure __atomic "ClearBackground" ((& Color)) void))
   (define (clear-background rgba)
 	(load-global-color global-color rgba)
 	(clear-background0 global-color))
 
   (define draw-line0
-	(foreign-procedure "DrawLine" (int int int int (& Color)) void))
+	(foreign-procedure __atomic "DrawLine" (int int int int (& Color)) void))
   (define (draw-line sx sy ex ey rgba)
 	(load-global-color global-color rgba)
 	(draw-line0 sx sy ex ey global-color))
 
   (define draw-circle-v0
-	(foreign-procedure "DrawCircleV" ((& RayVector2) float (& Color)) void))
+	(foreign-procedure __atomic "DrawCircleV" ((& RayVector2) float (& Color)) void))
   (define (draw-circle-v x y radius rgba)
 	(load-global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-circle-v0 global-vector2 radius global-color))
 
   (define draw-circle-lines-v0
-	(foreign-procedure "DrawCircleLinesV" ((& RayVector2) float (& Color)) void))
+	(foreign-procedure __atomic "DrawCircleLinesV" ((& RayVector2) float (& Color)) void))
   (define (draw-circle-lines-v x y radius rgba)
 	(load-global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-circle-lines-v0 global-vector2 radius global-color))
 
   (define draw-rectangle-gradient-v0
-	(foreign-procedure "DrawRectangleGradientV"
+	(foreign-procedure __atomic "DrawRectangleGradientV"
 					   (int int int int (& Color) (& Color)) void))
   (define (draw-rectangle-gradient-v x y w h rgba-upper rgba-lower)
 	(load-global-color global-color rgba-upper)
 	(load-global-color global-color2 rgba-lower)
 	(draw-rectangle-gradient-v0 x y w h global-color global-color2))
   (define draw-rectangle-gradient-h0
-	(foreign-procedure "DrawRectangleGradientH"
+	(foreign-procedure __atomic "DrawRectangleGradientH"
 					   (int int int int (& Color) (& Color)) void))
   (define (draw-rectangle-gradient-h x y w h rgba-left rgba-right)
 	(load-global-color global-color rgba-left)
@@ -179,7 +179,7 @@
 	(draw-rectangle-gradient-h0 x y w h global-color global-color2))
 
   (define draw-ring0
-	(foreign-procedure "DrawRing" ((& RayVector2) float float
+	(foreign-procedure __atomic "DrawRing" ((& RayVector2) float float
 								   float float int (& Color)) void))
   (define (draw-ring x y rinner router start-ang end-ang segments rgba)
 	(load-global-vector2 x y)
@@ -187,7 +187,7 @@
 	(draw-ring0 global-vector2 rinner router start-ang end-ang segments global-color))
 
   (define draw-ring-lines0
-	(foreign-procedure "DrawRingLines" ((& RayVector2) float float
+	(foreign-procedure __atomic "DrawRingLines" ((& RayVector2) float float
 										float float int (& Color)) void))
   (define (draw-ring-lines x y rinner router start-ang end-ang segments rgba)
 	(load-global-vector2 x y)
@@ -196,9 +196,9 @@
 					  start-ang end-ang segments global-color))
 
   (define init-audio-device
-	(foreign-procedure "InitAudioDevice" () void))
+	(foreign-procedure __atomic "InitAudioDevice" () void))
   (define close-audio-device
-	(foreign-procedure "CloseAudioDevice" () void))
+	(foreign-procedure __atomic "CloseAudioDevice" () void))
 
   ;; ABI as of Raylib 5.5
   (define-ftype AudioStream
@@ -217,27 +217,27 @@
 	  (_ void*)))
   
   (define load-music-stream0
-	(foreign-procedure "LoadMusicStream" (string) (& Music)))
+	(foreign-procedure __atomic "LoadMusicStream" (string) (& Music)))
   (define (load-music-stream file)
 	(define result (make-ftype-pointer Music (foreign-alloc (ftype-sizeof Music))))
 	(load-music-stream0 result file)
     result)
   (define play-music-stream
-	(foreign-procedure "PlayMusicStream" ((& Music)) void))
+	(foreign-procedure __atomic "PlayMusicStream" ((& Music)) void))
   (define stop-music-stream
-	(foreign-procedure "StopMusicStream" ((& Music)) void))
+	(foreign-procedure __atomic "StopMusicStream" ((& Music)) void))
   (define pause-music-stream
-	(foreign-procedure "PauseMusicStream" ((& Music)) void))
+	(foreign-procedure __atomic "PauseMusicStream" ((& Music)) void))
   (define resume-music-stream
-	(foreign-procedure "ResumeMusicStream" ((& Music)) void))
+	(foreign-procedure __atomic "ResumeMusicStream" ((& Music)) void))
   (define seek-music-stream
-	(foreign-procedure "SeekMusicStream" ((& Music) float) void))
+	(foreign-procedure __atomic "SeekMusicStream" ((& Music) float) void))
   (define update-music-stream
-	(foreign-procedure "UpdateMusicStream" ((& Music)) void))
+	(foreign-procedure __atomic "UpdateMusicStream" ((& Music)) void))
   (define unload-music-stream0
-	(foreign-procedure "UnloadMusicStream" ((& Music)) void))
+	(foreign-procedure __atomic "UnloadMusicStream" ((& Music)) void))
   (define set-music-volume
-	(foreign-procedure "SetMusicVolume" ((& Music) float) void))
+	(foreign-procedure __atomic "SetMusicVolume" ((& Music) float) void))
   (define (set-music-looping music looping)
 	(ftype-set! Music (looping) music looping))
   (define (unload-music-stream music)
@@ -249,37 +249,37 @@
 	  (_ AudioStream)
 	  (_ unsigned-int)))
   (define load-sound0
-	(foreign-procedure "LoadSound" (string) (& Sound)))
+	(foreign-procedure __atomic "LoadSound" (string) (& Sound)))
   (define (load-sound file)
 	(define result (make-ftype-pointer Sound (foreign-alloc (ftype-sizeof Sound))))
 	(load-sound0 result file)
 	result)
   (define play-sound
-	(foreign-procedure "PlaySound" ((& Sound)) void))
+	(foreign-procedure __atomic "PlaySound" ((& Sound)) void))
   (define set-sound-volume
-	(foreign-procedure "SetSoundVolume" ((& Sound) float) void))
+	(foreign-procedure __atomic "SetSoundVolume" ((& Sound) float) void))
   (define set-sound-pitch
-	(foreign-procedure "SetSoundPitch" ((& Sound) float) void))
+	(foreign-procedure __atomic "SetSoundPitch" ((& Sound) float) void))
   (define unload-sound0
-	(foreign-procedure "UnloadSound" ((& Sound)) void))
+	(foreign-procedure __atomic "UnloadSound" ((& Sound)) void))
   (define (unload-sound sound)
 	(unload-sound0 sound)
 	(foreign-free (ftype-pointer-address sound)))
 
   (define draw-rectangle-lines0
-	(foreign-procedure "DrawRectangleLines" (int int int int (& Color)) void))
+	(foreign-procedure __atomic "DrawRectangleLines" (int int int int (& Color)) void))
   (define (draw-rectangle-lines x y w h rgba)
 	(load-global-color global-color rgba)
 	(draw-rectangle-lines0 x y w h global-color))
   (define draw-rectangle-rec0
-	(foreign-procedure "DrawRectangleRec" ((& RayRect) (& Color)) void))
+	(foreign-procedure __atomic "DrawRectangleRec" ((& RayRect) (& Color)) void))
   (define (draw-rectangle-rec x y width height rgba)
 	(load-global-rectangle global-rectangle x y width height)
 	(load-global-color global-color rgba)
 	(draw-rectangle-rec0 global-rectangle global-color))
 
   (define draw-rectangle-pro0
-	(foreign-procedure "DrawRectanglePro" ((& RayRect) (& RayVector2)
+	(foreign-procedure __atomic "DrawRectanglePro" ((& RayRect) (& RayVector2)
 										   float (& Color)) void))
   (define (draw-rectangle-pro x y width height ox oy rot rgba)
 	(load-global-rectangle global-rectangle x y width height)
@@ -291,25 +291,26 @@
 						 global-color))
 
   (define draw-text0
-	(foreign-procedure "DrawText" (string int int int (& Color)) void))
+	(foreign-procedure __atomic "DrawText" (string int int int (& Color)) void))
   (define (draw-text text x y font-size rgba)
 	(load-global-color global-color rgba)
 	(draw-text0 text x y font-size global-color))
   (define draw-text-ex0
-	(foreign-procedure "DrawTextEx" ((& Font) string (& RayVector2)
+	(foreign-procedure __atomic "DrawTextEx" ((& Font) string (& RayVector2)
 									 float float (& Color)) void))
   (define (draw-text-ex font text x y size spacing rgba)
 	(load-global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-text-ex0 font text global-vector2 size spacing global-color))
   (define measure-text-ex0
-	(foreign-procedure "MeasureTextEx" ((& Font) string float float) (& RayVector2)))
+	(foreign-procedure __atomic "MeasureTextEx"
+					   ((& Font) string float float) (& RayVector2)))
   (define (measure-text-ex font text size spacing)
 	(measure-text-ex0 global-vector2 font text size spacing)
 	(unload-global-vector2))
 
   (define draw-fps
-	(foreign-procedure "DrawFPS" (int int) void))
+	(foreign-procedure __atomic "DrawFPS" (int int) void))
 
   (define-ftype Texture
 	(struct
@@ -319,13 +320,13 @@
 	  (_ int)
 	  (_ int)))
   (define load-texture0
-	(foreign-procedure "LoadTexture" (string) (& Texture)))
+	(foreign-procedure __atomic "LoadTexture" (string) (& Texture)))
   (define (load-texture file)
 	(define result (make-ftype-pointer Texture (foreign-alloc (ftype-sizeof Texture))))
 	(load-texture0 result file)
 	result)
   (define unload-texture0
-	(foreign-procedure "UnloadTexture" ((& Texture)) void))
+	(foreign-procedure __atomic "UnloadTexture" ((& Texture)) void))
   (define (unload-texture tex)
 	(unload-texture0 tex)
 	(foreign-free (ftype-pointer-address tex)))
@@ -337,14 +338,14 @@
 	  [_ Texture]))
 
   (define load-render-texture0
-	(foreign-procedure "LoadRenderTexture" (int int) (& RenderTexture)))
+	(foreign-procedure __atomic "LoadRenderTexture" (int int) (& RenderTexture)))
   (define (load-render-texture width height)
 	(define result (make-ftype-pointer RenderTexture
 									   (foreign-alloc (ftype-sizeof RenderTexture))))
 	(load-render-texture0 result width height)
 	result)
   (define unload-render-texture0
-	(foreign-procedure "UnloadRenderTexture" ((& RenderTexture)) void))
+	(foreign-procedure __atomic "UnloadRenderTexture" ((& RenderTexture)) void))
   (define (unload-render-texture rtexture)
 	(unload-render-texture0 rtexture)
 	(foreign-free (ftype-pointer-address rtexture)))
@@ -353,7 +354,7 @@
 	(ftype-&ref RenderTexture (texture) rtexture))
   
   (define draw-texture-rec0
-	(foreign-procedure "DrawTextureRec"
+	(foreign-procedure __atomic "DrawTextureRec"
 					   ((& Texture) (& RayRect)
 						(& RayVector2) (& Color)) void))
   (define (draw-texture-rec tex rect v rgba)
@@ -366,13 +367,13 @@
 	(draw-texture-rec0 tex global-rectangle global-vector2 global-color))
 
   (define draw-texture0
-	(foreign-procedure "DrawTexture" ((& Texture) int int (& Color)) void))
+	(foreign-procedure __atomic "DrawTexture" ((& Texture) int int (& Color)) void))
   (define (draw-texture tex x y rgba)
 	(load-global-color global-color rgba)
 	(draw-texture0 tex x y global-color))
 
   (define draw-texture-pro0
-	(foreign-procedure "DrawTexturePro"
+	(foreign-procedure __atomic "DrawTexturePro"
 					   ((& Texture) (& RayRect) (& RayRect)
 						(& RayVector2) float (& Color))
 					   void))
@@ -399,45 +400,45 @@
 	  (_ void*)
 	  (_ void*)))
   (define load-font0
-	(foreign-procedure "LoadFont" (string) (& Font)))
+	(foreign-procedure __atomic "LoadFont" (string) (& Font)))
   (define (load-font file)
 	(define result (make-ftype-pointer Font (foreign-alloc (ftype-sizeof Font))))
 	(load-font0 result file)
     result)
   (define unload-font0
-	(foreign-procedure "UnloadFont" ((& Font)) void))
+	(foreign-procedure __atomic "UnloadFont" ((& Font)) void))
   (define (unload-font font)
 	(unload-font0 font)
 	(foreign-free (ftype-pointer-address font)))
 
   (define is-key-down
-	(foreign-procedure "IsKeyDown" (int) stdbool))
+	(foreign-procedure __atomic "IsKeyDown" (int) stdbool))
 
   (define is-key-pressed
-	(foreign-procedure "IsKeyPressed" (int) stdbool))
+	(foreign-procedure __atomic "IsKeyPressed" (int) stdbool))
 
   (define is-key-released
-	(foreign-procedure "IsKeyReleased" (int) stdbool))
+	(foreign-procedure __atomic "IsKeyReleased" (int) stdbool))
 
   (define get-key-name
-	(foreign-procedure "GetKeyName" (int) string))
+	(foreign-procedure __atomic "GetKeyName" (int) string))
 
   (define get-key-pressed
-	(foreign-procedure "GetKeyPressed" () int))
+	(foreign-procedure __atomic "GetKeyPressed" () int))
 
   (define set-exit-key
-	(foreign-procedure "SetExitKey" (int) void))
+	(foreign-procedure __atomic "SetExitKey" (int) void))
 
   (define get-frame-time
-	(foreign-procedure "GetFrameTime" () float))
+	(foreign-procedure __atomic "GetFrameTime" () float))
 
   (define set-trace-log-level
-	(foreign-procedure "SetTraceLogLevel" (int) void))
+	(foreign-procedure __atomic "SetTraceLogLevel" (int) void))
 
   (define push-matrix
-	(foreign-procedure "rlPushMatrix" () void))
+	(foreign-procedure __atomic "rlPushMatrix" () void))
   (define pop-matrix
-	(foreign-procedure "rlPopMatrix" () void))
+	(foreign-procedure __atomic "rlPopMatrix" () void))
   (define-syntax with-matrix
 	(syntax-rules ()
 	  [(_ e1 e2 ...)
@@ -446,32 +447,32 @@
 		 e1 e2 ...
 		 (pop-matrix))]))
   (define translatef
-	(foreign-procedure "rlTranslatef" (float float float) void))
+	(foreign-procedure __atomic "rlTranslatef" (float float float) void))
   (define rotatef
-	(foreign-procedure "rlRotatef" (float float float float) void))
+	(foreign-procedure __atomic "rlRotatef" (float float float float) void))
   (define scalef
-	(foreign-procedure "rlScalef" (float float float) void))
+	(foreign-procedure __atomic "rlScalef" (float float float) void))
   (define rlbegin
-	(foreign-procedure "rlBegin" (int) void))
+	(foreign-procedure __atomic "rlBegin" (int) void))
   (define rlend
-	(foreign-procedure "rlEnd" () void))
+	(foreign-procedure __atomic "rlEnd" () void))
   (define vertex2
-	(foreign-procedure "rlVertex2f" (float float) void))
+	(foreign-procedure __atomic "rlVertex2f" (float float) void))
   (define texcoord
-	(foreign-procedure "rlTexCoord2f" (float float) void))
+	(foreign-procedure __atomic "rlTexCoord2f" (float float) void))
   (define set-texture0
-	(foreign-procedure "rlSetTexture" (unsigned-int) void))
+	(foreign-procedure __atomic "rlSetTexture" (unsigned-int) void))
   (define (set-texture tex)
 	(set-texture0 (if tex (ftype-ref Texture (id) tex) 0)))
   (define color4f
-	(foreign-procedure "rlColor4f" (float float float float) void))
+	(foreign-procedure __atomic "rlColor4f" (float float float float) void))
   (define color4ub
-	(foreign-procedure "rlColor4ub" (unsigned-8 unsigned-8 unsigned-8 unsigned-8) void))
+	(foreign-procedure __atomic "rlColor4ub" (unsigned-8 unsigned-8 unsigned-8 unsigned-8) void))
   (define normal3f
-	(foreign-procedure "rlNormal3f" (float float float) void))
+	(foreign-procedure __atomic "rlNormal3f" (float float float) void))
 
   (define set-shapes-texture0
-	(foreign-procedure "SetShapesTexture" ((& Texture) (& RayRect)) void))
+	(foreign-procedure __atomic "SetShapesTexture" ((& Texture) (& RayRect)) void))
   (define (set-shapes-texture tex rect)
 	(load-global-rectangle global-rectangle
 						   (rectangle-x rect) (rectangle-y rect)
@@ -481,18 +482,18 @@
   (define global-texture
 	(make-ftype-pointer Texture (foreign-alloc (ftype-sizeof Texture))))
   (define get-shapes-texture0
-	(foreign-procedure "GetShapesTexture" () (& Texture)))
+	(foreign-procedure __atomic "GetShapesTexture" () (& Texture)))
   (define (get-shapes-texture)
 	(get-shapes-texture0 global-texture)
 	global-texture)
   (define get-shapes-texture-rectangle0
-	(foreign-procedure "GetShapesTextureRectangle" () (& RayRect)))
+	(foreign-procedure __atomic "GetShapesTextureRectangle" () (& RayRect)))
   (define (get-shapes-texture-rectangle)
 	(get-shapes-texture-rectangle0 global-rectangle)
 	(unload-global-rectangle global-rectangle))
 
   (define set-texture-filter
-	(foreign-procedure "SetTextureFilter" ((& Texture) int) void))
+	(foreign-procedure __atomic "SetTextureFilter" ((& Texture) int) void))
 
   ;; room for 32 vec2s
   (define spline-buf-length 32)
@@ -511,19 +512,19 @@
 		(loop (add1 points-idx) (+ buf-idx (* 2 (ftype-sizeof float)))))))
   
   (define draw-spline-bezier-quadratic0
-	(foreign-procedure "DrawSplineBezierQuadratic" (u8* int float (& Color)) void))
+	(foreign-procedure __atomic "DrawSplineBezierQuadratic" (u8* int float (& Color)) void))
   (define (draw-spline-bezier-quadratic points thick rgba)
 	(load-spline-buf points)
 	(load-global-color global-color rgba)
 	(draw-spline-bezier-quadratic0 spline-draw-buf (vector-length points) thick global-color))
 
   (define draw-spline-bezier-cubic0
-	(foreign-procedure "DrawSplineBezierCubic" (u8* int float (& Color)) void))
+	(foreign-procedure __atomic "DrawSplineBezierCubic" (u8* int float (& Color)) void))
   (define (draw-spline-bezier-cubic points thick rgba)
 	(load-spline-buf points)
 	(load-global-color global-color rgba)
 	(draw-spline-bezier-cubic0 spline-draw-buf (vector-length points) thick global-color))
 
   (define take-screenshot
-	(foreign-procedure "TakeScreenshot" (string) void))
+	(foreign-procedure __atomic "TakeScreenshot" (string) void))
   )

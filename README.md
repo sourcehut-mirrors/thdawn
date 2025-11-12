@@ -27,7 +27,7 @@ You should have received a copy of the GNU General Public License along with thi
 program. If not, see <https://www.gnu.org/licenses/>.
 
 ## Dev/Build Dependencies
-* Chez Scheme
+* Chez Scheme 10.3.0+
 * Raylib dynamic library
 
 ## Runtime Dependencies

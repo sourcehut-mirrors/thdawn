@@ -136,18 +136,12 @@
   (define (vector-pop v)
 	(define length (vector-length v))
 	(define result (make-vector (sub1 length)))
-	;; TODO: replace manual loop with vector-copy! when moving to Chez 10.3.0
-	(do [(i 0 (add1 i))]
-		[(= i (sub1 length))]
-	  (vector-set! result i (vector-ref v i)))
+	(vector-copy! v 0 result 0 (sub1 length))
 	result)
 
   (define (vector-truncate v new-length)
 	(define length (vector-length v))
 	(define result (make-vector new-length))
-	;; TODO: replace manual loop with vector-copy! when moving to Chez 10.3.0
-	(do [(i 0 (add1 i))]
-		[(= i new-length)]
-	  (vector-set! result i (vector-ref v i)))
+	(vector-copy! v 0 result 0 new-length)
 	result)
   )
