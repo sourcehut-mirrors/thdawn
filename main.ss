@@ -945,10 +945,12 @@
    [(enum-set-member? (vkey shoot) (inputset-edge-pressed inputs))
 	(if (replist-gui-for-save self)
 		(void) ;; todo
-		(let ([path (rep-path (replist-gui-selected-page self)
-							  (replist-gui-selected-row self))])
-		  (start-replay (read-replay path))
-		  (set! gui-stack '())))]))
+		(let* ([path (rep-path (replist-gui-selected-page self)
+							   (replist-gui-selected-row self))]
+			   [rep (read-replay path)])
+		  (when rep
+			(start-replay rep)
+			(set! gui-stack '()))))]))
 (define (replist-render self textures fonts)
   (define title (if (replist-gui-for-save self)
 					"Select Slot" "Watch Elegant Replays"))
