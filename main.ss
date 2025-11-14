@@ -949,6 +949,7 @@
 							   (replist-gui-selected-row self))]
 			   [rep (read-replay path)])
 		  (when rep
+			(raylib:play-sound (sebundle-menuselect sounds))
 			(start-replay rep)
 			(set! gui-stack '()))))]))
 (define (replist-render self textures fonts)
@@ -3523,21 +3524,24 @@
 			 current-stage-ctx
 			 (cons r (stage-ctx-replay-output current-stage-ctx))))
 		  (handle-game-input inputs))
-		;; todo handle reaching the end
 		(let* ([v (stage-ctx-replay-records current-stage-ctx)]
-			   [idx (stage-ctx-replay-idx current-stage-ctx)]
-			   [r (vnth v idx)])
-		  (assert (= (vnth r 0) frames))
-		  (when (vnth r 4)
-			(assert (equal? (vnth r 4)
-							(pseudo-random-generator->vector game-rng))))
-		  (handle-game-input
-		   (make-inputset '()
-						  (vkeys-proc (vector-ref r 1))
-						  (vkeys-proc (vector-ref r 2))
-						  (vkeys-proc (vector-ref r 3))))
-		  (stage-ctx-replay-idx-set! current-stage-ctx
-									 (fx1+ idx))))]))
+			   [idx (stage-ctx-replay-idx current-stage-ctx)])
+		  (if (>= idx (vlen v))
+			  (begin
+				(play-music (musbundle-lupinasu-no-komoriuta-piano music))
+				(set! gui-stack (list (mk-pause-gui (pausetype replaydone)))))
+			  (let ([r (vnth v idx)])
+				(assert (= (vnth r 0) frames))
+				(when (vnth r 4)
+				  (assert (equal? (vnth r 4)
+								  (pseudo-random-generator->vector game-rng))))
+				(handle-game-input
+				 (make-inputset '()
+								(vkeys-proc (vector-ref r 1))
+								(vkeys-proc (vector-ref r 2))
+								(vkeys-proc (vector-ref r 3))))
+				(stage-ctx-replay-idx-set! current-stage-ctx
+										   (fx1+ idx))))))]))
 
 (define (handle-player-movement level-pressed)
   (define left-down (enum-set-member? (vkey left) level-pressed))
