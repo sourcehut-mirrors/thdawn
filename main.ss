@@ -878,15 +878,21 @@
 			 (thunk "Done")
 			 on-complete)))
    0))
+(define (nameinput-final-name ni-gui)
+  (if (zero? (nameinput-gui-position ni-gui))
+	  "Nanashi"
+	  (substring
+	   (nameinput-gui-name ni-gui)
+	   0 (nameinput-gui-position ni-gui))))
 
 (define +replay-pages+ 10)
 (define +replays-per-page+ 10)
 (define-record-type replist-gui
   (parent gui)
   (fields
-   ;; if #t then this is to pick a slot to save a replay in, otherwise
-   ;; this is to pick a slot to playback a replay
-   for-save
+   ;; if saving a new replay, the (score-entry . records) to save,
+   ;; otherwise #f
+   records-to-save
    (mutable selected-page)
    (mutable selected-row)
    ;; when the page is changed, we read in the data for the page of replays
@@ -915,7 +921,11 @@
   (cond
    [(enum-set-member? (vkey bomb) (inputset-edge-pressed inputs))
 	(raylib:play-sound (sebundle-menuback sounds))
-	(set! gui-stack (remq self gui-stack))]
+	(if (replist-gui-records-to-save self)
+		(begin
+		  (set! gui-stack (list (mk-title-gui)))
+		  (play-music (musbundle-ojamajo-wa-koko-ni-iru music)))
+		(set! gui-stack (remq self gui-stack)))]
    [(enum-set-member? (vkey left) (inputset-edge-pressed inputs))
 	(when (> (replist-gui-selected-page self) 0)
 	  (raylib:play-sound (sebundle-menuselect sounds))
@@ -943,8 +953,26 @@
 	   self
 	   (add1 (replist-gui-selected-row self))))]
    [(enum-set-member? (vkey shoot) (inputset-edge-pressed inputs))
-	(if (replist-gui-for-save self)
-		(void) ;; todo
+	(if (replist-gui-records-to-save self)
+		(let* ([path (rep-path (replist-gui-selected-page self)
+							   (replist-gui-selected-row self))]
+			   [score-entry (car (replist-gui-records-to-save self))]
+			   [records (cdr (replist-gui-records-to-save self))]
+			   [ni-gui
+				(mk-nameinput-gui
+				 (lambda (ni-gui)
+				   (define name (nameinput-final-name ni-gui))
+				   (with-output-to-file path
+					 (thunk
+					  (write score-entry)
+					  (newline)
+					  (for-each (lambda (r) (write r) (newline))
+								records))
+					 'truncate)
+				   (raylib:play-sound (sebundle-extend sounds))
+				   (replist-refresh self)
+				   (set! gui-stack (cdr gui-stack))))])
+		  (set! gui-stack (cons ni-gui gui-stack)))
 		(let* ([path (rep-path (replist-gui-selected-page self)
 							   (replist-gui-selected-row self))]
 			   [rep (read-replay path)])
@@ -953,7 +981,7 @@
 			(start-replay rep)
 			(set! gui-stack '()))))]))
 (define (replist-render self textures fonts)
-  (define title (if (replist-gui-for-save self)
+  (define title (if (replist-gui-records-to-save self)
 					"Select Slot" "Watch Elegant Replays"))
   (define-values (twidth _theight)
 	(raylib:measure-text-ex
@@ -981,12 +1009,12 @@
    (fl- 320.0 (fl/ pgwidth 2.0)) 370.0 20.0 0.0 -1)
   (draw-scores fonts (replist-gui-cached-data self)
 			   (replist-gui-selected-row self)))
-(define (mk-replist-gui for-save)
+(define (mk-replist-gui to-save)
   (define result
 	(make-replist-gui
 	 replist-handle-input
 	 replist-render
-	 for-save
+	 to-save
 	 0 0 '()))
   (replist-refresh result)
   result)
@@ -1240,6 +1268,24 @@
   pausetypes)
 (define replay-pausetypes (pausetypes replay replaydone))
 
+(define (mk-scoresave-nameinput-gui score time records)
+  (mk-nameinput-gui
+   (lambda (ni-gui)
+	 (define hiscore (assq 'hiscore play-data))
+	 (define name (nameinput-final-name ni-gui))
+	 ;; TODO cleared flag
+	 (define entry (make-score-entry name score time #f))
+	 (set-cdr!
+	  hiscore
+	  (list-sort
+	   (lambda (a b) (> (score-entry-score a)
+						(score-entry-score b)))
+	   (cons entry (cdr hiscore))))
+	 (save-play-data play-data)
+	 (raylib:play-sound (sebundle-extend sounds))
+	 (set! gui-stack
+		   (list (mk-replist-gui (cons entry records)))))))
+
 (define (mk-pause-gui type)
   (define (unpause gui)
 	(set! gui-stack (remq gui gui-stack))
@@ -1261,38 +1307,8 @@
 	(set! current-stage-ctx #f)
 	(if save
 		(begin
-		  (set!
-		   gui-stack
-		   (list
-			(mk-nameinput-gui
-			 (lambda (ni-gui)
-			   (define hiscore (assq 'hiscore play-data))
-			   (define name
-				 (if (zero? (nameinput-gui-position ni-gui))
-					 "Nanashi"
-					 (substring
-					  (nameinput-gui-name ni-gui)
-					  0 (nameinput-gui-position ni-gui))))
-			   ;; TODO cleared flag
-			   (define entry (make-score-entry name score time #f))
-			   (set-cdr!
-				hiscore
-				(list-sort
-				 (lambda (a b) (> (score-entry-score a)
-								  (score-entry-score b)))
-				 (cons entry (cdr hiscore))))
-			   (save-play-data play-data)
-			   ;; todo: pop the replist gui here
-			   (with-output-to-file "replays/slot00.rep"
-				 (thunk
-				  (write entry)
-				  (newline)
-				  (for-each (lambda (r) (write r) (newline))
-							records))
-				 'truncate)
-			   (raylib:play-sound (sebundle-extend sounds))
-			   (set! gui-stack (list (mk-title-gui)))
-			   (play-music (musbundle-ojamajo-wa-koko-ni-iru music))))))
+		  (set! gui-stack (list (mk-scoresave-nameinput-gui
+								 score time records)))
 		  (unless (eq? (pausetype gameover) type)
 			;; Gameover will have already started playing the music
 			(play-music (musbundle-lupinasu-no-komoriuta-piano music))))
