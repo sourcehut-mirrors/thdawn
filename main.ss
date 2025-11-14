@@ -956,15 +956,20 @@
 	(if (replist-gui-records-to-save self)
 		(let* ([path (rep-path (replist-gui-selected-page self)
 							   (replist-gui-selected-row self))]
-			   [score-entry (car (replist-gui-records-to-save self))]
+			   [entry (car (replist-gui-records-to-save self))]
 			   [records (cdr (replist-gui-records-to-save self))]
 			   [ni-gui
 				(mk-nameinput-gui
 				 (lambda (ni-gui)
-				   (define name (nameinput-final-name ni-gui))
+				   (define real-entry
+					 (make-score-entry
+					  (nameinput-final-name ni-gui)
+					  (score-entry-score entry)
+					  (score-entry-unixtime entry)
+					  (score-entry-cleared entry)))
 				   (with-output-to-file path
 					 (thunk
-					  (write score-entry)
+					  (write real-entry)
 					  (newline)
 					  (for-each (lambda (r) (write r) (newline))
 								records))
