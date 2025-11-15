@@ -2026,7 +2026,7 @@
   (guard (e [(i/o-file-does-not-exist-error? e)
 			 (with-output-to-file +playdata-path+
 			   (thunk (pretty-print
-					   `((spell-history . ,(vector-map (lambda (_) (cons 0 0))
+					   `((spell-history . ,(vector-map (lambda (_) '(0 . 0))
 													   spells))
 						 ;; sorted by score descending
 						 (hiscore . ())
