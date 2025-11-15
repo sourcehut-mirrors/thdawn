@@ -664,6 +664,11 @@
 ;; rendered bottom to top (reverse order)
 ;; if a stage is active, it is rendered before any gui
 (define gui-stack '())
+(define (replace-gui gui)
+  (if gui
+	  (set! gui-stack (list gui))
+	  (set! gui-stack '())))
+
 (define-record-type gui
   (fields
    ;; function (self level-pressed, edge-pressed, edge-released) -> void
@@ -751,7 +756,7 @@
 		 (set-cdr! pair (add1 (cdr pair)))
 		 (save-play-data play-data))
 	   (start-game)
-	   (set! gui-stack '())))
+	   (replace-gui #f)))
 	(make-menu-item
 	 (thunk "Replay")
 	 (lambda (_gui) (set! gui-stack (cons (mk-replist-gui #f) gui-stack))))
@@ -923,7 +928,7 @@
 	(raylib:play-sound (sebundle-menuback sounds))
 	(if (replist-gui-records-to-save self)
 		(begin
-		  (set! gui-stack (list (mk-title-gui)))
+		  (replace-gui (mk-title-gui))
 		  (play-music (musbundle-ojamajo-wa-koko-ni-iru music)))
 		(set! gui-stack (remq self gui-stack)))]
    [(enum-set-member? (vkey left) (inputset-edge-pressed inputs))
@@ -984,7 +989,7 @@
 		  (when rep
 			(raylib:play-sound (sebundle-menuselect sounds))
 			(start-replay rep)
-			(set! gui-stack '()))))]))
+			(replace-gui #f))))]))
 (define (replist-render self textures fonts)
   (define title (if (replist-gui-records-to-save self)
 					"Select Slot" "Watch Elegant Replays"))
@@ -1288,8 +1293,7 @@
 	   (cons entry (cdr hiscore))))
 	 (save-play-data play-data)
 	 (raylib:play-sound (sebundle-extend sounds))
-	 (set! gui-stack
-		   (list (mk-replist-gui (cons entry records)))))))
+	 (replace-gui (mk-replist-gui (cons entry records))))))
 
 (define (mk-pause-gui type)
   (define (unpause gui)
@@ -1312,13 +1316,13 @@
 	(set! current-stage-ctx #f)
 	(if save
 		(begin
-		  (set! gui-stack (list (mk-scoresave-nameinput-gui
-								 score time records)))
+		  (replace-gui (mk-scoresave-nameinput-gui
+						score time records))
 		  (unless (eq? (pausetype gameover) type)
 			;; Gameover will have already started playing the music
 			(play-music (musbundle-lupinasu-no-komoriuta-piano music))))
 		(begin
-		  (set! gui-stack (list (mk-title-gui)))
+		  (replace-gui (mk-title-gui))
 		  (play-music (musbundle-ojamajo-wa-koko-ni-iru music)))))
   (define (pause-gui-handle-input self inputs)
 	(define edge-pressed (inputset-edge-pressed inputs))
@@ -2316,10 +2320,10 @@
 	(if (< life-stock 1)
 		(begin
 		  (play-music (musbundle-lupinasu-no-komoriuta-piano music))
-		  (set! gui-stack (list (mk-pause-gui
-								 (if (is-liveplay)
-									 (pausetype gameover)
-									 (pausetype replaydone))))))
+		  (replace-gui (mk-pause-gui
+						(if (is-liveplay)
+							(pausetype gameover)
+							(pausetype replaydone)))))
 		(begin
 		  (when (>= life-stock 1)
 			(set! life-stock (sub1 life-stock)))
@@ -3550,7 +3554,7 @@
 		  (if (>= idx (vlen v))
 			  (begin
 				(play-music (musbundle-lupinasu-no-komoriuta-piano music))
-				(set! gui-stack (list (mk-pause-gui (pausetype replaydone)))))
+				(replace-gui (mk-pause-gui (pausetype replaydone))))
 			  (let ([r (vnth v idx)])
 				(assert (= (vnth r 0) frames))
 				(when (vnth r 4)
@@ -4094,7 +4098,7 @@
 		 [fonts (load-fonts)]
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
-	(set! gui-stack (list (mk-title-gui)))
+	(replace-gui (mk-title-gui))
 	(play-music (musbundle-ojamajo-wa-koko-ni-iru music))
 	
 	(dynamic-wind
@@ -4179,7 +4183,7 @@
 
 (define (debug-launch)
   (set! current-stage-ctx #f)
-  (set! gui-stack '())
+  (replace-gui #f)
   (set! want-quit #f)
   (kill-all-tasks)
   (fork-thread main))
