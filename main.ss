@@ -568,8 +568,8 @@
 
 (define-record-type stage-ctx
   (fields
-   ;; list of accumulated replay records for live plays, otherwise empty list
-   ;; consed onto, will only be reversed at the end when we write out the replay
+   ;; list of accumulated records during a liveplay,
+   ;; will only be reversed at the end when we write out the replay
    (mutable replay-output)
    ;; if playing a replay, the vector of replay records, otherwise #f
    replay-records
