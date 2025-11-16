@@ -614,7 +614,14 @@
    (mutable focus-frames)
    (mutable focused-immediate)
    option-xs
-   option-ys)
+   option-ys
+   ;; vec of any active dialogue, or #f if no dialogue active
+   (mutable dialogue)
+   ;; index into dialogue
+   (mutable dialogue-idx)
+   ;; for timed messages, forbid advancing dialogue-idx until
+   ;; `frames' exceeds this timestamp
+   (mutable dialogue-pinned-until))
   (sealed #t))
 
 (define (fresh-stage-ctx replay)
@@ -631,7 +638,7 @@
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
    0 0 #f
-   (make-vector 4 0.0) (make-vector 4 0.0)))
+   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1))
 
 (define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
@@ -3434,6 +3441,15 @@
 	 keybindings))
   (make-inputset edge-pressed-raw edge-pressed edge-released level-pressed))
 
+(define (handle-dialogue-advance)
+  (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
+	(if (= (vlen (stage-ctx-dialogue current-stage-ctx))
+		   next-idx)
+		(stage-ctx-dialogue-set! current-stage-ctx #f)
+		(stage-ctx-dialogue-idx-set! current-stage-ctx next-idx)
+		;; todo: trigger events and set the pin timestamp if necessary
+		)))
+
 (define (handle-game-input inputs)
   (define level-pressed (inputset-level-pressed inputs))
   (define edge-pressed (inputset-edge-pressed inputs))
@@ -3451,19 +3467,22 @@
 	  (handle-player-movement level-pressed))
 	(when (enum-set-member? (vkey shoot) level-pressed)
 	  (when (enum-set-member? (vkey shoot) edge-pressed)
-		(set! start-shot-frames frames))
-	  (when (= 5 (mod (fx- frames start-shot-frames) 10))
-		(vector-for-each
-		 (lambda (x y)
-		   (spawn-misc-ent (miscenttype needle) x y -10 0))
-		 option-xs option-ys))
-	  (when (zero? (mod (fx- frames start-shot-frames) 5))
-		(let ([y (- player-y 20)])
-		  (spawn-misc-ent (miscenttype mainshot) (- player-x 10) y
-						  -10 0)
-		  (spawn-misc-ent (miscenttype mainshot) (+ player-x 10) y
-						  -10 0)
-		  (raylib:play-sound (sebundle-playershoot sounds))))))
+		(if (stage-ctx-dialogue current-stage-ctx)
+			(handle-dialogue-advance)
+			(set! start-shot-frames frames)))
+	  (unless (= -1 start-shot-frames)
+		(when (= 5 (mod (fx- frames start-shot-frames) 10))
+		  (vector-for-each
+		   (lambda (x y)
+			 (spawn-misc-ent (miscenttype needle) x y -10 0))
+		   option-xs option-ys))
+		(when (zero? (mod (fx- frames start-shot-frames) 5))
+		  (let ([y (- player-y 20)])
+			(spawn-misc-ent (miscenttype mainshot) (- player-x 10) y
+							-10 0)
+			(spawn-misc-ent (miscenttype mainshot) (+ player-x 10) y
+							-10 0)
+			(raylib:play-sound (sebundle-playershoot sounds)))))))
   
   (when (enum-set-member? (vkey shoot) edge-released)
 	(set! start-shot-frames -1))
@@ -3777,6 +3796,32 @@
    (- +playfield-max-render-y+ 60)
    +playfield-width+
    60))
+
+(define (draw-dialogue textures fonts current)
+  (define text-color ;; todo pick better colors
+	(case (assqdr 'type current)
+	  [(reimu) -1]
+	  [(doremi) #xff0000ff]
+	  [(aiko) #x0000ffff]
+	  [(hazuki) #xffa500ff]))
+  (raylib:draw-rectangle-rec
+   (rectangle-x dialog-dest-bounds)
+   (rectangle-y dialog-dest-bounds)
+   (rectangle-width dialog-dest-bounds)
+   (rectangle-height dialog-dest-bounds)
+   #x939393a0)
+  (raylib:draw-texture-pro
+   (txbundle-dialog-box textures)
+   dialog-src-bounds
+   dialog-dest-bounds
+   v2zero 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-cabin fonts)
+   (assqdr 'text current)
+   (+ +playfield-min-render-x+ 10)
+   (- +playfield-max-render-y+ 50)
+   18.0 0.0 text-color))
+
 (define (draw-hud textures fonts)
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
   (raylib:draw-text-ex
@@ -3811,25 +3856,6 @@
 	 24.0 0.0 red))
   (when-let ([boss (first-boss)])
 	(draw-boss-hud boss textures fonts))
-
-  (raylib:draw-rectangle-rec
-   (rectangle-x dialog-dest-bounds)
-   (rectangle-y dialog-dest-bounds)
-   (rectangle-width dialog-dest-bounds)
-   (rectangle-height dialog-dest-bounds)
-   #x939393a0)
-  (raylib:draw-texture-pro
-   (txbundle-dialog-box textures)
-   dialog-src-bounds
-   dialog-dest-bounds
-   v2zero 0.0 -1)
-  (raylib:draw-text-ex
-   (fontbundle-cabin fonts)
-   "...What is this place?"
-   (+ +playfield-min-render-x+ 10)
-   (- +playfield-max-render-y+ 50)
-   18.0 0.0 -1
-   )
 
   (let* ([start-x 490.0]
 		 [y 48.0]
@@ -3889,7 +3915,11 @@
 					440 400 18 -1)
   (raylib:draw-text (format "TASK: ~d" (task-count))
 					440 425 18 -1)
-  (raylib:draw-fps 440 450))
+  (raylib:draw-fps 440 450)
+
+  (when-let ([d (stage-ctx-dialogue current-stage-ctx)])
+	(draw-dialogue textures fonts
+				   (vnth d (stage-ctx-dialogue-idx current-stage-ctx)))))
 
 (define bg1-scroll 0.0)
 (define bg2-scroll 0.0)
@@ -4068,6 +4098,7 @@
   (raylib:end-drawing))
 
 (include "stage.ss")
+(include "boss.ss")
 
 (define (reset-to chapter)
   ;; we do it like this instead of putting the functions directly in an

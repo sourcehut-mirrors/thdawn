@@ -1451,4 +1451,10 @@
 
 (define (chapter13 task)
   (set! current-chapter 13)
-  (loop-forever))
+  (wait 180)
+  (stage-ctx-dialogue-set!
+   current-stage-ctx
+   (with-input-from-file "assets/dialogue/prebattle.dat" read))
+  (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
+  (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
+  (chapter14 task))
