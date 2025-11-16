@@ -3773,6 +3773,13 @@
 			   (inexact (+ +playfield-max-y+ +playfield-render-offset-y+))
 			   #xffffffc0))
 
+(define dialog-src-bounds (make-rectangle 0 0 368 60))
+(define dialog-dest-bounds
+  (make-rectangle
+   +playfield-min-render-x+
+   (- +playfield-max-render-y+ 60)
+   +playfield-width+
+   60))
 (define (draw-hud textures fonts)
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
   (raylib:draw-text-ex
@@ -3807,6 +3814,25 @@
 	 24.0 0.0 red))
   (when-let ([boss (first-boss)])
 	(draw-boss-hud boss textures fonts))
+
+  (raylib:draw-rectangle-rec
+   (rectangle-x dialog-dest-bounds)
+   (rectangle-y dialog-dest-bounds)
+   (rectangle-width dialog-dest-bounds)
+   (rectangle-height dialog-dest-bounds)
+   #x939393a0)
+  (raylib:draw-texture-pro
+   (txbundle-dialog-box textures)
+   dialog-src-bounds
+   dialog-dest-bounds
+   v2zero 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-cabin fonts)
+   "...What is this place?"
+   (+ +playfield-min-render-x+ 10)
+   (- +playfield-max-render-y+ 50)
+   18.0 0.0 -1
+   )
 
   (let* ([start-x 490.0]
 		 [y 48.0]

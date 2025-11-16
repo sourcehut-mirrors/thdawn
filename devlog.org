@@ -1,3 +1,19 @@
+* [2025-11-15 Sat]
+How should the dialogue system work?
+
+probably plain readable data in external file
+something like:
+
+((type . reimu) (text . "First line
+second line"))
+((type . doremi-surprised) (text . "Reply"))
+"Plain string means same character and expression as previous"
+((type . doremi-enter)) ;; dummy types interpreted specially by the code
+((type . bossmusic))
+
+see dialogue/main.dat for a sketch.
+
+
 * [2025-11-06 Thu]
 Basic replays exist but they're pretty buggy and there's no UI.
 Main problems:
