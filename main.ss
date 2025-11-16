@@ -554,17 +554,14 @@
    edge-released
    level-pressed
    rng-state
-   unpaused
-   earlyend)
+   unpaused)
   (sealed #t))
 (define (make-replay-record frame edge-pressed edge-released level-pressed)
-  (vector frame edge-pressed edge-released level-pressed #f #f #f))
+  (vector frame edge-pressed edge-released level-pressed #f #f))
 (define (save-rng-state reprecord)
   (vector-set! reprecord 4 (pseudo-random-generator->vector game-rng)))
 (define (save-pause-duration reprecord seconds)
   (vector-set! reprecord 5 seconds))
-(define (mark-early-end reprecord)
-  (vector-set! reprecord 6 #t))
 
 (define-record-type stage-ctx
   (fields
