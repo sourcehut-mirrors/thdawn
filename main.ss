@@ -3446,7 +3446,9 @@
 	(if (= (vlen (stage-ctx-dialogue current-stage-ctx))
 		   next-idx)
 		(stage-ctx-dialogue-set! current-stage-ctx #f)
-		(stage-ctx-dialogue-idx-set! current-stage-ctx next-idx)
+		(begin
+		  (stage-ctx-dialogue-idx-set! current-stage-ctx next-idx)
+		  (raylib:play-sound (sebundle-playershoot sounds)))
 		;; todo: trigger events and set the pin timestamp if necessary
 		)))
 
@@ -4119,9 +4121,12 @@
   (kill-all-tasks)
   (spawn-task "stage driver" func (constantly #t))
   (set! frames timestamp)
-  (when current-music
-	(raylib:seek-music-stream current-music
-							  (inexact (/ frames 60.0)))))
+  (if (<= chapter 13)
+	  (begin
+		(play-music (musbundle-ojamajo-carnival music))
+		(raylib:seek-music-stream current-music
+							  (inexact (/ frames 60.0))))
+	  (play-music (musbundle-naisho-yo-ojamajo music))))
 
 (define (tick-game)
   (unless (paused?)
