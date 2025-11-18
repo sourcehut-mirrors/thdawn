@@ -3441,16 +3441,68 @@
 	 keybindings))
   (make-inputset edge-pressed-raw edge-pressed edge-released level-pressed))
 
+(define +left-boss-x+ -127.0)
+(define +left-boss-y+ 117.0)
+(define +middle-boss-x+ 0.0)
+(define +middle-boss-y+ 90.0)
+(define +right-boss-x+ 127.0)
+(define +right-boss-y+ 117.0)
+
+(define (blank-bossinfo name name-color)
+  (make-bossinfo name name-color
+				 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
+				 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
+				 #t #f #f #f 0 0 0 (immutable-vector)))
+
 (define (handle-dialogue-advance)
   (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
-	(if (= (vlen (stage-ctx-dialogue current-stage-ctx))
-		   next-idx)
-		(stage-ctx-dialogue-set! current-stage-ctx #f)
-		(begin
-		  (stage-ctx-dialogue-idx-set! current-stage-ctx next-idx)
-		  (raylib:play-sound (sebundle-playershoot sounds)))
-		;; todo: trigger events and set the pin timestamp if necessary
-		)))
+	(cond
+	 [(= (vlen (stage-ctx-dialogue current-stage-ctx))
+		 next-idx)
+	  (stage-ctx-dialogue-set! current-stage-ctx #f)
+	  ]
+	 [(< frames (stage-ctx-dialogue-pinned-until current-stage-ctx))
+	  (void)]
+	 [else
+	  (stage-ctx-dialogue-idx-set! current-stage-ctx next-idx)
+	  (raylib:play-sound (sebundle-playershoot sounds))
+	  (let* ([next (vnth (stage-ctx-dialogue current-stage-ctx)
+						 next-idx)]
+			 [evt (assq 'event next)]
+			 [dur (assq 'duration next)])
+		(stage-ctx-dialogue-pinned-until-set!
+		 current-stage-ctx
+		 (if dur (+ frames (cdr dur)) -1))
+		(when evt
+		  (case (cdr evt)
+			[(doremi-enter)
+			 (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
+									 (lambda (task enm)
+									   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+												(cdr dur) enm))
+									 '()
+									 (thunk #f))]
+				   [bossinfo (blank-bossinfo "Harukaze Doremi" #xff7fbcff)])
+			   (enm-extras-set! enm bossinfo))]
+			[(hazuki-enter)
+			 (let ([enm (spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
+									 (lambda (task enm)
+									   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
+												(cdr dur) enm))
+									 '()
+									 (thunk #f))]
+				   [bossinfo (blank-bossinfo "Fujiwara Hazuki" #xff7fbcff)])
+			   (enm-extras-set! enm bossinfo))]
+			[(aiko-enter)
+			 (let ([enm (spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
+									 (lambda (task enm)
+									   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
+												(cdr dur) enm))
+									 '()
+									 (thunk #f))]
+				   [bossinfo (blank-bossinfo "Senoo Aiko" #xff7fbcff)])
+			   (enm-extras-set! enm bossinfo))])))
+	  ])))
 
 (define (handle-game-input inputs)
   (define level-pressed (inputset-level-pressed inputs))
@@ -3803,8 +3855,8 @@
   (define text-color ;; todo pick better colors
 	(case (assqdr 'type current)
 	  [(reimu) -1]
-	  [(doremi) #xff0000ff]
-	  [(aiko) #x0000ffff]
+	  [(doremi) #xff69fcff]
+	  [(aiko) #x00ffffff]
 	  [(hazuki) #xffa500ff]))
   (raylib:draw-rectangle-rec
    (rectangle-x dialog-dest-bounds)

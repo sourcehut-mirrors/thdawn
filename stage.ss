@@ -634,10 +634,7 @@
   (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500 midboss-control
 						  '((bomb . 1) (point . 30))
 						  (thunk #f))]
-		[bossinfo (make-bossinfo "Harukaze Doremi" #xff7fbcff
-								 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
-								 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								 #t #f #f #f 0 0 0 (immutable-vector))])
+		[bossinfo (blank-bossinfo "Harukaze Doremi" #xff7fbcff)])
 	(enm-extras-set! enm bossinfo))
   (wait-until (thunk (>= frames 5200)))
   (chapter5 task))
@@ -1349,10 +1346,7 @@
   (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500 midboss2-control
 						  '((life . 1) (point . 50))
 						  (thunk #f))]
-		[bossinfo (make-bossinfo "Harukaze Doremi" #xff7fbcff
-								 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
-								 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-								 #t #f #f #f 0 0 0 (immutable-vector))])
+		[bossinfo (blank-bossinfo "Harukaze Doremi" #xff7fbcff)])
 	(enm-extras-set! enm bossinfo))
   (wait-until (thunk (>= frames 11785)))
   (chapter12 task))
