@@ -515,6 +515,9 @@
 			   (bitwise-arithmetic-shift-left g 16)
 			   (bitwise-arithmetic-shift-left b 8)
 			   a))
+(define (override-alpha color a)
+  (bitwise-ior (bitwise-and color (bitwise-not #xff))
+			   a))
 (define red (packcolor 230 41 55 255))
 (define green (packcolor 0 228 48 255))
 (define invincible-flash (packcolor 64 64 255 255))
@@ -2128,10 +2131,6 @@
 
 (define (is-boss? enm)
   (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko)))
-(define (first-boss)
-  (vector-find
-   (lambda (e) (and e (is-boss? e)))
-   live-enm))
 
 (define (calculate-spell-bonus bossinfo)
   (define grace-period 180)
@@ -3459,8 +3458,7 @@
 	(cond
 	 [(= (vlen (stage-ctx-dialogue current-stage-ctx))
 		 next-idx)
-	  (stage-ctx-dialogue-set! current-stage-ctx #f)
-	  ]
+	  (stage-ctx-dialogue-set! current-stage-ctx #f)]
 	 [(< frames (stage-ctx-dialogue-pinned-until current-stage-ctx))
 	  (void)]
 	 [else
@@ -3482,7 +3480,7 @@
 												(cdr dur) enm))
 									 '()
 									 (thunk #f))]
-				   [bossinfo (blank-bossinfo "Harukaze Doremi" #xff7fbcff)])
+				   [bossinfo (blank-bossinfo "Harukaze Doremi" #xff69fcff)])
 			   (enm-extras-set! enm bossinfo))]
 			[(hazuki-enter)
 			 (let ([enm (spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
@@ -3491,7 +3489,7 @@
 												(cdr dur) enm))
 									 '()
 									 (thunk #f))]
-				   [bossinfo (blank-bossinfo "Fujiwara Hazuki" #xff7fbcff)])
+				   [bossinfo (blank-bossinfo "Fujiwara Hazuki" #xffa500ff)])
 			   (enm-extras-set! enm bossinfo))]
 			[(aiko-enter)
 			 (let ([enm (spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
@@ -3500,9 +3498,8 @@
 												(cdr dur) enm))
 									 '()
 									 (thunk #f))]
-				   [bossinfo (blank-bossinfo "Senoo Aiko" #xff7fbcff)])
-			   (enm-extras-set! enm bossinfo))])))
-	  ])))
+				   [bossinfo (blank-bossinfo "Senoo Aiko" #x00ffffff)])
+			   (enm-extras-set! enm bossinfo))])))])))
 
 (define (handle-game-input inputs)
   (define level-pressed (inputset-level-pressed inputs))
@@ -3732,7 +3729,7 @@
 	(raylib:draw-circle-v render-player-x render-player-y +hit-radius+
 						  red)))
 
-(define (draw-boss-hud enm textures fonts)
+(define (draw-boss-hud position enm textures fonts)
   (define bossinfo (enm-extras enm))
   (define remaining-timer (bossinfo-remaining-timer bossinfo))
   (define elapsed-frames (fx- (bossinfo-total-timer bossinfo)
@@ -3753,12 +3750,16 @@
 			 (dummy-healthbar-bottom-color hb))
 			(loop (+ x (dummy-healthbar-width hb) (dummy-healthbar-post-padding hb))
 				  (add1 i))))))
-  ;; TODO(stack the names vertically if there's multiple bosses)
   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
 					   (bossinfo-name bossinfo)
 					   (+ +playfield-min-render-x+ 5)
-					   (+ +playfield-min-render-y+ 5)
-					   12.0 0.0 (bossinfo-name-color bossinfo))
+					   (+ +playfield-min-render-y+ 5 (* position 15.0))
+					   16.0 0.0
+					   (if (and (fl< player-x -70.0)
+								(fl< player-y 80.0))
+						   (override-alpha
+							(bossinfo-name-color bossinfo) 128)
+						   (bossinfo-name-color bossinfo)))
   (let ([dummy-healthbars-end (render-dummy-healthbars)]
 		[cur-atk-max-health (bossinfo-max-health bossinfo)])
 	(when (or (= -1 cur-atk-max-health) (> cur-atk-max-health 0))
@@ -3908,8 +3909,24 @@
 	 "REPLAY"
 	 440 165
 	 24.0 0.0 red))
-  (when-let ([boss (first-boss)])
-	(draw-boss-hud boss textures fonts))
+  
+  ;; this is kinda dumb but whatever
+  (let ([doremi (vector-find (lambda (e) (and e (eq? 'boss-doremi (enm-type e))))
+							 live-enm)]
+		[hazuki (vector-find (lambda (e) (and e (eq? 'boss-hazuki (enm-type e))))
+							 live-enm)]
+		[aiko (vector-find (lambda (e) (and e (eq? 'boss-aiko (enm-type e))))
+						   live-enm)]
+		[nth-boss 0])
+	(when doremi
+	  (draw-boss-hud nth-boss doremi textures fonts)
+	  (set! nth-boss (add1 nth-boss)))
+	(when hazuki
+	  (draw-boss-hud nth-boss hazuki textures fonts)
+	  (set! nth-boss (add1 nth-boss)))
+	(when aiko
+	  (draw-boss-hud nth-boss aiko textures fonts)
+	  (set! nth-boss (add1 nth-boss))))
 
   (let* ([start-x 490.0]
 		 [y 48.0]
