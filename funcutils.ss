@@ -126,10 +126,7 @@
   (define (vector-add v elem)
 	(define length (vector-length v))
 	(define result (make-vector (add1 length)))
-	;; TODO: replace manual loop with vector-copy! when moving to Chez 10.3.0
-	(do [(i 0 (add1 i))]
-		[(= i length)]
-	  (vector-set! result i (vector-ref v i)))
+	(vector-copy! v 0 result 0 length)
 	(vector-set! result length elem)
 	result)
 
