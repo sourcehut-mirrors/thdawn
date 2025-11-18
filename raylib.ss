@@ -10,7 +10,7 @@
 		  draw-text draw-text-ex measure-text-ex draw-fps
 		  draw-rectangle-rec draw-rectangle-pro draw-rectangle-lines
 		  draw-rectangle-gradient-h draw-rectangle-gradient-v
-		  draw-ring draw-ring-lines
+		  draw-ring draw-ring-lines draw-poly
 		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
@@ -194,6 +194,14 @@
 	(load-global-color global-color rgba)
 	(draw-ring-lines0 global-vector2 rinner router
 					  start-ang end-ang segments global-color))
+
+  (define draw-poly0
+	(foreign-procedure __atomic "DrawPoly"
+					   ((& RayVector2) int float float (& Color)) void))
+  (define (draw-poly x y sides radius rotation color)
+	(load-global-vector2 x y)
+	(load-global-color global-color color)
+	(draw-poly0 global-vector2 sides radius rotation global-color))
 
   (define init-audio-device
 	(foreign-procedure __atomic "InitAudioDevice" () void))

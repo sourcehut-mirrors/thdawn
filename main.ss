@@ -3853,7 +3853,7 @@
    60))
 
 (define (draw-dialogue textures fonts current)
-  (define text-color ;; todo pick better colors
+  (define text-color
 	(case (assqdr 'type current)
 	  [(reimu) -1]
 	  [(doremi) #xff69fcff]
@@ -3875,7 +3875,14 @@
    (assqdr 'text current)
    (+ +playfield-min-render-x+ 10)
    (- +playfield-max-render-y+ 50)
-   18.0 0.0 text-color))
+   18.0 0.0 text-color)
+  (unless (< frames (stage-ctx-dialogue-pinned-until current-stage-ctx))
+	(raylib:draw-poly
+	 (- +playfield-max-render-x+ 20.0)
+	 (+ (- +playfield-max-render-y+ 20.0)
+		(if (< (fxmod frames 60) 30)
+			3.0 0.0))
+	 3 5.0 90.0 -1)))
 
 (define (draw-hud textures fonts)
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
@@ -4187,6 +4194,7 @@
   (vector-fill! live-enm #f)
   (vector-fill! live-misc-ents #f)
   (vector-fill! live-particles #f)
+  (stage-ctx-dialogue-set! current-stage-ctx #f)
   (kill-all-tasks)
   (spawn-task "stage driver" func (constantly #t))
   (set! frames timestamp)
