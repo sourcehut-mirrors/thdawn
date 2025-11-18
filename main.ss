@@ -2068,13 +2068,15 @@
    (mutable total-timer)
    ;; of the current attack, 0 if none, -1 if survival
    (mutable max-health)
-   ;; immutable vector of dummy healthbars represented not-yet-declared attacks
+   ;; immutable vector of healthbars representing all current/future attacks
    ;; used only for rendering
-   (mutable dummy-healthbars))
+   (mutable healthbars))
   (sealed #t))
-(define-record-type dummy-healthbar
+(define-record-type healthbar
   (fields
-   width
+   ;; how wide the healthbar is at maximum width
+   (mutable width)
+   ;; how much padding should come after the healthbar before the next one
    post-padding
    top-color
    bottom-color)
@@ -3229,11 +3231,11 @@
   (define keep-running
 	(lambda () (and (positive? (enm-health enm))
 					(positive? (bossinfo-remaining-timer bossinfo)))))
-  (bossinfo-dummy-healthbars-set! bossinfo
-								  (vector (make-dummy-healthbar
-										   10 0
-										   #xf50000ff
-										   #x800000ff)))
+  (bossinfo-healthbars-set! bossinfo
+							(vector (make-healthbar
+									 10 0
+									 #xf50000ff
+									 #x800000ff)))
   (declare-nonspell enm 1200 1000)
   (spawn-subtask
 	  "non1-ring1"
@@ -3252,7 +3254,7 @@
   (define keep-running
 	(lambda () (and (positive? (enm-health enm))
 					(positive? (bossinfo-remaining-timer bossinfo)))))
-  (bossinfo-dummy-healthbars-set! bossinfo (immutable-vector))
+  (bossinfo-healthbars-set! bossinfo (immutable-vector))
   ;(declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000 2000000)
   (wait 120)
   (spawn-subtask "spam"
@@ -3735,8 +3737,8 @@
   (define elapsed-frames (fx- (bossinfo-total-timer bossinfo)
 							  remaining-timer))
   (define spname (bossinfo-active-spell-name bossinfo))
-  (define (render-dummy-healthbars)
-	(define healthbars (bossinfo-dummy-healthbars bossinfo))
+  (define (render-healthbars)
+	(define healthbars (bossinfo-healthbars bossinfo))
 	(let loop ([x (+ +playfield-render-offset-x+ +playfield-min-x+ 5)]
 			   [i 0])
 	  (if (= i (vlen healthbars))
@@ -3745,10 +3747,10 @@
 			(raylib:draw-rectangle-gradient-v
 			 x
 			 (+ +playfield-render-offset-y+ +playfield-min-y+)
-			 (dummy-healthbar-width hb) 5
-			 (dummy-healthbar-top-color hb)
-			 (dummy-healthbar-bottom-color hb))
-			(loop (+ x (dummy-healthbar-width hb) (dummy-healthbar-post-padding hb))
+			 (healthbar-width hb) 5
+			 (healthbar-top-color hb)
+			 (healthbar-bottom-color hb))
+			(loop (+ x (healthbar-width hb) (healthbar-post-padding hb))
 				  (add1 i))))))
   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
 					   (bossinfo-name bossinfo)
@@ -3760,13 +3762,13 @@
 						   (override-alpha
 							(bossinfo-name-color bossinfo) 128)
 						   (bossinfo-name-color bossinfo)))
-  (let ([dummy-healthbars-end (render-dummy-healthbars)]
+  (let ([healthbars-end (render-healthbars)]
 		[cur-atk-max-health (bossinfo-max-health bossinfo)])
 	(when (or (= -1 cur-atk-max-health) (> cur-atk-max-health 0))
 	  (raylib:draw-rectangle-gradient-v
-	   dummy-healthbars-end
+	   healthbars-end
 	   (+ +playfield-render-offset-y+ +playfield-min-y+)
-	   (eround (* (- (- +playfield-max-render-x+ 20.0) dummy-healthbars-end)
+	   (eround (* (- (- +playfield-max-render-x+ 20.0) healthbars-end)
 				  (if (= -1 cur-atk-max-health)
 					  (/ remaining-timer (bossinfo-total-timer bossinfo))
 					  (/ (enm-health enm) cur-atk-max-health))))
