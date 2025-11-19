@@ -1458,4 +1458,4 @@
   (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (let-values ([(doremi hazuki aiko) (find-bosses)])
-	(chapter14 task doremi hazuki aiko)))
+	(group-non1 task doremi hazuki aiko)))

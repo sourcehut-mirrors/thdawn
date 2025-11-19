@@ -2081,7 +2081,7 @@
    ;; if -1, means "all remaining horizontal space"
    (mutable width)
    ;; how much padding should come after the healthbar before the next one
-   post-padding
+   (mutable post-padding)
    top-color
    bottom-color)
   (sealed #t))
