@@ -420,10 +420,28 @@
   (common-boss-postlude bossinfo doremi #f)
   (common-boss-postlude bossinfo hazuki #f)
   (common-boss-postlude bossinfo aiko #f)
+  (wait 120)
   (stage-ctx-dialogue-set!
    current-stage-ctx
    (with-input-from-file "assets/dialogue/postbattle.dat" read))
   (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
-  ;; todo clear bonus, increment clear count, end the playthrough
-  )
+  ;; todo formula
+  (let ([clear-bonus 10000000])
+	(set! current-score (+ current-score clear-bonus))
+	(spawn-particle
+	 (make-particle
+	  (particletype clear-bonus)
+	  ;; Position dynamically calculated at render to avoid
+	  ;; needing to access the fonts here
+	  0.0 0.0 240 0
+	  (format "Clear Bonus: ~:d" clear-bonus))))
+  (when (is-liveplay)
+	(let ([pair (assq 'games-cleared play-data)])
+	  (set-cdr! pair (add1 (cdr pair))))
+	(save-play-data play-data))
+  (wait 300)
+  (replace-gui (mk-pause-gui
+				(if (is-liveplay)
+					(pausetype gameclear)
+					(pausetype replaydone)))))

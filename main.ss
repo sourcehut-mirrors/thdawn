@@ -55,7 +55,7 @@
   make-miscent-type-set)
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
-		  circle-hint)
+		  circle-hint clear-bonus)
   make-particletype-set)
 (define-enumeration bltflag
   (uncancelable ;; cannot be cancelled by bombs or other standard cancels
@@ -1281,7 +1281,10 @@
 
 (define +menu-animate-dur+ 10)
 (define-enumeration pausetype
-  (normal gameover replay replaydone) ;; replay gameover is also replaydone
+  (normal ;; unpauseable
+   gameclear ;; pretty much same as gameover but with happier title
+   gameover
+   replay replaydone) ;; replay gameover is also replaydone
   pausetypes)
 (define replay-pausetypes (pausetypes replay replaydone))
 
@@ -1339,7 +1342,7 @@
 				  (> (pause-gui-closing self) 0)))
 		 (cond
 		  [(and (enum-set-member? (vkey pause) edge-pressed)
-				(not (eq? (pausetype gameover) type)))
+				(not (memq type '(gameclear gameover))))
 		   (pause-gui-close-fn-set! self (thunk (unpause self)))
 		   (pause-gui-closing-set! self 1)]
 		  [(enum-set-member? (vkey quick-restart) edge-pressed)
@@ -1359,7 +1362,7 @@
 			self
 			(case type
 			  [(normal replay) 1]
-			  [(gameover replaydone) 0]))
+			  [(gameclear gameover replaydone) 0]))
 		   ((menu-item-on-select
 			 (vnth opts (pause-gui-selected-option self)))
 			self)]
@@ -1393,10 +1396,11 @@
 	(define alpha (eround (lerp 0 255 progress)))
 	(define title
 	  (case type
-	   [(normal) "Paused"]
-	   [(gameover) "Game Over..."]
-	   [(replay) "Replay Paused"]
-	   [(replaydone) "Playback Complete"]))
+		[(normal) "Paused"]
+		[(gameclear) "All Clear!!"]
+		[(gameover) "Game Over..."]
+		[(replay) "Replay Paused"]
+		[(replaydone) "Playback Complete"]))
 	(define-values (twidth _)
 	  (raylib:measure-text-ex
 	   (fontbundle-bubblegum fonts)
@@ -1443,7 +1447,7 @@
   (define quit-nosave-opt
 	(make-menu-item
 	 (let ([label (case type
-					[(normal gameover) "Quit to Menu"]
+					[(normal gameclear gameover) "Quit to Menu"]
 					[(replay replaydone)
 					 (string-append "Quit to Menu" quick-quit-key)])])
 	   (thunk label))
@@ -1461,7 +1465,7 @@
    (case type
 	 [(normal)
 	  (vector resume-opt quit-opt quit-nosave-opt restart-opt)]
-	 [(gameover)
+	 [(gameclear gameover)
 	  (vector quit-opt quit-nosave-opt restart-opt)]
 	 [(replay)
 	  (vector resume-opt quit-nosave-opt restart-opt)]
@@ -2828,7 +2832,7 @@
 		  render-x render-y
 		  (lerp r1 r2 (/ (particle-age p) (particle-max-age p)))
 		  color)))
-	  ([spellbonus]	   
+	  ([spellbonus clear-bonus]
 	   (let*-values ([(width _) (raylib:measure-text-ex
 								 (fontbundle-cabin fonts)
 								 extra-data 24.0 0.0)])
