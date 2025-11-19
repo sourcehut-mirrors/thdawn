@@ -2021,7 +2021,7 @@
    (make-spell-descriptor "Doremi Sp2" 1800 500 8000000)
    (make-spell-descriptor "Hazuki Sp2" 1800 500 8000000)
    (make-spell-descriptor "Aiko Sp2" 1800 500 8000000)
-   (make-spell-descriptor "Group Sp2" 6000 -1 10000000)
+   (make-spell-descriptor "Group Sp2" 2400 -1 10000000)
    (make-spell-descriptor "Group Sp3" 5940 20000 10000000)))
 (define-record-type score-entry
   (fields name score unixtime cleared)
@@ -3166,6 +3166,7 @@
 		"Bonus Failed..."
 		(format "GET Spell Bonus!! ~:d" bonus))))
   (cancel-all #t)
+  (bossinfo-remaining-timer-set! bossinfo 0)
   (bossinfo-active-spell-name-set! bossinfo #f)
   (bossinfo-active-spell-bonus-set! bossinfo #f))
 
