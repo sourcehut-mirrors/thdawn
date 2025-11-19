@@ -2009,20 +2009,20 @@
    bonus)
   (sealed #t))
 (define spells
-  (vector
+  (immutable-vector
    (make-spell-descriptor "\"My First Spell Card!\"" 1540 -1 3000000)
    (make-spell-descriptor "Natural Sign \"Butterfly Smelling the Flowers\""
 						  720 -1 5000000)
-   (make-spell-descriptor "Placeholder Sp1" 1 -1 1000)
-   (make-spell-descriptor "Placeholder Sp2" 1 -1 1000)
-   (make-spell-descriptor "Placeholder Sp3" 1 -1 1000)
-   (make-spell-descriptor "Placeholder Sp4" 1 -1 1000)
-   (make-spell-descriptor "Placeholder Sp5" 1 -1 1000)
-   (make-spell-descriptor "Placeholder Sp6" 1 -1 1000)
-   (make-spell-descriptor "Placeholder Sp7" 1 -1 1000)
-   (make-spell-descriptor "Placeholder Sp8" 1 -1 1000)
-   (make-spell-descriptor "Placeholder Sp9" 1 -1 1000)
-   (make-spell-descriptor "Placeholder Sp10" 1 -1 1000)))
+   (make-spell-descriptor "Group Sp1" 1800 500 6000000)
+   (make-spell-descriptor "Doremi Sp1" 1800 500 6000000)
+   (make-spell-descriptor "Hazuki Sp1" 1800 500 6000000)
+   (make-spell-descriptor "Aiko Sp1" 1800 500 6000000)
+   (make-spell-descriptor "Group Sp2" 1800 500 8000000)
+   (make-spell-descriptor "Doremi Sp2" 1800 500 8000000)
+   (make-spell-descriptor "Hazuki Sp2" 1800 500 8000000)
+   (make-spell-descriptor "Aiko Sp2" 1800 500 8000000)
+   (make-spell-descriptor "Group Sp2" 6000 -1 10000000)
+   (make-spell-descriptor "Group Sp3" 5940 20000 10000000)))
 (define-record-type score-entry
   (fields name score unixtime cleared)
   (sealed #t)
@@ -2078,6 +2078,7 @@
 (define-record-type healthbar
   (fields
    ;; how wide the healthbar is at maximum width
+   ;; if -1, means "all remaining horizontal space"
    (mutable width)
    ;; how much padding should come after the healthbar before the next one
    post-padding
@@ -2136,6 +2137,14 @@
 
 (define (is-boss? enm)
   (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko)))
+(define (find-bosses)
+  (values
+   (vector-find
+	(lambda (e) (and e (eq? 'boss-doremi (enm-type e)))) live-enm)
+   (vector-find
+	(lambda (e) (and e (eq? 'boss-hazuki (enm-type e)))) live-enm)
+   (vector-find
+	(lambda (e) (and e (eq? 'boss-aiko (enm-type e)))) live-enm)))
 
 (define (calculate-spell-bonus bossinfo)
   (define grace-period 180)
@@ -3127,35 +3136,6 @@
   (bossinfo-max-health-set! bossinfo health)
   (enm-health-set! boss health))
 
-(define (test-fairy-control2-ring1 enm)
-  (define b (-> (cb)
-				(cbcount 50)
-				(cbspeed 1.0)
-				(cbang 40.0 0.0)))
-  (interval-loop
-   90
-   (raylib:play-sound (sebundle-shoot0 sounds))
-   (cbshoot b (enm-x enm) (enm-y enm)
-			(lambda (row col speed facing)
-			  (spawn-bullet
-			   'arrow-green (enm-x enm) (enm-y enm)
-			   5
-			   (curry linear-step-forever facing speed))))))
-
-(define (test-fairy-control2-ring2 enm)
-  (define b (-> (cb)
-				(cbcount 5)
-				(cbspeed 5.0)))
-  (interval-loop
-   30
-   (raylib:play-sound (sebundle-bell sounds))
-   (cbshoot b (enm-x enm) (enm-y enm)
-			(lambda (row col speed facing)
-			  (spawn-bullet
-			   'small-ball-blue (enm-x enm) (enm-y enm)
-			   10
-			   (curry linear-step-forever facing speed))))))
-
 (define (common-spell-postlude bossinfo enm)
   (define failed (or (bossinfo-active-attack-failed bossinfo)
 					 ;; ran out of time and not a survival
@@ -3694,30 +3674,7 @@
   (define elapsed-frames (fx- (bossinfo-total-timer bossinfo)
 							  remaining-timer))
   (define spname (bossinfo-active-spell-name bossinfo))
-  (define (render-healthbars)
-	(define healthbars (bossinfo-healthbars bossinfo))
-	(let loop ([x +default-healthbar-start-x+]
-			   [i 0])
-	  (when (< i (vlen healthbars))
-		(let ([hb (vnth healthbars i)]
-			  [last (= i (sub1 (vlen healthbars)))])
-		  (raylib:draw-rectangle-gradient-v
-		   x
-		   (+ +playfield-render-offset-y+ +playfield-min-y+)
-		   (if last
-			   (let ([cur-atk-max-health (bossinfo-max-health bossinfo)])
-				 (if (or (= -1 cur-atk-max-health) (> cur-atk-max-health 0))
-					 (eround (* (- +default-healthbar-end-x+ x)
-								(if (= -1 cur-atk-max-health)
-									(/ remaining-timer (bossinfo-total-timer bossinfo))
-									(/ (enm-health enm) cur-atk-max-health))))
-					 0))
-			   (healthbar-width hb))
-		   5
-		   (healthbar-top-color hb)
-		   (healthbar-bottom-color hb))
-		  (loop (+ x (healthbar-width hb) (healthbar-post-padding hb))
-				(add1 i))))))
+  (define healthbars (bossinfo-healthbars bossinfo))
   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
 					   (bossinfo-name bossinfo)
 					   (+ +playfield-min-render-x+ 5)
@@ -3728,7 +3685,30 @@
 						   (override-alpha
 							(bossinfo-name-color bossinfo) 128)
 						   (bossinfo-name-color bossinfo)))
-  (render-healthbars)
+  (let loop ([x +default-healthbar-start-x+]
+			 [i 0])
+	(when (< i (vlen healthbars))
+	  (let ([hb (vnth healthbars i)]
+			[last (= i (sub1 (vlen healthbars)))])
+		(raylib:draw-rectangle-gradient-v
+		 x
+		 (+ +playfield-render-offset-y+ +playfield-min-y+)
+		 (if last
+			 (let ([cur-atk-max-health (bossinfo-max-health bossinfo)])
+			   (if (or (= -1 cur-atk-max-health) (> cur-atk-max-health 0))
+				   (eround (* (if (= -1 (healthbar-width hb))
+								  (- +default-healthbar-end-x+ x)
+								  (healthbar-width hb))
+							  (if (= -1 cur-atk-max-health)
+								  (/ remaining-timer (bossinfo-total-timer bossinfo))
+								  (/ (enm-health enm) cur-atk-max-health))))
+				   0))
+			 (healthbar-width hb))
+		 5
+		 (healthbar-top-color hb)
+		 (healthbar-bottom-color hb))
+		(loop (+ x (healthbar-width hb) (healthbar-post-padding hb))
+			  (add1 i)))))
   (unless (fxzero? remaining-timer)
 	(raylib:draw-text-ex (fontbundle-sharetechmono fonts)
 						 (format "~2,'0d"
