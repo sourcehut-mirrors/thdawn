@@ -2069,9 +2069,12 @@
    ;; of the current attack, 0 if none, -1 if survival
    (mutable max-health)
    ;; immutable vector of healthbars representing all current/future attacks
-   ;; used only for rendering
+   ;; used only for rendering and rendered left to right
    (mutable healthbars))
   (sealed #t))
+
+(define +default-healthbar-start-x+ (+ +playfield-min-render-x+ 5))
+(define +default-healthbar-end-x+ (- +playfield-max-render-x+ 20))
 (define-record-type healthbar
   (fields
    ;; how wide the healthbar is at maximum width
@@ -3222,53 +3225,6 @@
   (unless short
 	(delete-enemy enm)))
 
-(define (test-fairy-control2 task enm)
-  (test-fairy-non1 task enm)
-  (delete-enemy enm))
-
-(define (test-fairy-non1 task enm)
-  (define bossinfo (enm-extras enm))
-  (define keep-running
-	(lambda () (and (positive? (enm-health enm))
-					(positive? (bossinfo-remaining-timer bossinfo)))))
-  (bossinfo-healthbars-set! bossinfo
-							(vector (make-healthbar
-									 10 0
-									 #xf50000ff
-									 #x800000ff)))
-  (declare-nonspell enm 1200 1000)
-  (spawn-subtask
-	  "non1-ring1"
-	(lambda (_) (test-fairy-control2-ring1 enm))
-	keep-running task)
-  (wait-while keep-running)
-  (raylib:play-sound (sebundle-shoot0 sounds))
-  (cancel-all #t)
-  (bossinfo-active-attack-failed-set! bossinfo #f)
-  (wait 60)
-  (test-fairy-sp1 task enm)
-  )
-
-(define (test-fairy-sp1 task enm)
-  (define bossinfo (enm-extras enm))
-  (define keep-running
-	(lambda () (and (positive? (enm-health enm))
-					(positive? (bossinfo-remaining-timer bossinfo)))))
-  (bossinfo-healthbars-set! bossinfo (immutable-vector))
-  ;(declare-spell enm "Conjuring \"Eternal Meek\"" 1800 3000 2000000)
-  (wait 120)
-  (spawn-subtask "spam"
-	(lambda (_task)
-	  (loop-forever
-	   (dotimes 5
-		 (spawn-bullet 'small-ball-blue (enm-x enm) (enm-y enm)
-					   5
-					   (curry linear-step-forever (centered-roll game-rng pi)
-							  5.0)))))
-	keep-running task)
-  (wait-while keep-running)
-  (common-spell-postlude bossinfo enm))
-
 (define (tick-bomb)
   (define (bomb-sweep-x-left-hitbox)
 	(values (- bomb-sweep-x-left 40.0)
@@ -3740,19 +3696,28 @@
   (define spname (bossinfo-active-spell-name bossinfo))
   (define (render-healthbars)
 	(define healthbars (bossinfo-healthbars bossinfo))
-	(let loop ([x (+ +playfield-render-offset-x+ +playfield-min-x+ 5)]
+	(let loop ([x +default-healthbar-start-x+]
 			   [i 0])
-	  (if (= i (vlen healthbars))
-		  x
-		  (let ([hb (vnth healthbars i)])
-			(raylib:draw-rectangle-gradient-v
-			 x
-			 (+ +playfield-render-offset-y+ +playfield-min-y+)
-			 (healthbar-width hb) 5
-			 (healthbar-top-color hb)
-			 (healthbar-bottom-color hb))
-			(loop (+ x (healthbar-width hb) (healthbar-post-padding hb))
-				  (add1 i))))))
+	  (when (< i (vlen healthbars))
+		(let ([hb (vnth healthbars i)]
+			  [last (= i (sub1 (vlen healthbars)))])
+		  (raylib:draw-rectangle-gradient-v
+		   x
+		   (+ +playfield-render-offset-y+ +playfield-min-y+)
+		   (if last
+			   (let ([cur-atk-max-health (bossinfo-max-health bossinfo)])
+				 (if (or (= -1 cur-atk-max-health) (> cur-atk-max-health 0))
+					 (eround (* (- +default-healthbar-end-x+ x)
+								(if (= -1 cur-atk-max-health)
+									(/ remaining-timer (bossinfo-total-timer bossinfo))
+									(/ (enm-health enm) cur-atk-max-health))))
+					 0))
+			   (healthbar-width hb))
+		   5
+		   (healthbar-top-color hb)
+		   (healthbar-bottom-color hb))
+		  (loop (+ x (healthbar-width hb) (healthbar-post-padding hb))
+				(add1 i))))))
   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
 					   (bossinfo-name bossinfo)
 					   (+ +playfield-min-render-x+ 5)
@@ -3763,19 +3728,7 @@
 						   (override-alpha
 							(bossinfo-name-color bossinfo) 128)
 						   (bossinfo-name-color bossinfo)))
-  (let ([healthbars-end (render-healthbars)]
-		[cur-atk-max-health (bossinfo-max-health bossinfo)])
-	(when (or (= -1 cur-atk-max-health) (> cur-atk-max-health 0))
-	  (raylib:draw-rectangle-gradient-v
-	   healthbars-end
-	   (+ +playfield-render-offset-y+ +playfield-min-y+)
-	   (eround (* (- (- +playfield-max-render-x+ 20.0) healthbars-end)
-				  (if (= -1 cur-atk-max-health)
-					  (/ remaining-timer (bossinfo-total-timer bossinfo))
-					  (/ (enm-health enm) cur-atk-max-health))))
-	   5
-	   #xf5f5f5ff
-	   #x808080ff)))
+  (render-healthbars)
   (unless (fxzero? remaining-timer)
 	(raylib:draw-text-ex (fontbundle-sharetechmono fonts)
 						 (format "~2,'0d"

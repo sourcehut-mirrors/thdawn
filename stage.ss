@@ -635,6 +635,9 @@
 						  '((bomb . 1) (point . 30))
 						  (thunk #f))]
 		[bossinfo (blank-bossinfo "Harukaze Doremi" #xff7fbcff)])
+	(bossinfo-healthbars-set!
+	 bossinfo
+	 (immutable-vector (make-healthbar -1 0.0 #xf5f5f5ff #x808080ff)))
 	(enm-extras-set! enm bossinfo))
   (wait-until (thunk (>= frames 5200)))
   (chapter5 task))
@@ -1347,6 +1350,9 @@
 						  '((life . 1) (point . 50))
 						  (thunk #f))]
 		[bossinfo (blank-bossinfo "Harukaze Doremi" #xff7fbcff)])
+	(bossinfo-healthbars-set!
+	 bossinfo
+	 (immutable-vector (make-healthbar -1 0.0 #xf5f5f5ff #x808080ff)))
 	(enm-extras-set! enm bossinfo))
   (wait-until (thunk (>= frames 11785)))
   (chapter12 task))
