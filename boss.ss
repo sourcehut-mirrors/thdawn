@@ -67,13 +67,13 @@
   (adjust-bars-non (bossinfo-healthbars bossinfo))
   (spawn-subtask "hazuki leave"
 	(lambda (_)
-	  (ease-to ease-out-cubic -100.0 -100.0 30 hazuki)
+	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
 	  (delete-enemy hazuki))
 	(constantly #t)
 	task)
   (spawn-subtask "aiko leave"
 	(lambda (_)
-	  (ease-to ease-out-cubic 100.0 -100.0 30 aiko)
+	  (ease-to ease-out-cubic 100.0 -100.0 60 aiko)
 	  (delete-enemy aiko))
 	(constantly #t)
 	task)
@@ -101,18 +101,19 @@
 
 (define (hazuki-non1 task doremi)
   (define bars (bossinfo-healthbars (enm-extras doremi)))
+  (define _ (wait 90))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
 				 (lambda (task enm)
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-							30 enm))
+							60 enm))
 				 '()
 				 (thunk #f)))
   (define bossinfo (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
   (set! current-chapter 18)
   (spawn-subtask "doremi leave"
 	(lambda (_)
-	  (ease-to ease-out-cubic -100.0 -100.0 30 doremi)
+	  (ease-to ease-out-cubic -100.0 -100.0 60 doremi)
 	  (delete-enemy doremi))
 	(constantly #t)
 	task)
@@ -143,18 +144,19 @@
 
 (define (aiko-non1 task hazuki)
   (define bars (bossinfo-healthbars (enm-extras hazuki)))
+  (define _ (wait 90))
   (define aiko
 	(spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
 				 (lambda (task enm)
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-							30 enm))
+							60 enm))
 				 '()
 				 (thunk #f)))
   (define bossinfo (blank-bossinfo "Senoo Aiko" #x00ffffff))
   (set! current-chapter 20)
   (spawn-subtask "hazuki leave"
 	(lambda (_)
-	  (ease-to ease-out-cubic -100.0 -100.0 30 hazuki)
+	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
 	  (delete-enemy hazuki))
 	(constantly #t)
 	task)
@@ -185,18 +187,19 @@
 
 (define (group-non2 task aiko)
   (define bossinfo (blank-bossinfo "Harukaze Doremi" #xff69fcff))
+  (define _ (wait 90))
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
 				 (lambda (task enm)
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-							30 enm))
+							60 enm))
 				 '()
 				 (thunk #f)))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) -100.0 -100.0 500
 				 (lambda (task enm)
 				   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
-							30 enm))
+							60 enm))
 				 '()
 				 (thunk #f)))
   (set! current-chapter 22)
@@ -206,7 +209,7 @@
    bossinfo
    (adjust-bars-non (bossinfo-healthbars (enm-extras aiko))))
   (bossinfo-healthbars-set! (enm-extras aiko) '#())
-  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 30 aiko)
+  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
   (declare-nonspell doremi 1800 1000)
   (wait-while
    (thunk
@@ -236,13 +239,13 @@
   (adjust-bars-non (bossinfo-healthbars bossinfo))
   (spawn-subtask "hazuki leave"
 	(lambda (_)
-	  (ease-to ease-out-cubic -100.0 -100.0 30 hazuki)
+	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
 	  (delete-enemy hazuki))
 	(constantly #t)
 	task)
   (spawn-subtask "aiko leave"
 	(lambda (_)
-	  (ease-to ease-out-cubic 100.0 -100.0 30 aiko)
+	  (ease-to ease-out-cubic 100.0 -100.0 60 aiko)
 	  (delete-enemy aiko))
 	(constantly #t)
 	task)
@@ -270,18 +273,19 @@
 
 (define (hazuki-non2 task doremi)
   (define bars (bossinfo-healthbars (enm-extras doremi)))
+  (define _ (wait 90))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
 				 (lambda (task enm)
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-							30 enm))
+							60 enm))
 				 '()
 				 (thunk #f)))
   (define bossinfo (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
   (set! current-chapter 26)
   (spawn-subtask "doremi leave"
 	(lambda (_)
-	  (ease-to ease-out-cubic -100.0 -100.0 30 doremi)
+	  (ease-to ease-out-cubic -100.0 -100.0 60 doremi)
 	  (delete-enemy doremi))
 	(constantly #t)
 	task)
@@ -312,18 +316,19 @@
 
 (define (aiko-non2 task hazuki)
   (define bars (bossinfo-healthbars (enm-extras hazuki)))
+  (define _ (wait 90))
   (define aiko
 	(spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
 				 (lambda (task enm)
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-							30 enm))
+							60 enm))
 				 '()
 				 (thunk #f)))
   (define bossinfo (blank-bossinfo "Senoo Aiko" #x00ffffff))
   (set! current-chapter 28)
   (spawn-subtask "hazuki leave"
 	(lambda (_)
-	  (ease-to ease-out-cubic -100.0 -100.0 30 hazuki)
+	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
 	  (delete-enemy hazuki))
 	(constantly #t)
 	task)
@@ -354,18 +359,19 @@
 
 (define (group-sp3 task aiko)
   (define bossinfo (blank-bossinfo "Harukaze Doremi" #xff69fcff))
+  (define _ (wait 90))
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
 				 (lambda (task enm)
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-							30 enm))
+							60 enm))
 				 '()
 				 (thunk #f)))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) -100.0 -100.0 500
 				 (lambda (task enm)
 				   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
-							30 enm))
+							60 enm))
 				 '()
 				 (thunk #f)))
   (set! current-chapter 30)
@@ -379,7 +385,7 @@
   (healthbar-width-set! (vnth (bossinfo-healthbars bossinfo)
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
-  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 30 aiko)
+  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
   (declare-spell doremi 10)
   (wait-while
    (thunk (positive? (bossinfo-remaining-timer bossinfo))))
