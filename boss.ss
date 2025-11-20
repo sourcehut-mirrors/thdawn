@@ -16,25 +16,25 @@
    bossinfo
    (vector
 	;; final
-	(make-healthbar 4 1 #xffd700ff #xffd700ff)
+	(make-healthbar 4 1 #xffd700ff #xdaa520ff)
 	;; survival
-	(make-healthbar 4 1 #xffd700ff #xffd700ff)
+	(make-healthbar 4 1 #xffd700ff #xdaa520ff)
 	;; aiko sp2
-	(make-healthbar 4 1 #x00ffffff #x00ffffff)
+	(make-healthbar 4 1 #x00ffffff #x008b8bff)
 	;; hazuki sp2
-	(make-healthbar 4 1 #xffa500ff #xffa500ff)
+	(make-healthbar 4 1 #xffa500ff #xf4a460ff)
 	;; doremi sp2
-	(make-healthbar 4 1 #xff69fcff #xff69fcff)
+	(make-healthbar 4 1 #xba55d3ff #xff69fcff)
 	;; group sp2
-	(make-healthbar 4 1 #xffd700ff #xffd700ff)
+	(make-healthbar 4 1 #xffd700ff #xdaa520ff)
 	;; aiko sp1
-	(make-healthbar 4 1 #x00ffffff #x00ffffff)
+	(make-healthbar 4 1 #x00ffffff #x008b8bff)
 	;; hazuki sp1
-	(make-healthbar 4 1 #xffa500ff #xffa500ff)
+	(make-healthbar 4 1 #xffa500ff #xf4a460ff)
 	;; doremi sp1
-	(make-healthbar 4 1 #xff69fcff #xff69fcff)
+	(make-healthbar 4 1 #xba55d3ff #xff69fcff)
 	;; group sp1
-	(make-healthbar 25 0 #xffd700ff #xffd700ff)
+	(make-healthbar 25 0 #xffd700ff #xdaa520ff)
 	;; group non1
 	(make-healthbar -1 0 #xf5f5f5ff #x808080ff)))
   (declare-nonspell doremi 1800 1000)
@@ -389,10 +389,10 @@
 (define (group-sp4 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 31)
+  (wait 90)
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars bossinfo)))
-  (wait 90)
   ;; widen to full width
   (healthbar-width-set! (vnth (bossinfo-healthbars bossinfo)
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
