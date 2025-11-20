@@ -350,9 +350,9 @@
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health aiko)))))
   (common-spell-postlude bossinfo aiko)
-  (group-non3 task aiko))
+  (group-sp3 task aiko))
 
-(define (group-non3 task aiko)
+(define (group-sp3 task aiko)
   (define bossinfo (blank-bossinfo "Harukaze Doremi" #xff69fcff))
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
@@ -371,29 +371,15 @@
   (set! current-chapter 30)
   (enm-extras-set! doremi bossinfo)
   (enm-extras-set! hazuki (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
-  (bossinfo-healthbars-set!
-   bossinfo
-   (adjust-bars-non (bossinfo-healthbars (enm-extras aiko))))
-  (bossinfo-healthbars-set! (enm-extras aiko) '#())
-  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 30 aiko)
-  (declare-nonspell doremi 1800 1000)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi)))))
-  (cancel-all #t)
-  (group-sp3 task doremi hazuki aiko))
 
-(define (group-sp3 task doremi hazuki aiko)
-  (define bossinfo (enm-extras doremi))
-  (set! current-chapter 31)
   (bossinfo-healthbars-set!
    bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo)))
+   (vector-pop (bossinfo-healthbars (enm-extras aiko))))
   ;; widen to full width
   (healthbar-width-set! (vnth (bossinfo-healthbars bossinfo)
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
+  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 30 aiko)
   (declare-spell doremi 10)
   (wait-while
    (thunk (positive? (bossinfo-remaining-timer bossinfo))))
@@ -402,7 +388,7 @@
 
 (define (group-sp4 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
-  (set! current-chapter 32)
+  (set! current-chapter 31)
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars bossinfo)))
