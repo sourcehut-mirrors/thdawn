@@ -417,9 +417,17 @@
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health doremi)))))
   (common-spell-postlude bossinfo doremi)
+  (spawn-subtask "hazuki postlude"
+	(lambda (_)
+	  (common-boss-postlude bossinfo hazuki #f))
+	(constantly #t)
+	task)
+  (spawn-subtask "aiko postlude"
+	(lambda (_)
+	  (common-boss-postlude bossinfo aiko #f))
+	(constantly #t)
+	task)
   (common-boss-postlude bossinfo doremi #f)
-  (common-boss-postlude bossinfo hazuki #f)
-  (common-boss-postlude bossinfo aiko #f)
   (wait 120)
   (stage-ctx-dialogue-set!
    current-stage-ctx
