@@ -1288,13 +1288,12 @@
   pausetypes)
 (define replay-pausetypes (pausetypes replay replaydone))
 
-(define (mk-scoresave-nameinput-gui score time records)
+(define (mk-scoresave-nameinput-gui score time records cleared)
   (mk-nameinput-gui
    (lambda (ni-gui)
 	 (define hiscore (assq 'hiscore play-data))
 	 (define name (nameinput-final-name ni-gui))
-	 ;; TODO cleared flag
-	 (define entry (make-score-entry name score time #f))
+	 (define entry (make-score-entry name score time cleared))
 	 (set-cdr!
 	  hiscore
 	  (list-sort
@@ -1327,7 +1326,8 @@
 	(if save
 		(begin
 		  (replace-gui (mk-scoresave-nameinput-gui
-						score time records))
+						score time records
+						(eq? (pausetype gameclear) type)))
 		  (unless (eq? (pausetype gameover) type)
 			;; Gameover will have already started playing the music
 			(play-music (musbundle-lupinasu-no-komoriuta-piano music))))
