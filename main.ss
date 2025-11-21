@@ -4320,22 +4320,8 @@
 	(display "Bytes Allocated: ")
 	(display (bytes-allocated))
 	(newline)
-	(if (and (message-condition? e) (irritants-condition? e)
-			 (format-condition? e))
-		(begin
-		  (display "Message: ")
-		  (display
-		   (apply format (condition-message e) (condition-irritants e)))
-		  (newline))
-		(begin
-		  (when (message-condition? e)
-			(display "Message: ")
-			(display (condition-message e))
-			(newline))
-		  (when (irritants-condition? e)
-			(display "Irritants: ")
-			(display (condition-irritants e))
-			(newline))))
+	(display-condition e)
+	(newline)
 	(display "\nBacktrace:\n")
 	(do [(i 0 (fx1+ i))]
 		[(fx= i depth)]
