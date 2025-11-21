@@ -450,20 +450,22 @@
 
 (define (draw-sprite textures sprite-id x y color)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
+  (define cshift (sprite-descriptor-center-shift data))
   (raylib:draw-texture-rec
    ((sprite-descriptor-tx-accessor data) textures)
    (sprite-descriptor-bounds data)
-   (v2+ (vec2 x y) (sprite-descriptor-center-shift data))
+   (vec2 (fl+ x (v2x cshift)) (fl+ y (v2y cshift)))
    color))
 
 (define (draw-sprite-mirror-x textures sprite-id x y color)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
   (define bounds (sprite-descriptor-bounds data))
+  (define cshift (sprite-descriptor-center-shift data))
   (raylib:draw-texture-rec
    ((sprite-descriptor-tx-accessor data) textures)
    (make-rectangle (rectangle-x bounds) (rectangle-y bounds)
 				   (- (rectangle-width bounds)) (rectangle-height bounds))
-   (v2+ (vec2 x y) (sprite-descriptor-center-shift data))
+   (vec2 (fl+ x (v2x cshift)) (fl+ y (v2y cshift)))
    color))
 
 (define (draw-sprite-pro textures sprite-id dest color)
@@ -502,7 +504,7 @@
    (raylib:translatef x y 0.0)
    (raylib:rotatef (inexact rotation) 0.0 0.0 1.0)
    (raylib:scalef scale scale 1.0)
-   (raylib:translatef (+ (v2x center-shift)) (+ (v2y center-shift)) 0.0)
+   (raylib:translatef (v2x center-shift) (v2y center-shift) 0.0)
    (raylib:draw-texture-rec
 	((sprite-descriptor-tx-accessor data) textures)
 	(sprite-descriptor-bounds data)
