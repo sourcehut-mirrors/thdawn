@@ -2072,10 +2072,8 @@
    (mutable old-xs)
    (mutable old-ys)
    time-spawned
-   ;; todo: consider getting rid of some of the other fields, at least max-health and name since they're redundant with this
    ;; index into spells array of the active spell, -1 if none
    (mutable active-spell-id)
-   (mutable active-spell-name)
    (mutable active-spell-bonus)
    ;; #t if the player bombed or died on the current attack
    (mutable active-attack-failed)
@@ -2510,7 +2508,7 @@
   ;; The compromise is to use Raylib's DrawRing, but only for a small sector (i.e. segments=1).
   ;; while having a loop on the Scheme side to continuously update the shape rect
   ;; TODO: Find a permanent solution for this clowntown
-  (when (bossinfo-active-spell-name bossinfo)
+  (when (fxnonnegative? (bossinfo-active-spell-id bossinfo))
 	(let* ([boss-tex (txbundle-boss-flip textures)]
 		   [save-tex (raylib:get-shapes-texture)]
 		   [save-rect (raylib:get-shapes-texture-rectangle)]
@@ -3145,8 +3143,6 @@
 	(save-play-data play-data))
   (bossinfo-active-spell-id-set!
    bossinfo idx)
-  (bossinfo-active-spell-name-set!
-   bossinfo (spell-descriptor-name descriptor))
   (bossinfo-active-spell-bonus-set!
    bossinfo (+ (* 100 item-value)
 			   (spell-descriptor-bonus descriptor)))
@@ -3203,7 +3199,6 @@
 						  (end-radius . 85))))
   (cancel-all #t)
   (bossinfo-remaining-timer-set! bossinfo 0)
-  (bossinfo-active-spell-name-set! bossinfo #f)
   (bossinfo-active-spell-bonus-set! bossinfo #f)
   (bossinfo-active-spell-id-set!
    bossinfo -1))
@@ -3434,7 +3429,7 @@
   (make-bossinfo name name-color
 				 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 				 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-				 frames -1 #f #f #f 0 0 0 (immutable-vector)))
+				 frames -1 #f #f 0 0 0 (immutable-vector)))
 
 (define (handle-dialogue-advance)
   (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
@@ -3718,7 +3713,9 @@
   (define remaining-timer (bossinfo-remaining-timer bossinfo))
   (define elapsed-frames (fx- (bossinfo-total-timer bossinfo)
 							  remaining-timer))
-  (define spname (bossinfo-active-spell-name bossinfo))
+  (define spid (bossinfo-active-spell-id bossinfo))
+  (define spname (and (fxnonnegative? spid)
+					  (spell-descriptor-name (vnth spells spid))))
   (define healthbars (bossinfo-healthbars bossinfo))
   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
 					   (bossinfo-name bossinfo)
@@ -3772,10 +3769,7 @@
 						  [else -1]))
 	(when spname
 	  (let*-values ([(bonus) (calculate-spell-bonus bossinfo)]
-					[(spidx) (vector-find-index
-							  (lambda (s) (eq? spname (spell-descriptor-name s)))
-							  spells)]
-					[(history) (vnth (assqdr 'spell-history play-data) spidx)]
+					[(history) (vnth (assqdr 'spell-history play-data) spid)]
 					[(bonus-txt) (format "Bonus: ~11:d | History: ~2,'0d/~2,'0d"
 										 bonus (car history) (cdr history))]
 					[(bonus-width _) (raylib:measure-text-ex
