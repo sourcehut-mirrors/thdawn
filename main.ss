@@ -2062,7 +2062,7 @@
    ;; from oldest to latest; used for the spell circle to trail behind the boss
    (mutable old-xs)
    (mutable old-ys)
-   (mutable aura-active)
+   time-spawned
    (mutable active-spell-name)
    (mutable active-spell-bonus)
    ;; #t if the player bombed or died on the current attack
@@ -2478,15 +2478,17 @@
 						   (flvector-ref (bossinfo-old-xs bossinfo) 0)))
   (define lazy-render-y (+ +playfield-render-offset-y+
 						   (flvector-ref (bossinfo-old-ys bossinfo) 0)))
-  (when (bossinfo-aura-active bossinfo)
-	(let ([radius (fl+ 90.0 (fl* 10.0 (flsin (/ frames 12.0))))])
-	  (draw-sprite-pro-with-rotation
-	   textures 'magicircle
-	   (flmod (* frames 3.0) 360.0)
-	   ;; idk why I don't subtract the radius here but it works so :shrug:
-	   (make-rectangle render-x render-y
-					   (fl* 2.0 radius) (fl* 2.0 radius))
-	   #xffffffff)))
+  ;; add the spawn timestamp to seed the rotation so multiple bosses don't
+  ;; render their aura the exact same way
+  (let* ([t (fx+ frames (bossinfo-time-spawned bossinfo))]
+		 [radius (fl+ 90.0 (fl* 10.0 (flsin (/ t 12.0))))])
+	(draw-sprite-pro-with-rotation
+	 textures 'magicircle
+	 (flmod (* t 3.0) 360.0)
+	 ;; idk why I don't subtract the radius here but it works so :shrug:
+	 (make-rectangle render-x render-y
+					 (fl* 2.0 radius) (fl* 2.0 radius))
+	 #xffffffff))
 	
   ;; Okay, so raylib's draw-ring uses the ENTIRE shapes-texture for
   ;; every segment of the circle which is...not what we want.
@@ -3394,7 +3396,7 @@
   (make-bossinfo name name-color
 				 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 				 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-				 #t #f #f #f 0 0 0 (immutable-vector)))
+				 frames #f #f #f 0 0 0 (immutable-vector)))
 
 (define (handle-dialogue-advance)
   (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
