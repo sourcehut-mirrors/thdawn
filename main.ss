@@ -3802,21 +3802,23 @@
 								 (- +playfield-max-y+ height 15.0)
 								 (+ +playfield-min-y+ 15.0)
 								 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
-							   [else (+ +playfield-min-y+ 15.0)]))])
+							   [else (+ +playfield-min-y+ 15.0)]))]
+					[(color) (if (fl< player-y 80.0)
+								 #xffffff80 -1)])
 		;; TODO: scissor when outside of playfield
 		(raylib:draw-texture-pro
 		 (txbundle-boss-ui textures)
 		 (make-rectangle 0.0 0.0 256.0 36.0)
 		 (make-rectangle (- +playfield-max-render-x+ 256.0) (- spy 5.0) 256.0 36.0)
-		 v2zero 0.0 -1)
+		 v2zero 0.0 color)
 		(raylib:draw-text-ex
 		 (fontbundle-cabin fonts) spname
 		 spx spy
-		 18.0 0.5 -1)
+		 18.0 0.5 color)
 		(raylib:draw-text-ex
 		 (fontbundle-sharetechmono fonts) bonus-txt
 		 bonus-x (+ spy height 5.0)
-		 15.0 0.0 -1))))
+		 15.0 0.0 color))))
   (draw-sprite textures 'enemy-indicator
 			   (+ +playfield-render-offset-x+
 				  (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
