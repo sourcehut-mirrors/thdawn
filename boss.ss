@@ -1,12 +1,40 @@
+(define (make-non-healthbar)
+  (make-healthbar -1 0 #xf5f5f5ff #x808080ff))
+
 (define (adjust-bars-non healthbars)
   ;; add upcoming nonspell (replacing the spell that just expired)
   (vector-set! healthbars (sub1 (vlen healthbars))
-			   (make-healthbar -1 0 #xf5f5f5ff #x808080ff))
+			   (make-non-healthbar))
   ;; make upcoming spell bigger and remove its padding
   (let ([sp (vnth healthbars (- (vlen healthbars) 2))])
 	(healthbar-width-set! sp 25)
 	(healthbar-post-padding-set! sp 0))
   healthbars)
+
+(define (base-healthbars)
+  (vector
+   ;; final
+   (make-healthbar 4 1 #xffd700ff #xdaa520ff)
+   ;; survival
+   (make-healthbar 4 1 #xffd700ff #xdaa520ff)
+   ;; aiko sp2
+   (make-healthbar 4 1 #x00ffffff #x008b8bff)
+   ;; hazuki sp2
+   (make-healthbar 4 1 #xffa500ff #xf4a460ff)
+   ;; doremi sp2
+   (make-healthbar 4 1 #xba55d3ff #xff69fcff)
+   ;; group sp2
+   (make-healthbar 4 1 #xffd700ff #xdaa520ff)
+   ;; aiko sp1
+   (make-healthbar 4 1 #x00ffffff #x008b8bff)
+   ;; hazuki sp1
+   (make-healthbar 4 1 #xffa500ff #xf4a460ff)
+   ;; doremi sp1
+   (make-healthbar 4 1 #xba55d3ff #xff69fcff)
+   ;; group sp1
+   (make-healthbar 25 0 #xffd700ff #xdaa520ff)
+   ;; group non1
+   (make-healthbar -1 0 #xf5f5f5ff #x808080ff)))
 
 (define (group-non1 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
@@ -14,29 +42,7 @@
   (play-music (musbundle-naisho-yo-ojamajo music))
   (bossinfo-healthbars-set!
    bossinfo
-   (vector
-	;; final
-	(make-healthbar 4 1 #xffd700ff #xdaa520ff)
-	;; survival
-	(make-healthbar 4 1 #xffd700ff #xdaa520ff)
-	;; aiko sp2
-	(make-healthbar 4 1 #x00ffffff #x008b8bff)
-	;; hazuki sp2
-	(make-healthbar 4 1 #xffa500ff #xf4a460ff)
-	;; doremi sp2
-	(make-healthbar 4 1 #xba55d3ff #xff69fcff)
-	;; group sp2
-	(make-healthbar 4 1 #xffd700ff #xdaa520ff)
-	;; aiko sp1
-	(make-healthbar 4 1 #x00ffffff #x008b8bff)
-	;; hazuki sp1
-	(make-healthbar 4 1 #xffa500ff #xf4a460ff)
-	;; doremi sp1
-	(make-healthbar 4 1 #xba55d3ff #xff69fcff)
-	;; group sp1
-	(make-healthbar 25 0 #xffd700ff #xdaa520ff)
-	;; group non1
-	(make-healthbar -1 0 #xf5f5f5ff #x808080ff)))
+   (vector-add (base-healthbars) (make-non-healthbar)))
   (declare-nonspell doremi 1800 1000)
   (wait-while
    (thunk
