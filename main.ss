@@ -2837,20 +2837,26 @@
 	  ([spellbonus clear-bonus]
 	   (let*-values ([(width _) (raylib:measure-text-ex
 								 (fontbundle-cabin fonts)
-								 extra-data 24.0 0.0)])
+								 extra-data 24.0 0.0)]
+					 [(age) (particle-age p)])
 		 (raylib:draw-text-ex
 		  (fontbundle-cabin fonts)
 		  extra-data
 		  (+ +playfield-render-offset-x+ (/ width -2.0))
 		  75.0
 		  24.0 0.0
-		  (if (< (particle-age p) 120)
-			  -1
-			  (packcolor
-			   255 255 255
-			   (eround (lerp 255 0
-							 (/ (- (particle-age p) 120)
-								(- (particle-max-age p) 120)))))))))))
+		  (cond
+		   [(< age 30)
+			(bitwise-ior
+			 #xffffff00
+			 (eround (lerp 0 255 (ease-out-cubic (/ age 30)))))]
+		   [(< age 120) -1]
+		   [else
+			(bitwise-ior
+			 #xffffff00
+			 (eround (lerp 255 0
+						   (/ (- age 120)
+							  (- (particle-max-age p) 120)))))]))))))
   (vector-for-each-truthy each live-particles))
 
 (define-record-type miscent
