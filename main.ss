@@ -3936,7 +3936,8 @@
 					440 400 18 -1)
   (raylib:draw-text (format "TASK: ~d" (task-count))
 					440 425 18 -1)
-  (raylib:draw-fps 440 450)
+  (raylib:draw-text (format "FT: ~,5f ms" (fl* 1000.0 frame-time-ema))
+					440 450 18 -1)
 
   (when-let ([d (stage-ctx-dialogue current-stage-ctx)])
 	(draw-dialogue textures fonts
@@ -4161,6 +4162,8 @@
 	(tick-particles)
 	(process-collisions)))
 
+(define +frame-time-factor+ 0.8)
+(define frame-time-ema 0.0)
 (define (main)
   (raylib:set-trace-log-level 4) ;; WARNING or above
   (raylib:init-window 1280 960 "thdawn")
@@ -4193,6 +4196,12 @@
 		 (when (and current-stage-ctx (not (paused?)))
 		   (set! frames (fx1+ frames)))
 		 (set! true-frames (fx1+ true-frames))
+		 (let ([ft (raylib:get-frame-time)])
+		   (set! frame-time-ema
+				 (fl+ (fl* +frame-time-factor+
+						   ft)
+					  (fl* (fl- 1.0 +frame-time-factor+)
+						   frame-time-ema))))
 		 #;(when (fxzero? (fxmod true-frames 180))
 		 (display (format "B ~,2f || "
 		 (/ (cost-center-allocation-count bullet-cc)
