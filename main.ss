@@ -3580,8 +3580,12 @@
 	(when current-music
 	  (raylib:pause-music-stream current-music))]
    [(enum-set-member? (vkey screenshot) ep)
-	(raylib:take-screenshot
-	 (string-append "screenshot-" (date-and-time) ".png"))]
+	(let ([d (current-date)])
+	  (raylib:take-screenshot
+	   (format "screenshot-~2,'0d-~2,'0d-~2,'0d-~2,'0d:~2,'0d:~2,'0d_~d.png"
+			   (date-year d) (date-month d) (date-day d)
+			   (date-hour d) (date-minute d) (date-second d)
+			   (date-nanosecond d))))]
    [else
 	(if (is-liveplay)
 		(begin
