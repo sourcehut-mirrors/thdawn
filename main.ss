@@ -3185,6 +3185,12 @@
   (bossinfo-active-spell-name-set! bossinfo #f)
   (bossinfo-active-spell-bonus-set! bossinfo #f))
 
+(define (common-nonspell-postlude bossinfo)
+  (cancel-all #t)
+  (bossinfo-healthbars-set!
+   bossinfo
+   (vector-pop (bossinfo-healthbars bossinfo))))
+
 ;; If short, only explodes once and doesn't drift, and also doesn't delete the boss
 (define (common-boss-postlude bossinfo enm short)
   (unless short

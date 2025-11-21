@@ -46,16 +46,13 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health doremi)))))
-  (cancel-all #t)
+  (common-nonspell-postlude bossinfo)
   (group-sp1 task doremi hazuki aiko))
 
 
 (define (group-sp1 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 15)
-  (bossinfo-healthbars-set!
-   bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo)))
   (declare-spell doremi 2)
   (wait-while
    (thunk
@@ -86,15 +83,12 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health doremi)))))
-  (cancel-all #t)
+  (common-nonspell-postlude bossinfo)
   (doremi-sp1 task doremi))
 
 (define (doremi-sp1 task doremi)
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 17)
-  (bossinfo-healthbars-set!
-   bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo)))
   (declare-spell doremi 3)
   (wait-while
    (thunk
@@ -129,15 +123,12 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health hazuki)))))
-  (cancel-all #t)
+  (common-nonspell-postlude bossinfo)
   (hazuki-sp1 task hazuki))
 
 (define (hazuki-sp1 task hazuki)
   (define bossinfo (enm-extras hazuki))
   (set! current-chapter 19)
-  (bossinfo-healthbars-set!
-   bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo)))
   (declare-spell hazuki 4)
   (wait-while
    (thunk
@@ -172,15 +163,12 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health aiko)))))
-  (cancel-all #t)
+  (common-nonspell-postlude bossinfo)
   (aiko-sp1 task aiko))
 
 (define (aiko-sp1 task aiko)
   (define bossinfo (enm-extras aiko))
   (set! current-chapter 21)
-  (bossinfo-healthbars-set!
-   bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo)))
   (declare-spell aiko 5)
   (wait-while
    (thunk
@@ -219,15 +207,12 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health doremi)))))
-  (cancel-all #t)
+  (common-nonspell-postlude bossinfo)
   (group-sp2 task doremi hazuki aiko))
 
 (define (group-sp2 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 23)
-  (bossinfo-healthbars-set!
-   bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo)))
   (declare-spell doremi 6)
   (wait-while
    (thunk
@@ -258,15 +243,12 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health doremi)))))
-  (cancel-all #t)
+  (common-nonspell-postlude bossinfo)
   (doremi-sp2 task doremi))
 
 (define (doremi-sp2 task doremi)
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 25)
-  (bossinfo-healthbars-set!
-   bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo)))
   (declare-spell doremi 7)
   (wait-while
    (thunk
@@ -301,15 +283,12 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health hazuki)))))
-  (cancel-all #t)
+  (common-nonspell-postlude bossinfo)
   (hazuki-sp2 task hazuki))
 
 (define (hazuki-sp2 task hazuki)
   (define bossinfo (enm-extras hazuki))
   (set! current-chapter 27)
-  (bossinfo-healthbars-set!
-   bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo)))
   (declare-spell hazuki 8)
   (wait-while
    (thunk
@@ -344,15 +323,12 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health aiko)))))
-  (cancel-all #t)
+  (common-nonspell-postlude bossinfo)
   (aiko-sp2 task aiko))
 
 (define (aiko-sp2 task aiko)
   (define bossinfo (enm-extras aiko))
   (set! current-chapter 29)
-  (bossinfo-healthbars-set!
-   bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo)))
   (declare-spell aiko 9)
   (wait-while
    (thunk
@@ -382,6 +358,7 @@
   (enm-extras-set! doremi bossinfo)
   (enm-extras-set! hazuki (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
 
+  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars (enm-extras aiko))))
@@ -389,7 +366,6 @@
   (healthbar-width-set! (vnth (bossinfo-healthbars bossinfo)
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
-  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
   (declare-spell doremi 10)
   (wait-while
    (thunk (positive? (bossinfo-remaining-timer bossinfo))))
