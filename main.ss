@@ -3704,23 +3704,27 @@
   (let loop ([x +default-healthbar-start-x+]
 			 [i 0])
 	(when (< i (vlen healthbars))
-	  (let ([hb (vnth healthbars i)]
-			[last (= i (sub1 (vlen healthbars)))])
+	  (let* ([hb (vnth healthbars i)]
+			 [cur-atk-max-health (bossinfo-max-health bossinfo)]
+			 [width0 (healthbar-width hb)]
+			 [width
+			  (cond
+			   [(< i (sub1 (vlen healthbars))) width0]
+			   [(zero? cur-atk-max-health) 0]
+			   [else
+				(eround (* (if (= -1 width0)
+							   (if (fx<= elapsed-frames 30)
+								   (* (- +default-healthbar-end-x+ x)
+									  (/ elapsed-frames 30))
+								   (- +default-healthbar-end-x+ x))
+							   width0)
+						   (if (= -1 cur-atk-max-health)
+							   (/ remaining-timer (bossinfo-total-timer bossinfo))
+							   (/ (enm-health enm) cur-atk-max-health))))])])
 		(raylib:draw-rectangle-gradient-v
 		 x
 		 (+ +playfield-render-offset-y+ +playfield-min-y+)
-		 (if last
-			 (let ([cur-atk-max-health (bossinfo-max-health bossinfo)])
-			   (if (or (= -1 cur-atk-max-health) (> cur-atk-max-health 0))
-				   (eround (* (if (= -1 (healthbar-width hb))
-								  (- +default-healthbar-end-x+ x)
-								  (healthbar-width hb))
-							  (if (= -1 cur-atk-max-health)
-								  (/ remaining-timer (bossinfo-total-timer bossinfo))
-								  (/ (enm-health enm) cur-atk-max-health))))
-				   0))
-			 (healthbar-width hb))
-		 5
+		 width 5
 		 (healthbar-top-color hb)
 		 (healthbar-bottom-color hb))
 		(loop (+ x (healthbar-width hb) (healthbar-post-padding hb))

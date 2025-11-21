@@ -32,9 +32,7 @@
    ;; doremi sp1
    (make-healthbar 4 1 #xba55d3ff #xff69fcff)
    ;; group sp1
-   (make-healthbar 25 0 #xffd700ff #xdaa520ff)
-   ;; group non1
-   (make-healthbar -1 0 #xf5f5f5ff #x808080ff)))
+   (make-healthbar 25 0 #xffd700ff #xdaa520ff)))
 
 (define (group-non1 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
