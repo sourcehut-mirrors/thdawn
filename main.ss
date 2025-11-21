@@ -2010,23 +2010,32 @@
    name
    duration
    health
-   bonus)
+   bonus
+   drops
+   failed-drops)
   (sealed #t))
 (define spells
-  (immutable-vector
-   (make-spell-descriptor "\"My First Spell Card!\"" 1540 -1 1000000)
-   (make-spell-descriptor "Natural Sign \"Butterfly Smelling the Flowers\""
-						  720 -1 1000000)
-   (make-spell-descriptor "Group Sp1" 1800 500 1000000)
-   (make-spell-descriptor "Doremi Sp1" 1800 500 1000000)
-   (make-spell-descriptor "Hazuki Sp1" 1800 500 1000000)
-   (make-spell-descriptor "Aiko Sp1" 1800 500 1000000)
-   (make-spell-descriptor "Group Sp2" 1800 500 3000000)
-   (make-spell-descriptor "Doremi Sp2" 1800 500 3000000)
-   (make-spell-descriptor "Hazuki Sp2" 1800 500 3000000)
-   (make-spell-descriptor "Aiko Sp2" 1800 500 3000000)
-   (make-spell-descriptor "Group Sp2" 2400 -1 5000000)
-   (make-spell-descriptor "Group Sp3" 5940 20000 5000000)))
+  (let ([std '((point . 50))]
+		[std-fail '((point . 10))])
+	(immutable-vector
+	 (make-spell-descriptor
+	  "\"My First Spell Card!\"" 1540 -1 1000000
+	  '((bomb . 1) (point . 30))
+	  (cons '(bomb . 1) std-fail))
+	 (make-spell-descriptor
+	  "Natural Sign \"Butterfly Smelling the Flowers\"" 720 -1 1000000
+	  '((life . 1) (point . 50))
+	  (cons '(life . 1) std-fail))
+	 (make-spell-descriptor "Group Sp1" 1800 500 1000000 std std-fail)
+	 (make-spell-descriptor "Doremi Sp1" 1800 500 1000000 std std-fail)
+	 (make-spell-descriptor "Hazuki Sp1" 1800 500 1000000 std std-fail)
+	 (make-spell-descriptor "Aiko Sp1" 1800 500 1000000 std std-fail)
+	 (make-spell-descriptor "Group Sp2" 1800 500 3000000 std std-fail)
+	 (make-spell-descriptor "Doremi Sp2" 1800 500 3000000 std std-fail)
+	 (make-spell-descriptor "Hazuki Sp2" 1800 500 3000000 std std-fail)
+	 (make-spell-descriptor "Aiko Sp2" 1800 500 3000000 std std-fail)
+	 (make-spell-descriptor "Group Sp2" 2400 -1 5000000 std std-fail)
+	 (make-spell-descriptor "\"Magical Stage\"" 5940 20000 5000000 std std-fail))))
 (define-record-type score-entry
   (fields name score unixtime cleared)
   (sealed #t)
@@ -2063,6 +2072,9 @@
    (mutable old-xs)
    (mutable old-ys)
    time-spawned
+   ;; todo: consider getting rid of some of the other fields, at least max-health and name since they're redundant with this
+   ;; index into spells array of the active spell, -1 if none
+   (mutable active-spell-id)
    (mutable active-spell-name)
    (mutable active-spell-bonus)
    ;; #t if the player bombed or died on the current attack
@@ -3131,6 +3143,8 @@
 	(let ([history (vnth (assqdr 'spell-history play-data) idx)])
 	  (set-cdr! history (add1 (cdr history))))
 	(save-play-data play-data))
+  (bossinfo-active-spell-id-set!
+   bossinfo idx)
   (bossinfo-active-spell-name-set!
    bossinfo (spell-descriptor-name descriptor))
   (bossinfo-active-spell-bonus-set!
@@ -3157,18 +3171,19 @@
 					 (and (not (= -1 (bossinfo-max-health bossinfo)))
 						  (positive? (enm-health enm)))))
   (define bonus (and (not failed) (calculate-spell-bonus bossinfo)))
+
+  (enm-drops-set!
+   enm
+   ((if failed spell-descriptor-failed-drops spell-descriptor-drops)
+	(vnth spells (bossinfo-active-spell-id bossinfo))))
   (spawn-enm-drops enm)
   (raylib:play-sound (sebundle-shoot0 sounds))
   (unless failed
 	(raylib:play-sound (sebundle-spellcapture sounds))
 	(set! current-score (+ current-score bonus))
 	(when (is-liveplay)
-	  ;; this kinda dumb but whatever
-	  (let* ([idx (vector-find-index
-				   (lambda (s) (eq? (bossinfo-active-spell-name bossinfo)
-									(spell-descriptor-name s)))
-				   spells)]
-			 [history (vnth (assqdr 'spell-history play-data) idx)])
+	  (let ([history (vnth (assqdr 'spell-history play-data)
+						   (bossinfo-active-spell-id bossinfo))])
 		(set-car! history (add1 (car history))))
 	  (save-play-data play-data)))
   (spawn-particle
@@ -3180,10 +3195,18 @@
 	(if failed
 		"Bonus Failed..."
 		(format "GET Spell Bonus!! ~:d" bonus))))
+  (spawn-particle (make-particle
+				   (particletype enmdeath)
+				   (+ (enm-x enm) (centered-roll visual-rng 20.0))
+				   (+ (enm-y enm) (centered-roll visual-rng 20.0))
+				   30 0 '((start-radius . 2)
+						  (end-radius . 85))))
   (cancel-all #t)
   (bossinfo-remaining-timer-set! bossinfo 0)
   (bossinfo-active-spell-name-set! bossinfo #f)
-  (bossinfo-active-spell-bonus-set! bossinfo #f))
+  (bossinfo-active-spell-bonus-set! bossinfo #f)
+  (bossinfo-active-spell-id-set!
+   bossinfo -1))
 
 (define (common-nonspell-postlude bossinfo)
   (cancel-all #t)
@@ -3411,7 +3434,7 @@
   (make-bossinfo name name-color
 				 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 				 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-				 frames #f #f #f 0 0 0 (immutable-vector)))
+				 frames -1 #f #f #f 0 0 0 (immutable-vector)))
 
 (define (handle-dialogue-advance)
   (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
