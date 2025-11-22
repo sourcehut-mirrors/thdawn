@@ -92,7 +92,7 @@
 (define (ch0-w3-fairy type task enm)
   (define x0 (enm-x enm))
   (define y0 (enm-y enm))
-  (ease-linear-to (+ x0 40.0) y0 10 enm)
+  (ease-to values (+ x0 40.0) y0 10 enm)
   (let ([l (spawn-laser type (+ (enm-x enm) 20.0) (enm-y enm)
 			   0.0 (inexact +playfield-width+)
 			   5.0
@@ -100,7 +100,7 @@
 	(bullet-addflags l (bltflags uncancelable)))
   (raylib:play-sound (sebundle-laser sounds))
   (wait-until (thunk (>= frames 880)))
-  (ease-linear-to x0 y0 20 enm)
+  (ease-to values x0 y0 20 enm)
   (delete-enemy enm))
 
 (define (chapter0 task)

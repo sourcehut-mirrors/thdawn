@@ -3109,10 +3109,6 @@
 	  (enm-x-set! enm x)
 	  (enm-y-set! enm y))
 	(yield)))
-(define (ease-linear-to x y duration enm)
-  (ease-to values x y duration enm))
-(define (ease-cubic-to x y duration enm)
-  (ease-to ease-out-cubic x y duration enm))
 
 ;; points must be a whole spline (see truncate-to-whole-spline)
 (define (move-on-spline points segment->config enm)
