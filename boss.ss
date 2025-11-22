@@ -107,7 +107,7 @@
 							60 enm))
 				 '()
 				 (thunk #f)))
-  (define bossinfo (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
+  (define bossinfo (blank-hazuki-bossinfo))
   (set! current-chapter 18)
   (spawn-subtask "doremi leave"
 	(lambda (_)
@@ -147,7 +147,7 @@
 							60 enm))
 				 '()
 				 (thunk #f)))
-  (define bossinfo (blank-bossinfo "Senoo Aiko" #x00ffffff))
+  (define bossinfo (blank-aiko-bossinfo))
   (set! current-chapter 20)
   (spawn-subtask "hazuki leave"
 	(lambda (_)
@@ -178,7 +178,7 @@
   (group-non2 task aiko))
 
 (define (group-non2 task aiko)
-  (define bossinfo (blank-bossinfo "Harukaze Doremi" #xff69fcff))
+  (define bossinfo (blank-doremi-bossinfo))
   (define _ (wait 90))
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
@@ -196,7 +196,7 @@
 				 (thunk #f)))
   (set! current-chapter 22)
   (enm-extras-set! doremi bossinfo)
-  (enm-extras-set! hazuki (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
+  (enm-extras-set! hazuki (blank-hazuki-bossinfo))
   (bossinfo-healthbars-set!
    bossinfo
    (adjust-bars-non (bossinfo-healthbars (enm-extras aiko))))
@@ -267,7 +267,7 @@
 							60 enm))
 				 '()
 				 (thunk #f)))
-  (define bossinfo (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
+  (define bossinfo (blank-hazuki-bossinfo))
   (set! current-chapter 26)
   (spawn-subtask "doremi leave"
 	(lambda (_)
@@ -307,7 +307,7 @@
 							60 enm))
 				 '()
 				 (thunk #f)))
-  (define bossinfo (blank-bossinfo "Senoo Aiko" #x00ffffff))
+  (define bossinfo (blank-aiko-bossinfo))
   (set! current-chapter 28)
   (spawn-subtask "hazuki leave"
 	(lambda (_)
@@ -338,7 +338,7 @@
   (group-sp3 task aiko))
 
 (define (group-sp3 task aiko)
-  (define bossinfo (blank-bossinfo "Harukaze Doremi" #xff69fcff))
+  (define bossinfo (blank-doremi-bossinfo))
   (define _ (wait 90))
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
@@ -356,7 +356,7 @@
 				 (thunk #f)))
   (set! current-chapter 30)
   (enm-extras-set! doremi bossinfo)
-  (enm-extras-set! hazuki (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
+  (enm-extras-set! hazuki (blank-hazuki-bossinfo))
 
   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
   (bossinfo-healthbars-set!

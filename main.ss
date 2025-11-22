@@ -3428,6 +3428,12 @@
 				 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 				 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
 				 frames -1 #f #f 0 0 0 (immutable-vector)))
+(define (blank-doremi-bossinfo)
+  (blank-bossinfo "Harukaze Doremi" #xff7fbcff))
+(define (blank-hazuki-bossinfo)
+  (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
+(define (blank-aiko-bossinfo)
+  (blank-bossinfo "Senoo Aiko" #x00ffffff))
 
 (define (handle-dialogue-advance)
   (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
@@ -3541,7 +3547,7 @@
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
   (when (raylib:is-key-pressed key-period)
-	(set! chapter-select (min (add1 chapter-select) 13)))
+	(set! chapter-select (min (add1 chapter-select) 31)))
   (when (raylib:is-key-pressed key-comma)
 	(set! chapter-select (max (sub1 chapter-select) 0)))
   (when (and (not (paused?)) (raylib:is-key-pressed key-r))
@@ -4173,21 +4179,96 @@
 	  [(6) (values chapter6 6339)] [(7) (values chapter7 6725)]
 	  [(8) (values chapter8 7497)] [(9) (values chapter9 8284)]
 	  [(10) (values chapter10 9392)] [(11) (values chapter11 10960)]
-	  [(12) (values chapter12 11785)] [(13) (values chapter13 13000)]))
+	  [(12) (values chapter12 11785)] [(13) (values chapter13 13000)]
+	  [(14) (values group-non1 14000)] [(15) (values group-sp1 14000)]
+	  [(16) (values doremi-non1 14000)] [(17) (values doremi-sp1 14000)]
+	  [(18) (values hazuki-non1 14000)] [(19) (values hazuki-sp1 14000)]
+	  [(20) (values aiko-non1 14000)] [(21) (values aiko-sp1 14000)]
+	  [(22) (values group-non2 14000)] [(23) (values group-sp2 14000)]
+	  [(24) (values doremi-non2 14000)] [(25) (values doremi-sp2 14000)]
+	  [(26) (values hazuki-non2 14000)] [(27) (values hazuki-sp2 14000)]
+	  [(28) (values aiko-non2 14000)] [(29) (values aiko-sp2 14000)]
+	  [(30) (values group-sp3 14000)] [(31) (values group-sp4 14000)]))
   (vector-fill! live-bullets #f)
   (vector-fill! live-enm #f)
   (vector-fill! live-misc-ents #f)
   (vector-fill! live-particles #f)
   (stage-ctx-dialogue-set! current-stage-ctx #f)
   (kill-all-tasks)
-  (spawn-task "stage driver" func (constantly #t))
   (set! frames timestamp)
-  (if (<= chapter 13)
+  (if (< chapter 14)
 	  (begin
+		(spawn-task "stage driver" func (constantly #t))
 		(play-music (musbundle-ojamajo-carnival music))
 		(raylib:seek-music-stream current-music
-							  (inexact (/ frames 60.0))))
-	  (play-music (musbundle-naisho-yo-ojamajo music))))
+								  (inexact (/ frames 60.0))))
+	  (let* ([to-pop
+			  (cond
+			   [(= chapter 14) 0]
+			   [(< chapter 30)
+				;; simple alternating spells/nons, so can use math to calc
+				(fxdiv (- chapter 15) 2)]
+			   [(= chapter 30) 7]
+			   [(= chapter 31) 8])]
+			 [bars (vector-pop (base-healthbars) to-pop)])
+		(case chapter
+		  ;; requires all three
+		  [(14 15 16 23 24 31)
+		   (let* ([doremi (spawn-enemy 'boss-doremi
+									   +middle-boss-x+ +middle-boss-y+
+									   500 values '() (thunk #f))]
+				  [hazuki (spawn-enemy 'boss-hazuki
+									   +left-boss-x+ +left-boss-y+
+									   500 values '() (thunk #f))]
+				  [aiko (spawn-enemy 'boss-aiko
+									   +right-boss-x+ +right-boss-y+
+									   500 values '() (thunk #f))]
+				  [bossinfo (blank-doremi-bossinfo)])
+			 (bossinfo-healthbars-set! bossinfo bars)
+			 (enm-extras-set! doremi bossinfo)
+			 (enm-extras-set! hazuki (blank-hazuki-bossinfo))
+			 (enm-extras-set! aiko (blank-aiko-bossinfo))
+			 (spawn-task "stage driver"
+			   (lambda (task)
+				 (func task doremi hazuki aiko))
+			   (constantly #t)))]
+		  ;; requires doremi
+		  [(17 18 25 26)
+		   (let* ([doremi (spawn-enemy 'boss-doremi
+									   +middle-boss-x+ +middle-boss-y+
+									   500 values '() (thunk #f))]
+				  [bossinfo (blank-doremi-bossinfo)])
+			 (bossinfo-healthbars-set! bossinfo bars)
+			 (enm-extras-set! doremi bossinfo)
+			 (spawn-task "stage driver"
+			   (lambda (task)
+				 (func task doremi))
+			   (constantly #t)))]
+		  ;; requires hazuki
+		  [(19 20 27 28)
+		   (let* ([hazuki (spawn-enemy 'boss-hazuki
+									   +middle-boss-x+ +middle-boss-y+
+									   500 values '() (thunk #f))]
+				  [bossinfo (blank-hazuki-bossinfo)])
+			 (bossinfo-healthbars-set! bossinfo bars)
+			 (enm-extras-set! hazuki bossinfo)
+			 (spawn-task "stage driver"
+			   (lambda (task)
+				 (func task hazuki))
+			   (constantly #t)))]
+		  ;; requires aiko
+		  [(21 22 29 30)
+		   (let* ([aiko (spawn-enemy 'boss-aiko
+									 +middle-boss-x+ +middle-boss-y+
+									 500 values '() (thunk #f))]
+				  [bossinfo (blank-doremi-bossinfo)])
+			 (bossinfo-healthbars-set! bossinfo bars)
+			 (enm-extras-set! aiko bossinfo)
+			 (spawn-task "stage driver"
+			   (lambda (task)
+				 (func task aiko))
+			   (constantly #t)))])
+		(play-music (musbundle-naisho-yo-ojamajo music)))))
 
 (define (tick-game)
   (unless (paused?)

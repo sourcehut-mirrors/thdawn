@@ -130,11 +130,14 @@
 	(vector-set! result length elem)
 	result)
 
-  (define (vector-pop v)
-	(define length (vector-length v))
-	(define result (make-vector (sub1 length)))
-	(vector-copy! v 0 result 0 (sub1 length))
-	result)
+  (define vector-pop
+	(case-lambda
+	  [(v) (vector-pop v 1)]
+	  [(v n)
+	   (define length (vector-length v))
+	   (define result (make-vector (- length n)))
+	   (vector-copy! v 0 result 0 (- length n))
+	   result]))
 
   (define (vector-truncate v new-length)
 	(define length (vector-length v))

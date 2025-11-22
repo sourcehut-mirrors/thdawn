@@ -101,11 +101,12 @@
 	(update-music-volumes)))
 (define current-music #f)
 (define (play-music m)
-  (when current-music
-	(raylib:stop-music-stream current-music))
-  (set! current-music m)
-  (when m
-	(raylib:play-music-stream m)))
+  (when (not (eq? m current-music))
+	(when current-music
+	  (raylib:stop-music-stream current-music))
+	(set! current-music m)
+	(when m
+	  (raylib:play-music-stream m))))
 
 (define-record-type txbundle
   (fields
