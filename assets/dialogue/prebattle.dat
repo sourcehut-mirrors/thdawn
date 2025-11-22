@@ -1,0 +1,36 @@
+#(
+((type . reimu) (text . "...Where is this?
+Maybe I took a wrong turn..."))
+((type . reimu) (text . "What a beautiful starry night, though..."))
+((type . doremi) (noportrait . #t) (text . "There you are!") (event . doremi-enter) (duration . 90))
+((type . doremi) (text . "You're the onee-san we just passed by!"))
+((type . aiko) (text . "Doremi-chan, wait up!") (event . aiko-enter) (duration . 90))
+((type . hazuki) (event . hazuki-enter) (duration . 90) (text . "You can't fly so far ahead of us, Doremi-chan.
+You'll get lost!"))
+((type . doremi) (text . "Don't worry about that, Hazuki-chan, look who I met!"))
+((type . reimu) (text . "...? Who are these...little girls?"))
+((type . reimu) (text . "Are you lost?"))
+((type . doremi) (text . "Actually, we're on our way to the Witch World!
+Today, we're visiting some of our witch friends!"))
+((type . doremi) (text . "Who are you, by the way? Your dress is really pretty~"))
+((type . reimu) (text . "The Witch World, huh..."))
+((type . reimu) (text . "Let's put that aside for a moment.
+How did you learn how to cast spell cards?"))
+((type . doremi) (text . "Ah, the...what was it called...danmaku from earlier?"))
+((type . doremi) (text . "Another onee-san taught us the previous time
+we were in the Witch World!"))
+((type . hazuki) (text . "Ah yes, she had such beautiful golden hair..."))
+((type . hazuki) (text . "And she had a pointy hat and rode around on a broom!"))
+((type . hazuki) (text . "She's a bona-fide witch! Though she used a strange
+item to channel her magic instead of a crystal."))
+((type . reimu) (text . "Of course it was her..."))
+((type . reimu) (text . "Anyways, it was nice to meet you three, I'll be on my way now."))
+((type . aiko) (text . "Hold up, onee-san!"))
+((type . aiko) (text . "I just remembered, the kind witch also told us that the
+inventor of spell cards was a red-and-white-wearin' miko!"))
+((type . hazuki) (text . "Could it be you?"))
+((type . reimu) (text . "That would be me, yes."))
+((type . doremi) (text . "In that case, we gotta show you what we've come up with!"))
+((type . hazuki) (text . "Yes, it'll be a dazzling show!"))
+((type . aiko) (text . "Here we come!"))
+)

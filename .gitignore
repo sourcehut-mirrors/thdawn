@@ -2,5 +2,6 @@
 *.wpo
 *.boot
 *.dat
+!assets/dialogue/*.dat
 *.png
 *.rep

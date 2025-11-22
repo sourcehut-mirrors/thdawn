@@ -1,0 +1,14 @@
+#(
+((type . reimu) (text . "Not bad at all."))
+((type . doremi) (text . "Whew, Hazuki-chan, Aiko-chan, I'm wiped out..."))
+((type . aiko) (text . "Agh, you're strong...wish we had more spells to use...!"))
+((type . hazuki) (text . "We did our best, Dormei-chan, Aiko-chan."))
+((type . reimu) (text . "I meant that sincerely. Putting together
+ten spell cards in such a short time is amazing!"))
+((type . reimu) (text . "I'm sure if you asked,
+Marisa would be happy to tutor you further."))
+((type . hazuki) (text . "Marisa...? Isn't that you?"))
+((type . doremi) (text . "The golden-haired witch said her name was Reimu."))
+((type . aiko) (text . "Yeah and that the red-white miko was called Marisa."))
+((type . reimu) (text . "Isn't this joke a bit too outdated now, Marisa??!!"))
+)
