@@ -3804,10 +3804,10 @@
 					[(spy) (+ +playfield-render-offset-y+
 							  (cond
 							   [(fx<= elapsed-frames 45)
-								(- +playfield-max-y+ height 15.0)]
+								(- +playfield-max-y+ height 20.0)]
 							   [(fx<= 45 elapsed-frames 90)
 								(lerp
-								 (- +playfield-max-y+ height 15.0)
+								 (- +playfield-max-y+ height 20.0)
 								 (+ +playfield-min-y+ 15.0)
 								 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
 							   [else (+ +playfield-min-y+ 15.0)]))]
@@ -3830,7 +3830,8 @@
   (draw-sprite textures 'enemy-indicator
 			   (+ +playfield-render-offset-x+
 				  (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
-			   (inexact (+ +playfield-max-y+ +playfield-render-offset-y+))
+			   (inexact (+ +playfield-max-y+ +playfield-render-offset-y+
+						   2))
 			   #xffffffc0))
 
 (define dialog-src-bounds (make-rectangle 0 0 368 60))
