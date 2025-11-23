@@ -3908,13 +3908,8 @@
 	 24.0 0.0 red))
   
   ;; this is kinda dumb but whatever
-  (let ([doremi (vector-find (lambda (e) (and e (eq? 'boss-doremi (enm-type e))))
-							 live-enm)]
-		[hazuki (vector-find (lambda (e) (and e (eq? 'boss-hazuki (enm-type e))))
-							 live-enm)]
-		[aiko (vector-find (lambda (e) (and e (eq? 'boss-aiko (enm-type e))))
-						   live-enm)]
-		[nth-boss 0])
+  (let-values ([(doremi hazuki aiko) (find-bosses)]
+			   [(nth-boss) 0])
 	(when doremi
 	  (draw-boss-hud nth-boss doremi textures fonts)
 	  (set! nth-boss (add1 nth-boss)))
