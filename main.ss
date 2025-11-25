@@ -3160,10 +3160,11 @@
   (enm-health-set! boss health))
 
 (define (common-spell-postlude bossinfo enm)
-  (define failed (or (bossinfo-active-attack-failed bossinfo)
-					 ;; ran out of time and not a survival
-					 (and (not (= -1 (bossinfo-max-health bossinfo)))
-						  (positive? (enm-health enm)))))
+  (define timeout-fail
+	(and (not (= -1 (bossinfo-max-health bossinfo)))
+		 (positive? (enm-health enm))))
+  (define failed (or timeout-fail
+					 (bossinfo-active-attack-failed bossinfo)))
   (define bonus (and (not failed) (calculate-spell-bonus bossinfo)))
 
   (enm-drops-set!
@@ -3172,6 +3173,8 @@
 	(vnth spells (bossinfo-active-spell-id bossinfo))))
   (spawn-enm-drops enm)
   (raylib:play-sound (sebundle-shoot0 sounds))
+  (when timeout-fail
+	(raylib:play-sound (sebundle-laugh sounds)))
   (unless failed
 	(raylib:play-sound (sebundle-spellcapture sounds))
 	(set! current-score (+ current-score bonus))
