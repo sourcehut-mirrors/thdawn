@@ -605,8 +605,7 @@
 		(-> (cb)
 			(cbcount 14)
 			(cbspeed 6.0)
-			(cbshootenm enm 'ellipse-red 5 (sebundle-bell sounds)))
-		))
+			(cbshootenm enm 'heart-magenta 5 (sebundle-bell sounds)))))
 	(thunk (positive? (bossinfo-remaining-timer bossinfo)))
 	task)
   (let loop ([ang 0.0]
