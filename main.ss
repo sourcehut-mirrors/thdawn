@@ -4260,7 +4260,7 @@
 		   (let* ([aiko (spawn-enemy 'boss-aiko
 									 +middle-boss-x+ +middle-boss-y+
 									 500 values '() (thunk #f))]
-				  [bossinfo (blank-doremi-bossinfo)])
+				  [bossinfo (blank-aiko-bossinfo)])
 			 (bossinfo-healthbars-set! bossinfo bars)
 			 (enm-extras-set! aiko bossinfo)
 			 (spawn-task "stage driver"
