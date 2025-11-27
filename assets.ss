@@ -120,7 +120,7 @@
    bulletcancel hint
    bullet-ball-huge
    laser1 laser2 laser3 laser4
-   magicircle boss boss-flip boss-ui dialog-box)
+   magicircle boss boss-flip boss-ui dialog-box wisp)
   (sealed #t))
 (define (load-textures)
   (define (ltex file)
@@ -139,7 +139,7 @@
 					 "bullet_ball_huge.png"
 					 "laser1.png" "laser2.png" "laser3.png" "laser4.png"
 					 "eff_magicsquare.png" "boss.png" "boss_rot.png"
-					 "boss_ui.png" "dialog_box.png"))))
+					 "boss_ui.png" "dialog_box.png" "wisp.png"))))
 
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
