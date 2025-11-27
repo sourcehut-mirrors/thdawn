@@ -521,40 +521,40 @@
 	(define x (enm-x enm))
 	(define y (enm-y enm))
 	(define start-frames frames)
-	(letrec ([center-blt
-			  (spawn-bullet
-			   'small-ball-red x y 5
-			   (lambda (blt)
-				 (loop-forever
-				  (linear-step facing speed blt)
-				  (when with-ring
-					(position-bullets-around (bullet-x blt) (bullet-y blt)
-											 33.0 0.0 ring))
-				  (position-bullets-around (bullet-x blt) (bullet-y blt)
-										   12.0 (torad (mod (* 2 (+ start-frames
-																	frames))
-															360.0))
-										   notes))))]
-			 [ring (if with-ring
-					   (map
-						(lambda (_)
-						  (spawn-bullet
-						   'pellet-white x y 5
-						   (lambda (blt)
-							 (wait-until
-							  (thunk (not (vector-index center-blt live-bullets))))
-							 (delete-bullet blt))))
-						(iota 24))
-					   '())]
-			 [notes (map
-					 (lambda (type)
-					   (spawn-bullet
-						type x y 5
-						(lambda (blt)
-						  (wait-until
-						   (thunk (not (vector-index center-blt live-bullets))))
-						  (delete-bullet blt))))
-					 '(music-red music-yellow music-cyan))])
+	(letrec* ([center-blt
+			   (spawn-bullet
+				'small-ball-red x y 5
+				(lambda (blt)
+				  (loop-forever
+				   (linear-step facing speed blt)
+				   (when with-ring
+					 (position-bullets-around (bullet-x blt) (bullet-y blt)
+											  33.0 0.0 ring))
+				   (position-bullets-around (bullet-x blt) (bullet-y blt)
+											12.0 (torad (mod (* 2 (+ start-frames
+																	 frames))
+															 360.0))
+											notes))))]
+			  [ring (if with-ring
+						(map
+						 (lambda (_)
+						   (spawn-bullet
+							'pellet-white x y 5
+							(lambda (blt)
+							  (wait-until
+							   (thunk (not (vector-index center-blt live-bullets))))
+							  (delete-bullet blt))))
+						 (iota 24))
+						'())]
+			  [notes (map
+					  (lambda (type)
+						(spawn-bullet
+						 type x y 5
+						 (lambda (blt)
+						   (wait-until
+							(thunk (not (vector-index center-blt live-bullets))))
+						   (delete-bullet blt))))
+					  '(music-red music-yellow music-cyan))])
 	  (void)))
   (ease-to values 0.0 80.0 20 enm)
   (raylib:play-sound (sebundle-longcharge sounds))
@@ -983,29 +983,29 @@
 		[y (enm-y enm)])
 	(interval-loop-while 30 (fx< (fx- frames start-frames) 240)
 	  (raylib:play-sound (sebundle-shoot0 sounds))
-	  (letrec ([facing (facing-player x y)]
-			   [center-blt
-				(spawn-bullet
-				 'big-star-orange x y 5
-				 (lambda (blt)
-				   (do [(i 0 (fx1+ i))]
-					   [(fx= i 241)]
-					 (linear-step facing 5.0 blt)
-					 (let ([r (flmin (fl* (inexact i) 1.5) 30.0)])
-					   (position-bullets-around (bullet-x center-blt)
-												(bullet-y center-blt)
-												r 0.0 ring-blts))
-					 (yield))
-				   (delete-bullet blt)))]
-			   [ring-blts (map
-						   (lambda (_)
-							 (spawn-bullet
-							  'small-star-yellow x y 5
-							  (lambda (blt)
-								(wait-until
-								 (thunk (not (vector-index center-blt live-bullets))))
-								(delete-bullet blt))))
-						   (iota 10))])
+	  (letrec* ([facing (facing-player x y)]
+				[center-blt
+				 (spawn-bullet
+				  'big-star-orange x y 5
+				  (lambda (blt)
+					(do [(i 0 (fx1+ i))]
+						[(fx= i 241)]
+					  (linear-step facing 5.0 blt)
+					  (let ([r (flmin (fl* (inexact i) 1.5) 30.0)])
+						(position-bullets-around (bullet-x center-blt)
+												 (bullet-y center-blt)
+												 r 0.0 ring-blts))
+					  (yield))
+					(delete-bullet blt)))]
+				[ring-blts (map
+							(lambda (_)
+							  (spawn-bullet
+							   'small-star-yellow x y 5
+							   (lambda (blt)
+								 (wait-until
+								  (thunk (not (vector-index center-blt live-bullets))))
+								 (delete-bullet blt))))
+							(iota 10))])
 		(void))))
   (ease-to ease-in-quad (enm-x enm) -20.0 60 enm)
   (delete-enemy enm))
