@@ -637,8 +637,9 @@
   (fields
    ;; function (self level-pressed, edge-pressed, edge-released) -> void
    handle-input
+   ;; function (self) -> void, does any per-frame logic necessary
+   tick
    ;; function (self textures fonts) -> void. Draws the gui.
-   ;; I guess you can do any per-frame logic in here too...
    render))
 
 (define-record-type menu-item
@@ -711,7 +712,7 @@
 (define want-quit #f)
 (define (mk-title-gui)
   (make-title-gui
-   title-handle-input title-render
+   title-handle-input values title-render
    (vector
 	(make-menu-item
 	 (thunk "Game Start")
@@ -827,7 +828,7 @@
 		   (nameinput-gui-selected-option-set!
 			gui (sub1 (vlen (nameinput-gui-menu-options gui)))))))))
   (make-nameinput-gui
-   nameinput-handle-input nameinput-render
+   nameinput-handle-input values nameinput-render
    (make-string +name-max+ #\nul)
    0
    (vector-append
@@ -987,6 +988,7 @@
   (define result
 	(make-replist-gui
 	 replist-handle-input
+	 values
 	 replist-render
 	 to-save
 	 0 0 '()))
@@ -1116,7 +1118,7 @@
 	  (playdata-draw-spellhist self textures fonts)
 	  (draw-scores fonts (assqdr 'hiscore play-data) #f)))
 (define (mk-playdata-gui)
-  (make-playdata-gui playdata-handle-input playdata-render #f))
+  (make-playdata-gui playdata-handle-input values playdata-render #f))
 
 (define-record-type setting-gui
   (parent gui)
@@ -1203,7 +1205,7 @@
 
 (define (mk-setting-gui)
   (make-setting-gui
-   setting-handle-input setting-render
+   setting-handle-input values setting-render
    (vector-append
 	(vector
 	 (make-menu-item
@@ -1338,6 +1340,22 @@
 		  [(enum-set-member? (vkey shoot) edge-pressed)
 		   (raylib:play-sound (sebundle-menuselect sounds))
 		   ((menu-item-on-select (vnth opts selected)) self)])))
+  (define (pause-gui-tick self)
+	(define opening (pause-gui-opening self))
+	(define closing (pause-gui-closing self))
+	(define progress
+	  (cond
+	   [(> opening 0)
+		(- 1 (/ opening +menu-animate-dur+))]
+	   [(> closing 0)
+	    (- 1 (/ closing +menu-animate-dur+))]
+	   [else 1]))
+	(when (> opening 0)
+	  (pause-gui-opening-set! self (sub1 opening)))
+	(when (> closing 0)
+	  (pause-gui-closing-set! self (add1 closing))
+	  (when (= closing +menu-animate-dur+)
+	    ((pause-gui-close-fn self)))))
   (define (pause-gui-render self textures fonts)
 	(define opts (pause-gui-menu-options self))
 	(define selected (pause-gui-selected-option self))
@@ -1372,13 +1390,7 @@
 	 32.0 0.0 (packcolor 200 122 255 alpha))
 	(render-ingame-menu fonts opts selected
 						(eround (lerp 80 100 progress))
-						200 20 20.0 alpha)
-	(when (> opening 0)
-	  (pause-gui-opening-set! self (sub1 opening)))
-	(when (> closing 0)
-	  (pause-gui-closing-set! self (add1 closing))
-	  (when (= closing +menu-animate-dur+)
-	    ((pause-gui-close-fn self)))))
+						200 20 20.0 alpha))
   (define restart-opt
 	(make-menu-item
 	 (let ([label (string-append "Restart ("
@@ -1418,7 +1430,7 @@
 	   (pause-gui-close-fn-set! gui (thunk (unpause gui)))
 	   (pause-gui-closing-set! gui 1))))
   (make-pause-gui
-   pause-gui-handle-input pause-gui-render
+   pause-gui-handle-input pause-gui-tick pause-gui-render
    (case type
 	 [(normal)
 	  (vector resume-opt quit-opt quit-nosave-opt restart-opt)]
@@ -4272,6 +4284,9 @@
 		 (handle-input)
 		 (when current-music
 		   (raylib:update-music-stream current-music))
+		 (for-each
+		  (lambda (g) ((gui-tick g) g))
+		  (reverse gui-stack))
 		 (when current-stage-ctx
 		   (tick-game))
 		 (render-all render-texture render-texture-inner textures fonts)
