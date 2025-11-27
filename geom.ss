@@ -1,16 +1,69 @@
 ;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
-;; userland geometry library to avoid having to use the raylib ftypes, which
+;; math and geometry library.
+;; doesn't use the raylib ftypes, which would
 ;; require manually managing memory
 (library (geom)
   (export rectangle-x rectangle-y rectangle-width rectangle-height make-rectangle
 		  (rename (vector2-x v2x) (vector2-y v2y))
 		  vec2 v2+ v2- v2* v2zero v2unit
 		  check-collision-circles check-collision-recs check-collision-circle-rec
-		  lerp eval-bezier-quad eval-bezier-cubic)
+		  lerp eval-bezier-quad eval-bezier-cubic
+		  pi tau
+		  torad todeg eround epsilon-equal clamp
+		  ease-in-quad ease-out-quad ease-in-out-quad
+		  ease-out-cubic
+		  ease-in-quart ease-out-quart ease-in-out-quart
+		  ease-out-quint
+		  ease-out-expo ease-out-circ)
   (import (chezscheme))
 
   (define (lerp a b progress)
 	(+ a (* progress (- b a))))
+
+  (define pi 3.141592)
+  (define tau 6.28318)
+  (define (torad x)
+	(fl* (fl/ pi 180.0) x))
+  (define (todeg x)
+	(fl* (fl/ 180.0 pi) x))
+  (define (eround x)
+	(exact (round x)))
+  (define (epsilon-equal a b)
+	(fl< (flabs (fl- a b)) 0.00000001))
+
+  (define (clamp v lower upper)
+	(max (min v upper) lower))
+  (define (ease-out-cubic x)
+	(- 1 (expt (- 1 x) 3.0)))
+  (define (ease-in-out-quart x)
+	(if (< x 0.5)
+		(* 8 x x x x)
+		(- 1 (/ (expt (+ (* -2 x) 2) 4)
+				2))))
+  (define (ease-in-quad x)
+	(* x x))
+  (define (ease-in-quart x)
+	(* x x x x))
+  (define (ease-out-quad x)
+	(define invx (- 1 x))
+	(- 1 (* invx invx)))
+  (define (ease-in-out-quad x)
+	(if (< x 0.5)
+		(* 2 x x)
+		(- 1 (/ (expt (+ (* -2 x) 2) 2)
+				2))))
+  (define (ease-out-quart x)
+	(- 1 (expt (- 1 x) 4)))
+  (define (ease-out-quint x)
+	(- 1 (expt (- 1 x) 5)))
+  (define (ease-out-expo x)
+	(if (= 1 x)
+		x
+		(- 1 (expt 2 (* -10 x)))))
+  (define (ease-in-circ x)
+	(- 1 (sqrt (- 1 (* x x)))))
+  (define (ease-out-circ x)
+	(sqrt (- 1 (* (- x 1) (- x 1)))))
 
   (define-record-type rectangle
 	(fields
