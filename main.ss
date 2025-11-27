@@ -2039,6 +2039,8 @@
    (mutable total-timer)
    ;; of the current attack, 0 if none, -1 if survival
    (mutable max-health)
+   ;; if non-#f, redirect all damage to this boss to this other enemy
+   (mutable redirect-damage)
    ;; immutable vector of healthbars representing all current/future attacks
    ;; used only for rendering and rendered left to right
    (mutable healthbars))
@@ -2242,29 +2244,34 @@
 	[(enm amount)
 	 (damage-enemy enm amount #t)]
 	[(enm amount playsound)
-	 (set! current-score (+ current-score 20))
-	 (if (enm-hasflag? enm (enmflag invincible))
-		 (when playsound
-		   (raylib:play-sound (sebundle-damageresist sounds)))
-		 (let* ([superarmor (positive? (enm-superarmor enm))]
-				[amount (cond
-						 [superarmor
-						  (max 1 (eround (* 0.1 amount)))]
-						 [else amount])])
-		   (when (and playsound (> amount 0))
-			 (raylib:play-sound
-			  (cond
-			   [superarmor (sebundle-damageresist sounds)]
-			   ;; this logic is kinda arbitary. consider changing to percentage-based?
-			   [(and (< (enm-health enm) 300) (>= (enm-initial-health enm) 300))
-				(sebundle-damage1 sounds)]
-			   [else (sebundle-damage0 sounds)])))
-		   (when (> amount 0)
-			 (enm-damaged-recently-set! enm 20)
-			 (enm-health-set! enm (- (enm-health enm) amount)))
+	 (cond
+	  [(and (is-boss? enm)
+			(bossinfo-redirect-damage (enm-extras enm)))
+	   => (lambda (other-enm) (damage-enemy other-enm amount playsound))]
+	  [else
+	   (set! current-score (+ current-score 20))
+	   (if (enm-hasflag? enm (enmflag invincible))
+		   (when playsound
+			 (raylib:play-sound (sebundle-damageresist sounds)))
+		   (let* ([superarmor (positive? (enm-superarmor enm))]
+				  [amount (cond
+						   [superarmor
+							(max 1 (eround (* 0.1 amount)))]
+						   [else amount])])
+			 (when (and playsound (> amount 0))
+			   (raylib:play-sound
+				(cond
+				 [superarmor (sebundle-damageresist sounds)]
+				 ;; this logic is kinda arbitary. consider changing to percentage-based?
+				 [(and (< (enm-health enm) 300) (>= (enm-initial-health enm) 300))
+				  (sebundle-damage1 sounds)]
+				 [else (sebundle-damage0 sounds)])))
+			 (when (> amount 0)
+			   (enm-damaged-recently-set! enm 20)
+			   (enm-health-set! enm (- (enm-health enm) amount)))
 
-		   (when (fx<= (enm-health enm) 0)
-			 (kill-enemy enm))))]))
+			 (when (fx<= (enm-health enm) 0)
+			   (kill-enemy enm))))])]))
 
 (define (spawn-drops drops x y)
   (for-each
@@ -3385,7 +3392,7 @@
   (make-bossinfo name name-color
 				 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 				 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-				 frames -1 #f #f 0 0 0 (immutable-vector)))
+				 frames -1 #f #f 0 0 0 #f (immutable-vector)))
 (define (blank-doremi-bossinfo)
   (blank-bossinfo "Harukaze Doremi" #xff7fbcff))
 (define (blank-hazuki-bossinfo)

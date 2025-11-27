@@ -41,6 +41,10 @@
   (bossinfo-healthbars-set!
    bossinfo
    (vector-add (base-healthbars) (make-non-healthbar)))
+  (bossinfo-redirect-damage-set!
+   (enm-extras hazuki) doremi)
+  (bossinfo-redirect-damage-set!
+   (enm-extras aiko) doremi)
   (declare-nonspell doremi 1800 1000)
   (wait-while
    (thunk
@@ -53,6 +57,10 @@
 (define (group-sp1 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 15)
+  (bossinfo-redirect-damage-set!
+   (enm-extras hazuki) doremi)
+  (bossinfo-redirect-damage-set!
+   (enm-extras aiko) doremi)
   (declare-spell doremi 2)
   (wait-while
    (thunk
@@ -201,6 +209,10 @@
    bossinfo
    (adjust-bars-non (bossinfo-healthbars (enm-extras aiko))))
   (bossinfo-healthbars-set! (enm-extras aiko) '#())
+  (bossinfo-redirect-damage-set!
+   (enm-extras hazuki) doremi)
+  (bossinfo-redirect-damage-set!
+   (enm-extras aiko) doremi)
   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
   (declare-nonspell doremi 1800 1000)
   (wait-while
@@ -213,6 +225,10 @@
 (define (group-sp2 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 23)
+  (bossinfo-redirect-damage-set!
+   (enm-extras hazuki) doremi)
+  (bossinfo-redirect-damage-set!
+   (enm-extras aiko) doremi)
   (declare-spell doremi 6)
   (wait-while
    (thunk
@@ -357,7 +373,10 @@
   (set! current-chapter 30)
   (enm-extras-set! doremi bossinfo)
   (enm-extras-set! hazuki (blank-hazuki-bossinfo))
-
+  (bossinfo-redirect-damage-set!
+   (enm-extras hazuki) doremi)
+  (bossinfo-redirect-damage-set!
+   (enm-extras aiko) doremi)
   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
   (bossinfo-healthbars-set!
    bossinfo
@@ -367,9 +386,15 @@
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
   (declare-spell doremi 10)
+  (enm-addflags doremi (enmflags invincible))
+  (enm-addflags hazuki (enmflags invincible))
+  (enm-addflags aiko (enmflags invincible))
   (wait-while
    (thunk (positive? (bossinfo-remaining-timer bossinfo))))
   (common-spell-postlude bossinfo doremi)
+  (enm-clrflags doremi (enmflags invincible))
+  (enm-clrflags hazuki (enmflags invincible))
+  (enm-clrflags aiko (enmflags invincible))
   (group-sp4 task doremi hazuki aiko))
 
 (define (group-sp4 task doremi hazuki aiko)
@@ -383,6 +408,10 @@
   (healthbar-width-set! (vnth (bossinfo-healthbars bossinfo)
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
+  (bossinfo-redirect-damage-set!
+   (enm-extras hazuki) doremi)
+  (bossinfo-redirect-damage-set!
+   (enm-extras aiko) doremi)
   (declare-spell doremi 11)
   (wait-while
    (thunk
