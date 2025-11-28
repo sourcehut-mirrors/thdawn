@@ -4334,14 +4334,11 @@
   (let ([pair (assq 'games-started play-data)])
 	(set-cdr! pair (add1 (cdr pair)))
 	(save-play-data play-data))
-  (reset-state)
-  (play-music (musbundle-ojamajo-carnival music))
-  (reset-to 0))
-
-(define (reset-state)
   (set! current-stage-ctx (fresh-stage-ctx #f))
   (vector-fill! live-particles #f)
-  (kill-all-tasks))
+  (kill-all-tasks)
+  (play-music (musbundle-ojamajo-carnival music))
+  (reset-to 0))
 
 ;; read the given replay file and return its records as a vector, or #f
 ;; if there was an error
