@@ -4389,6 +4389,7 @@
   (set! current-stage-ctx (fresh-stage-ctx #f))
   (vector-fill! live-particles #f)
   (kill-all-tasks)
+  (play-music #f)
   (play-music (musbundle-ojamajo-carnival music))
   (reset-to 0))
 
@@ -4414,6 +4415,7 @@
   (vector->pseudo-random-generator! game-rng (vnth first 4))
   (vector-fill! live-particles #f)
   (kill-all-tasks)
+  (play-music #f)
   (play-music (musbundle-ojamajo-carnival music))
   (reset-to 0))
 
