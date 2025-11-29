@@ -1,3 +1,4 @@
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 (define (ch0-w12-fairy bullet xvel task enm)
   (define (movement task)
 	(loop-until

@@ -1,3 +1,4 @@
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 (define key-space 32)
 (define key-escape 256)
 (define key-f1 290)

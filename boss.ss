@@ -1,3 +1,4 @@
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 (define (make-non-healthbar)
   (make-healthbar -1 0 #xf5f5f5ff #x808080ff))
 

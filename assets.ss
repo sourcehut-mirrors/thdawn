@@ -1,3 +1,4 @@
+;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 (define-record-type sebundle
   (fields
    spellcapture spelldeclare
