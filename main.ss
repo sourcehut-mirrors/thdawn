@@ -3218,6 +3218,11 @@
 				   30 0 '((start-radius . 2)
 						  (end-radius . 85))))
   (cancel-all #t)
+  (vector-for-each-truthy
+   (lambda (e)
+	 (when (not (is-boss? e))
+	   (kill-enemy e)))
+   live-enm)
   (bossinfo-remaining-timer-set! bossinfo 0)
   (bossinfo-active-spell-bonus-set! bossinfo #f)
   (bossinfo-active-spell-id-set!
