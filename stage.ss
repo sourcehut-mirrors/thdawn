@@ -476,26 +476,22 @@
 	(define ox (enm-x enm))
 	(define mag (inexact (+ 15 (roll game-rng 65))))
 	(cond
-	 [(fl< ox -160.0)
+	 [(fl< ox -140.0)
 	  (fl+ ox mag)]
-	 [(fl< ox -80.0)
+	 [(fl< ox -65.0)
 	  (if (fl< (roll game-rng) 0.3333)
 		  (fl- ox mag)
 		  (fl+ ox mag))]
-	 [(fl< ox 80.0)
+	 [(fl< ox 65.0)
 	  (if (fl< (roll game-rng) 0.5)
 		  (fl- ox mag)
 		  (fl+ ox mag))]
-	 [(fl< ox 160.0)
+	 [(fl< ox 140.0)
 	  (if (fl< (roll game-rng) 0.3333)
 		  (fl+ ox mag)
 		  (fl- ox mag))]
 	 [else (fl- ox mag)]))
   (ease-to ease-in-out-quad (pick-next-x) (pick-next-y) duration enm))
-
-(define (boss-standard-wander enm task)
-  (interval-loop 80
-	(boss-standard-wander-once enm 70)))
 
 (define (position-bullets-around cx cy dist start-angle bullets)
   (define dang (fl/ tau (inexact (length bullets))))
