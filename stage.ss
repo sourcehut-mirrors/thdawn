@@ -468,32 +468,6 @@
   (wait-until (thunk (>= frames 3500)))
   (chapter4 task))
 
-(define (boss-standard-wander-once enm duration)
-  (define (pick-next-y)
-	(clamp (fl+ (enm-y enm)
-				(centered-roll game-rng 20.0))
-		   80.0 140.0))
-  (define (pick-next-x)
-	(define ox (enm-x enm))
-	(define mag (inexact (+ 15 (roll game-rng 65))))
-	(cond
-	 [(fl< ox -140.0)
-	  (fl+ ox mag)]
-	 [(fl< ox -65.0)
-	  (if (fl< (roll game-rng) 0.3333)
-		  (fl- ox mag)
-		  (fl+ ox mag))]
-	 [(fl< ox 65.0)
-	  (if (fl< (roll game-rng) 0.5)
-		  (fl- ox mag)
-		  (fl+ ox mag))]
-	 [(fl< ox 140.0)
-	  (if (fl< (roll game-rng) 0.3333)
-		  (fl+ ox mag)
-		  (fl- ox mag))]
-	 [else (fl- ox mag)]))
-  (ease-to ease-in-out-quad (pick-next-x) (pick-next-y) duration enm))
-
 (define (position-bullets-around cx cy dist start-angle bullets)
   (define dang (fl/ tau (inexact (length bullets))))
   (let loop ([ang start-angle]
@@ -579,7 +553,7 @@
 	 (ring) (wait 22)
 	 (ring)
 	 (raylib:play-sound (sebundle-shortcharge sounds))
-	 (boss-standard-wander-once enm 60)
+	 (boss-standard-wander-once enm 15 80 60)
 	 (for-each
 	  (lambda (point)
 		(raylib:play-sound (sebundle-shoot0 sounds))
@@ -590,7 +564,7 @@
 	 (ring)
 	 (when first
 	   (raylib:play-sound (sebundle-shortcharge sounds))
-	   (boss-standard-wander-once enm 50)
+	   (boss-standard-wander-once enm 15 80 50)
 	   (loop #f))))
   (wait 25)
   (raylib:play-sound (sebundle-shoot0 sounds))

@@ -3275,6 +3275,32 @@
   (unless short
 	(delete-enemy enm)))
 
+(define (boss-standard-wander-once enm min-dx max-dx duration)
+  (define (pick-next-y)
+	(clamp (fl+ (enm-y enm)
+				(centered-roll game-rng 20.0))
+		   80.0 140.0))
+  (define (pick-next-x)
+	(define ox (enm-x enm))
+	(define mag (inexact (+ min-dx (roll game-rng (- max-dx min-dx)))))
+	(cond
+	 [(fl< ox -140.0)
+	  (fl+ ox mag)]
+	 [(fl< ox -65.0)
+	  (if (fl< (roll game-rng) 0.3333)
+		  (fl- ox mag)
+		  (fl+ ox mag))]
+	 [(fl< ox 65.0)
+	  (if (fl< (roll game-rng) 0.5)
+		  (fl- ox mag)
+		  (fl+ ox mag))]
+	 [(fl< ox 140.0)
+	  (if (fl< (roll game-rng) 0.3333)
+		  (fl+ ox mag)
+		  (fl- ox mag))]
+	 [else (fl- ox mag)]))
+  (ease-to ease-in-out-quad (pick-next-x) (pick-next-y) duration enm))
+
 (define (tick-bomb)
   (define (bomb-sweep-x-left-hitbox)
 	(values (- bomb-sweep-x-left 40.0)
