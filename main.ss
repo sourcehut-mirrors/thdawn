@@ -277,6 +277,24 @@
 	  (make yellow txbundle-enemy1 (* 32 i) 480 32 32 shift16)))
 
   (for-each
+   (lambda (p)
+	 (define type (car p))
+	 (define y (cdr p))
+	 (do [(i 0 (add1 i))]
+		 [(= i 8)]
+	   (let-values ([(name) (->> (number->string i)
+								 (string-append type)
+								 string->symbol)]
+					[(row col) (div-and-mod i 4)])
+		 (make name txbundle-wisp
+			   (* i 32.0) y
+			   32 32 shift16))))
+   '(("red-wisp" . 0)
+	 ("green-wisp" . 32)
+	 ("blue-wisp" . 64)
+	 ("yellow-wisp" . 96)))
+
+  (for-each
    (lambda (l)
 	 (define type (car l))
 	 (define start-x (cadr l))
@@ -2075,7 +2093,8 @@
   (red-fairy green-fairy blue-fairy yellow-fairy
 			 red-yinyang green-yinyang blue-yinyang magenta-yinyang
 			 medium-red-fairy medium-blue-fairy
-			 big-fairy boss-doremi boss-hazuki boss-aiko)
+			 big-fairy boss-doremi boss-hazuki boss-aiko
+			 red-wisp green-wisp blue-wisp yellow-wisp)
   make-enmtype-set)
 (define-record-type enm
   (fields
@@ -2433,6 +2452,10 @@
 	 (values (- (enm-x enm) 11)
 			 (- (enm-y enm) 11)
 			 22 22))
+	([blue-wisp green-wisp red-wisp yellow-wisp]
+	 (values (- (enm-x enm) 9)
+			 (- (enm-y enm) 9)
+			 18 18))
 	([big-fairy]
 	 (values (- (enm-x enm) 15)
 			 (- (enm-y enm) 15)
@@ -2449,10 +2472,15 @@
 			 (- (enm-y enm) 24)
 			 48 48))
 	([medium-blue-fairy medium-red-fairy
-						red-yinyang green-yinyang blue-yinyang magenta-yinyang]
+						red-yinyang green-yinyang blue-yinyang magenta-yinyang
+						blue-wisp green-wisp red-wisp yellow-wisp]
 	 (values (- (enm-x enm) 16)
 			 (- (enm-y enm) 16)
 			 32 32))
+	([blue-wisp green-wisp red-wisp yellow-wisp]
+	 (values (- (enm-x enm) 14)
+			 (- (enm-y enm) 14)
+			 28 28))
 	([big-fairy]
 	 (values (- (enm-x enm) 22)
 			 (- (enm-y enm) 22)
@@ -2575,6 +2603,23 @@
 			outer-sprite
 			(flmod (* frames 8.0) 360.0)
 			render-x render-y tint)))
+		([red-wisp blue-wisp green-wisp yellow-wisp]
+		 (let* ([sprites
+				 (case type
+				   ([red-wisp] '#(red-wisp0 red-wisp1 red-wisp2
+											red-wisp3 red-wisp4 red-wisp5
+											red-wisp6 red-wisp7))
+				   ([blue-wisp] '#(blue-wisp0 blue-wisp1 blue-wisp2
+											  blue-wisp3 blue-wisp4 blue-wisp5
+											  blue-wisp6 blue-wisp7))
+				   ([green-wisp] '#(green-wisp0 green-wisp1 green-wisp2
+												green-wisp3 green-wisp4 green-wisp5
+												green-wisp6 green-wisp7))
+				   ([yellow-wisp] '#(yellow-wisp0 yellow-wisp1 yellow-wisp2
+												  yellow-wisp3 yellow-wisp4 yellow-wisp5
+												  yellow-wisp6 yellow-wisp7)))]
+				[sprite (vnth sprites (fxmod (fx/ frames 5) 8))])
+		   (draw-sprite textures sprite render-x render-y -1)))
 		([yellow-fairy red-fairy green-fairy blue-fairy
 					   medium-red-fairy medium-blue-fairy big-fairy]
 		 (cond

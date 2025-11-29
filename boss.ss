@@ -306,6 +306,14 @@
   (define bossinfo (enm-extras hazuki))
   (set! current-chapter 27)
   (declare-spell hazuki 8)
+  (spawn-enemy (enmtype red-wisp) 0.0 200.0 500
+			   (lambda (_task _enm) (void)))
+  (spawn-enemy (enmtype blue-wisp) 50.0 200.0 500
+			   (lambda (_task _enm) (void)))
+  (spawn-enemy (enmtype green-wisp) 100.0 200.0 500
+			   (lambda (_task _enm) (void)))
+  (spawn-enemy (enmtype yellow-wisp) 150.0 200.0 500
+			   (lambda (_task _enm) (void)))
   (wait-while
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
