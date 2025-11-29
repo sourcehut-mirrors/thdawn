@@ -308,10 +308,13 @@
   (declare-spell hazuki 8)
   (spawn-enemy (enmtype red-wisp) 0.0 200.0 500
 			   (lambda (_task _enm) (void)))
+  (wait 30)
   (spawn-enemy (enmtype blue-wisp) 50.0 200.0 500
 			   (lambda (_task _enm) (void)))
+  (wait 30)
   (spawn-enemy (enmtype green-wisp) 100.0 200.0 500
 			   (lambda (_task _enm) (void)))
+  (wait 30)
   (spawn-enemy (enmtype yellow-wisp) 150.0 200.0 500
 			   (lambda (_task _enm) (void)))
   (wait-while

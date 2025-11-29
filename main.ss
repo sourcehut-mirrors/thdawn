@@ -2058,7 +2058,6 @@
    ;; from oldest to latest; used for the spell circle to trail behind the boss
    (mutable old-xs)
    (mutable old-ys)
-   time-spawned
    ;; index into spells array of the active spell, -1 if none
    (mutable active-spell-id)
    (mutable active-spell-bonus)
@@ -2105,6 +2104,8 @@
    (mutable oy)
    (mutable health)
    initial-health
+   ;; frame counter when this enemy was spawned
+   time-spawned
    ;; set to positive when damaged, decreases automatically every frame.
    (mutable damaged-recently)
    (mutable flags)
@@ -2240,7 +2241,8 @@
 	 (let ((idx (vector-index #f live-enm)))
 	   (unless idx
 		 (error 'spawn-enemy "No more open enemy slots!"))
-	   (let ([enemy (make-enm type x y x y health health 0 empty-enmflags
+	   (let ([enemy (make-enm type x y x y health health frames
+							  0 empty-enmflags
 							  drops on-death 0 0.0 #f)])
 		 (vector-set! live-enm idx enemy)
 		 (spawn-task
@@ -2494,7 +2496,7 @@
 						   (flvector-ref (bossinfo-old-ys bossinfo) 0)))
   ;; add the spawn timestamp to seed the rotation so multiple bosses don't
   ;; render their aura the exact same way
-  (let* ([t (fx+ frames (bossinfo-time-spawned bossinfo))]
+  (let* ([t (fx+ frames (enm-time-spawned enm))]
 		 [radius (fl+ 90.0 (fl* 10.0 (flsin (/ t 12.0))))])
 	(draw-sprite-pro-with-rotation
 	 textures 'magicircle
@@ -2618,7 +2620,8 @@
 				   ([yellow-wisp] '#(yellow-wisp0 yellow-wisp1 yellow-wisp2
 												  yellow-wisp3 yellow-wisp4 yellow-wisp5
 												  yellow-wisp6 yellow-wisp7)))]
-				[sprite (vnth sprites (fxmod (fx/ frames 5) 8))])
+				[t (fx+ frames (enm-time-spawned enm))]
+				[sprite (vnth sprites (fxmod (fx/ t 5) 8))])
 		   (draw-sprite textures sprite render-x render-y -1)))
 		([yellow-fairy red-fairy green-fairy blue-fairy
 					   medium-red-fairy medium-blue-fairy big-fairy]
@@ -3456,7 +3459,7 @@
   (make-bossinfo name name-color
 				 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 				 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-				 frames -1 #f #f 0 0 0 #f (immutable-vector)))
+				 -1 #f #f 0 0 0 #f (immutable-vector)))
 (define (blank-doremi-bossinfo)
   (blank-bossinfo "Harukaze Doremi" #xff7fbcff))
 (define (blank-hazuki-bossinfo)
