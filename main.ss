@@ -3015,6 +3015,8 @@
 		  (when (< (miscent-y ent) (- +playfield-min-y+ 50)) ;; extra fuzz for length
 			(delete-misc-ent ent)))))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
+	   (when (stage-ctx-dialogue current-stage-ctx)
+		 (miscent-autocollect-set! ent #t))
 	   (cond
 		[(miscent-autocollect ent)
 		 ;; todo dedupe with below
