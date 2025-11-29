@@ -3,5 +3,5 @@
 *.boot
 *.dat
 !assets/dialogue/*.dat
-*.png
+screenshot-*.png
 *.rep
