@@ -2006,23 +2006,33 @@
 		[std-fail '((point . 10))])
 	(immutable-vector
 	 (make-spell-descriptor
-	  "\"My First Spell Card!\"" 1540 -1 1000000
+	  "Beginner Sign \"My First Spell Card!\"" 1540 -1 1000000
 	  '((bomb . 1) (point . 30))
 	  (cons '(bomb . 1) std-fail))
 	 (make-spell-descriptor
 	  "Natural Sign \"Butterfly Smelling the Flowers\"" 720 -1 1000000
 	  '((life . 1) (point . 50))
 	  (cons '(life . 1) std-fail))
-	 (make-spell-descriptor "Group Sp1" 1800 500 1000000 std std-fail)
-	 (make-spell-descriptor "Doremi Sp1" 1800 500 1000000 std std-fail)
-	 (make-spell-descriptor "Hazuki Sp1" 1800 500 1000000 std std-fail)
-	 (make-spell-descriptor "Aiko Sp1" 1800 500 1000000 std std-fail)
-	 (make-spell-descriptor "Group Sp2" 1800 500 3000000 std std-fail)
-	 (make-spell-descriptor "Doremi Sp2" 1800 500 3000000 std std-fail)
-	 (make-spell-descriptor "Hazuki Sp2" 1800 500 3000000 std std-fail)
-	 (make-spell-descriptor "Aiko Sp2" 1800 500 3000000 std std-fail)
-	 (make-spell-descriptor "Group Sp2" 2400 -1 5000000 std std-fail)
-	 (make-spell-descriptor "\"Magical Stage\"" 5940 20000 5000000 std std-fail))))
+	 (make-spell-descriptor "Group Sp1"
+							1800 500 1000000 std std-fail)
+	 (make-spell-descriptor "Doremi Sp1"
+							1800 500 1000000 std std-fail)
+	 (make-spell-descriptor "Hazuki Sp1"
+							1800 500 1000000 std std-fail)
+	 (make-spell-descriptor "Aiko Sp1"
+							1800 500 1000000 std std-fail)
+	 (make-spell-descriptor "Witchy Sign \"\""
+							1800 500 3000000 std std-fail)
+	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""
+							1800 500 3000000 std std-fail)
+	 (make-spell-descriptor "Paranormal Sign \"Ah...G-...G-Ghost!\""
+							1800 500 3000000 std std-fail)
+	 (make-spell-descriptor "Athlete Sign \"Penalty Shootout\""
+							1800 500 3000000 std std-fail)
+	 (make-spell-descriptor "\"One Flower, One World\""
+							2400 -1 5000000 std std-fail)
+	 (make-spell-descriptor "\"Magical Stage\""
+							5940 20000 5000000 std std-fail))))
 (define-record-type score-entry
   (fields name score unixtime cleared)
   (sealed #t)

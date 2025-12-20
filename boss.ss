@@ -37,6 +37,10 @@
 
 (define (group-non1 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
+  (define keep-running
+	(thunk
+	 (and (positive? (bossinfo-remaining-timer bossinfo))
+		  (positive? (enm-health doremi)))))
   (set! current-chapter 14)
   (play-music (musbundle-naisho-yo-ojamajo music))
   (bossinfo-healthbars-set!
@@ -46,11 +50,39 @@
    (enm-extras hazuki) doremi)
   (bossinfo-redirect-damage-set!
    (enm-extras aiko) doremi)
-  (declare-nonspell doremi 1800 1000)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi)))))
+  (declare-nonspell doremi 1800 5000)
+
+  (spawn-subtask "doremi wander"
+	(lambda (task)
+	  (wait (roll game-rng 60))
+	  (interval-loop 60
+		(boss-standard-wander-once doremi 10 40 50)))
+	keep-running task)
+  (spawn-subtask "hazuki wander"
+	(lambda (task)
+	  (wait (roll game-rng 60))
+	  (interval-loop 60
+		(boss-standard-wander-once hazuki 10 40 50)))
+	keep-running task)
+  (spawn-subtask "aiko wander"
+	(lambda (task)
+	  (wait (roll game-rng 60))
+	  (interval-loop 60
+		(boss-standard-wander-once aiko 10 40 50)))
+	keep-running task)
+
+  (wait 100)
+  (-> (cb)
+	  (cbcount 36)
+	  (cbspeed 3.0)
+	  (cbshootenm doremi 'butterfly-magenta 5 (sebundle-shoot0 sounds)))
+  (wait 40)
+  (-> (cb)
+	  (cbcount 36)
+	  (cbspeed 3.0)
+	  (cbshootenm doremi 'butterfly-magenta 5 (sebundle-shoot0 sounds)))
+  
+  (wait-while keep-running)
   (common-nonspell-postlude bossinfo)
   (group-sp1 task doremi hazuki aiko))
 
