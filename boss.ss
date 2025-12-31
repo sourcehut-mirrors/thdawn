@@ -23,7 +23,7 @@
    ;; hazuki sp2
    (make-healthbar 4 1 #xffa500ff #xf4a460ff)
    ;; doremi sp2
-   (make-healthbar 4 1 #xba55d3ff #xff69fcff)
+   (make-healthbar 4 1 #xff69fcff #xba55d3ff)
    ;; group sp2
    (make-healthbar 4 1 #xffd700ff #xdaa520ff)
    ;; aiko sp1
@@ -31,7 +31,7 @@
    ;; hazuki sp1
    (make-healthbar 4 1 #xffa500ff #xf4a460ff)
    ;; doremi sp1
-   (make-healthbar 4 1 #xba55d3ff #xff69fcff)
+   (make-healthbar 4 1 #xff69fcff #xba55d3ff)
    ;; group sp1
    (make-healthbar 25 0 #xffd700ff #xdaa520ff)))
 
