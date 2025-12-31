@@ -253,6 +253,16 @@
 		 txbundle-bullet-music (* 60 i) (* 32 j) 60 32 shift)))
    basic-colors)
 
+  (for-each-indexed
+   (lambda (i color)
+	 (define shift (vec2 -24.0 -16.0))
+	 (do [(j 0 (add1 j))]
+		 [(= j 4)]
+	   (make (string->symbol
+			  (string-append "fireball-" (symbol->string color) (number->string j)))
+		 txbundle-fireball (* 48 i) (* 32 j) 48 32 shift)))
+   basic-colors)
+
   ;; small fairies
   (do [(i 0 (add1 i))]
 	  [(>= i 12)]
@@ -1572,6 +1582,7 @@
 	(make-family 'heart basic-colors 6.0)
 	(make-family 'arrow basic-colors 3.0)
 	(make-family 'glow-orb basic-colors 9.0)
+	(make-family 'fireball basic-colors 5.5)
 	(for-each (lambda (color)
 				(define type
 				  (string->symbol (string-append
@@ -1769,7 +1780,16 @@
 												   (number->string
 													(fxmod (fx/ frames 10) 3))))])
 			   (draw-sprite-with-rotation textures sprite 90.0
-										  render-x render-y -1))))
+										  render-x render-y -1)))
+			([fireball]
+			 (let ([sprite
+					(string->symbol (string-append (symbol->string type)
+												   (number->string
+													(fxmod (fx/ frames 7) 4))))])
+			   (draw-sprite-with-rotation
+				textures sprite
+				(todeg (bullet-facing bullet))
+				render-x render-y -1))))
 		  (when show-hitboxes
 			(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
 								  red))))))

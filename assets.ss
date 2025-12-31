@@ -116,7 +116,7 @@
    hud
    misc item
    bullet1 bullet2 bullet3 bullet4 bullet5 bullet6
-   bullet-music
+   bullet-music fireball
    bg1 bg2 bg3 bg4
    bulletcancel hint
    bullet-ball-huge
@@ -133,7 +133,7 @@
 					 "misc.png" "item.png"
 					 "bullet1.png" "bullet2.png" "bullet3.png"
 					 "bullet4.png" "bullet5.png" "bullet6.png"
-					 "bullet_music.png"
+					 "bullet_music.png" "bullet_fireball.png"
 					 "background_1.png" "background_2.png"
 					 "background_3.png" "background_4.png"
 					 "etbreak.png" "hint.png"

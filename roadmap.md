@@ -78,15 +78,26 @@ music: naisho yo ojamajo
 
 Sp1 Doremi 
 Something flower or music themed normal dodging
+Harukaze: alternate waves of spring final ish stuff and "wind blowing" danmaku 
+But that might be too annoying to dodge 
+Nons: Music notes that bounce similar to in the stage
 
 Sp2 Hazuki
 love themed? crush on yada idk
 incorporate homing from ojamajo doremi shoot?
+Something about fans/traditional dance?
+Shoot mid orbs+trail, the trail expands into a fan, then the fan bullets get shot outwards. Plus something from the boss to add some more action.
+Nons: butterflies and swirls
 
 Sp3 Aiko
 "straightforward" or "simple"
 incorporate direct shot from ojamajo doremi shoot?
 lasers + micro?
+
+Pretty active/lots of boss movement
+Jump around to set mines, when triggered fire done aimed stuff and some decoration rings
+Chase player maybe?
+Nons: Hearts
 
 Sp4 Trio
 something where bullets from each char interact with each other
