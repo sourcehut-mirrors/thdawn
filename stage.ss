@@ -2,12 +2,12 @@
 (define (ch0-w12-fairy bullet xvel task enm)
   (define (movement task)
 	(loop-until
-	 (> (enm-y enm) 200.0)
-	 (enm-y-set! enm (+ (enm-y enm) 2.2)))
+		(> (enm-y enm) 200.0)
+	  (enm-y-set! enm (+ (enm-y enm) 2.2)))
 	(loop-until
-	 (> (enm-y enm) (+ +playfield-max-y+ 20))
-	 (enm-y-set! enm (+ (enm-y enm) 1.7))
-	 (enm-x-set! enm (+ (enm-x enm) xvel)))
+		(> (enm-y enm) (+ +playfield-max-y+ 20))
+	  (enm-y-set! enm (+ (enm-y enm) 1.7))
+	  (enm-x-set! enm (+ (enm-x enm) xvel)))
 	(delete-enemy enm))
   (define (shoot task)
 	(wait 30)
@@ -25,8 +25,8 @@
   (define start-time frames)
   (define (movement task)
 	(loop-until
-	 (> (enm-y enm) 140.0)
-	 (enm-y-set! enm (+ (enm-y enm) 1.2)))
+		(> (enm-y enm) 140.0)
+	  (enm-y-set! enm (+ (enm-y enm) 1.2)))
 	(wait 300)
 	(ease-to values 250.0 160.0 180 enm)
 	(delete-enemy enm))
@@ -42,13 +42,13 @@
 									small-ball-white))
 	(let loop ([i 0])
 	  (fbshoot pat
-			   (enm-x enm) (enm-y enm)
-			   (lambda (row col speed facing)
-				 (spawn-bullet (vnth types i) (enm-x enm) (enm-y enm) 5
-							   (curry linear-step-gravity-forever
-									  (fl+ facing
-										   (centered-roll game-rng (torad 10.0)))
-									  speed 0.1))))
+		  (enm-x enm) (enm-y enm)
+		  (λ (row col speed facing)
+			(spawn-bullet (vnth types i) (enm-x enm) (enm-y enm) 5
+						  (curry linear-step-gravity-forever
+								 (fl+ facing
+									  (centered-roll game-rng (torad 10.0)))
+								 speed 0.1))))
 	  (wait 20)
 	  (when (< (- frames start-time) 200)
 		(loop (mod (add1 i) (vlen types))))))
@@ -62,25 +62,25 @@
   (define (note task)
 	(wait 200)
 	(for-each
-	 (lambda (xoff yoff)
+	 (λ (xoff yoff)
 	   (dotimes 10
 		 (spawn-bullet 'pellet-blue (- (enm-x enm) 40.0) (+ yoff (enm-y enm)) 5
-					   (lambda (blt)
+					   (λ (blt)
 						 (wait-until (thunk (>= (- frames start-time) 350)))
 						 (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
 	   (unless (flzero? xoff)
 		 (dotimes 10
 		   (spawn-bullet 'pellet-blue (+ xoff (enm-x enm) -40.0)
 						 (+ yoff (enm-y enm)) 5
-					   (lambda (blt)
-						 (wait-until (thunk (>= (- frames start-time) 350)))
-						 (linear-step-forever (* tau (roll game-rng)) 2.0 blt)))))
+						 (λ (blt)
+						   (wait-until (thunk (>= (- frames start-time) 350)))
+						   (linear-step-forever (* tau (roll game-rng)) 2.0 blt)))))
 	   (wait 3))
 	 '(5.0 10.0 12.0 15.0 15.0 17.0 17.0 12.0 11.0 0.0 0.0 0.0 0.0 0.0)
 	 '(-40.0 -35.0 -30.0 -25.0 -20.0 -15.0 -10.0 -5.0 0.0 5.0 10.0 15.0 20.0
 			 25.0))
 	(spawn-bullet 'big-star-blue (- (enm-x enm) 50.0) (+ 28.0 (enm-y enm))
-				  5 (lambda (blt)
+				  5 (λ (blt)
 					  (wait-until (thunk (>= (- frames start-time) 350)))
 					  (raylib:play-sound (sebundle-bell sounds))
 					  (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
@@ -95,9 +95,9 @@
   (define y0 (enm-y enm))
   (ease-to values (+ x0 40.0) y0 10 enm)
   (let ([l (spawn-laser type (+ (enm-x enm) 20.0) (enm-y enm)
-			   0.0 (inexact +playfield-width+)
-			   5.0
-			   40 20 (lambda (_blt) (wait-until (thunk (>= frames 900)))))])
+						0.0 (inexact +playfield-width+)
+						5.0
+						40 20 (λ (_blt) (wait-until (thunk (>= frames 900)))))])
 	(bullet-addflags l (bltflags uncancelable)))
   (raylib:play-sound (sebundle-laser sounds))
   (wait-until (thunk (>= frames 880)))
@@ -152,7 +152,7 @@
 	(do [(i 0 (fx1+ i))]
 		[(fx= i 35)]
 	  (let ([facing (torad (fl* (fl/ 360.0 20.0) (inexact i)))]
-			[cfun (lambda (blt)
+			[cfun (λ (blt)
 					(linear-step-forever (facing-player (bullet-x blt) (bullet-y blt))
 										 7.0 blt))])
 		(-> (spawn-bullet 'ellipse-magenta
@@ -171,10 +171,10 @@
 						 (vec2 134.0 276.0)
 						 (vec2 220.0 214.0)))
   (spawn-subtask "shoot" shoot (constantly #t) task)
-  (move-on-spline (if flip (vector-map (lambda (p) (vec2 (fl- (v2x p)) (v2y p)))
+  (move-on-spline (if flip (vector-map (λ (p) (vec2 (fl- (v2x p)) (v2y p)))
 									   points)
 					  points)
-				  (lambda (_) (values values 180))
+				  (λ (_) (values values 180))
 				  enm)
   (delete-enemy enm))
 
@@ -237,7 +237,7 @@
 			   (vec2 -47.0 85.0)
 			   (vec2 51.0 149.0)
 			   (vec2 89.0 -20.0)))
-   (lambda (_) (values values 180))
+   (λ (_) (values values 180))
    enm)
   (delete-enemy enm))
 (define (ch2-w2-fairy task enm)
@@ -312,7 +312,7 @@
 		  (cbshootenm enm 'medium-ball-cyan 5 (sebundle-bell sounds)))))
   (enm-addflags enm (enmflags invincible))
   (spawn-subtask "uninvincible"
-	(lambda (task)
+	(λ (task)
 	  (wait 90)
 	  (enm-clrflags enm (enmflags invincible)))
 	(constantly #t)
@@ -321,7 +321,7 @@
   (ch3-fairy-sin-move flip task enm))
 (define (ch3-w1-leader-on-death followers)
   (for-each
-   (lambda (f)
+   (λ (f)
 	 (when (> (enm-health f) 0)
 	   (enm-drops-set! f default-drop)
 	   (kill-enemy f)
@@ -329,7 +329,7 @@
 		   (cbcount 12 2)
 		   (cbspeed 2.0 3.0)
 		   (cbshootenm f 'small-ball-white 2
-					  (sebundle-bell sounds)))))
+					   (sebundle-bell sounds)))))
    followers))
 
 (define (ch3-w1-follower-fairy delay flip task enm)
@@ -342,15 +342,15 @@
 			(fbspeed 4.0 4.0)
 			(fbang (if flip 265.0 275.0) 10.0)
 			(fbshoot (enm-x enm) (enm-y enm)
-					 (lambda (row col speed facing)
-					   (spawn-bullet
-						(if flip 'small-ball-yellow 'small-ball-red)
-						(enm-x enm) (enm-y enm) 5
-						(lambda (blt)
-						  (linear-step-gravity-forever facing speed 0.1 blt))))))
+			  (λ (row col speed facing)
+				(spawn-bullet
+				 (if flip 'small-ball-yellow 'small-ball-red)
+				 (enm-x enm) (enm-y enm) 5
+				 (λ (blt)
+				   (linear-step-gravity-forever facing speed 0.1 blt))))))
 		(wait 2))))
   (spawn-subtask "uninvincible"
-	(lambda (task)
+	(λ (task)
 	  (wait (+ delay 100))
 	  (enm-clrflags enm (enmflags invincible)))
 	(constantly #t)
@@ -366,7 +366,7 @@
   (define laser-dir (+ (- init-ang pi) (torad 18.0)))
   (define laser (spawn-laser 'fixed-laser-orange (enm-x enm) (enm-y enm) laser-dir
 							 (fl* 2.0 init-dist sin72) 5.0 40 delay
-							 (lambda (blt) (loop-until (unbox stop-spinning)))))
+							 (λ (blt) (loop-until (unbox stop-spinning)))))
   (define (do-spin)
 	(do [(angvel (torad 0.05) (if (fl< angvel (torad 4.0))
 								  (fl+ angvel (torad 0.1))
@@ -388,7 +388,7 @@
   (raylib:play-sound (sebundle-laser sounds))
   (wait delay)
   (spawn-subtask "spin shoot"
-	(lambda (task)
+	(λ (task)
 	  (interval-loop 2
 		(let ([ang (todeg (atan (- (enm-y enm) cy) (- (enm-x enm) cx)))])
 		  (-> (fb)
@@ -402,15 +402,15 @@
   (let ([final-ang (do-spin)])
 	(set-box! stop-spinning #t)
 	(spawn-subtask "exit shoot"
-				   (lambda (task)
-					 (loop-forever
-					   (-> (fb)
-						   (fbcounts 2)
-						   (fbspeed 6.0)
-						   (fbang 0.0 12.0)
-						   (fbshootenm enm 'small-star-red 2 #f))))
-				   (constantly #t)
-				   task)
+	  (λ (task)
+		(loop-forever
+		 (-> (fb)
+			 (fbcounts 2)
+			 (fbspeed 6.0)
+			 (fbang 0.0 12.0)
+			 (fbshootenm enm 'small-star-red 2 #f))))
+	  (constantly #t)
+	  task)
 	(ease-to values
 			 (+ cx (* 300.0 (cos final-ang))) (+ cy (* 300.0 (sin final-ang)))
 			 40 enm)
@@ -423,7 +423,7 @@
   ;; ;; technically map can and does evaluate the lambda out of order, but here it
   ;; ;; doesn't really matter as long as it remains the same impl in chez scheme,
   ;; ;; which is likely the case.
-  (let ([followers (map (lambda (i)
+  (let ([followers (map (λ (i)
 						  (spawn-enemy
 						   (enmtype red-fairy) -210.0 150.0 100
 						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #f)
@@ -431,9 +431,9 @@
 						(iota 6))])
 	(spawn-enemy (enmtype big-fairy) -210.0 150.0 500
 				 (curry ch3-w1-leader-fairy #f) five-point-items
-				 (lambda () (ch3-w1-leader-on-death followers))))
+				 (λ () (ch3-w1-leader-on-death followers))))
   (wait 400)
-  (let ([followers (map (lambda (i)
+  (let ([followers (map (λ (i)
 						  (spawn-enemy
 						   (enmtype red-fairy) 220.0 180.0 100
 						   (curry ch3-w1-follower-fairy (* 20 (add1 i)) #t)
@@ -441,7 +441,7 @@
 						(iota 6))])
 	(spawn-enemy (enmtype big-fairy) 220.0 180.0 500
 				 (curry ch3-w1-leader-fairy #t) five-point-items
-				 (lambda () (ch3-w1-leader-on-death followers))))
+				 (λ () (ch3-w1-leader-on-death followers))))
   (wait 240)
   (dotimes 4
 	(spawn-particle
@@ -495,7 +495,7 @@
 	(letrec* ([center-blt
 			   (spawn-bullet
 				'small-ball-red x y 5
-				(lambda (blt)
+				(λ (blt)
 				  (loop-forever
 				   (linear-step facing speed blt)
 				   (when with-ring
@@ -508,20 +508,20 @@
 											notes))))]
 			  [ring (if with-ring
 						(map
-						 (lambda (_)
+						 (λ (_)
 						   (spawn-bullet
 							'pellet-white x y 5
-							(lambda (blt)
+							(λ (blt)
 							  (wait-until
 							   (thunk (not (vector-index center-blt live-bullets))))
 							  (delete-bullet blt))))
 						 (iota 24))
 						'())]
 			  [notes (map
-					  (lambda (type)
+					  (λ (type)
 						(spawn-bullet
 						 type x y 5
-						 (lambda (blt)
+						 (λ (blt)
 						   (wait-until
 							(thunk (not (vector-index center-blt live-bullets))))
 						   (delete-bullet blt))))
@@ -539,39 +539,39 @@
   (wait 60)
 
   (let loop ([first #t])
-   (let ([points (-> (fb)
-					 (fbcounts 8)
-					 (fbang 0.0 25.0)
-					 (fbspeed 6.0)
-					 (fbcollect (enm-x enm) (enm-y enm)))])
-	 (for-each
-	  (lambda (point)
-		(raylib:play-sound (sebundle-shoot0 sounds))
-		(orb point #t) (wait 12))
-	  points)
-	 (ring) (wait 22)
-	 (ring) (wait 22)
-	 (ring)
-	 (raylib:play-sound (sebundle-shortcharge sounds))
-	 (boss-standard-wander-once enm 15 80 60)
-	 (for-each
-	  (lambda (point)
-		(raylib:play-sound (sebundle-shoot0 sounds))
-		(orb point #t) (wait 12))
-	  (reverse points))
-	 (ring) (wait 22)
-	 (ring) (wait 22)
-	 (ring)
-	 (when first
-	   (raylib:play-sound (sebundle-shortcharge sounds))
-	   (boss-standard-wander-once enm 15 80 50)
-	   (loop #f))))
+	(let ([points (-> (fb)
+					  (fbcounts 8)
+					  (fbang 0.0 25.0)
+					  (fbspeed 6.0)
+					  (fbcollect (enm-x enm) (enm-y enm)))])
+	  (for-each
+	   (λ (point)
+		 (raylib:play-sound (sebundle-shoot0 sounds))
+		 (orb point #t) (wait 12))
+	   points)
+	  (ring) (wait 22)
+	  (ring) (wait 22)
+	  (ring)
+	  (raylib:play-sound (sebundle-shortcharge sounds))
+	  (boss-standard-wander-once enm 15 80 60)
+	  (for-each
+	   (λ (point)
+		 (raylib:play-sound (sebundle-shoot0 sounds))
+		 (orb point #t) (wait 12))
+	   (reverse points))
+	  (ring) (wait 22)
+	  (ring) (wait 22)
+	  (ring)
+	  (when first
+		(raylib:play-sound (sebundle-shortcharge sounds))
+		(boss-standard-wander-once enm 15 80 50)
+		(loop #f))))
   (wait 25)
   (raylib:play-sound (sebundle-shoot0 sounds))
   (cancel-all #f)
   (ease-to ease-in-out-quad 0.0 150.0 60 enm)
   (spawn-subtask "aim"
-	(lambda (task)
+	(λ (task)
 	  (interval-loop 30 
 		(-> (cb)
 			(cbcount 14)
@@ -582,7 +582,7 @@
   (let loop ([ang 0.0]
 			 [offset 80.0])
 	(for-each
-	 (lambda (point) (orb point #f))
+	 (λ (point) (orb point #f))
 	 (-> (cb)
 		 (cbcount 6)
 		 (cbabsolute-aim)
@@ -615,7 +615,7 @@
 (define (ch5-bigfairy task enm)
   (ease-to values (enm-x enm) 100.0 60 enm)
   (spawn-subtask "rally"
-	(lambda (task)
+	(λ (task)
 	  (define (shoot type ang spd)
 		(define blt (spawn-bullet type
 								  (+ (enm-x enm) -10.0 (* 5 (cos ang)))
@@ -624,20 +624,20 @@
 								  (curry linear-step-gravity-forever ang spd
 										 0.07 3.5)))
 		(bullet-addflags blt (bltflags noprune))
-		(spawn-task "prune" (lambda (task)
+		(spawn-task "prune" (λ (task)
 							  (wait 300)
 							  (bullet-clrflags blt (bltflags noprune)))
 					(constantly #t)))
 	  (define angs
 		(map torad '(210.0 230.0 250.0 270.0 290.0 310.0 330.0)))
 	  (define types
-		(map (lambda (color)
+		(map (λ (color)
 			   (string->symbol (string-append "droplet-" (symbol->string color))))
 			 basic-colors))
 	  (let loop ([angs angs]
 				 [type-idx 0])
 		(for-each
-		 (lambda (ang)
+		 (λ (ang)
 		   (shoot (list-ref types type-idx)
 				  (+ ang (centered-roll game-rng (torad 2.0))) 5.0)
 		   (shoot (list-ref types type-idx)
@@ -655,7 +655,7 @@
 
 (define (ch5-yinyang task enm)
   (spawn-subtask "shoot"
-	(lambda (task)
+	(λ (task)
 	  (interval-loop 40
 		(dotimes 5
 		  (-> (fb)
@@ -703,14 +703,14 @@
 			   '((point . 20)))
   (wait 360)
   (for-each
-   (lambda (pair)
-	(spawn-enemy (enmtype magenta-yinyang)
-				 (car pair) (centered-roll game-rng 10.0)
-				 250 ch5-yinyang '((point . 5)) on-death)
-	(spawn-enemy (enmtype magenta-yinyang)
-				 (cdr pair) (centered-roll game-rng 10.0)
-				 250 ch5-yinyang '((point . 5)) on-death)
-	(wait 50))
+   (λ (pair)
+	 (spawn-enemy (enmtype magenta-yinyang)
+				  (car pair) (centered-roll game-rng 10.0)
+				  250 ch5-yinyang '((point . 5)) on-death)
+	 (spawn-enemy (enmtype magenta-yinyang)
+				  (cdr pair) (centered-roll game-rng 10.0)
+				  250 ch5-yinyang '((point . 5)) on-death)
+	 (wait 50))
    xs)
   (wait-until (thunk (>= frames 6339)))
   (chapter6 task))
@@ -722,11 +722,11 @@
 	  (cbang 0.0 10.0)
 	  (cbspeed 2.0 3.5)
 	  (cbshoot x y
-		(lambda (layer in-layer speed facing)
+		(λ (layer in-layer speed facing)
 		  (-> (spawn-bullet
 			   (if (fxeven? layer) even-type odd-type)
 			   x y 10
-			   (lambda (blt)
+			   (λ (blt)
 				 (define initial-facing facing)
 				 (define turn-dir (torad (if (fxeven? layer) -4.0 4.0)))
 				 (let loop ([facing initial-facing])
@@ -759,11 +759,11 @@
 	  (cbang 0.0 10.0)
 	  (cbspeed 2.0 3.5)
 	  (cbshoot 0.0 100.0
-		(lambda (layer in-layer speed facing)
+		(λ (layer in-layer speed facing)
 		  (-> (spawn-bullet
 			   (if (fxeven? layer) 'music-green 'rest-cyan)
 			   0.0 100.0 10
-			   (lambda (blt)
+			   (λ (blt)
 				 (define initial-facing facing)
 				 (define turn-dir (torad (if (fxeven? layer) -4.0 4.0)))
 				 (raylib:play-sound (sebundle-oldvwoopslow sounds))
@@ -792,7 +792,7 @@
 						 (vec2 -138.0 108.0)
 						 (vec2 -70.0 146.0) (vec2 200.0 210.0)))
   (spawn-subtask "shoot"
-	(lambda (task)
+	(λ (task)
 	  (let loop ([wave 0])
 		(do [(i 0 (1+ i))]
 			[(= i 5)]
@@ -801,17 +801,17 @@
 			  (cbcount 12)
 			  (cbang (inexact (+ (* 20 wave) (* 5 i))))
 			  (cbshootenm enm 'heart-red 2 #f
-						 (lambda (facing speed blt)
-						   (bullet-facing-set! blt facing)
-						   (dotimes 5
-							 (linear-step facing speed blt)
-							 (yield))
-						   (wait 30)
-						   (raylib:play-sound (sebundle-bell sounds))
-						   (linear-step-forever facing speed blt))))
+						  (λ (facing speed blt)
+							(bullet-facing-set! blt facing)
+							(dotimes 5
+							  (linear-step facing speed blt)
+							  (yield))
+							(wait 30)
+							(raylib:play-sound (sebundle-bell sounds))
+							(linear-step-forever facing speed blt))))
 		  (spawn-bullet 'big-star-magenta
 						(enm-x enm) (enm-y enm)
-						2 (lambda (blt)
+						2 (λ (blt)
 							(wait 35)
 							(cancel-bullet blt))))
 		(wait 30)
@@ -819,10 +819,10 @@
 	(constantly #t)
 	task)
   (move-on-spline
-   (if flip (vector-map (lambda (p) (vec2 (fl- (v2x p)) (v2y p)))
+   (if flip (vector-map (λ (p) (vec2 (fl- (v2x p)) (v2y p)))
 						points)
 	   points)
-   (lambda (_seg) (values values 120))
+   (λ (_seg) (values values 120))
    enm)
   (delete-enemy enm))
 
@@ -853,7 +853,7 @@
 	  (yield)
 	  (loop
 	   (fl+ ang (fl* 12.0 (flcos (torad (inexact frames)))
-				   (flsin (torad (inexact frames))))))))
+					 (flsin (torad (inexact frames))))))))
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (move-on-spline
    (if flip
@@ -865,7 +865,7 @@
 			   (vec2 -101.0 80.0)
 			   (vec2 130.0 222.0)
 			   (vec2 200.0 -20.0)))
-   (lambda (_seg) (values values 480))
+   (λ (_seg) (values values 480))
    enm)
   (delete-enemy enm))
 
@@ -876,8 +876,8 @@
 					(yellow-fairy . big-star-yellow)))
   (set! current-chapter 8)
   (let* ([first (-> (spawn-enemy (enmtype medium-blue-fairy)
-				   -200.0 200.0 1200 (curry ch8-bigfairy #f)
-				   '((point . 20)))
+								 -200.0 200.0 1200 (curry ch8-bigfairy #f)
+								 '((point . 20)))
 					(enm-addflags (enmflags nocollide)))]
 		 [second (begin
 				   (wait 240)
@@ -892,7 +892,7 @@
 		(spawn-enemy
 		 (car pair)
 		 (centered-roll game-rng 160.0) -20.0 70
-		 (lambda (task enm)
+		 (λ (task enm)
 		   (ease-to ease-out-quad
 					(+ (enm-x enm) (centered-roll game-rng 20.0))
 					(+ (enm-y enm) (+ 50.0 (roll game-rng 20)))
@@ -914,7 +914,7 @@
 
 (define (ch9-w1-left blttype points task enm)
   (spawn-subtask "shoot"
-	(lambda (task)
+	(λ (task)
 	  (interval-loop 15
 		(-> (fb)
 			(fbcounts 1 3)
@@ -924,14 +924,14 @@
 	task)
   (loop-until (flpositive? (enm-x enm))
 	(linear-step-enm 0.0 4.0 enm))
-  (move-on-spline points (lambda (_seg) (values values 60)) enm)
+  (move-on-spline points (λ (_seg) (values values 60)) enm)
   (loop-until (fl< (enm-x enm) -200.0)
 	(linear-step-enm pi 4.0 enm))
   (delete-enemy enm))
 
 (define (ch9-w1-right blttype points task enm)
   (spawn-subtask "shoot"
-	(lambda (task)
+	(λ (task)
 	  (interval-loop 15
 		(-> (fb)
 			(fbcounts 1 3)
@@ -941,7 +941,7 @@
 	task)
   (loop-until (flnegative? (enm-x enm))
 	(linear-step-enm pi 4.0 enm))
-  (move-on-spline points (lambda (_seg) (values values 60)) enm)
+  (move-on-spline points (λ (_seg) (values values 60)) enm)
   (loop-until (fl> (enm-x enm) 200.0)
 	(linear-step-enm 0.0 4.0 enm))
   (delete-enemy enm))
@@ -958,7 +958,7 @@
 				[center-blt
 				 (spawn-bullet
 				  'big-star-orange x y 5
-				  (lambda (blt)
+				  (λ (blt)
 					(do [(i 0 (fx1+ i))]
 						[(fx= i 241)]
 					  (linear-step facing 5.0 blt)
@@ -969,10 +969,10 @@
 					  (yield))
 					(delete-bullet blt)))]
 				[ring-blts (map
-							(lambda (_)
+							(λ (_)
 							  (spawn-bullet
 							   'small-star-yellow x y 5
-							   (lambda (blt)
+							   (λ (blt)
 								 (wait-until
 								  (thunk (not (vector-index center-blt live-bullets))))
 								 (delete-bullet blt))))
@@ -1017,7 +1017,7 @@
 	(wait 10))
   (let ([drops '((point . 15))]
 		[on-death (let ([killed (box 0)])
-					(lambda ()
+					(λ ()
 					  (set-box! killed (add1 (unbox killed)))
 					  (when (= (unbox killed) 3)
 						(spawn-drops '((bomb-frag . 1)) 0.0 110.0))))])
@@ -1041,7 +1041,7 @@
 			(cbspeed 3.0)
 			(cbabsolute-aim)
 			(cbshoot (enm-x enm) (enm-y enm)
-			  (lambda (layer in-layer speed facing)
+			  (λ (layer in-layer speed facing)
 				(spawn-bullet color (enm-x enm) (enm-y enm) 5
 							  (curry linear-step-with-bounce facing speed))
 				(wait 2)))))))
@@ -1082,15 +1082,15 @@
 	  (fbabsolute-aim)
 	  (fbang (if right-side 180.0 0.0) 0.0)
 	  (fbshootenm enm type
-				 2 (sebundle-shoot0 sounds)
-				 (lambda (facing speed blt)
-				   (dotimes 60
-					 (linear-step facing speed blt)
-					 (yield))
-				   (linear-step-forever (fl/ pi 2.0) 3.0 blt))))
+				  2 (sebundle-shoot0 sounds)
+				  (λ (facing speed blt)
+					(dotimes 60
+					  (linear-step facing speed blt)
+					  (yield))
+					(linear-step-forever (fl/ pi 2.0) 3.0 blt))))
   (wait 60)
   (spawn-subtask "rings"
-	(lambda (task)
+	(λ (task)
 	  (interval-loop 50
 		(-> (cb)
 			(cbcount 12)
@@ -1108,7 +1108,7 @@
   (enm-superarmor-set! enm 60)
   (ease-to values 0.0 100.0 60 enm)
   (spawn-subtask "hearts"
-	(lambda (task)
+	(λ (task)
 	  (interval-loop 30
 		(-> (cb)
 			(cbcount 12)
@@ -1117,7 +1117,7 @@
 	(constantly #t)
 	task)
   (spawn-subtask "shoot"
-	(lambda (task)
+	(λ (task)
 	  (define iters 5)
 	  (define angper 8.0)
 	  (let loop ([sign 1]
@@ -1130,10 +1130,10 @@
 			  (cbang (fl+ start-ang (fl* (inexact sign) (inexact i) angper)))
 			  (cbspeed 3.0)
 			  (cbshootenm enm 'big-star-magenta 2 (sebundle-shoot0 sounds)
-						 (lambda (facing speed blt)
-						   (linear-step-decelerate facing speed -0.1 blt)
-						   (wait 10)
-						   (linear-step-accelerate-forever facing 0.0 0.7 6.0 blt))))
+						  (λ (facing speed blt)
+							(linear-step-decelerate facing speed -0.1 blt)
+							(wait 10)
+							(linear-step-accelerate-forever facing 0.0 0.7 6.0 blt))))
 		  (wait 5))
 		(wait 5)
 		(loop (- sign)
@@ -1174,18 +1174,18 @@
 		   (enm-y enm)
 		   20 enm)
   (for-each
-   (lambda (type)
-	(raylib:play-sound (sebundle-laser sounds))
-	(spawn-laser type
-				 (enm-x enm) (enm-y enm)
-				 (facing-player (enm-x enm) (enm-y enm))
-				 550.0 5.0 5 30
-				 (lambda (_blt) (wait 40)))
-	(wait 25))
+   (λ (type)
+	 (raylib:play-sound (sebundle-laser sounds))
+	 (spawn-laser type
+				  (enm-x enm) (enm-y enm)
+				  (facing-player (enm-x enm) (enm-y enm))
+				  550.0 5.0 5 30
+				  (λ (_blt) (wait 40)))
+	 (wait 25))
    types)
   (wait-until (thunk (>= frames 10872)))
   (for-each
-   (lambda (bubble heart)
+   (λ (bubble heart)
 	 (-> (fb)
 		 (fbcounts 1 5)
 		 (fbspeed 4.0 8.0)
@@ -1194,7 +1194,7 @@
 		 (cbcount 10 3)
 		 (cbspeed 4.0 8.0)
 		 (cbshoot (enm-x enm) (enm-y enm)
-		   (lambda (layer in-layer speed facing)
+		   (λ (layer in-layer speed facing)
 			 (when (not (zero? in-layer))
 			   (-> (spawn-bullet
 					heart (enm-x enm) (enm-y enm)
@@ -1253,12 +1253,12 @@
 (define (midboss2-control task enm)
   (define bossinfo (enm-extras enm))
   (define keep-running
-	(lambda () (positive? (bossinfo-remaining-timer bossinfo))))
+	(λ () (positive? (bossinfo-remaining-timer bossinfo))))
   (ease-to values 0.0 100.0 20 enm)
   (wait 50)
 
   (vector-for-each-truthy
-   (lambda (enm)
+   (λ (enm)
 	 (unless (is-boss? enm)
 	   (kill-enemy enm)))
    live-enm)
@@ -1268,7 +1268,7 @@
   (cancel-all #f)
   (wait 60)
   (spawn-subtask "fan"
-	(lambda (task)
+	(λ (task)
 	  (wait 30)
 	  (interval-loop 60
 		(-> (fb)
@@ -1278,7 +1278,7 @@
 			(fbshootenm enm 'medium-ball-red 10 #f))))
 	keep-running task)
   (spawn-subtask "circle"
-	(lambda (task)
+	(λ (task)
 	  (define dang (torad 10.0))
 	  (define cx player-x)
 	  (define cy player-y)
@@ -1336,7 +1336,7 @@
 
 (define (ch12-small-fairy right-side task enm)
   (spawn-subtask "shoot"
-	(lambda (task)
+	(λ (task)
 	  (interval-loop 15
 		(-> (cb)
 			(cbcount 12)
@@ -1352,7 +1352,7 @@
 	   (vector (vec2 (enm-x enm) (enm-y enm))
 			   (vec2 5.0 168.0) (vec2 133.0 146.0)
 			   (vec2 210.0 (fl+ 61.0 (centered-roll game-rng 30.0)))))
-   (lambda (_seg) (values values 100))
+   (λ (_seg) (values values 100))
    enm)
   (delete-enemy enm))
 
@@ -1366,11 +1366,11 @@
 		 (cbang 0.0 10.0)
 		 (cbspeed 2.0 3.5)
 		 (cbshoot x y
-		   (lambda (layer in-layer speed facing)
+		   (λ (layer in-layer speed facing)
 			 (-> (spawn-bullet
 				  (if (fxeven? layer) even-type odd-type)
 				  x y 10
-				  (lambda (blt)
+				  (λ (blt)
 					(define initial-facing facing)
 					(define turn-dir (torad (if (fxeven? layer) -5.5 5.5)))
 					(let loop ([facing initial-facing])

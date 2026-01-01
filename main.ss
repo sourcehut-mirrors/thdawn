@@ -5,7 +5,7 @@
 (import (chezscheme))
 (import (add-prefix (raylib) raylib:)
 		(coro) (geom) (funcutils) (config))
-
+(alias λ lambda)
 (define-enumeration vkey
   (up down left right shoot bomb focus pause
 	  screenshot quick-restart quick-quit)
@@ -140,7 +140,7 @@
 							 shift)))
   (define (make-vertical-group prefix elems accessor x y width height shift)
 	(for-each-indexed
-	 (lambda (i elem)
+	 (λ (i elem)
 	   (define type
 		 (string->symbol (string-append
 						  (symbol->string prefix)
@@ -151,7 +151,7 @@
   ;; skip double the space between each member of the group
   (define (make-vertical-group-skip prefix elems accessor x y width height shift)
 	(for-each-indexed
-	 (lambda (i elem)
+	 (λ (i elem)
 	   (define type
 		 (string->symbol (string-append
 						  (symbol->string prefix)
@@ -161,7 +161,7 @@
 	 elems))
   ;; lasers
   (for-each-indexed
-   (lambda (i color)
+   (λ (i color)
 	 (define type
 	   (string->symbol (string-append
 						"fixed-laser-"
@@ -246,7 +246,7 @@
   (make 'bubble-white txbundle-bullet-ball-huge 192 64 64 64 shift32)
 
   (for-each-indexed
-   (lambda (i color)
+   (λ (i color)
 	 (define shift (vec2 -30.0 -16.0))
 	 (do [(j 0 (add1 j))]
 		 [(> j 2)]
@@ -256,7 +256,7 @@
    basic-colors)
 
   (for-each-indexed
-   (lambda (i color)
+   (λ (i color)
 	 (define shift (vec2 -24.0 -16.0))
 	 (do [(j 0 (add1 j))]
 		 [(= j 4)]
@@ -289,7 +289,7 @@
 	  (make yellow txbundle-enemy1 (* 32 i) 480 32 32 shift16)))
 
   (for-each
-   (lambda (p)
+   (λ (p)
 	 (define type (car p))
 	 (define y (cdr p))
 	 (do [(i 0 (add1 i))]
@@ -307,7 +307,7 @@
 	 ("yellow-wisp" . 96)))
 
   (for-each
-   (lambda (l)
+   (λ (l)
 	 (define type (car l))
 	 (define start-x (cadr l))
 	 (define start-y (caddr l))
@@ -746,7 +746,7 @@
    (vector
 	(make-menu-item
 	 (thunk "Game Start")
-	 (lambda (gui)
+	 (λ (gui)
 	   (let ([pair (assq 'games-started play-data)])
 		 (set-cdr! pair (add1 (cdr pair)))
 		 (save-play-data play-data))
@@ -754,16 +754,16 @@
 	   (replace-gui #f)))
 	(make-menu-item
 	 (thunk "Replay")
-	 (lambda (_gui) (set! gui-stack (cons (mk-replist-gui #f) gui-stack))))
+	 (λ (_gui) (set! gui-stack (cons (mk-replist-gui #f) gui-stack))))
 	(make-menu-item
 	 (thunk "Play Data")
-	 (lambda (_gui) (set! gui-stack (cons (mk-playdata-gui) gui-stack))))
+	 (λ (_gui) (set! gui-stack (cons (mk-playdata-gui) gui-stack))))
 	(make-menu-item
 	 (thunk "Setting")
-	 (lambda (_gui) (set! gui-stack (cons (mk-setting-gui) gui-stack))))
+	 (λ (_gui) (set! gui-stack (cons (mk-setting-gui) gui-stack))))
 	(make-menu-item
 	 (thunk "Quit")
-	 (lambda (_gui) (set! want-quit #t))))
+	 (λ (_gui) (set! want-quit #t))))
    0))
 
 (define +name-max+ 8)
@@ -833,7 +833,7 @@
    (fontbundle-sharetechmono fonts) name
    (fl- 320.0 (fl/ width 2.0)) 100.0 40.0 0.0 -1)
   (vector-for-each-indexed
-   (lambda (i opt)
+   (λ (i opt)
 	 (define-values (row col) (div-and-mod i +nameinput-per-row+))
 	 (define label ((menu-item-label opt)))
 	 (raylib:draw-text-ex
@@ -849,7 +849,7 @@
 	(define label (string ch))
 	(make-menu-item
 	 (thunk label)
-	 (lambda (gui)
+	 (λ (gui)
 	   (define pos (nameinput-gui-position gui))
 	   (when (< pos +name-max+)
 		 (string-set! (nameinput-gui-name gui) pos ch)
@@ -862,13 +862,13 @@
    (make-string +name-max+ #\nul)
    0
    (vector-append
-	(list->vector (map (lambda (i)
+	(list->vector (map (λ (i)
 						 (mk-option (integer->char (+ i (char->integer #\A)))))
 					   (iota 26)))
-	(list->vector (map (lambda (i)
+	(list->vector (map (λ (i)
 						 (mk-option (integer->char (+ i (char->integer #\a)))))
 					   (iota 26)))
-	(list->vector (map (lambda (i)
+	(list->vector (map (λ (i)
 						 (mk-option (integer->char (+ i (char->integer #\0)))))
 					   (iota 10)))
 	(vector-map mk-option '#(#\? #\! #\# #\* #\. #\[ #\]
@@ -910,7 +910,7 @@
   (replist-gui-cached-data-set!
    self
    (map
-	(lambda (i)
+	(λ (i)
 	  (define path (rep-path page i))
 	  (and (file-exists? path)
 		   ;; read the score entry from the first datum of the replay
@@ -960,7 +960,7 @@
 			   [records (cdr (replist-gui-records-to-save self))]
 			   [ni-gui
 				(mk-nameinput-gui
-				 (lambda (ni-gui)
+				 (λ (ni-gui)
 				   (define real-entry
 					 (make-score-entry
 					  (nameinput-final-name ni-gui)
@@ -971,7 +971,7 @@
 					 (thunk
 					  (write real-entry)
 					  (newline)
-					  (for-each (lambda (r) (write r) (newline))
+					  (for-each (λ (r) (write r) (newline))
 								records))
 					 'truncate)
 				   (raylib:play-sound (sebundle-extend sounds))
@@ -1170,7 +1170,7 @@
 		   [k (car edge-pressed-raw)]
 		   [binds (assqdr 'keybindings config)]
 		   [pair (assq vk binds)]
-		   [conflict (find (lambda (p) (= k (cdr p))) binds)])
+		   [conflict (find (λ (p) (= k (cdr p))) binds)])
 	  (when conflict ;; swap
 		(set-cdr! conflict (cdr pair)))
 	  (set-cdr! pair k))
@@ -1240,22 +1240,22 @@
 	(vector
 	 (make-menu-item
 	  (thunk "Back")
-	  (lambda (_gui) (set! gui-stack (cdr gui-stack))))
+	  (λ (_gui) (set! gui-stack (cdr gui-stack))))
 	 (make-menu-item
 	  (thunk
 	   (string-append "SFX Volume: < "
 					  (number->string (assqdr 'sfx-vol config))
 					  " >"))
-	  (lambda (_gui) (void)))
+	  (λ (_gui) (void)))
 	 (make-menu-item
 	  (thunk
 	   (string-append "Music Volume: < "
 					  (number->string (assqdr 'music-vol config))
 					  " >"))
-	  (lambda (_gui) (void))))
+	  (λ (_gui) (void))))
 	(list->vector
 	 (map
-	  (lambda (vk)
+	  (λ (vk)
 		(make-keybind-menu-item
 		 (thunk
 		  (let ()
@@ -1263,7 +1263,7 @@
 						   ": "
 						   (key-name
 							(assqdr vk (assqdr 'keybindings config))))))
-		 (lambda (gui) (setting-gui-waiting-for-rebind-set! gui #t))
+		 (λ (gui) (setting-gui-waiting-for-rebind-set! gui #t))
 		 vk))
 	  (enum-set->list (enum-set-universe (vkeys))))))
    0 #f))
@@ -1279,14 +1279,14 @@
 
 (define (mk-scoresave-nameinput-gui score time records cleared)
   (mk-nameinput-gui
-   (lambda (ni-gui)
+   (λ (ni-gui)
 	 (define hiscore (assq 'hiscore play-data))
 	 (define name (nameinput-final-name ni-gui))
 	 (define entry (make-score-entry name score time cleared))
 	 (set-cdr!
 	  hiscore
 	  (list-sort
-	   (lambda (a b) (> (score-entry-score a)
+	   (λ (a b) (> (score-entry-score a)
 						(score-entry-score b)))
 	   (cons entry (cdr hiscore))))
 	 (save-play-data play-data)
@@ -1429,7 +1429,7 @@
 											(assqdr 'keybindings config)))
 								 ")")])
 	   (thunk label))
-	 (lambda (gui)
+	 (λ (gui)
 	  (pause-gui-close-fn-set! gui (thunk (restart gui)))
 	  (pause-gui-closing-set! gui 1))))
   (define quick-quit-key
@@ -1440,7 +1440,7 @@
 	(make-menu-item
 	 (let ([label (string-append "Save and Quit" quick-quit-key)])
 	   (thunk label))
-	 (lambda (gui)
+	 (λ (gui)
 	   (pause-gui-close-fn-set! gui (thunk (quit gui #t)))
 	   (pause-gui-closing-set! gui 1))))
   (define quit-nosave-opt
@@ -1450,13 +1450,13 @@
 					[(replay replaydone)
 					 (string-append "Quit to Menu" quick-quit-key)])])
 	   (thunk label))
-	 (lambda (gui)
+	 (λ (gui)
 	   (pause-gui-close-fn-set! gui (thunk (quit gui #f)))
 	   (pause-gui-closing-set! gui 1))))
   (define resume-opt
 	(make-menu-item
 	 (thunk "Resume")
-	 (lambda (gui)
+	 (λ (gui)
 	   (pause-gui-close-fn-set! gui (thunk (unpause gui)))
 	   (pause-gui-closing-set! gui 1))))
   (make-pause-gui
@@ -1542,13 +1542,13 @@
 (define bullet-types
   (let* ([ret (make-hashtable symbol-hash eq?)]
 		 [preimg-sprite-mapping
-		  (map (lambda (color)
+		  (map (λ (color)
 				 (cons color (string->symbol (string-append "preimg-"
 															(symbol->string color)))))
 			   basic-colors)]
 		 [make-family
-		  (lambda (family colors hit-radius)
-			(for-each (lambda (color)
+		  (λ (family colors hit-radius)
+			(for-each (λ (color)
 						(define type
 						  (string->symbol (string-append
 										   (symbol->string family)
@@ -1586,7 +1586,7 @@
 	(make-family 'arrow basic-colors 3.0)
 	(make-family 'glow-orb basic-colors 9.0)
 	(make-family 'fireball basic-colors 5.5)
-	(for-each (lambda (color)
+	(for-each (λ (color)
 				(define type
 				  (string->symbol (string-append
 								   "bubble-"
@@ -1604,13 +1604,13 @@
   (let ([music (make-hashtable symbol-hash eq?)]
 		[fireball (make-hashtable symbol-hash eq?)])
 	(vector-for-each
-	 (lambda (pair)
+	 (λ (pair)
 	   (define id (car pair))
 	   (when (eq? 'music (blttype-family (cdr pair)))
 		 (symbol-hashtable-set!
 		  music id
 		  (list->vector
-		   (map (lambda (i)
+		   (map (λ (i)
 				  (string->symbol
 				   (string-append (symbol->string id) (number->string i))))
 				(iota 3)))))
@@ -1618,7 +1618,7 @@
 		 (symbol-hashtable-set!
 		  fireball id
 		  (list->vector
-		   (map (lambda (i)
+		   (map (λ (i)
 				  (string->symbol
 				   (string-append (symbol->string id) (number->string i))))
 				(iota 4))))))
@@ -1649,7 +1649,7 @@
 							empty-bltflags)])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "bullet"
-				  (lambda (task)
+				  (λ (task)
 					(do [(i 0 (fx1+ i))]
 						[(fx> i delay)]
 					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
@@ -1669,7 +1669,7 @@
 						   length radius despawn-time -1 #f)])
 	  (vector-set! live-bullets idx blt)
 	  (spawn-task "laser"
-				  (lambda (task)
+				  (λ (task)
 					(do [(i 0 (fx1+ i))]
 						[(fx> i delay)]
 					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
@@ -1701,7 +1701,7 @@
 (define (spawn-drop-with-autocollect x y drop)
   (define ent (spawn-misc-ent drop x y -3.0 0.1))
   (spawn-task "delayed autocollect"
-			  (lambda (task) (wait 45) (miscent-autocollect-set! ent #t))
+			  (λ (task) (wait 45) (miscent-autocollect-set! ent #t))
 			  (constantly #t)))
 
 (define cancel-bullet-with-drop
@@ -1713,7 +1713,7 @@
 
 (define (cancel-all force)
   (vector-for-each-truthy
-   (lambda (blt)
+   (λ (blt)
 	 (cancel-bullet-with-drop blt 'small-piv force))
    live-bullets))
 
@@ -1915,7 +1915,7 @@
 (define (fbcollect fb x y)
   (define result '())
   (fbshoot fb x y
-		   (lambda args (set! result (cons args result))))
+		   (λ args (set! result (cons args result))))
   (reverse! result))
 
 ;; helper for the common case of shooting a fanbuilder from the enemy position
@@ -1933,7 +1933,7 @@
 	 (fbshootez fb x y type delay sound linear-step-forever)]
 	[(fb x y type delay sound control-function)
 	 (fbshoot fb x y
-	   (lambda (row col speed facing)
+	   (λ (row col speed facing)
 		 (when sound
 		   (raylib:play-sound sound))
 		 (-> (spawn-bullet type x y delay (curry control-function facing speed))
@@ -2008,7 +2008,7 @@
 
 (define (cbcollect cb x y)
   (define result '())
-  (cbshoot cb x y (lambda args (set! result (cons args result))))
+  (cbshoot cb x y (λ args (set! result (cons args result))))
   (reverse! result))
 
 ;; helper for the common case of shooting a circlebuilder from the enemy position
@@ -2028,7 +2028,7 @@
 	[(cb x y type delay sound control-function)
 	 (define offset (circle-builder-offset cb))
 	 (cbshoot cb x y
-			  (lambda (row col speed facing)
+			  (λ (row col speed facing)
 				(when sound
 				  (raylib:play-sound sound))
 				(-> (spawn-bullet type
@@ -2088,7 +2088,7 @@
   (guard (e [(i/o-file-does-not-exist-error? e)
 			 (with-output-to-file +playdata-path+
 			   (thunk (pretty-print
-					   `((spell-history . ,(vector-map (lambda (_) '(0 . 0))
+					   `((spell-history . ,(vector-map (λ (_) '(0 . 0))
 													   spells))
 						 ;; sorted by score descending
 						 (hiscore . ())
@@ -2200,11 +2200,11 @@
 (define (find-bosses)
   (values
    (vector-find
-	(lambda (e) (and e (eq? 'boss-doremi (enm-type e)))) live-enm)
+	(λ (e) (and e (eq? 'boss-doremi (enm-type e)))) live-enm)
    (vector-find
-	(lambda (e) (and e (eq? 'boss-hazuki (enm-type e)))) live-enm)
+	(λ (e) (and e (eq? 'boss-hazuki (enm-type e)))) live-enm)
    (vector-find
-	(lambda (e) (and e (eq? 'boss-aiko (enm-type e)))) live-enm)))
+	(λ (e) (and e (eq? 'boss-aiko (enm-type e)))) live-enm)))
 
 (define (calculate-spell-bonus bossinfo)
   (define grace-period 180)
@@ -2302,7 +2302,7 @@
 		 (vector-set! live-enm idx enemy)
 		 (spawn-task
 		  (symbol->string type)
-		  (lambda (task) (control-function task enemy))
+		  (λ (task) (control-function task enemy))
 		  (thunk (eq? enemy (vnth live-enm idx))))
 		 enemy))]))
 
@@ -2335,7 +2335,7 @@
 	 (cond
 	  [(and (is-boss? enm)
 			(bossinfo-redirect-damage (enm-extras enm)))
-	   => (lambda (other-enm) (damage-enemy other-enm amount playsound))]
+	   => (λ (other-enm) (damage-enemy other-enm amount playsound))]
 	  [else
 	   (set! current-score (+ current-score 20))
 	   (if (enm-hasflag? enm (enmflag invincible))
@@ -2363,7 +2363,7 @@
 
 (define (spawn-drops drops x y)
   (for-each
-   (lambda (drop)
+   (λ (drop)
 	 (define type (car drop))
 	 (define count (cdr drop))
 	 (do [(i 0 (fx1+ i))]
@@ -2380,7 +2380,7 @@
 					 -3.0 0.08)])
 		   (when (fxpositive? bombing)
 			 (spawn-task "delayed autocollect"
-						 (lambda (task) (wait 45) (miscent-autocollect-set! ent #t))
+						 (λ (task) (wait 45) (miscent-autocollect-set! ent #t))
 						 (constantly #t)))))))
    drops))
 
@@ -2964,7 +2964,7 @@
 
 (define (autocollect-all-items)
   (vector-for-each-truthy
-   (lambda (ent)
+   (λ (ent)
 	 (when (miscent-supports-autocollect? ent)
 	   (miscent-autocollect-set! ent #t)))
    live-misc-ents))
@@ -3035,9 +3035,9 @@
 	  ((mainshot)
 	   (do-standard-movement)
 	   (call/1cc
-		(lambda (return)
+		(λ (return)
 		  (vector-for-each-truthy
-		   (lambda (enm)
+		   (λ (enm)
 			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
 			   (when (and
 					  (not (enm-hasflag? enm (enmflag invincible)))
@@ -3055,9 +3055,9 @@
 	  ([needle]
 	   (do-standard-movement)
 	   (call/1cc
-		(lambda (return)
+		(λ (return)
 		  (vector-for-each-truthy
-		   (lambda (enm)
+		   (λ (enm)
 			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
 			   (when (and
 					  (not (enm-hasflag? enm (enmflag invincible)))
@@ -3279,7 +3279,7 @@
 						  (end-radius . 85))))
   (cancel-all #t)
   (vector-for-each-truthy
-   (lambda (e)
+   (λ (e)
 	 (when (not (is-boss? e))
 	   (kill-enemy e)))
    live-enm)
@@ -3299,7 +3299,7 @@
   (unless short
 	(raylib:play-sound (sebundle-bossdie sounds))
 	(spawn-task "particles"
-	  (lambda (task)
+	  (λ (task)
 		(dotimes 90
 		  (spawn-particle
 		   (make-particle
@@ -3407,7 +3407,7 @@
 			   [(yux yuy yuw yuh) (bomb-sweep-y-up-hitbox)]
 			   [(ydx ydy ydw ydh) (bomb-sweep-y-down-hitbox)])
 	(vector-for-each-truthy
-	 (lambda (blt)
+	 (λ (blt)
 	   (when (bullet-active? blt)
 		 (let ([x (bullet-x blt)]
 			   [y (bullet-y blt)]
@@ -3423,7 +3423,7 @@
 			 (cancel-bullet-with-drop blt 'small-piv)))))
 	 live-bullets)
 	(vector-for-each-truthy
-	 (lambda (enm)
+	 (λ (enm)
 	   (let-values ([(x y w h) (enm-hurtbox enm)])
 		 (when (or (check-collision-recs x y w h xlx xly xlw xlh)
 				   (check-collision-recs x y w h xrx xry xrw xrh)
@@ -3472,7 +3472,7 @@
 (define (refresh-keybindings)
   (let ([ctor (enum-set-constructor (vkeys))])
 	(set! keybindings
-		  (map (lambda (pair)
+		  (map (λ (pair)
 				 (cons (ctor (list (car pair)))
 					   (cdr pair)))
 			   (assqdr 'keybindings config)))))
@@ -3505,7 +3505,7 @@
 	  (reverse! result)))
   (define level-pressed
 	(fold-left
-	 (lambda (acc pair)
+	 (λ (acc pair)
 	   (if (raylib:is-key-down (cdr pair))
 		   (enum-set-union acc (car pair))
 		   acc))
@@ -3513,7 +3513,7 @@
 	 keybindings))
   (define edge-pressed
 	(fold-left
-	 (lambda (acc pair)
+	 (λ (acc pair)
 	   (if (raylib:is-key-pressed (cdr pair))
 		   (enum-set-union acc (car pair))
 		   acc))
@@ -3521,7 +3521,7 @@
 	 keybindings))
   (define edge-released
 	(fold-left
-	 (lambda (acc pair)
+	 (λ (acc pair)
 	   (if (raylib:is-key-released (cdr pair))
 		   (enum-set-union acc (car pair))
 		   acc))
@@ -3570,7 +3570,7 @@
 		  (case (cdr evt)
 			[(doremi-enter)
 			 (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
-									 (lambda (task enm)
+									 (λ (task enm)
 									   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
 												(cdr dur) enm))
 									 '()
@@ -3579,7 +3579,7 @@
 			   (enm-extras-set! enm bossinfo))]
 			[(hazuki-enter)
 			 (let ([enm (spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
-									 (lambda (task enm)
+									 (λ (task enm)
 									   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
 												(cdr dur) enm))
 									 '()
@@ -3588,7 +3588,7 @@
 			   (enm-extras-set! enm bossinfo))]
 			[(aiko-enter)
 			 (let ([enm (spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
-									 (lambda (task enm)
+									 (λ (task enm)
 									   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
 												(cdr dur) enm))
 									 '()
@@ -3619,7 +3619,7 @@
 	  (unless (= -1 start-shot-frames)
 		(when (= 5 (mod (fx- frames start-shot-frames) 10))
 		  (vector-for-each
-		   (lambda (x y)
+		   (λ (x y)
 			 (spawn-misc-ent (miscenttype needle) x y -10 0))
 		   option-xs option-ys))
 		(when (zero? (mod (fx- frames start-shot-frames) 5))
@@ -3810,7 +3810,7 @@
 
   ;; options
   (vector-for-each
-   (lambda (x y)
+   (λ (x y)
 	 (define render-x (+ x +playfield-render-offset-x+))
 	 (define render-y (+ y +playfield-render-offset-y+))
 	 (draw-sprite-with-rotation
@@ -4190,7 +4190,7 @@
 					  -1))
 
   (let ([sorted-bullets (vector-sort
-						 (lambda (a b)
+						 (λ (a b)
 						   (cond
 							[(not a) #t]
 							[(not b) #f]
@@ -4228,13 +4228,13 @@
   (draw-hud textures fonts)
 
   (let ([render-positions (vector-map
-						   (lambda (p) (v2+ p +playfield-render-offset+))
+						   (λ (p) (v2+ p +playfield-render-offset+))
 						   spline-editor-positions)])
 	(when (not (zero? (vlen render-positions)))
 	  (raylib:draw-spline-bezier-cubic
 	   (truncate-to-whole-spline render-positions) 5.0 red))
 	(vector-for-each-indexed
-	 (lambda (i p)
+	 (λ (i p)
 	   (when p
 		 (raylib:draw-circle-v (v2x p) (v2y p) 10.0
 							   (if (= i spline-editor-selected-position)
@@ -4252,7 +4252,7 @@
   (when current-stage-ctx
 	(do-render-game textures fonts))
   (for-each
-   (lambda (g) ((gui-render g) g textures fonts))
+   (λ (g) ((gui-render g) g textures fonts))
    (reverse gui-stack)))
 
 (define (render-all render-texture render-texture-inner textures fonts)
@@ -4340,7 +4340,7 @@
 			 (enm-extras-set! hazuki (blank-hazuki-bossinfo))
 			 (enm-extras-set! aiko (blank-aiko-bossinfo))
 			 (spawn-task "stage driver"
-			   (lambda (task)
+			   (λ (task)
 				 (func task doremi hazuki aiko))
 			   (constantly #t)))]
 		  ;; requires doremi
@@ -4352,7 +4352,7 @@
 			 (bossinfo-healthbars-set! bossinfo bars)
 			 (enm-extras-set! doremi bossinfo)
 			 (spawn-task "stage driver"
-			   (lambda (task)
+			   (λ (task)
 				 (func task doremi))
 			   (constantly #t)))]
 		  ;; requires hazuki
@@ -4364,7 +4364,7 @@
 			 (bossinfo-healthbars-set! bossinfo bars)
 			 (enm-extras-set! hazuki bossinfo)
 			 (spawn-task "stage driver"
-			   (lambda (task)
+			   (λ (task)
 				 (func task hazuki))
 			   (constantly #t)))]
 		  ;; requires aiko
@@ -4376,7 +4376,7 @@
 			 (bossinfo-healthbars-set! bossinfo bars)
 			 (enm-extras-set! aiko bossinfo)
 			 (spawn-task "stage driver"
-			   (lambda (task)
+			   (λ (task)
 				 (func task aiko))
 			   (constantly #t)))])
 		(play-music (musbundle-naisho-yo-ojamajo music)))))
@@ -4423,7 +4423,7 @@
 		 (when current-music
 		   (raylib:update-music-stream current-music))
 		 (for-each
-		  (lambda (g) ((gui-tick g) g))
+		  (λ (g) ((gui-tick g) g))
 		  (reverse gui-stack))
 		 (when current-stage-ctx
 		   (tick-game))
@@ -4536,4 +4536,4 @@
 	(main)))
 
 (scheme-start
- (lambda _ (main-with-backtrace)))
+ (λ _ (main-with-backtrace)))
