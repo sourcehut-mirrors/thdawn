@@ -123,6 +123,7 @@
   (sealed #t))
 
 (define basic-colors '(red magenta blue cyan green yellow orange white))
+(define basic-colors-str (map symbol->string basic-colors))
 (define sprite-data
   (let ()
   (define ret (make-hashtable symbol-hash eq?))
@@ -163,11 +164,9 @@
   (for-each-indexed
    (λ (i color)
 	 (define type
-	   (string->symbol (string-append
-						"fixed-laser-"
-						(symbol->string color))))
+	   (string->symbol (string-append "fixed-laser-" color)))
 	 (make type txbundle-laser4 0 (+ (* 2 i 16) 3) 256 10 v2zero))
-   basic-colors)
+   basic-colors-str)
   ;; bullets
   (make-vertical-group-skip
    'pellet basic-colors
@@ -250,10 +249,9 @@
 	 (define shift (vec2 -30.0 -16.0))
 	 (do [(j 0 (add1 j))]
 		 [(> j 2)]
-	   (make (string->symbol
-			  (string-append "music-" (symbol->string color) (number->string j)))
+	   (make (string->symbol (string-append "music-" color (number->string j)))
 		 txbundle-bullet-music (* 60 i) (* 32 j) 60 32 shift)))
-   basic-colors)
+   basic-colors-str)
 
   (for-each-indexed
    (λ (i color)
@@ -261,9 +259,9 @@
 	 (do [(j 0 (add1 j))]
 		 [(= j 4)]
 	   (make (string->symbol
-			  (string-append "fireball-" (symbol->string color) (number->string j)))
+			  (string-append "fireball-" color (number->string j)))
 		 txbundle-fireball (* 48 i) (* 32 j) 48 32 shift)))
-   basic-colors)
+   basic-colors-str)
 
   ;; small fairies
   (do [(i 0 (add1 i))]
@@ -1543,9 +1541,8 @@
   (let* ([ret (make-hashtable symbol-hash eq?)]
 		 [preimg-sprite-mapping
 		  (map (λ (color)
-				 (cons color (string->symbol (string-append "preimg-"
-															(symbol->string color)))))
-			   basic-colors)]
+				 (cons color (string->symbol (string-append "preimg-" color))))
+			   basic-colors-str)]
 		 [make-family
 		  (λ (family colors hit-radius)
 			(for-each (λ (color)
@@ -1553,7 +1550,7 @@
 						  (string->symbol (string-append
 										   (symbol->string family)
 										   "-"
-										   (symbol->string color))))
+										   color)))
 						(define preimg-sprite
 						  (let ([entry (assq color preimg-sprite-mapping)])
 							(if entry (cdr entry) 'preimg-white)))
@@ -1564,38 +1561,36 @@
 									   20.0 2.0
 									   hit-radius)))
 					  colors))])
-	(make-family 'small-star basic-colors 3.7)
-	(make-family 'big-star basic-colors 5.5)
-	(make-family 'rice basic-colors 2.0)
-	(make-family 'pellet basic-colors 2.0)
-	(make-family 'butterfly basic-colors 3.7)
-	(make-family 'ellipse basic-colors 4.0)
-	(make-family 'arrowhead basic-colors 3.0)
-	(make-family 'amulet basic-colors 3.1)
-	(make-family 'small-ball basic-colors 3.0)
-	(make-family 'medium-ball basic-colors 9.0)
-	(make-family 'ice-shard basic-colors 2.5)
-	(make-family 'fixed-laser basic-colors 0.0)
-	(make-family 'rest basic-colors 3.0)
-	(make-family 'music basic-colors 3.0)
-	(make-family 'knife basic-colors 4.0)
-	(make-family 'bacteria basic-colors 2.0)
-	(make-family 'kunai basic-colors 2.5)
-	(make-family 'droplet basic-colors 2.0)
-	(make-family 'heart basic-colors 6.0)
-	(make-family 'arrow basic-colors 3.0)
-	(make-family 'glow-orb basic-colors 9.0)
-	(make-family 'fireball basic-colors 5.5)
+	(make-family 'small-star basic-colors-str 3.7)
+	(make-family 'big-star basic-colors-str 5.5)
+	(make-family 'rice basic-colors-str 2.0)
+	(make-family 'pellet basic-colors-str 2.0)
+	(make-family 'butterfly basic-colors-str 3.7)
+	(make-family 'ellipse basic-colors-str 4.0)
+	(make-family 'arrowhead basic-colors-str 3.0)
+	(make-family 'amulet basic-colors-str 3.1)
+	(make-family 'small-ball basic-colors-str 3.0)
+	(make-family 'medium-ball basic-colors-str 9.0)
+	(make-family 'ice-shard basic-colors-str 2.5)
+	(make-family 'fixed-laser basic-colors-str 0.0)
+	(make-family 'rest basic-colors-str 3.0)
+	(make-family 'music basic-colors-str 3.0)
+	(make-family 'knife basic-colors-str 4.0)
+	(make-family 'bacteria basic-colors-str 2.0)
+	(make-family 'kunai basic-colors-str 2.5)
+	(make-family 'droplet basic-colors-str 2.0)
+	(make-family 'heart basic-colors-str 6.0)
+	(make-family 'arrow basic-colors-str 3.0)
+	(make-family 'glow-orb basic-colors-str 9.0)
+	(make-family 'fireball basic-colors-str 5.5)
 	(for-each (λ (color)
 				(define type
-				  (string->symbol (string-append
-								   "bubble-"
-								   (symbol->string color))))
+				  (string->symbol (string-append "bubble-" color)))
 				(symbol-hashtable-set!
 				 ret
 				 type
 				 (make-blttype type 'bubble type 2.0 32.0 16.0)))
-			  basic-colors)
+			  basic-colors-str)
 	(symbol-hashtable-set! ret 'placeholder
 						   (make-blttype 'placeholder 'placeholder 'preimg-white
 										 0.0 0.0 0.0))
