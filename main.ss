@@ -48,6 +48,8 @@
 (alias roll pseudo-random-generator-next!) ;; convenience alias
 (define (vrand v rng)
   (vector-ref v (roll rng (vector-length v))))
+(define (vnth-mod v n)
+  (vnth v (fxmod n (vlen v))))
 (define-enumeration miscenttype
   (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb)
   make-miscent-type-set)
@@ -511,7 +513,7 @@
 
 ;; [31-416] x bounds of playfield in the hud texture
 ;; [15-463] y bounds of playfield in the hud texture
-;; idea is to have logical game x in [-192, 192] (192 is (416-31)/2, roughly), and y in [0, 448] 
+;; idea is to have logical game x in [-192, 192] (192 is (416-31)/2, roughly), and y in [0, 448]
 ;; logical game 0, 0 is at gl (31+(416-31)/2), 15
 ;; offset logical coords by 223, 15 to get to GL coords for render
 (define +playfield-render-offset-x+ 223)
@@ -1535,9 +1537,10 @@
    hit-radius)
   (sealed #t))
 
+;; cached sprites: symbol ht type -> vector of the sprite ids
+;; to avoid repetitive symbol munging/allocation at render time
 (define bullet-types
   (let* ([ret (make-hashtable symbol-hash eq?)]
-		 [basic-colors '(red magenta blue cyan green yellow orange white)]
 		 [preimg-sprite-mapping
 		  (map (lambda (color)
 				 (cons color (string->symbol (string-append "preimg-"
@@ -1597,6 +1600,30 @@
 						   (make-blttype 'placeholder 'placeholder 'preimg-white
 										 0.0 0.0 0.0))
 	ret))
+(define-values (cached-music-sprites cached-fireball-sprites)
+  (let ([music (make-hashtable symbol-hash eq?)]
+		[fireball (make-hashtable symbol-hash eq?)])
+	(vector-for-each
+	 (lambda (pair)
+	   (define id (car pair))
+	   (when (eq? 'music (blttype-family (cdr pair)))
+		 (symbol-hashtable-set!
+		  music id
+		  (list->vector
+		   (map (lambda (i)
+				  (string->symbol
+				   (string-append (symbol->string id) (number->string i))))
+				(iota 3)))))
+	   (when (eq? 'fireball (blttype-family (cdr pair)))
+		 (symbol-hashtable-set!
+		  fireball id
+		  (list->vector
+		   (map (lambda (i)
+				  (string->symbol
+				   (string-append (symbol->string id) (number->string i))))
+				(iota 4))))))
+	 (hashtable-cells bullet-types))
+	(values music fireball)))
 
 (define (bullet-active? blt)
   ;; whether the bullet participates in gameplay
@@ -1735,7 +1762,7 @@
 							  length radius (bullet-facing bullet)
 							  (blttype-preimg-sprite bt)))))))
   (vector-for-each-truthy each sorted-bullets))
-  
+
 
 (define (draw-bullets textures sorted-bullets)
   (define (each bullet)
@@ -1776,16 +1803,14 @@
 										render-x render-y -1))
 			([music]
 			 (let ([sprite
-					(string->symbol (string-append (symbol->string type)
-												   (number->string
-													(fxmod (fx/ frames 10) 3))))])
+					(vnth-mod (symbol-hashtable-ref cached-music-sprites type #f)
+							  (fx/ frames 10))])
 			   (draw-sprite-with-rotation textures sprite 90.0
 										  render-x render-y -1)))
 			([fireball]
 			 (let ([sprite
-					(string->symbol (string-append (symbol->string type)
-												   (number->string
-													(fxmod (fx/ frames 7) 4))))])
+					(vnth-mod (symbol-hashtable-ref cached-fireball-sprites type #f)
+							  (fx/ frames 7))])
 			   (draw-sprite-with-rotation
 				textures sprite
 				(todeg (bullet-facing bullet))
@@ -2535,7 +2560,7 @@
 	 (make-rectangle render-x render-y
 					 (fl* 2.0 radius) (fl* 2.0 radius))
 	 #xffffffff))
-	
+
   ;; Okay, so raylib's draw-ring uses the ENTIRE shapes-texture for
   ;; every segment of the circle which is...not what we want.
   ;; However, I tried implementing ring drawing myself in the previous commit
@@ -2595,7 +2620,7 @@
 		   (raylib:set-shapes-texture boss-tex (make-rectangle u 80.0 4.0 16.0))
 		   (raylib:draw-ring 0.0 0.0 outer-ring-radius (fl+ outer-ring-radius 12.0)
 							 ang (fl+ ang 11.25) 1 #xffffffeb))))
-	  
+
 	  (raylib:set-shapes-texture save-tex save-rect)))
   ;; TODO actual sprites lol
   (draw-sprite textures 'yellow-fairy2 render-x render-y -1))
@@ -3604,7 +3629,7 @@
 			(spawn-misc-ent (miscenttype mainshot) (+ player-x 10) y
 							-10 0)
 			(raylib:play-sound (sebundle-playershoot sounds)))))))
-  
+
   (when (enum-set-member? (vkey shoot) edge-released)
 	(set! start-shot-frames -1))
   (when (raylib:is-key-pressed key-f1)
@@ -3996,7 +4021,7 @@
 	 "REPLAY"
 	 440 165
 	 24.0 0.0 red))
-  
+
   ;; this is kinda dumb but whatever
   (let-values ([(doremi hazuki aiko) (find-bosses)]
 			   [(nth-boss) 0])
@@ -4196,7 +4221,7 @@
 	   (draw-sprite textures 'focus-sigil
 					0.0 0.0 ;; manually translated to final position above
 					(packcolor 255 255 255 (eround (* 255 focus-sigil-strength)))))))
-  
+
   (when (positive? bombing)
 	(draw-bomb textures))
 
@@ -4382,14 +4407,14 @@
   (load-music)
   (load-sfx)
   (set! play-data (load-play-data))
-  
+
   (let* ([textures (load-textures)]
 		 [fonts (load-fonts)]
 		 [render-texture (raylib:load-render-texture 640 480)]
 		 [render-texture-inner (raylib:render-texture-inner render-texture)])
 	(replace-gui (mk-title-gui))
 	(play-music (musbundle-ojamajo-wa-koko-ni-iru music))
-	
+
 	(dynamic-wind
 	  (thunk #f)
 	  (thunk
