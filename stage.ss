@@ -632,8 +632,8 @@
 		(map torad '(210.0 230.0 250.0 270.0 290.0 310.0 330.0)))
 	  (define types
 		(map (λ (color)
-			   (string->symbol (string-append "droplet-" (symbol->string color))))
-			 basic-colors))
+			   (string->symbol (string-append "droplet-" color)))
+			 basic-colors-str))
 	  (let loop ([angs angs]
 				 [type-idx 0])
 		(for-each
