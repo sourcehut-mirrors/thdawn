@@ -2671,7 +2671,7 @@
 												  yellow-wisp3 yellow-wisp4 yellow-wisp5
 												  yellow-wisp6 yellow-wisp7)))]
 				[t (fx+ frames (enm-time-spawned enm))]
-				[sprite (vnth sprites (fxmod (fx/ t 5) 8))])
+				[sprite (vnth-mod sprites (fx/ t 5))])
 		   (draw-sprite textures sprite render-x render-y -1)))
 		([yellow-fairy red-fairy green-fairy blue-fairy
 					   medium-red-fairy medium-blue-fairy big-fairy]
@@ -2687,9 +2687,7 @@
 					 ([medium-blue-fairy] '#(medium-blue-fairy0 medium-blue-fairy1 medium-blue-fairy2 medium-blue-fairy3))
 					 ([medium-red-fairy] '#(medium-red-fairy0 medium-red-fairy1 medium-red-fairy2 medium-red-fairy3))
 					 ([big-fairy] '#(big-fairy0 big-fairy1 big-fairy2 big-fairy3)))]
-				  [sprite (vnth fwd-sprites
-								(truncate (mod (/ frames 5)
-											   (vlen fwd-sprites))))])
+				  [sprite (vnth-mod fwd-sprites (fx/ frames 5))])
 			 (draw-sprite textures sprite render-x render-y tint))]
 		  [(fl< (abs dx) 10.0)
 		   (let* ([transition-sprites
@@ -2701,10 +2699,7 @@
 					 ([medium-blue-fairy] '#(medium-blue-fairy4 medium-blue-fairy5 medium-blue-fairy6 medium-blue-fairy7))
 					 ([medium-red-fairy] '#(medium-red-fairy4 medium-red-fairy5 medium-red-fairy6 medium-red-fairy7))
 					 ([big-fairy] '#(big-fairy4 big-fairy5 big-fairy6 big-fairy7)))]
-				  [sprite (vnth transition-sprites
-								(truncate (mod (/ frames 7)
-											   (vlen
-												transition-sprites))))])
+				  [sprite (vnth-mod transition-sprites (fx/ frames 7))])
 			 (if (flnegative? dx)
 				 (draw-sprite-mirror-x textures sprite render-x render-y tint)
 				 (draw-sprite textures sprite render-x render-y tint)))]
@@ -2726,9 +2721,7 @@
 					 ([medium-blue-fairy] '#(medium-blue-fairy8 medium-blue-fairy9 medium-blue-fairy10 medium-blue-fairy11))
 					 ([medium-red-fairy] '#(medium-red-fairy8 medium-red-fairy9 medium-red-fairy10 medium-red-fairy11))
 					 ([big-fairy] '#(big-fairy8 big-fairy9 big-fairy10 big-fairy11)))]
-				  [sprite (vnth side-sprites
-								(truncate (mod (/ frames 7)
-											   (vlen side-sprites))))])
+				  [sprite (vnth-mod side-sprites (fx/ frames 7))])
 			 (if (flnegative? dx)
 				 (draw-sprite-mirror-x textures sprite render-x render-y tint)
 				 (draw-sprite textures sprite render-x render-y tint)))])))
