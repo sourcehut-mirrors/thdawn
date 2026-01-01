@@ -2,9 +2,13 @@
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
 		  dotimes curry vector-for-all vector-for-each-indexed
+		  symbol-map
 		  vector-find vector-find-index vector-index vector-popcnt -> ->> thunk
 		  vector-add vector-pop vector-truncate when-let assqdr)
   (import (chezscheme))
+
+  (define (symbol-map f sym)
+	(string->symbol (f (symbol->string sym))))
 
   (define (assqdr key alist)
 	(cdr (assq key alist)))
