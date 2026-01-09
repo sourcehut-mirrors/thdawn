@@ -1688,10 +1688,10 @@
 	([bullet force]
 	 (and (or force (not (bullet-hasflag? bullet (bltflag uncancelable))))
 		  (or force (bullet-active? bullet))
-		  (spawn-particle (make-particle
-						   (particletype cancel)
-						   (bullet-x bullet) (bullet-y bullet)
-						   23 0 #f))
+		  (spawn-particle
+		   (particletype cancel)
+		   (bullet-x bullet) (bullet-y bullet)
+		   23 #f)
 		  (delete-bullet bullet)))))
 
 (define (spawn-drop-with-autocollect x y drop)
@@ -2313,12 +2313,12 @@
 	(when do-standard-logic
 	  (spawn-enm-drops enm)
 	  (raylib:play-sound (sebundle-enmdie sounds))
-	  (spawn-particle (make-particle
-					   (particletype enmdeath)
-					   (+ (enm-x enm) (centered-roll visual-rng 20.0))
-					   (+ (enm-y enm) (centered-roll visual-rng 20.0))
-					   30 0 '((start-radius . 2)
-							  (end-radius . 85))))
+	  (spawn-particle 
+	   (particletype enmdeath)
+	   (+ (enm-x enm) (centered-roll visual-rng 20.0))
+	   (+ (enm-y enm) (centered-roll visual-rng 20.0))
+	   30 '((start-radius . 2)
+			(end-radius . 85)))
 	  (let ([idx (vector-index enm live-enm)])
 		(when idx
 		  (vector-set! live-enm idx #f))))))
@@ -2460,20 +2460,20 @@
 		(if is-laser
 			(laser-last-grazed-at-set! bullet frames)
 			(bullet-grazed-set! bullet #t))
-		(spawn-particle (make-particle
-						 (particletype graze)
-						 player-x player-y
-						 25 0
-						 (list (cons 'dir
-									 ;; 80% of the time, particle flies towards bullet
-									 ;; 20% of the time, away from it
-									 (torad (+ (centered-roll visual-rng 90.0)
-											   (if (< (bullet-x bullet) player-x)
-												   180.0 0.0)
-											   (if (< (roll visual-rng) 0.2)
-												   180.0 0.0))))
-							   (cons 'speed (+ 1.0 (* 2.0 (roll visual-rng))))
-							   (cons 'rot (* (roll visual-rng) 360.0)))))
+		(spawn-particle 
+		 (particletype graze)
+		 player-x player-y
+		 25
+		 (list (cons 'dir
+					 ;; 80% of the time, particle flies towards bullet
+					 ;; 20% of the time, away from it
+					 (torad (+ (centered-roll visual-rng 90.0)
+							   (if (< (bullet-x bullet) player-x)
+								   180.0 0.0)
+							   (if (< (roll visual-rng) 0.2)
+								   180.0 0.0))))
+			   (cons 'speed (+ 1.0 (* 2.0 (roll visual-rng))))
+			   (cons 'rot (* (roll visual-rng) 360.0))))
 		(raylib:play-sound (sebundle-graze sounds)))
 
 	  (when (check-player-collision bullet +hit-radius+)
@@ -2817,11 +2817,12 @@
 ;; to the menus
 (define live-particles (make-vector 4096 #f))
 
-(define (spawn-particle p)
+(define (spawn-particle type x y max-age extra)
   (let ([idx (vector-index #f live-particles)])
 	(unless idx
 	  (error 'spawn-particle "No more open particle slots!"))
-	(vector-set! live-particles idx p)))
+	(vector-set! live-particles idx
+				 (make-particle type x y max-age 0 extra))))
 
 (define (delete-particle p)
   (let ([idx (vector-index p live-particles)])
@@ -3102,12 +3103,12 @@
 				   [value (round-score (* item-value value-multiplier))])
 			  (set! current-score (+ current-score value))
 			  (spawn-particle
-			   (make-particle (particletype itemvalue)
-							  (miscent-x ent) (- (miscent-y ent) 10.0)
-							  60 0 (cons (if (= 1 value-multiplier)
-											 #xffd70000
-											 #xf5f5f500)
-										 (number->string value))))))
+			   (particletype itemvalue)
+			   (miscent-x ent) (- (miscent-y ent) 10.0)
+			   60 (cons (if (= 1 value-multiplier)
+							#xffd70000
+							#xf5f5f500)
+						(number->string value)))))
 		   ([life-frag] (add-lives 1/3))
 		   ([life] (add-lives 1))
 		   ([bomb-frag] (add-bombs 1/3))
@@ -3255,20 +3256,19 @@
 		(set-car! history (add1 (car history))))
 	  (save-play-data play-data)))
   (spawn-particle
-   (make-particle
-	(particletype spellbonus)
-	;; Position dynamically calculated at render to avoid
-	;; the enemy tasks needing to access the fonts
-	0.0 0.0 180 0
-	(if failed
-		"Bonus Failed..."
-		(format "GET Spell Bonus!! ~:d" bonus))))
-  (spawn-particle (make-particle
-				   (particletype enmdeath)
-				   (+ (enm-x enm) (centered-roll visual-rng 20.0))
-				   (+ (enm-y enm) (centered-roll visual-rng 20.0))
-				   30 0 '((start-radius . 2)
-						  (end-radius . 85))))
+   (particletype spellbonus)
+   ;; Position dynamically calculated at render to avoid
+   ;; the enemy tasks needing to access the fonts
+   0.0 0.0 180
+   (if failed
+	   "Bonus Failed..."
+	   (format "GET Spell Bonus!! ~:d" bonus)))
+  (spawn-particle 
+   (particletype enmdeath)
+   (+ (enm-x enm) (centered-roll visual-rng 20.0))
+   (+ (enm-y enm) (centered-roll visual-rng 20.0))
+   30 '((start-radius . 2)
+		(end-radius . 85)))
   (cancel-all #t)
   (vector-for-each-truthy
    (λ (e)
@@ -3294,14 +3294,13 @@
 	  (λ (task)
 		(dotimes 90
 		  (spawn-particle
-		   (make-particle
-			(particletype maple)
-			(fl+ (enm-x enm) (centered-roll visual-rng 5.0))
-			(fl+ (enm-y enm) (centered-roll visual-rng 5.0))
-			60 0 `((speed . ,(fl+ (centered-roll visual-rng 0.75) 1.5))
-				   (dir . ,(centered-roll visual-rng pi))
-				   (rot . ,(fl* (roll visual-rng) 360.0))
-				   (initsz . 55))))
+		   (particletype maple)
+		   (fl+ (enm-x enm) (centered-roll visual-rng 5.0))
+		   (fl+ (enm-y enm) (centered-roll visual-rng 5.0))
+		   60 `((speed . ,(fl+ (centered-roll visual-rng 0.75) 1.5))
+				(dir . ,(centered-roll visual-rng pi))
+				(rot . ,(fl* (roll visual-rng) 360.0))
+				(initsz . 55)))
 		  (yield)))
 	  (constantly #t))
 	(ease-to values
@@ -3312,13 +3311,13 @@
   (cancel-all #t)
   (dotimes 90
 	(spawn-particle
-	 (make-particle (particletype maple)
-					(fl+ (enm-x enm) (centered-roll visual-rng 2.0))
-					(fl+ (enm-y enm) (centered-roll visual-rng 2.0))
-					60 0 `((speed . ,(fl+ (centered-roll visual-rng 1.5) 2.5))
-						   (dir . ,(centered-roll visual-rng pi))
-						   (rot . ,(fl* (roll visual-rng) 360.0))
-						   (initsz . 70)))))
+	 (particletype maple)
+	 (fl+ (enm-x enm) (centered-roll visual-rng 2.0))
+	 (fl+ (enm-y enm) (centered-roll visual-rng 2.0))
+	 60 `((speed . ,(fl+ (centered-roll visual-rng 1.5) 2.5))
+		  (dir . ,(centered-roll visual-rng pi))
+		  (rot . ,(fl* (roll visual-rng) 360.0))
+		  (initsz . 70))))
   (unless short
 	(delete-enemy enm)))
 

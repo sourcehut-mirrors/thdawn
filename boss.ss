@@ -483,12 +483,11 @@
   (let ([clear-bonus 10000000])
 	(set! current-score (+ current-score clear-bonus))
 	(spawn-particle
-	 (make-particle
-	  (particletype clear-bonus)
-	  ;; Position dynamically calculated at render to avoid
-	  ;; needing to access the fonts here
-	  0.0 0.0 240 0
-	  (format "Clear Bonus: ~:d" clear-bonus))))
+	 (particletype clear-bonus)
+	 ;; Position dynamically calculated at render to avoid
+	 ;; needing to access the fonts here
+	 0.0 0.0 240
+	 (format "Clear Bonus: ~:d" clear-bonus)))
   (when (is-liveplay)
 	(let ([pair (assq 'games-cleared play-data)])
 	  (set-cdr! pair (add1 (cdr pair))))

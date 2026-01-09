@@ -1,7 +1,7 @@
 * [2026-01-08 Thu]
 
 - Added a filled circle hint particle
-- 
+- Made spawn-particle call make-particle for you
 
 * [2025-12-31 Wed]
 Going to try harder this upcoming year to write in the devlog every day I do any

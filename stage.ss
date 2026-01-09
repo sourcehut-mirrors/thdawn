@@ -445,10 +445,9 @@
   (wait 240)
   (dotimes 4
 	(spawn-particle
-	 (make-particle
-	  (particletype circle-hint)
-	  0.0 224.0
-	  30 0 '((color . -1) (r1 . 300.0) (r2 . 80.0))))
+	 (particletype circle-hint)
+	 0.0 224.0
+	 30 '((color . -1) (r1 . 300.0) (r2 . 80.0)))
 	(wait 30))
   (wait 40)
   ;; TODO: hint particle telling player to get in middle of screen?
