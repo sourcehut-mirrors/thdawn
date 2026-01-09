@@ -1,3 +1,13 @@
+* [2026-01-08 Thu]
+
+- Added a filled circle hint particle
+- 
+
+* [2025-12-31 Wed]
+Going to try harder this upcoming year to write in the devlog every day I do any
+development. Just some cleaning up today, adding in fireball bullets, and granularizing
+the roadmap more.
+
 * [2025-11-15 Sat]
 How should the dialogue system work?
 

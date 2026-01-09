@@ -55,6 +55,7 @@
   make-miscent-type-set)
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
+		  circle-hint-opaque
 		  circle-hint clear-bonus)
   make-particletype-set)
 (define-enumeration bltflag
@@ -2848,13 +2849,14 @@
 	(define render-x (+ (particle-x p) +playfield-render-offset-x+))
 	(define render-y (+ (particle-y p) +playfield-render-offset-y+))
 	(define extra-data (particle-extra-data p))
-	(case (particle-type p)
+	(define type (particle-type p))
+	(case type
 	  ([maple maple-grayscale]
 	   (let* ([t (/ (particle-age p) (particle-max-age p))]
 			  [sz (lerp (assqdr 'initsz extra-data) 16 t)]
 			  [rot (assqdr 'rot extra-data)])
 		 (draw-sprite-pro-with-rotation
-		  textures (particle-type p)
+		  textures type
 		  (fl+ rot (flmod (* frames 3.0) 360.0))
 		  (make-rectangle render-x render-y sz sz)
 		  (packcolor 255 255 255 (eround (lerp 255 0 t))))))
@@ -2903,14 +2905,16 @@
 				(eround render-x))
 			(eround render-y)
 			16.0 0.0 (bitwise-ior color alpha)))))
-	  ([circle-hint]
+	  ([circle-hint circle-hint-opaque]
 	   (let ([color (assqdr 'color extra-data)]
-			 [r1 (assqdr 'r1 extra-data)]
-			 [r2 (assqdr 'r2 extra-data)])
-		 (raylib:draw-circle-lines-v
+			 [r (lerp (assqdr 'r1 extra-data)
+					  (assqdr 'r2 extra-data)
+					  (/ (particle-age p) (particle-max-age p)))])
+		 ((if (eq? type 'circle-hint-opaque)
+			  raylib:draw-circle-v
+			  raylib:draw-circle-lines-v)
 		  render-x render-y
-		  (lerp r1 r2 (/ (particle-age p) (particle-max-age p)))
-		  color)))
+		  r color)))
 	  ([spellbonus clear-bonus]
 	   (let*-values ([(width _) (raylib:measure-text-ex
 								 (fontbundle-cabin fonts)

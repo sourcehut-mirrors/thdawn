@@ -9,10 +9,27 @@ Midbosses: Doremi/Hazuki/Aiko/Onpu. Maybe Pop as midboss 2.
 Boss: Doremi/Hazuki/Aiko/Onpu. BGM: Naisho yo ojamajo (no syncing)
 
 ## Immediate TODOs
-* replay saving/playback
-* replay menu
-* dialogue system (localization support)
-* player and boss portraits
+As in, when you work pick something off the list and get at it.
+
+* doremi sprite
+* hazuki sprite
+* aiko sprite
+* player portrait
+* doremi portrait
+* hazuki portrait
+* aiko portrait
+* implement hazuki sp2
+* implement aiko sp1
+* implement doremi sp2
+* freely noodle around with flower patterns for doremi/hazuki nons and spells
+
+## Medium-term TODOs
+* make ch1 treble clef spread out prettier/more structured
+* improve ch1 even wave fairies
+* improve ch5 rain fairy
+* improve ch10 knife fairies
+
+## Nice to haves (non release blocking)
 * make sure we're doing proper alpha blending (premultiplication and such)
 * find a way to avoid having to add render-offset-x and y everywhere.
   * for example, draw to a separate framebuffer for gameplay area then move that whole thing
