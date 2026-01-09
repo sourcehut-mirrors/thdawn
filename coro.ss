@@ -92,7 +92,8 @@
 	   (let* ([actual-keep-running?
 			   (if parent
 				   (let ([parent-keep-running (task-keep-running? parent)])
-					 (lambda () (and (parent-keep-running)
+					 (lambda () (and (not (task-dead parent))
+									 (parent-keep-running)
 									 (keep-running?))))
 				   keep-running?)]
 			  [task (make-task name actual-keep-running?

@@ -207,14 +207,65 @@
   (common-nonspell-postlude bossinfo)
   (aiko-sp1 task aiko))
 
+(define (aiko-sp1-round task aiko)
+  (define spread-signal (box #f))
+  (dotimes 4
+	(let ([x player-x]
+		  [y player-y])
+	  (spawn-particle (particletype circle-hint-opaque)
+					  x y 40 '((color . #x008b8b80)
+							   (r1 . 100.0)
+							   (r2 . 0.0)))
+	  (wait 60)
+	  (ease-to values x y 20 aiko)
+	  (-> (cb)
+		  (cbcount 20 2)
+		  (cbspeed 3.0 3.5)
+		  (cbshootenm aiko 'medium-ball-blue 2 (sebundle-shoot0 sounds)))
+	  (wait 30)))
+  (ease-to values +middle-boss-x+ +middle-boss-y+ 20 aiko)
+  (wait 20)
+  (raylib:play-sound (sebundle-shortcharge sounds))
+  (let* ([move-task
+		  (spawn-subtask "wiggle"
+			(λ (task)
+			  (dotimes 3
+				(let ([x (fl+ (enm-x aiko) (centered-roll game-rng 50.0))]
+					  [y (fl+ (enm-y aiko) (centered-roll game-rng 5.0))])
+				  (ease-to values x y 30 aiko)
+				  (wait 30))))
+			(constantly #t)
+			task)]
+		 [shoot-task
+		  (spawn-subtask "shoot"
+			(λ (task)
+			  (interval-loop 30
+				(dotimes 5
+				  (-> (fb)
+					  (fbcounts 3)
+					  (fbang 0.0 10.0)
+					  (fbspeed 3.5)
+					  (fbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds)))
+				  (wait 4))))
+			(constantly #t)
+			move-task)])
+	(wait-until (thunk (task-dead move-task)))
+	))
+
 (define (aiko-sp1 task aiko)
   (define bossinfo (enm-extras aiko))
+  (define keep-running
+	(thunk
+	 (and (positive? (bossinfo-remaining-timer bossinfo))
+		  (positive? (enm-health aiko)))))
   (set! current-chapter 21)
   (declare-spell aiko 5)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health aiko)))))
+  (loop-while (keep-running)
+	  (let ([t (spawn-subtask "wave"
+				 (λ (task) (aiko-sp1-round task aiko))
+				 keep-running
+				 task)])
+		(wait-until (thunk (task-dead t)))))
   (common-spell-postlude bossinfo aiko)
   (group-non2 task aiko))
 

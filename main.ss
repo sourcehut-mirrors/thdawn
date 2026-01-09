@@ -113,6 +113,14 @@
 		 b ...
 		 (yield)
 		 (loop)))]))
+(define-syntax loop-while
+  (syntax-rules ()
+	[(_ condition b ...)
+	 (let loop ()
+	   (when condition
+		 b ...
+		 (yield)
+		 (loop)))]))
 
 (include "assets.ss")
 
