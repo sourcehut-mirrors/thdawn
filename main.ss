@@ -2223,6 +2223,15 @@
    (vector-find
 	(λ (e) (and e (eq? 'boss-aiko (enm-type e)))) live-enm)))
 
+(define (enm-invincible? enm)
+  (or (enm-hasflag? enm (enmflag invincible))
+	  (and (is-boss? enm)
+		   (fxpositive? bombing)
+		   (or (fxnonnegative? (bossinfo-active-spell-id (enm-extras enm)))
+			   (let ([delegate (bossinfo-redirect-damage (enm-extras enm))])
+				 (and delegate (fxnonnegative?
+								(bossinfo-active-spell-id (enm-extras delegate)))))))))
+
 (define (calculate-spell-bonus bossinfo)
   (define grace-period 180)
   (define remaining-time (bossinfo-remaining-timer bossinfo))
@@ -2355,7 +2364,7 @@
 	   => (λ (other-enm) (damage-enemy other-enm amount playsound))]
 	  [else
 	   (set! current-score (+ current-score 20))
-	   (if (enm-hasflag? enm (enmflag invincible))
+	   (if (enm-invincible? enm)
 		   (when playsound
 			 (raylib:play-sound (sebundle-damageresist sounds)))
 		   (let* ([superarmor (positive? (enm-superarmor enm))]
@@ -2560,9 +2569,13 @@
 
 (define (enm-tint enm)
   (cond
-   [(and (enm-hasflag? enm (enmflag invincible))
+   [(and (not (is-boss? enm))
+		 (enm-invincible? enm)
 		 (< (fxmod frames 4) 2))
 	invincible-flash]
+   [(and (is-boss? enm)
+		 (enm-invincible? enm))
+	#xffffff80]
    [(and (fxpositive? (enm-damaged-recently enm))
 		 (< (fxmod frames 4) 2))
 	(if (enm-lowhealth enm) crit-damage-flash damage-flash)]
@@ -3054,7 +3067,7 @@
 		   (λ (enm)
 			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
 			   (when (and
-					  (not (enm-hasflag? enm (enmflag invincible)))
+					  (not (enm-invincible? enm))
 					  (check-collision-recs
 					   ehx ehy ehw ehh
 					   (- (miscent-x ent) 6)
@@ -3074,7 +3087,7 @@
 		   (λ (enm)
 			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
 			   (when (and
-					  (not (enm-hasflag? enm (enmflag invincible)))
+					  (not (enm-invincible? enm))
 					  (check-collision-recs
 					   ehx ehy ehw ehh
 					   (- (miscent-x ent) 5)

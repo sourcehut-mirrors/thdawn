@@ -24,8 +24,8 @@ As in, when you work pick something off the list and get at it.
 * go through all bullet types and appropriately set their preimg sizes
 * freely noodle around with flower patterns for doremi/hazuki nons and spells
 * actually fix the spell circle following to not be Bad tm
-* make bosses invincible during spells
 * shot collide with enemy effect
+* fix damage effect on delegate bosses
 
 ## Medium-term TODOs
 * borderless fullscreen support
