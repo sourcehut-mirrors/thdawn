@@ -516,6 +516,7 @@
 (define green (packcolor 0 228 48 255))
 (define invincible-flash (packcolor 64 64 255 255))
 (define damage-flash (packcolor 255 64 64 255))
+(define crit-damage-flash (packcolor 64 16 16 255))
 (define selected-color #xc87affff)
 
 ;; [31-416] x bounds of playfield in the hud texture
@@ -2557,6 +2558,16 @@
 			 (- (enm-y enm) 22)
 			 44 44))))
 
+(define (enm-tint enm)
+  (cond
+   [(and (enm-hasflag? enm (enmflag invincible))
+		 (< (fxmod frames 4) 2))
+	invincible-flash]
+   [(and (fxpositive? (enm-damaged-recently enm))
+		 (< (fxmod frames 4) 2))
+	(if (enm-lowhealth enm) crit-damage-flash damage-flash)]
+   [else -1]))
+
 (define (draw-boss textures enm render-x render-y)
   (define bossinfo (enm-extras enm))
   (define lazy-render-x (+ +playfield-render-offset-x+
@@ -2636,7 +2647,7 @@
 
 	  (raylib:set-shapes-texture save-tex save-rect)))
   ;; TODO actual sprites lol
-  (draw-sprite textures 'yellow-fairy2 render-x render-y -1))
+  (draw-sprite textures 'yellow-fairy2 render-x render-y (enm-tint enm)))
 
 (define (draw-enemies textures)
   (define (each enm)
@@ -2644,14 +2655,7 @@
 		  [render-y (+ (enm-y enm) +playfield-render-offset-y+)]
 		  [dx (enm-dx-render enm)]
 		  [type (enm-type enm)]
-		  [tint (cond
-				 [(and (enm-hasflag? enm (enmflag invincible))
-					   (< (fxmod frames 4) 2))
-				  invincible-flash]
-				 [(and (fxpositive? (enm-damaged-recently enm))
-					   (< (fxmod frames 4) 2))
-				  damage-flash]
-				 [else -1])])
+		  [tint (enm-tint enm)])
 	  (case type
 		([boss-doremi boss-hazuki boss-aiko]
 		 (draw-boss textures enm render-x render-y))
