@@ -21,13 +21,27 @@ As in, when you work pick something off the list and get at it.
 * implement hazuki sp2
 * implement aiko sp1
 * implement doremi sp2
+* make low health sfx play based on percentage instead of aboslute threshold
+* go through all bullet types and appropriately set their preimg sizes
 * freely noodle around with flower patterns for doremi/hazuki nons and spells
+* actually fix the spell circle following to not be Bad tm
 
 ## Medium-term TODOs
+* borderless fullscreen support
+* improve midsp1 wandering
+* menu system prettification
+  * find/make a stock image for menu background
+    * just stick with one, or maybe two (one for play data/replay menus, other for rest)
+  * rearrange settings visually
+  * add little effects like idle wiggling, pulsing when selection changes, etc.
 * make ch1 treble clef spread out prettier/more structured
 * improve ch1 even wave fairies
 * improve ch5 rain fairy
 * improve ch10 knife fairies
+* adjust ch6 rewards
+* consider nonlinear preimg based on the initial delay
+* boss theme loop points (dynamic jump to "thank you!" if possible?)
+* controller support
 
 ## Nice to haves (non release blocking)
 * make sure we're doing proper alpha blending (premultiplication and such)

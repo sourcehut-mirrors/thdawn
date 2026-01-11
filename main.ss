@@ -2188,7 +2188,8 @@
    (mutable dx-render)
    ;; arbitrary scratchpad for custom data depending on type
    ;; - boss: contains a bossinfo instance
-   (mutable extras)))
+   (mutable extras))
+  (sealed #t))
 (define default-drop '((point . 1)))
 (define five-point-items '((point . 5)))
 (define ten-point '((point . 10)))

@@ -20,7 +20,8 @@
 	 (mutable continuation)
 	 ;; whether task ran and was terminated by any reason, including
 	 ;; returning normally, its keep-running returning false, or being killed
-	 (mutable dead)))
+	 (mutable dead))
+	(sealed #t))
 
   (define (yield0-fallback _resume)
 	(error 'yield "yield0 called with no active coroutine"))

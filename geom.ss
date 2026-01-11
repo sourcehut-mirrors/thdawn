@@ -67,10 +67,12 @@
 
   (define-record-type rectangle
 	(fields
-	 x y width height))
+	 x y width height)
+	(sealed #t))
 
   (define-record-type vector2
-	(fields x y))
+	(fields x y)
+	(sealed #t))
 
   (define (vec2 x y)
 	;; will assert in dev, but be optimized away in prod
