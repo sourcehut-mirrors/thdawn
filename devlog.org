@@ -1,3 +1,23 @@
+* [2026-01-10 Sat]
+(late night)
+
+Loading up some spell backgrounds from a pattern book I bought a while back.
+
+Spent a long time futzing about with Raylib's DrawTexturePro again, whose origin/rotation
+arguments still confuse me to this day. I'm just going to ignore it and do things using the
+GL matrix.
+
+The pattern book has some circular patterns with a "background" color in the middle that's
+obviously meant to become transparent when you use the pattern, but I tried some of them
+out and they don't look too good when the stage background shows underneath. So I settled
+on the ones that are mostly opaque.
+
+At first I rendered the texture shrunk too small and was wondering why it looked
+wrong. After enlarging, /then/ I got that nice maingame feel. Though you still want to
+shrink a bit so that you get as much of the detail from the original texture as possible,
+but not too much that the square corners of the texture start showing up as the texture
+spins. I think what we landed on in the end looks alright.
+
 * [2026-01-08 Thu]
 
 - Added a filled circle hint particle

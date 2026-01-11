@@ -4157,11 +4157,47 @@
 (define bullet-cc (make-cost-center))
 (define miscent-cc (make-cost-center))
 
+(define (render-spell-bg textures idx)
+  (define tex
+	(case idx
+	  [(0) (txbundle-spellbg0 textures)]
+	  [(1) (txbundle-spellbg1 textures)]
+	  [(2) (txbundle-spellbg2 textures)]
+	  [(3) (txbundle-spellbg3 textures)]))
+  (define src
+	(make-rectangle
+	 0.0 0.0
+	 (inexact (raylib:texture-width tex))
+	 (inexact (raylib:texture-height tex))))
+  (define scale
+	(case idx
+	  [(0) (fl/ 1.0 1.75)]
+	  [(1) (fl/ 1.0 1.8)]
+	  [(2) (fl/ 1.0 1.7)]
+	  [(3) (fl/ 1.0 1.15)]))
+  (let* ([scaledw (fl* (rectangle-width src) scale)]
+		 [scaledh (fl* (rectangle-height src) scale)]
+		 [dest (make-rectangle
+				(fl/ scaledw -2.0) (fl/ scaledh -2.0)
+				scaledw scaledh)]
+		 [finalx (+ (/ scaledw -2.0) +playfield-render-offset-x+)]
+		 [finaly (+ 180.0
+					(/ scaledh -2.0)
+					+playfield-render-offset-y+)])
+	(raylib:with-matrix
+	 (raylib:translatef
+	  (fl- finalx (rectangle-x dest))
+	  (fl- finaly (rectangle-y dest))
+	  0.0)
+	 (raylib:rotatef (flmod (fl/ (inexact frames) 2.0) 360.0) 0.0 0.0 1.0)
+	 (raylib:draw-texture-pro tex src dest v2zero 0.0 #xc0c0c0e0))))
+
 (define background-draw-bounds
   ;; x is integer multiple of texture width to prevent stretching
   ;; y isn't but the stretching isn't too noticeable so it's ok
   (make-rectangle 0.0 0.0 512.0 480.0))
 
+(define bgcolor #xc0c0c0ff)
 (define (do-render-game textures fonts)
   (raylib:clear-background #x000000ff) ;;#x42024aff) ;; todo: some variability :D
   (unless (paused?)
@@ -4172,15 +4208,17 @@
   (raylib:draw-texture-pro (txbundle-bg1 textures)
 						   (make-rectangle 0.0 bg1-scroll 256.0 224.0)
 						   background-draw-bounds
-						   v2zero 0.0 #xc0c0c0ff)
+						   v2zero 0.0 bgcolor)
   (raylib:draw-texture-pro (txbundle-bg2 textures)
 						   (make-rectangle 0.0 bg2-scroll 256.0 224.0)
 						   background-draw-bounds
-						   v2zero 0.0 #xc0c0c0ff)
+						   v2zero 0.0 bgcolor)
   (raylib:draw-texture-pro (txbundle-bg3 textures)
 						   (make-rectangle 0.0 bg3-scroll 256.0 224.0)
 						   background-draw-bounds
-						   v2zero 0.0 #xc0c0c0ff)
+						   v2zero 0.0 bgcolor)
+  ;; aiko 0, doremi 2, hazuki 3, group 1
+  (render-spell-bg textures 3)
   (when show-hitboxes
 	(raylib:draw-line (+ +playfield-render-offset-x+ +playfield-min-x+)
 					  (+ +playfield-render-offset-y+ +poc-y+)

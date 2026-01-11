@@ -16,7 +16,8 @@
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
 		  set-music-volume set-music-looping
 		  load-sound play-sound unload-sound set-sound-pitch set-sound-volume
-		  load-texture unload-texture draw-texture-rec draw-texture draw-texture-pro
+		  load-texture unload-texture texture-width texture-height
+		  draw-texture-rec draw-texture draw-texture-pro
 		  load-font unload-font
 		  is-key-down get-key-pressed set-exit-key is-key-pressed is-key-released
 		  get-key-name
@@ -323,8 +324,8 @@
   (define-ftype Texture
 	(struct
 	  (id unsigned-int)
-	  (_ int)
-	  (_ int)
+	  (width int)
+	  (height int)
 	  (_ int)
 	  (_ int)))
   (define load-texture0
@@ -338,6 +339,10 @@
   (define (unload-texture tex)
 	(unload-texture0 tex)
 	(foreign-free (ftype-pointer-address tex)))
+  (define (texture-width tex)
+	(ftype-ref Texture (width) tex))
+  (define (texture-height tex)
+	(ftype-ref Texture (height) tex))
 
   (define-ftype RenderTexture
 	(struct
