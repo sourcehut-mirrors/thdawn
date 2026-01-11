@@ -47,7 +47,7 @@
 (alias vlen vector-length)
 (alias roll pseudo-random-generator-next!) ;; convenience alias
 (define (vrand v rng)
-  (vector-ref v (roll rng (vector-length v))))
+  (vnth v (roll rng (vector-length v))))
 (define (vnth-mod v n)
   (vnth v (fxmod n (vlen v))))
 (define-enumeration miscenttype
@@ -2047,6 +2047,7 @@
    duration
    health
    bonus
+   bgid
    drops
    failed-drops)
   (sealed #t))
@@ -2055,33 +2056,33 @@
 		[std-fail '((point . 10))])
 	(immutable-vector
 	 (make-spell-descriptor
-	  "Beginner Sign \"My First Spell Card!\"" 1540 -1 1000000
+	  "Beginner Sign \"My First Spell Card!\"" 1540 -1 1000000 #f
 	  '((bomb . 1) (point . 30))
 	  (cons '(bomb . 1) std-fail))
 	 (make-spell-descriptor
-	  "Natural Sign \"Butterfly Smelling the Flowers\"" 720 -1 1000000
+	  "Natural Sign \"Butterfly Smelling the Flowers\"" 720 -1 1000000 #f
 	  '((life . 1) (point . 50))
 	  (cons '(life . 1) std-fail))
 	 (make-spell-descriptor "Group Sp1"
-							1800 500 1000000 std std-fail)
+							1800 500 1000000 'group std std-fail)
 	 (make-spell-descriptor "Doremi Sp1"
-							1800 500 1000000 std std-fail)
+							1800 500 1000000 'doremi std std-fail)
 	 (make-spell-descriptor "Hazuki Sp1"
-							1800 500 1000000 std std-fail)
+							1800 500 1000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Aiko Sp1"
-							1800 500 1000000 std std-fail)
+							1800 500 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witchy Sign \"\""
-							1800 500 3000000 std std-fail)
+							1800 500 3000000 'group std std-fail)
 	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""
-							1800 500 3000000 std std-fail)
+							1800 500 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Ah...G-...G-Ghost!\""
-							1800 500 3000000 std std-fail)
+							1800 500 3000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Athlete Sign \"Penalty Shootout\""
-							1800 500 3000000 std std-fail)
+							1800 500 3000000 'aiko std std-fail)
 	 (make-spell-descriptor "\"One Flower, One World\""
-							2400 -1 5000000 std std-fail)
+							2400 -1 5000000 'group std std-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
-							5940 20000 5000000 std std-fail))))
+							5940 20000 5000000 'group std std-fail))))
 (define-record-type score-entry
   (fields name score unixtime cleared)
   (sealed #t)
@@ -2133,6 +2134,10 @@
    ;; used only for rendering and rendered left to right
    (mutable healthbars))
   (sealed #t))
+
+(define (bossinfo-elapsed-frames bossinfo)
+  (fx- (bossinfo-total-timer bossinfo)
+	   (bossinfo-remaining-timer bossinfo)))
 
 (define +default-healthbar-start-x+ (+ +playfield-min-render-x+ 5))
 (define +default-healthbar-end-x+ (- +playfield-max-render-x+ 20))
@@ -2321,7 +2326,7 @@
 	(when do-standard-logic
 	  (spawn-enm-drops enm)
 	  (raylib:play-sound (sebundle-enmdie sounds))
-	  (spawn-particle 
+	  (spawn-particle
 	   (particletype enmdeath)
 	   (+ (enm-x enm) (centered-roll visual-rng 20.0))
 	   (+ (enm-y enm) (centered-roll visual-rng 20.0))
@@ -2468,7 +2473,7 @@
 		(if is-laser
 			(laser-last-grazed-at-set! bullet frames)
 			(bullet-grazed-set! bullet #t))
-		(spawn-particle 
+		(spawn-particle
 		 (particletype graze)
 		 player-x player-y
 		 25
@@ -2577,8 +2582,7 @@
 	(let* ([boss-tex (txbundle-boss-flip textures)]
 		   [save-tex (raylib:get-shapes-texture)]
 		   [save-rect (raylib:get-shapes-texture-rectangle)]
-		   [elapsed-frames (fx- (bossinfo-total-timer bossinfo)
-								(bossinfo-remaining-timer bossinfo))])
+		   [elapsed-frames (bossinfo-elapsed-frames bossinfo)])
 	  (let* ([progress-of-90 (/ elapsed-frames 90.0)]
 			 [inner-ring-radius (if (fx< elapsed-frames 90)
 									(lerp 1.0 98.0 (ease-out-circ progress-of-90))
@@ -3271,7 +3275,7 @@
    (if failed
 	   "Bonus Failed..."
 	   (format "GET Spell Bonus!! ~:d" bonus)))
-  (spawn-particle 
+  (spawn-particle
    (particletype enmdeath)
    (+ (enm-x enm) (centered-roll visual-rng 20.0))
    (+ (enm-y enm) (centered-roll visual-rng 20.0))
@@ -3833,8 +3837,7 @@
 (define (draw-boss-hud position enm textures fonts)
   (define bossinfo (enm-extras enm))
   (define remaining-timer (bossinfo-remaining-timer bossinfo))
-  (define elapsed-frames (fx- (bossinfo-total-timer bossinfo)
-							  remaining-timer))
+  (define elapsed-frames (bossinfo-elapsed-frames bossinfo))
   (define spid (bossinfo-active-spell-id bossinfo))
   (define spname (and (fxnonnegative? spid)
 					  (spell-descriptor-name (vnth spells spid))))
@@ -3881,7 +3884,7 @@
 	(raylib:draw-text-ex (fontbundle-sharetechmono fonts)
 						 (format "~2,'0d"
 								 (exact (ceiling
-								  (/ (bossinfo-remaining-timer bossinfo) 60.0))))
+								  (/ remaining-timer 60.0))))
 						 (- +playfield-max-render-x+ 18)
 						 (- +playfield-min-render-y+ 0)
 						 20.0 0.0
@@ -4157,24 +4160,24 @@
 (define bullet-cc (make-cost-center))
 (define miscent-cc (make-cost-center))
 
-(define (render-spell-bg textures idx)
+(define (render-spell-background textures id alpha)
   (define tex
-	(case idx
-	  [(0) (txbundle-spellbg0 textures)]
-	  [(1) (txbundle-spellbg1 textures)]
-	  [(2) (txbundle-spellbg2 textures)]
-	  [(3) (txbundle-spellbg3 textures)]))
+	(case id
+	  [(group) (txbundle-spellbg-group textures)]
+	  [(doremi) (txbundle-spellbg-doremi textures)]
+	  [(hazuki) (txbundle-spellbg-hazuki textures)]
+	  [(aiko) (txbundle-spellbg-aiko textures)]))
   (define src
 	(make-rectangle
 	 0.0 0.0
 	 (inexact (raylib:texture-width tex))
 	 (inexact (raylib:texture-height tex))))
   (define scale
-	(case idx
-	  [(0) (fl/ 1.0 1.75)]
-	  [(1) (fl/ 1.0 1.8)]
-	  [(2) (fl/ 1.0 1.7)]
-	  [(3) (fl/ 1.0 1.15)]))
+	(case id
+	  [(group) (fl/ 1.0 1.8)]
+	  [(doremi) (fl/ 1.0 1.7)]
+	  [(hazuki) (fl/ 1.0 1.15)]
+	  [(aiko) (fl/ 1.0 1.75)]))
   (let* ([scaledw (fl* (rectangle-width src) scale)]
 		 [scaledh (fl* (rectangle-height src) scale)]
 		 [dest (make-rectangle
@@ -4190,7 +4193,9 @@
 	  (fl- finaly (rectangle-y dest))
 	  0.0)
 	 (raylib:rotatef (flmod (fl/ (inexact frames) 2.0) 360.0) 0.0 0.0 1.0)
-	 (raylib:draw-texture-pro tex src dest v2zero 0.0 #xc0c0c0e0))))
+	 (raylib:draw-texture-pro
+	  tex src dest v2zero 0.0
+	  (bitwise-ior #xc0c0c000 alpha)))))
 
 (define background-draw-bounds
   ;; x is integer multiple of texture width to prevent stretching
@@ -4217,8 +4222,23 @@
 						   (make-rectangle 0.0 bg3-scroll 256.0 224.0)
 						   background-draw-bounds
 						   v2zero 0.0 bgcolor)
-  ;; aiko 0, doremi 2, hazuki 3, group 1
-  (render-spell-bg textures 3)
+  (let ([enm (vector-find
+			   (λ (e)
+				 (and e (is-boss? e)
+					  (fxnonnegative? (bossinfo-active-spell-id (enm-extras e)))))
+			   live-enm)])
+	(when enm
+	  (let* ([bossinfo (enm-extras enm)]
+			 [bgid (spell-descriptor-bgid
+					(vnth spells (bossinfo-active-spell-id bossinfo)))]
+			 [elapsed (bossinfo-elapsed-frames bossinfo)]
+			 [alpha
+			  (if (fx> elapsed 60)
+				  #xe0
+			      (eround (lerp 0 #xe0 (/ elapsed 60))))])
+		(when bgid
+		  (render-spell-background textures bgid alpha)))))
+  
   (when show-hitboxes
 	(raylib:draw-line (+ +playfield-render-offset-x+ +playfield-min-x+)
 					  (+ +playfield-render-offset-y+ +poc-y+)

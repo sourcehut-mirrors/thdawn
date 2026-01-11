@@ -122,7 +122,7 @@
    bullet-ball-huge
    laser1 laser2 laser3 laser4
    magicircle boss boss-flip boss-ui dialog-box wisp
-   spellbg0 spellbg1 spellbg2 spellbg3)
+   spellbg-aiko spellbg-group spellbg-doremi spellbg-hazuki)
   (sealed #t))
 (define (load-textures)
   (define (ltex file)
