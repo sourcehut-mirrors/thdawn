@@ -2213,7 +2213,7 @@
 							  (enm-initial-health enm)))))
 
 (define (is-boss? enm)
-  (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko)))
+  (memq (enm-type enm) '(boss-doremi boss-hazuki boss-aiko)))
 (define (find-bosses)
   (values
    (vector-find
@@ -3196,7 +3196,7 @@
 			  textures type (* 45.0 (floor (/ livetime 3)))
 			  render-x render-y -1)
 			 (draw-sprite textures type render-x render-y
-						  (if (member type '(big-piv small-piv)) #xffffffc0 -1))))
+						  (if (memq type '(big-piv small-piv)) #xffffffc0 -1))))
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
 		  (- render-x 8) (- render-y 8) 16 16
