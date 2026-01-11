@@ -2167,7 +2167,7 @@
    (mutable ox)
    (mutable oy)
    (mutable health)
-   initial-health
+   (mutable initial-health)
    ;; frame counter when this enemy was spawned
    time-spawned
    ;; set to positive when damaged, decreases automatically every frame.
@@ -2204,6 +2204,12 @@
 (define (enm-clrflags enm flags)
   (enm-flags-set! enm (enum-set-difference (enm-flags enm) flags))
   enm)
+
+;; for player hinting only, not for gameplay
+(define (enm-lowhealth enm)
+  (and (>= (enm-initial-health enm) 300)
+	   (< (enm-health enm) (* (if (is-boss? enm) 0.1 0.2)
+							  (enm-initial-health enm)))))
 
 (define (is-boss? enm)
   (member (enm-type enm) '(boss-doremi boss-hazuki boss-aiko)))
@@ -2360,9 +2366,7 @@
 			   (raylib:play-sound
 				(cond
 				 [superarmor (sebundle-damageresist sounds)]
-				 ;; this logic is kinda arbitary. consider changing to percentage-based?
-				 [(and (< (enm-health enm) 300) (>= (enm-initial-health enm) 300))
-				  (sebundle-damage1 sounds)]
+				 [(enm-lowhealth enm) (sebundle-damage1 sounds)]
 				 [else (sebundle-damage0 sounds)])))
 			 (when (> amount 0)
 			   (enm-damaged-recently-set! enm 20)
@@ -3231,9 +3235,10 @@
 			   (spell-descriptor-bonus descriptor)))
   (bossinfo-remaining-timer-set! bossinfo (spell-descriptor-duration descriptor))
   (bossinfo-total-timer-set! bossinfo (spell-descriptor-duration descriptor))
-  (bossinfo-max-health-set! bossinfo (spell-descriptor-health descriptor))
   (enm-superarmor-set! boss 120)
+  (bossinfo-max-health-set! bossinfo (spell-descriptor-health descriptor))
   (enm-health-set! boss (spell-descriptor-health descriptor))
+  (enm-initial-health-set! boss (enm-health boss))
   (raylib:play-sound (sebundle-spelldeclare sounds))
   (bossinfo-active-attack-failed-set! bossinfo #f))
 
@@ -3242,7 +3247,8 @@
   (bossinfo-remaining-timer-set! bossinfo duration-frames)
   (bossinfo-total-timer-set! bossinfo duration-frames)
   (bossinfo-max-health-set! bossinfo health)
-  (enm-health-set! boss health))
+  (enm-health-set! boss health)
+  (enm-initial-health-set! boss health))
 
 (define (common-spell-postlude bossinfo enm)
   (define timeout-fail

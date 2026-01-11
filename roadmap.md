@@ -21,7 +21,6 @@ As in, when you work pick something off the list and get at it.
 * implement hazuki sp2
 * implement aiko sp1
 * implement doremi sp2
-* make low health sfx play based on percentage instead of aboslute threshold
 * go through all bullet types and appropriately set their preimg sizes
 * freely noodle around with flower patterns for doremi/hazuki nons and spells
 * actually fix the spell circle following to not be Bad tm
