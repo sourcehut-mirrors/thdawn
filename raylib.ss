@@ -56,10 +56,10 @@
   (define global-color2
 	(make-ftype-pointer Color (foreign-alloc (ftype-sizeof Color))))
   (define (load-global-color dest rgba)
-	(define r (bitwise-and #xff (bitwise-arithmetic-shift-right rgba 24)))
-	(define g (bitwise-and #xff (bitwise-arithmetic-shift-right rgba 16)))
-	(define b (bitwise-and #xff (bitwise-arithmetic-shift-right rgba 8)))
-	(define a (bitwise-and #xff rgba))
+	(define r (fxlogand #xff (fxsrl rgba 24)))
+	(define g (fxlogand #xff (fxsrl rgba 16)))
+	(define b (fxlogand #xff (fxsrl rgba 8)))
+	(define a (fxlogand #xff rgba))
 	(ftype-set! Color (r) dest r)
 	(ftype-set! Color (g) dest g)
 	(ftype-set! Color (b) dest b)
@@ -69,10 +69,7 @@
 	(define g (ftype-ref Color (g) global-color))
 	(define b (ftype-ref Color (b) global-color))
 	(define a (ftype-ref Color (a) global-color))
-	(bitwise-ior (bitwise-arithmetic-shift-left r 24)
-				 (bitwise-arithmetic-shift-left g 16)
-				 (bitwise-arithmetic-shift-left b 8)
-				 a))
+	(fxlogior (fxsll r 24) (fxsll g 16) (fxsll b 8) a))
 
   (define-ftype RayVector2
 	(struct (x float) (y float)))

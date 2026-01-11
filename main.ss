@@ -505,13 +505,9 @@
   )
 
 (define (packcolor r g b a)
-  (bitwise-ior (bitwise-arithmetic-shift-left r 24)
-			   (bitwise-arithmetic-shift-left g 16)
-			   (bitwise-arithmetic-shift-left b 8)
-			   a))
+  (fxlogior (fxsll r 24) (fxsll g 16) (fxsll b 8) a))
 (define (override-alpha color a)
-  (bitwise-ior (bitwise-and color (bitwise-not #xff))
-			   a))
+  (fxlogior (fxlogand color (fxlognot #xff)) a))
 (define red (packcolor 230 41 55 255))
 (define green (packcolor 0 228 48 255))
 (define invincible-flash (packcolor 64 64 255 255))
@@ -2636,7 +2632,7 @@
 		   (raylib:draw-ring 0.0 0.0 inner-ring-radius (fl+ inner-ring-radius
 															inner-ring-gap)
 							 ang (fl+ ang 11.25) 1
-							 (bitwise-ior #xffffff00 inner-ring-brightness)))))
+							 (fxlogior #xffffff00 inner-ring-brightness)))))
 
 	  (let* ([outer-ring-radius
 			  (cond
@@ -2939,7 +2935,7 @@
 				(eround (- render-x width 20.0))
 				(eround render-x))
 			(eround render-y)
-			16.0 0.0 (bitwise-ior color alpha)))))
+			16.0 0.0 (fxlogior color alpha)))))
 	  ([circle-hint circle-hint-opaque]
 	   (let ([color (assqdr 'color extra-data)]
 			 [r (lerp (assqdr 'r1 extra-data)
@@ -2963,12 +2959,12 @@
 		  24.0 0.0
 		  (cond
 		   [(< age 30)
-			(bitwise-ior
+			(fxlogior
 			 #xffffff00
 			 (eround (lerp 0 255 (ease-out-cubic (/ age 30)))))]
 		   [(< age 120) -1]
 		   [else
-			(bitwise-ior
+			(fxlogior
 			 #xffffff00
 			 (eround (lerp 255 0
 						   (/ (- age 120)
@@ -4219,7 +4215,7 @@
 	 (raylib:rotatef (flmod (fl/ (inexact frames) 2.0) 360.0) 0.0 0.0 1.0)
 	 (raylib:draw-texture-pro
 	  tex src dest v2zero 0.0
-	  (bitwise-ior #xc0c0c000 alpha)))))
+	  (fxlogior #xc0c0c000 alpha)))))
 
 (define background-draw-bounds
   ;; x is integer multiple of texture width to prevent stretching
