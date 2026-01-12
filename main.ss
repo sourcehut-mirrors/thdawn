@@ -2168,6 +2168,7 @@
    ;; frame counter when this enemy was spawned
    time-spawned
    ;; set to positive when damaged, decreases automatically every frame.
+   ;; only use for visuals, because it's inaccurate when bosses have damage delegation
    (mutable damaged-recently)
    (mutable flags)
    ;; alist of (miscent type . count) to drop on death.
@@ -2354,32 +2355,29 @@
 	[(enm amount)
 	 (damage-enemy enm amount #t)]
 	[(enm amount playsound)
-	 (cond
-	  [(and (is-boss? enm)
-			(bossinfo-redirect-damage (enm-extras enm)))
-	   => (λ (other-enm) (damage-enemy other-enm amount playsound))]
-	  [else
-	   (set! current-score (+ current-score 20))
-	   (if (enm-invincible? enm)
-		   (when playsound
-			 (raylib:play-sound (sebundle-damageresist sounds)))
-		   (let* ([superarmor (positive? (enm-superarmor enm))]
-				  [amount (cond
-						   [superarmor
-							(max 1 (eround (* 0.1 amount)))]
-						   [else amount])])
-			 (when (and playsound (> amount 0))
-			   (raylib:play-sound
-				(cond
-				 [superarmor (sebundle-damageresist sounds)]
-				 [(enm-lowhealth enm) (sebundle-damage1 sounds)]
-				 [else (sebundle-damage0 sounds)])))
-			 (when (> amount 0)
-			   (enm-damaged-recently-set! enm 20)
-			   (enm-health-set! enm (- (enm-health enm) amount)))
-
-			 (when (fx<= (enm-health enm) 0)
-			   (kill-enemy enm))))])]))
+	 (set! current-score (+ current-score 20))
+	 (if (enm-invincible? enm)
+		 (when playsound
+		   (raylib:play-sound (sebundle-damageresist sounds)))
+		 (let* ([superarmor (positive? (enm-superarmor enm))]
+				[amount (cond
+						 [superarmor
+						  (max 1 (eround (* 0.1 amount)))]
+						 [else amount])]
+				[target (or (and (is-boss? enm)
+								 (bossinfo-redirect-damage (enm-extras enm)))
+							enm)])
+		   (when (and playsound (> amount 0))
+			 (raylib:play-sound
+			  (cond
+			   [superarmor (sebundle-damageresist sounds)]
+			   [(enm-lowhealth target) (sebundle-damage1 sounds)]
+			   [else (sebundle-damage0 sounds)])))
+		   (when (> amount 0)
+			 (enm-damaged-recently-set! enm 20)
+			 (enm-health-set! target (- (enm-health target) amount))
+			 (when (fx<= (enm-health target) 0)
+			   (kill-enemy target)))))]))
 
 (define (spawn-drops drops x y)
   (for-each
