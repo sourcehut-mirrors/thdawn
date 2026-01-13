@@ -25,7 +25,6 @@ As in, when you work pick something off the list and get at it.
 * freely noodle around with flower patterns for doremi/hazuki nons and spells
 * actually fix the spell circle following to not be Bad tm
 * shot collide with enemy effect
-* fix damage effect on delegate bosses
 
 ## Medium-term TODOs
 * borderless fullscreen support

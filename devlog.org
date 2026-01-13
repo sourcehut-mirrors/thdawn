@@ -1,3 +1,7 @@
+* [2026-01-12 Mon]
+Just some quick noodling around with aiko sp1. I like where it's going; obviously it's
+unbalanced and visually barebones, but I think the basic skeleton is quite serviceable.
+
 * [2026-01-10 Sat]
 (late night)
 

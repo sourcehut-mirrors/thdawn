@@ -213,19 +213,40 @@
 	(let ([x player-x]
 		  [y player-y])
 	  (spawn-particle (particletype circle-hint-opaque)
-					  x y 40 '((color . #x008b8b80)
+					  x y 40 '((color . #x8b008ba0)
 							   (r1 . 100.0)
 							   (r2 . 0.0)))
+	  (raylib:play-sound (sebundle-shortcharge sounds))
 	  (wait 60)
 	  (ease-to values x y 20 aiko)
 	  (-> (cb)
-		  (cbcount 20 2)
-		  (cbspeed 3.0 3.5)
+		  (cbcount 16)
+		  (cbspeed 3.0)
 		  (cbshootenm aiko 'medium-ball-blue 2 (sebundle-shoot0 sounds)))
+	  (-> (cb)
+		  (cbcount 16)
+		  (cbspeed 5.0)
+		  (cbshootenm aiko 'medium-ball-cyan 2 #f))
+	  (spawn-bullet
+	   'big-star-red x y 2
+	   (λ (blt)
+		 (define init-ang (centered-roll game-rng 180.0))
+		 (wait-until (thunk (unbox spread-signal)))
+		 (do [(i 0 (add1 i))]
+			 [(= i 24)]
+		   (-> (cb)
+			   (cbcount 8)
+			   (cbspeed 2.0)
+			   (cbabsolute-aim)
+			   (cbang (fl+ init-ang (fl* (inexact i) 8.0)))
+			   (cbshootez x y 'kunai-magenta 10 (sebundle-shoot0 sounds)))
+		   (wait 8))
+		 (cancel-bullet blt)))
 	  (wait 30)))
   (ease-to values +middle-boss-x+ +middle-boss-y+ 20 aiko)
+  (raylib:play-sound (sebundle-longcharge sounds))
   (wait 20)
-  (raylib:play-sound (sebundle-shortcharge sounds))
+  (set-box! spread-signal #t)
   (let* ([move-task
 		  (spawn-subtask "wiggle"
 			(λ (task)
@@ -260,6 +281,7 @@
 		  (positive? (enm-health aiko)))))
   (set! current-chapter 21)
   (declare-spell aiko 5)
+  (wait 40)
   (loop-while (keep-running)
 	  (let ([t (spawn-subtask "wave"
 				 (λ (task) (aiko-sp1-round task aiko))

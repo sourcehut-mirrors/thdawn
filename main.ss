@@ -2060,22 +2060,23 @@
 	  "Natural Sign \"Butterfly Smelling the Flowers\"" 720 -1 1000000 #f
 	  '((life . 1) (point . 50))
 	  (cons '(life . 1) std-fail))
+	 ;; todo appropriate time limits
 	 (make-spell-descriptor "Group Sp1"
-							1800 500 1000000 'group std std-fail)
+							6000 500 1000000 'group std std-fail)
 	 (make-spell-descriptor "Doremi Sp1"
-							1800 500 1000000 'doremi std std-fail)
+							6000 500 1000000 'doremi std std-fail)
 	 (make-spell-descriptor "Hazuki Sp1"
-							1800 500 1000000 'hazuki std std-fail)
+							6000 500 1000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Aiko Sp1"
-							1800 500 1000000 'aiko std std-fail)
+							6000 500 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witchy Sign \"\""
-							1800 500 3000000 'group std std-fail)
+							6000 500 3000000 'group std std-fail)
 	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""
-							1800 500 3000000 'doremi std std-fail)
+							6000 500 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Ah...G-...G-Ghost!\""
-							1800 500 3000000 'hazuki std std-fail)
+							6000 500 3000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Athlete Sign \"Penalty Shootout\""
-							1800 500 3000000 'aiko std std-fail)
+							6000 500 3000000 'aiko std std-fail)
 	 (make-spell-descriptor "\"One Flower, One World\""
 							2400 -1 5000000 'group std std-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
