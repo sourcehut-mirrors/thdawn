@@ -654,6 +654,8 @@
 (define (centered-roll rng radius)
   (- (* (roll rng) 2 radius)
 	 radius))
+(define (roll-bool rng)
+  (fl< (roll rng) 0.5))
 (define chapter-select 0)
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
@@ -2068,7 +2070,7 @@
 	 (make-spell-descriptor "Hazuki Sp1"
 							6000 500 1000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Aiko Sp1"
-							6000 500 1000000 'aiko std std-fail)
+							2400 5000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witchy Sign \"\""
 							6000 500 3000000 'group std std-fail)
 	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""

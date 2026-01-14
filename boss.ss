@@ -209,7 +209,8 @@
 
 (define (aiko-sp1-round task aiko)
   (define spread-signal (box #f))
-  (dotimes 4
+  (define winding (if (roll-bool game-rng) 8.0 -8.0))
+  (dotimes 3
 	(let ([x player-x]
 		  [y player-y])
 	  (spawn-particle (particletype circle-hint-opaque)
@@ -218,30 +219,33 @@
 							   (r2 . 0.0)))
 	  (raylib:play-sound (sebundle-shortcharge sounds))
 	  (wait 60)
-	  (ease-to values x y 20 aiko)
+	  (ease-to ease-in-out-quad x y 20 aiko)
 	  (-> (cb)
 		  (cbcount 16)
 		  (cbspeed 3.0)
 		  (cbshootenm aiko 'medium-ball-blue 2 (sebundle-shoot0 sounds)))
 	  (-> (cb)
 		  (cbcount 16)
-		  (cbspeed 5.0)
+		  (cbspeed 4.0)
 		  (cbshootenm aiko 'medium-ball-cyan 2 #f))
-	  (spawn-bullet
-	   'big-star-red x y 2
-	   (λ (blt)
-		 (define init-ang (centered-roll game-rng 180.0))
-		 (wait-until (thunk (unbox spread-signal)))
-		 (do [(i 0 (add1 i))]
-			 [(= i 24)]
-		   (-> (cb)
-			   (cbcount 8)
-			   (cbspeed 2.0)
-			   (cbabsolute-aim)
-			   (cbang (fl+ init-ang (fl* (inexact i) 8.0)))
-			   (cbshootez x y 'kunai-magenta 10 (sebundle-shoot0 sounds)))
-		   (wait 8))
-		 (cancel-bullet blt)))
+	  (->
+	   (spawn-bullet
+		'big-star-red x y 2
+		(λ (blt)
+		  (define init-ang (todeg (flatan (fl- player-y y) (fl- player-x x)))
+			#;(centered-roll game-rng 180.0))
+		  (wait-until (thunk (unbox spread-signal)))
+		  (do [(i 0 (add1 i))]
+			  [(= i 18)]
+			(-> (cb)
+				(cbcount 9)
+				(cbspeed 2.0)
+				(cbabsolute-aim)
+				(cbang (fl+ init-ang (fl* (inexact i) winding)))
+				(cbshootez x y 'small-star-magenta 10 (sebundle-shoot0 sounds)))
+			(wait 10))
+		  (cancel-bullet blt #t)))
+	   (bullet-addflags (bltflags uncancelable)))
 	  (wait 30)))
   (ease-to values +middle-boss-x+ +middle-boss-y+ 20 aiko)
   (raylib:play-sound (sebundle-longcharge sounds))
@@ -252,8 +256,8 @@
 			(λ (task)
 			  (dotimes 3
 				(let ([x (fl+ (enm-x aiko) (centered-roll game-rng 50.0))]
-					  [y (fl+ (enm-y aiko) (centered-roll game-rng 5.0))])
-				  (ease-to values x y 30 aiko)
+					  [y (fl+ (enm-y aiko) (centered-roll game-rng 10.0))])
+				  (ease-to ease-in-out-quad x y 30 aiko)
 				  (wait 30))))
 			(constantly #t)
 			task)]
@@ -261,13 +265,13 @@
 		  (spawn-subtask "shoot"
 			(λ (task)
 			  (interval-loop 30
-				(dotimes 5
+				(dotimes 3
 				  (-> (fb)
 					  (fbcounts 3)
 					  (fbang 0.0 10.0)
-					  (fbspeed 3.5)
+					  (fbspeed 4.5)
 					  (fbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds)))
-				  (wait 4))))
+				  (wait 8))))
 			(constantly #t)
 			move-task)])
 	(wait-until (thunk (task-dead move-task)))
@@ -281,13 +285,16 @@
 		  (positive? (enm-health aiko)))))
   (set! current-chapter 21)
   (declare-spell aiko 5)
-  (wait 40)
-  (loop-while (keep-running)
-	  (let ([t (spawn-subtask "wave"
-				 (λ (task) (aiko-sp1-round task aiko))
-				 keep-running
-				 task)])
-		(wait-until (thunk (task-dead t)))))
+  (wait 100)
+  (loop-while
+   (keep-running)
+   (let ([t (spawn-subtask "wave"
+			  (λ (task)
+				(aiko-sp1-round task aiko)
+				(wait 120))
+			  keep-running
+			  task)])
+	 (wait-until (thunk (task-dead t)))))
   (common-spell-postlude bossinfo aiko)
   (group-non2 task aiko))
 
