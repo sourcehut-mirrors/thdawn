@@ -656,6 +656,8 @@
 	 radius))
 (define (roll-bool rng)
   (fl< (roll rng) 0.5))
+(define (roll-range rng min max) ;; both bounds inclusive
+  (fx+ min (roll rng (fx1+ (fx- max min)))))
 (define chapter-select 0)
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
@@ -2051,17 +2053,17 @@
    failed-drops)
   (sealed #t))
 (define spells
-  (let ([std '((point . 50))]
-		[std-fail '((point . 10))])
+  (let ([std '((bomb-frag . 1) (point . 50))]
+		[std-fail '((bomb-frag . 1) (point . 10))])
 	(immutable-vector
 	 (make-spell-descriptor
 	  "Beginner Sign \"My First Spell Card!\"" 1540 -1 1000000 #f
 	  '((bomb . 1) (point . 30))
-	  (cons '(bomb . 1) std-fail))
+	  '((bomb . 1) (point . 10)))
 	 (make-spell-descriptor
 	  "Natural Sign \"Butterfly Smelling the Flowers\"" 720 -1 1000000 #f
 	  '((life . 1) (point . 50))
-	  (cons '(life . 1) std-fail))
+	  '((life . 1) (point . 10)))
 	 ;; todo appropriate time limits
 	 (make-spell-descriptor "Group Sp1"
 							6000 500 1000000 'group std std-fail)
@@ -2069,8 +2071,8 @@
 							6000 500 1000000 'doremi std std-fail)
 	 (make-spell-descriptor "Hazuki Sp1"
 							6000 500 1000000 'hazuki std std-fail)
-	 (make-spell-descriptor "Aiko Sp1"
-							2400 5000 1000000 'aiko std std-fail)
+	 (make-spell-descriptor "Love Sign \"Star Spiral\""
+							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witchy Sign \"\""
 							6000 500 3000000 'group std std-fail)
 	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""

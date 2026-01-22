@@ -209,10 +209,19 @@
 
 (define (aiko-sp1-round task aiko)
   (define spread-signal (box #f))
-  (define winding (if (roll-bool game-rng) 8.0 -8.0))
-  (dotimes 3
-	(let ([x player-x]
-		  [y player-y])
+  (do [(i 0 (add1 i))]
+	  [(= i 3)]
+	(let ([winding (if (roll-bool game-rng) 1.0 -1.0)]
+		  [colors (vrand
+				   '#(#(small-star-blue small-star-cyan)
+					  #(small-star-orange small-star-white)
+					  #(small-star-red small-star-magenta))
+				   game-rng)]
+		  [x (case i
+			   [(0) (inexact (roll-range game-rng -115 -80))]
+			   [(1) (inexact (roll-range game-rng 80 115))]
+			   [(2) (centered-roll game-rng 115.0)])]
+		  [y (vnth '#(150.0 230.0 300.0) i)])
 	  (spawn-particle (particletype circle-hint-opaque)
 					  x y 40 '((color . #x8b008ba0)
 							   (r1 . 100.0)
@@ -232,18 +241,27 @@
 	   (spawn-bullet
 		'big-star-red x y 2
 		(λ (blt)
-		  (define init-ang (todeg (flatan (fl- player-y y) (fl- player-x x)))
-			#;(centered-roll game-rng 180.0))
+		  (-> (cb)
+			  (cbcount 9 17)
+			  (cbspeed 1.8 4.0)
+			  (cbabsolute-aim)
+			  (cbang (centered-roll game-rng 180.0) (fl* winding 4.0))
+			  (cbshoot x y
+				(λ (layer in-layer speed facing)
+				  (->
+				   (spawn-bullet
+					(vnth-mod colors in-layer)
+					x y 10
+					(λ (blt)
+					  (linear-step-decelerate facing speed -0.10 blt)
+					  (wait-until (thunk (unbox spread-signal)))
+					  (bullet-clrflags blt (bltflags uncancelable))
+					  (wait (* 10 layer))
+					  (linear-step-accelerate (fl+ facing pi) 0.0 0.02 4.5 blt)
+					  (linear-step-forever (fl+ facing pi) 4.5 blt)))
+				   (bullet-addflags (bltflags uncancelable))))))
 		  (wait-until (thunk (unbox spread-signal)))
-		  (do [(i 0 (add1 i))]
-			  [(= i 18)]
-			(-> (cb)
-				(cbcount 9)
-				(cbspeed 2.0)
-				(cbabsolute-aim)
-				(cbang (fl+ init-ang (fl* (inexact i) winding)))
-				(cbshootez x y 'small-star-magenta 10 (sebundle-shoot0 sounds)))
-			(wait 10))
+		  (wait 30)
 		  (cancel-bullet blt #t)))
 	   (bullet-addflags (bltflags uncancelable)))
 	  (wait 30)))
@@ -268,14 +286,13 @@
 				(dotimes 3
 				  (-> (fb)
 					  (fbcounts 3)
-					  (fbang 0.0 10.0)
-					  (fbspeed 4.5)
-					  (fbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds)))
+					  (fbang 0.0 15.0)
+					  (fbspeed 4.75)
+					  (fbshootenm aiko 'heart-blue 5 (sebundle-shoot0 sounds)))
 				  (wait 8))))
 			(constantly #t)
 			move-task)])
-	(wait-until (thunk (task-dead move-task)))
-	))
+	(wait-until (thunk (task-dead move-task)))))
 
 (define (aiko-sp1 task aiko)
   (define bossinfo (enm-extras aiko))
