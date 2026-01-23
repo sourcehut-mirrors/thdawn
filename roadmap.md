@@ -19,7 +19,6 @@ As in, when you work pick something off the list and get at it.
 * hazuki portrait
 * aiko portrait
 * implement hazuki sp2
-* implement aiko sp1
 * implement doremi sp2
 * go through all bullet types and appropriately set their preimg sizes
 * freely noodle around with flower patterns for doremi/hazuki nons and spells

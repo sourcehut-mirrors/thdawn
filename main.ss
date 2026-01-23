@@ -65,7 +65,10 @@
   bltflags)
 (define empty-bltflags (bltflags))
 (define-enumeration enmflag
-  (invincible nocollide)
+  (invincible
+   nocollide ;; cannot run into the player
+   aura-red aura-green aura-blue aura-magenta ;; add decorative aura
+   )
   enmflags)
 (define empty-enmflags (enmflags))
 
@@ -352,6 +355,10 @@
   (make 'green-yinyang-outer txbundle-enemy1 224 96 32 32 shift16)
   (make 'blue-yinyang-outer txbundle-enemy1 256 96 32 32 shift16)
   (make 'magenta-yinyang-outer txbundle-enemy1 288 96 32 32 shift16)
+  (make 'aura-red txbundle-enemy1 192 32 32 32 shift16)
+  (make 'aura-green txbundle-enemy1 224 32 32 32 shift16)
+  (make 'aura-blue txbundle-enemy1 256 32 32 32 shift16)
+  (make 'aura-magenta txbundle-enemy1 288 32 32 32 shift16)
 
   ;; items
   (make 'life-frag txbundle-item 0 32 32 32 shift16)
@@ -1887,10 +1894,15 @@
 	 (fan-builder-min-speed-set! fb min)
 	 (fan-builder-max-speed-set! fb max)
 	 fb]))
-(define (fbang fb global local)
-  (fan-builder-global-angle-set! fb (torad global))
-  (fan-builder-local-angle-set! fb (torad local))
-  fb)
+(define fbang
+  (case-lambda
+	[(fb global)
+	 (fan-builder-global-angle-set! fb (torad global))
+	 fb]
+	[(fb global local)
+	 (fan-builder-global-angle-set! fb (torad global))
+	 (fan-builder-per-layer-angle-set! fb (torad local))
+	 fb]))
 (define (fbshoot fb x y consume)
   (define rows (fan-builder-rows fb))
   (define row-width (fan-builder-row-width fb))
@@ -2078,7 +2090,7 @@
 	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""
 							6000 500 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Ah...G-...G-Ghost!\""
-							6000 500 3000000 'hazuki std std-fail)
+							3000 9000 3000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Athlete Sign \"Penalty Shootout\""
 							6000 500 3000000 'aiko std std-fail)
 	 (make-spell-descriptor "\"One Flower, One World\""
@@ -2705,7 +2717,24 @@
 												  yellow-wisp3 yellow-wisp4 yellow-wisp5
 												  yellow-wisp6 yellow-wisp7)))]
 				[t (fx+ frames (enm-time-spawned enm))]
-				[sprite (vnth-mod sprites (fx/ t 5))])
+				[sprite (vnth-mod sprites (fx/ t 5))]
+				[aura-sprite
+				 (cond
+				  [(enm-hasflag? enm (enmflag aura-red))
+				   'aura-red]
+				  [(enm-hasflag? enm (enmflag aura-green))
+				   'aura-green]
+				  [(enm-hasflag? enm (enmflag aura-blue))
+				   'aura-blue]
+				  [(enm-hasflag? enm (enmflag aura-magenta))
+				   'aura-magenta]
+				  [else #f])])
+		   (when aura-sprite
+			 (draw-sprite-with-scale-rotation
+			  textures aura-sprite
+			  (fxmod (fx* 2 t) 360)
+			  (fl+ 1.2 0.2 (fl* 0.2 (flsin (/ t 10.0))))
+			  render-x render-y -1))
 		   (draw-sprite textures sprite render-x render-y -1)))
 		([yellow-fairy red-fairy green-fairy blue-fairy
 					   medium-red-fairy medium-blue-fairy big-fairy]
@@ -4093,30 +4122,31 @@
 				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
   ;; todo: for prod release, hide this behind f3
-  (raylib:draw-text (format "SPLED: ~d of [0, ~d]" spline-editor-selected-position
-							(sub1 (vlen spline-editor-positions)))
-					440 225 18 -1)
-  (raylib:draw-text (format "CHAP: ~d / GOTO: ~d" current-chapter chapter-select)
-					440 250 18 -1)
-  (raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
-					440 275 18 -1)
+  (when show-hitboxes
+	(raylib:draw-text (format "SPLED: ~d of [0, ~d]" spline-editor-selected-position
+							  (sub1 (vlen spline-editor-positions)))
+					  440 225 18 -1)
+	(raylib:draw-text (format "CHAP: ~d / GOTO: ~d" current-chapter chapter-select)
+					  440 250 18 -1)
+	(raylib:draw-text (format "FRAME: ~d" frames)
+					  440 275 18 -1)
+	(raylib:draw-text (format "MISC: ~d / PART: ~d"
+							  (vector-popcnt live-misc-ents)
+							  (vector-popcnt live-particles))
+					  440 300 18 -1)
+	(raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
+					  440 325 18 -1)
+	(raylib:draw-text (format "BLT: ~d / LFT: ~d"
+							  (vector-popcnt live-bullets)
+							  (fx1- next-bullet-id))
+					  440 350 18 -1)
+	(raylib:draw-text (format "TASK: ~d" (task-count))
+					  440 375 18 -1)
+	(raylib:draw-text (format "X: ~,2f / Y: ~,2f" player-x player-y)
+					  440 400 18 -1))
   (raylib:draw-text (format "MEM: ~,2f MiB"
 							(/ (bytes-allocated)
 							   (* 1024.0 1024.0)))
-					440 300 18 -1)
-  (raylib:draw-text (format "FRAME: ~d" frames)
-					440 325 18 -1)
-  (raylib:draw-text (format "MISC: ~d / PART: ~d"
-							(vector-popcnt live-misc-ents)
-							(vector-popcnt live-particles))
-					440 350 18 -1)
-  (raylib:draw-text (format "ENM: ~d" (vector-popcnt live-enm))
-					440 375 18 -1)
-  (raylib:draw-text (format "BLT: ~d / LFT: ~d"
-							(vector-popcnt live-bullets)
-							(fx1- next-bullet-id))
-					440 400 18 -1)
-  (raylib:draw-text (format "TASK: ~d" (task-count))
 					440 425 18 -1)
   (raylib:draw-text (format "FT: ~,5f ms" (fl* 1000.0 frame-time-ema))
 					440 450 18 -1)

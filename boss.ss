@@ -236,6 +236,7 @@
 	  (-> (cb)
 		  (cbcount 16)
 		  (cbspeed 4.0)
+		  (cbang 11.25)
 		  (cbshootenm aiko 'medium-ball-cyan 2 #f))
 	  (->
 	   (spawn-bullet
@@ -434,23 +435,59 @@
 
 (define (hazuki-sp2 task hazuki)
   (define bossinfo (enm-extras hazuki))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health hazuki))))
   (set! current-chapter 27)
   (declare-spell hazuki 8)
-  (spawn-enemy (enmtype red-wisp) 0.0 200.0 500
-			   (λ (_task _enm) (void)))
-  (wait 30)
-  (spawn-enemy (enmtype blue-wisp) 50.0 200.0 500
-			   (λ (_task _enm) (void)))
-  (wait 30)
-  (spawn-enemy (enmtype green-wisp) 100.0 200.0 500
-			   (λ (_task _enm) (void)))
-  (wait 30)
-  (spawn-enemy (enmtype yellow-wisp) 150.0 200.0 500
-			   (λ (_task _enm) (void)))
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health hazuki)))))
+  ;; (-> (spawn-enemy (enmtype red-wisp) 0.0 200.0 500
+  ;; 				   (λ (_task _enm) (void)))
+  ;; 	  (enm-addflags (enmflags aura-red)))
+  ;; (wait 30)
+  ;; (-> (spawn-enemy (enmtype blue-wisp) 50.0 200.0 500
+  ;; 				   (λ (_task _enm) (void)))
+  ;; 	  (enm-addflags (enmflags aura-blue)))
+  ;; (wait 30)
+  ;; (-> (spawn-enemy (enmtype green-wisp) 100.0 200.0 500
+  ;; 				   (λ (_task _enm) (void)))
+  ;; 	  (enm-addflags (enmflags aura-green)))
+  ;; (wait 30)
+  ;; (-> (spawn-enemy (enmtype yellow-wisp) 150.0 200.0 500
+  ;; 				   (λ (_task _enm) (void)))
+  ;; 	  (enm-addflags (enmflags aura-magenta)))
+  (wait 45)
+  (ease-to ease-out-quad 0.0 215.0 45 hazuki)
+  (raylib:play-sound (sebundle-laugh sounds))
+  ;; friendly fire. hardcoded to the bullet types fired by the wisps.
+  (spawn-subtask "damager"
+	(λ (task)
+	  (let-values ([(x y w h) (enm-collision-box hazuki)])
+		(loop-forever
+		 (vector-for-each-truthy
+		  (λ (blt)
+			(when (and (memq (bullet-family (bullet-type blt)) '(pellet small-ball))
+					   (check-collision-circle-rec
+						(bullet-x blt) (bullet-y blt)
+						(bullet-hit-radius (bullet-type blt))
+						x y w h))
+			  (enm-health-set! hazuki (- (enm-health hazuki) 100))
+			  (cancel-bullet blt)))
+		  live-bullets))))
+	keep-running task)
+  (-> (spawn-enemy
+	   (enmtype red-wisp) -100.0 200.0 500
+	   (λ (task enm)
+		 (interval-loop 5
+		   (-> (fb)
+			   (fbabsolute-aim)
+			   (fbcounts 1 5)
+			   (fbspeed 1.0 4.0)
+			   (fbang (flatan (fl- (enm-y hazuki) (enm-y enm))
+							  (fl- (enm-x hazuki) (enm-x enm))))
+			   (fbshootenm enm 'pellet-white 2 #f)))
+		 (void)))
+	  (enm-addflags (enmflags aura-red)))
+  (wait-while keep-running)
   (common-spell-postlude bossinfo hazuki)
   (aiko-non2 task hazuki))
 
