@@ -156,8 +156,8 @@
 	 ret type
 	 (make-sprite-descriptor accessor
 							 (make-rectangle
-							  (inexact x) (inexact y)
-							  (inexact width) (inexact height))
+							  (fx2fl x) (fx2fl y)
+							  (fx2fl width) (fx2fl height))
 							 shift)))
   (define (make-vertical-group prefix elems accessor x y width height shift)
 	(for-each-indexed
@@ -317,7 +317,7 @@
 								 string->symbol)]
 					[(row col) (div-and-mod i 4)])
 		 (make name txbundle-wisp
-			   (* i 32.0) y
+			   (* i 32) y
 			   32 32 shift16))))
    '(("red-wisp" . 0)
 	 ("green-wisp" . 32)
@@ -537,8 +537,8 @@
 ;; offset logical coords by 223, 15 to get to GL coords for render
 (define +playfield-render-offset-x+ 223)
 (define +playfield-render-offset-y+ 15)
-(define +playfield-render-offset+ (vec2 (inexact +playfield-render-offset-x+)
-										(inexact +playfield-render-offset-y+)))
+(define +playfield-render-offset+ (vec2 (fx2fl +playfield-render-offset-x+)
+										(fx2fl +playfield-render-offset-y+)))
 (define +playfield-min-x+ -192)
 (define +playfield-min-y+ 0)
 (define +playfield-max-x+ 192)
@@ -862,8 +862,8 @@
 	 (raylib:draw-text-ex
 	  (fontbundle-sharetechmono fonts)
 	  (if (string=? " " label) "SP" label)
-	  (fl+ 162.0 (fl* (inexact col) 25.0))
-	  (fl+ 200.0 (fl* (inexact row) 25.0))
+	  (fx2fl (+ 162 (* col 25)))
+	  (fx2fl (+ 200 (* row 25)))
 	  30.0 0.0 (if (= selected i) selected-color -1)))
    (nameinput-gui-menu-options self)))
 ;; on-complete: function of the gui that runs when player submits the name
@@ -3405,7 +3405,7 @@
 		   80.0 140.0))
   (define (pick-next-x)
 	(define ox (enm-x enm))
-	(define mag (inexact (+ min-dx (roll game-rng (- max-dx min-dx)))))
+	(define mag (fx2fl (+ min-dx (roll game-rng (- max-dx min-dx)))))
 	(cond
 	 [(fl< ox -140.0)
 	  (fl+ ox mag)]
@@ -3837,7 +3837,7 @@
 						 +respawning-max+)]
 			[start-y (+ +playfield-max-y+ 5.0)]
 			[end-y +initial-player-y+])
-		(values (inexact +playfield-render-offset-x+)
+		(values (fx2fl +playfield-render-offset-x+)
 				(+ (lerp start-y end-y progress) +playfield-render-offset-y+)))
 	  (values (+ player-x +playfield-render-offset-x+)
 			  (+ player-y +playfield-render-offset-y+))))
@@ -4012,8 +4012,8 @@
   (draw-sprite textures 'enemy-indicator
 			   (+ +playfield-render-offset-x+
 				  (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
-			   (inexact (+ +playfield-max-y+ +playfield-render-offset-y+
-						   2))
+			   (fx2fl (+ +playfield-max-y+ +playfield-render-offset-y+
+						 2))
 			   #xffffffc0))
 
 (define dialog-src-bounds (make-rectangle 0 0 368 60))
@@ -4236,8 +4236,8 @@
   (define src
 	(make-rectangle
 	 0.0 0.0
-	 (inexact (raylib:texture-width tex))
-	 (inexact (raylib:texture-height tex))))
+	 (fx2fl (raylib:texture-width tex))
+	 (fx2fl (raylib:texture-height tex))))
   (define scale
 	(case id
 	  [(group) (fl/ 1.0 1.8)]
@@ -4258,7 +4258,7 @@
 	  (fl- finalx (rectangle-x dest))
 	  (fl- finaly (rectangle-y dest))
 	  0.0)
-	 (raylib:rotatef (flmod (fl/ (inexact frames) 2.0) 360.0) 0.0 0.0 1.0)
+	 (raylib:rotatef (flmod (fl/ (fx2fl frames) 2.0) 360.0) 0.0 0.0 1.0)
 	 (raylib:draw-texture-pro
 	  tex src dest v2zero 0.0
 	  (fxlogior #xc0c0c000 alpha)))))

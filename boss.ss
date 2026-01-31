@@ -218,8 +218,8 @@
 					  #(small-star-red small-star-magenta))
 				   game-rng)]
 		  [x (case i
-			   [(0) (inexact (roll-range game-rng -115 -80))]
-			   [(1) (inexact (roll-range game-rng 80 115))]
+			   [(0) (fx2fl (roll-range game-rng -115 -80))]
+			   [(1) (fx2fl (roll-range game-rng 80 115))]
 			   [(2) (centered-roll game-rng 115.0)])]
 		  [y (vnth '#(150.0 230.0 300.0) i)])
 	  (spawn-particle (particletype circle-hint-opaque)

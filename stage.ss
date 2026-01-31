@@ -95,7 +95,7 @@
   (define y0 (enm-y enm))
   (ease-to values (+ x0 40.0) y0 10 enm)
   (let ([l (spawn-laser type (+ (enm-x enm) 20.0) (enm-y enm)
-						0.0 (inexact +playfield-width+)
+						0.0 (fx2fl +playfield-width+)
 						5.0
 						40 20 (λ (_blt) (wait-until (thunk (>= frames 900)))))])
 	(bullet-addflags l (bltflags uncancelable)))
@@ -151,7 +151,7 @@
 	(wait 10)
 	(do [(i 0 (fx1+ i))]
 		[(fx= i 35)]
-	  (let ([facing (torad (fl* (fl/ 360.0 20.0) (inexact i)))]
+	  (let ([facing (torad (fx2fl (* (/ 360 20) i)))]
 			[cfun (λ (blt)
 					(linear-step-forever (facing-player (bullet-x blt) (bullet-y blt))
 										 7.0 blt))])
@@ -297,8 +297,8 @@
 	  [(if flip
 		   (<= (enm-x enm) (- +playfield-min-x+ 50))
 		   (>= (enm-x enm) (+ +playfield-max-x+ 50)))]
-	(let ([x ((if flip fl- fl+) start-x (fl* (inexact i) 1.7))]
-		  [y (fl+ start-y (fl* 20.0 (flsin (fl/ (inexact i) 18.0))))])
+	(let ([x ((if flip fl- fl+) start-x (fl* (fx2fl i) 1.7))]
+		  [y (fl+ start-y (fl* 20.0 (flsin (fl/ (fx2fl i) 18.0))))])
 	  (enm-x-set! enm x)
 	  (enm-y-set! enm y))
 	(yield))
@@ -458,7 +458,7 @@
 	(do [(i 0 (add1 i))
 		 (delay (* 4 delay-per) (- delay delay-per))]
 		[(= i 5)]
-	  (let ([ang (torad (- (* 72.0 (inexact i)) 18.0))])
+	  (let ([ang (torad (fx2fl (- (* 72 i) 18)))])
 		(spawn-enemy (enmtype red-fairy)
 					 (+ cx (* initial-dist (cos ang)))
 					 (+ cy (* initial-dist (sin ang)))
@@ -468,7 +468,7 @@
   (chapter4 task))
 
 (define (position-bullets-around cx cy dist start-angle bullets)
-  (define dang (fl/ tau (inexact (length bullets))))
+  (define dang (fl/ tau (fx2fl (length bullets))))
   (let loop ([ang start-angle]
 			 [bullets bullets])
 	(unless (null? bullets)
@@ -695,7 +695,7 @@
 	(when (= next (* 2 (length xs)))
 	  ;; all yinyangs killed, reward
 	  (spawn-drops '((bomb . 1) (life-frag . 1))
-				   0.0 (inexact +poc-y+)))
+				   0.0 (fx2fl +poc-y+)))
 	#t)
   (set! current-chapter 5)
   (spawn-enemy (enmtype big-fairy) 0.0 -20.0 2500 ch5-bigfairy
@@ -798,7 +798,7 @@
 		  (-> (cb)
 			  (cbspeed 3.0)
 			  (cbcount 12)
-			  (cbang (inexact (+ (* 20 wave) (* 5 i))))
+			  (cbang (fx2fl (+ (* 20 wave) (* 5 i))))
 			  (cbshootenm enm 'heart-red 2 #f
 						  (λ (facing speed blt)
 							(bullet-facing-set! blt facing)
@@ -851,8 +851,8 @@
 		  (cbshootenm enm (if flip 'kunai-orange 'kunai-red) 2 #f))
 	  (yield)
 	  (loop
-	   (fl+ ang (fl* 12.0 (flcos (torad (inexact frames)))
-					 (flsin (torad (inexact frames))))))))
+	   (fl+ ang (fl* 12.0 (flcos (torad (fx2fl frames)))
+					 (flsin (torad (fx2fl frames))))))))
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (move-on-spline
    (if flip
@@ -961,7 +961,7 @@
 					(do [(i 0 (fx1+ i))]
 						[(fx= i 241)]
 					  (linear-step facing 5.0 blt)
-					  (let ([r (flmin (fl* (inexact i) 1.5) 30.0)])
+					  (let ([r (flmin (fl* (fx2fl i) 1.5) 30.0)])
 						(position-bullets-around (bullet-x center-blt)
 												 (bullet-y center-blt)
 												 r 0.0 ring-blts))
@@ -1095,7 +1095,7 @@
 			(cbcount 12)
 			(cbspeed 4.0)
 			(cbabsolute-aim)
-			(cbang (inexact (roll game-rng 360)) 0.0)
+			(cbang (fx2fl (roll game-rng 360)) 0.0)
 			(cbshootenm enm 'small-ball-yellow 2 (sebundle-bell sounds)))))
 	(constantly #t) task)
   (ease-to values (if right-side -200.0 200.0)
@@ -1118,15 +1118,15 @@
   (spawn-subtask "shoot"
 	(λ (task)
 	  (define iters 5)
-	  (define angper 8.0)
+	  (define angper 8)
 	  (let loop ([sign 1]
-				 [start-ang 0.0])
+				 [start-ang 0])
 		(do [(i 0 (fx1+ i))]
 			[(= i iters)]
 		  (-> (cb)
 			  (cbabsolute-aim)
 			  (cbcount 5)
-			  (cbang (fl+ start-ang (fl* (inexact sign) (inexact i) angper)))
+			  (cbang (fx2fl (+ start-ang (* sign i angper))))
 			  (cbspeed 3.0)
 			  (cbshootenm enm 'big-star-magenta 2 (sebundle-shoot0 sounds)
 						  (λ (facing speed blt)
@@ -1136,10 +1136,10 @@
 		  (wait 5))
 		(wait 5)
 		(loop (- sign)
-			  (fl+ start-ang
-				   ;; start where previous wave ended, plus a bit more
-				   (* sign angper iters)
-				   (* sign 5.0)))))
+			  (+ start-ang
+				 ;; start where previous wave ended, plus a bit more
+				 (* sign angper iters)
+				 (* sign 5)))))
 	(constantly #t)
 	task)
   (wait 190)
@@ -1399,12 +1399,12 @@
   (set! current-chapter 12)
   (wait 50)
   (dotimes 60
-	(spawn-enemy 'red-fairy (- -20.0 (inexact (roll game-rng 100))) -10.0
+	(spawn-enemy 'red-fairy (fx2fl (- -20 (roll game-rng 100))) -10.0
 				 20 (curry ch12-small-fairy #f) five-point-items)
 	(wait 5))
   (wait 75)
   (dotimes 25
-	(spawn-enemy 'red-fairy (+ 20.0 (inexact (roll game-rng 100))) -10.0
+	(spawn-enemy 'red-fairy (fx2fl (+ 20 (roll game-rng 100))) -10.0
 				 20 (curry ch12-small-fairy #t) five-point-items)
 	(wait 5))
   (wait 60)
