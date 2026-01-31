@@ -524,6 +524,54 @@
   (define bossinfo (enm-extras aiko))
   (set! current-chapter 29)
   (declare-spell aiko 9)
+  (wait 90)
+  (raylib:play-sound (sebundle-longcharge sounds))
+  (ease-to ease-in-out-quad 0.0 225.0 30 aiko)
+  (parameterize ([ovr-uncancelable #t])
+	(let* ([x-margin 24]
+		   [x-left (fx2fl (+ +playfield-min-x+ x-margin))]
+		   [x-right (fx2fl (- +playfield-max-x+ x-margin))]
+		   [x-len (fl- x-right x-left)]
+		   [y-margin-top 34]
+		   [y-margin-bot 23]
+		   [y-top (fx2fl y-margin-top)]
+		   [y-bot (fx2fl (- +playfield-max-y+ y-margin-bot))]
+		   [y-len (fl- y-bot y-top)]
+		   [ctrl (λ (_blt) (loop-forever))])
+	  (for-each
+	   (λ (l) (bullet-addflags l (bltflags noshine)))
+	   (list
+		;; top edge
+		(spawn-laser 'fixed-laser-blue
+					 x-left y-top
+					 0.0 x-len 5.0
+					 40 120 ctrl)
+		;; left edge
+		(spawn-laser 'fixed-laser-blue x-left y-top
+					 (fl/ pi 2.0) y-len 5.0
+					 40 120 ctrl)
+		;; right edge
+		(spawn-laser 'fixed-laser-blue x-right y-top
+					 (fl/ pi 2.0) y-len 5.0
+					 40 120 ctrl)))
+	  ;; corners
+	  (spawn-bullet 'big-star-blue x-left y-top 5 values)
+	  (spawn-bullet 'big-star-blue x-right y-top 5 values)
+	  (spawn-bullet 'big-star-blue x-left y-bot 5 values)
+	  (spawn-bullet 'big-star-blue x-right y-bot 5 values)
+	  ;; goalbox
+	  (spawn-laser 'fixed-laser-blue -67.0 y-bot
+				   pi (flabs (fl- x-left -67.0)) 5.0
+				   40 120 ctrl)
+	  (spawn-laser 'fixed-laser-blue -67.0 y-bot
+				   (fl/ pi 2.0) 50.0 5.0
+				   40 120 ctrl)
+	  (spawn-laser 'fixed-laser-blue 67.0 y-bot
+				   0.0 (fl- x-right 67.0) 5.0
+				   40 120 ctrl)
+	  (spawn-laser 'fixed-laser-blue 67.0 y-bot
+				   (fl/ pi 2.0) 50.0 5.0
+				   40 120 ctrl)))
   (wait-while
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))

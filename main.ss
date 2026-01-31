@@ -45,6 +45,7 @@
 
 (alias vnth vector-ref)
 (alias vlen vector-length)
+(alias fx2fl fixnum->flonum)
 (alias roll pseudo-random-generator-next!) ;; convenience alias
 (define (vrand v rng)
   (vnth v (roll rng (vector-length v))))
@@ -61,8 +62,15 @@
 (define-enumeration bltflag
   (uncancelable ;; cannot be cancelled by bombs or other standard cancels
    noprune ;; do not prune the bullet when it travels out of bounds
+   ;; on fixed lasers, do not render the spinning shine sprite at the laser origin
+   ;; no effect on non-fixed laser types
+   noshine
    )
   bltflags)
+;; global overrides. when in effect, all spawned bullets automatically gain the
+;; corresponding flags. makes callsite code cleaner at the cost of some global state
+(define ovr-uncancelable (make-parameter #f))
+
 (define empty-bltflags (bltflags))
 (define-enumeration enmflag
   (invincible
@@ -1660,6 +1668,8 @@
 							type x y 0.0 #f (- delay) (- delay)
 							empty-bltflags)])
 	  (vector-set! live-bullets idx blt)
+	  (when (ovr-uncancelable)
+		(bullet-addflags blt (bltflags uncancelable)))
 	  (spawn-task "bullet"
 				  (λ (task)
 					(do [(i 0 (fx1+ i))]
@@ -1680,6 +1690,8 @@
 						   empty-bltflags
 						   length radius despawn-time -1 #f)])
 	  (vector-set! live-bullets idx blt)
+	  (when (ovr-uncancelable)
+		(bullet-addflags blt (bltflags uncancelable)))
 	  (spawn-task "laser"
 				  (λ (task)
 					(do [(i 0 (fx1+ i))]
@@ -1772,7 +1784,8 @@
 						 [else full-radius])])
 		   (draw-laser-sprite textures type render-x render-y
 							  length radius (bullet-facing bullet)
-							  (blttype-preimg-sprite bt)))))))
+							  (and (not (bullet-hasflag? bullet (bltflag noshine)))
+								   (blttype-preimg-sprite bt))))))))
   (vector-for-each-truthy each sorted-bullets))
 
 
@@ -1901,7 +1914,7 @@
 	 fb]
 	[(fb global local)
 	 (fan-builder-global-angle-set! fb (torad global))
-	 (fan-builder-per-layer-angle-set! fb (torad local))
+	 (fan-builder-local-angle-set! fb (torad local))
 	 fb]))
 (define (fbshoot fb x y consume)
   (define rows (fan-builder-rows fb))
@@ -2092,7 +2105,7 @@
 	 (make-spell-descriptor "Paranormal Sign \"Ah...G-...G-Ghost!\""
 							3000 9000 3000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Athlete Sign \"Penalty Shootout\""
-							6000 500 3000000 'aiko std std-fail)
+							6000 9000 3000000 'aiko std std-fail)
 	 (make-spell-descriptor "\"One Flower, One World\""
 							2400 -1 5000000 'group std std-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
