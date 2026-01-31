@@ -1,3 +1,23 @@
+* [2026-01-31 Sat]
+(late night)
+
+Aiko sp1 is done but pretty unbalanced. I was fooling around with Hazuki sp2, which
+originally was intending to be a CIV reference what with ghost/wisps attacking Hazuki and
+getting a bonus for saving her, but after some thought I felt like it would kinda be
+reflecting on her character in a negative light, so I've tabled the idea.
+
+Instead, moving on to aiko sp2 which is the next best baked idea I have. Got the lasers
+for the field setup, next is to set up the bouncing ball physics. Not sure yet whether i
+want the shots to interact with the ball, because the fire rate here is too fast. Either
+shots don't interact or we'd have to slow the fire rate down to hrtp speeds, or disable
+autofire. idk.
+
+Originally I had an idea as well to do some sort of "footrace" thing to tie in with Aiko's
+running career in the light novels, but given this spell is right before the survival I
+don't think a prolonged attack is appropriate, so the penalty shootout idea is what we're
+going with. Need to research pong AI's and how they angle their shots, but honestly it's
+not hard to rederive myself.
+
 * [2026-01-12 Mon]
 Just some quick noodling around with aiko sp1. I like where it's going; obviously it's
 unbalanced and visually barebones, but I think the basic skeleton is quite serviceable.
