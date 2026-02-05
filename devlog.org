@@ -1,3 +1,23 @@
+* [2026-02-04 Wed]
+Hacked up Aiko non2. It's simple but serves the purpose of telling the player more bouncy
+bullets are coming up ahead. As always, there's some balancing adjustments needed but the
+core is sound.
+
+When characters switch out, I programmed it so that the exiting character uses a subtask
+and the incoming character does it in their spawn coroutine. I'm not sure why I had it
+that way, but trying to move the exiting character' exit from a subtask to the main task
+crashes. Didn't look into it further but logging here in case something comes up again.
+
+Also, when programming boss attacks, I find it most useful to put everything into a
+subtask gated by the keep-running function. If you do things in the context of the main
+task then every kind of looping you have needs to check keep-running to make sure you're
+not hanging around past when the enemy's health or time limit is depleted. It's just
+easier to put everything into a subtask and have that check keep-running for you.
+
+This might be a mismatch with the whole "attacks tail-call each other" paradigm, but I
+think that design is still useful because it allows you to jump to specific phases and
+msot importantly keep playing after that phase is done.
+
 * [2026-01-31 Sat]
 (late night)
 

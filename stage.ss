@@ -1048,29 +1048,6 @@
   (ease-to values dest-x dest-y 180 enm)
   (delete-enemy enm))
 
-(define (linear-step-with-bounce facing speed blt)
-  (let loop ()
-	(let ([ox (bullet-x blt)]
-		  [oy (bullet-y blt)])
-	  (linear-step facing speed blt)
-	  (yield)
-	  (let ([nx (bullet-x blt)]
-			[ny (bullet-y blt)])
-		(cond
-		 [(> ny +playfield-max-y+)
-		  (linear-step-forever facing speed blt)]
-		 [(< ny +playfield-min-y+)
-		  (let ([xv (flcos facing)]
-				[yv (flsin facing)])
-			(linear-step-forever (flatan (fl- yv) xv) speed blt))]
-		 [(or (< nx +playfield-min-x+)
-			  (> nx +playfield-max-x+))
-		  (let ([xv (flcos facing)]
-				[yv (flsin facing)])
-			(linear-step-forever (flatan yv (fl- xv)) speed blt))])
-		)
-	  (loop))))
-
 (define (ch10-w2 type right-side task enm)
   (ease-to values
 		   (+ (enm-x enm) (if right-side -50.0 50.0))

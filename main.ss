@@ -2886,6 +2886,28 @@
   (linear-step-accelerate facing speed accel max-speed blt)
   (linear-step-forever facing max-speed blt))
 
+(define (linear-step-with-bounce facing speed blt)
+  (let loop ()
+	(let ([ox (bullet-x blt)]
+		  [oy (bullet-y blt)])
+	  (linear-step facing speed blt)
+	  (yield)
+	  (let ([nx (bullet-x blt)]
+			[ny (bullet-y blt)])
+		(cond
+		 [(> ny +playfield-max-y+)
+		  (linear-step-forever facing speed blt)]
+		 [(< ny +playfield-min-y+)
+		  (let ([xv (flcos facing)]
+				[yv (flsin facing)])
+			(linear-step-forever (flatan (fl- yv) xv) speed blt))]
+		 [(or (< nx +playfield-min-x+)
+			  (> nx +playfield-max-x+))
+		  (let ([xv (flcos facing)]
+				[yv (flsin facing)])
+			(linear-step-forever (flatan yv (fl- xv)) speed blt))]))
+	  (loop))))
+
 (define-record-type particle
   (fields
    type
