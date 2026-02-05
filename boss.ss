@@ -502,6 +502,9 @@
 				 '()
 				 (thunk #f)))
   (define bossinfo (blank-aiko-bossinfo))
+  (define (keep-running?)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health aiko))))
   (set! current-chapter 28)
   (spawn-subtask "hazuki leave"
 	(λ (_)
@@ -512,11 +515,14 @@
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! aiko bossinfo)
-  (declare-nonspell aiko 1800 1000)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health aiko)))))
+  (declare-nonspell aiko 1800 6000)
+  (interval-loop-while 30 (keep-running?)
+	(-> (fb)
+		(fbcounts 3 3)
+		(fbspeed 2.0 3.0)
+		(fbang 0.0 10.0)
+		(fbshootenm aiko 'yinyang-magenta 5 (sebundle-shoot0 sounds))))
+  (wait-while keep-running?)
   (common-nonspell-postlude bossinfo)
   (aiko-sp2 task aiko))
 

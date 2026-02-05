@@ -355,6 +355,13 @@
 			(+ 192 (* 64 row))
 			64 64 shift32)))
 
+  ;; these are the bullets, the ones below are the enemies.
+  ;; Hopefully not too confusing.
+  (make 'yinyang-red txbundle-enemy1 192 0 32 32 shift16)
+  (make 'yinyang-green txbundle-enemy1 224 0 32 32 shift16)
+  (make 'yinyang-blue txbundle-enemy1 256 0 32 32 shift16)
+  (make 'yinyang-magenta txbundle-enemy1 288 0 32 32 shift16)
+
   (make 'red-yinyang txbundle-enemy1 192 64 32 32 shift16)
   (make 'green-yinyang txbundle-enemy1 224 64 32 32 shift16)
   (make 'blue-yinyang txbundle-enemy1 256 64 32 32 shift16)
@@ -1608,6 +1615,7 @@
 	(make-family 'arrow basic-colors-str 3.0)
 	(make-family 'glow-orb basic-colors-str 9.0)
 	(make-family 'fireball basic-colors-str 5.5)
+	(make-family 'yinyang '("red" "green" "blue" "magenta") 8.0)
 	(for-each (λ (color)
 				(define type
 				  (string->symbol (string-append "bubble-" color)))
@@ -1823,7 +1831,7 @@
 			([small-star big-star]
 			 (draw-sprite-with-rotation textures type (fxmod (fx* frames 5) 360)
 										render-x render-y -1))
-			([bubble]
+			([bubble yinyang]
 			 (draw-sprite-with-rotation textures type (fxmod (fx* frames 8) 360)
 										render-x render-y -1))
 			([music]
