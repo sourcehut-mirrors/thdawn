@@ -88,6 +88,10 @@ chapter 12: all out!
 
 ## boss design brainstorming
 
+idk who but: Barrage musical bdt last scene inspiration: spin around screen forced by
+laser + bullet. Maybe the free area on screen gets smaller and smaller (like a pie slice)
+so your spin has to get more and more precise? Maybe this is the survival idea?
+
 Midsp doremi
 "My First Spellcard"
 Something related to the second poron (spinny music notes in a bubble)
