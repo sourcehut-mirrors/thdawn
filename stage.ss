@@ -525,7 +525,16 @@
 							(thunk (not (vector-index center-blt live-bullets))))
 						   (delete-bullet blt))))
 					  '(music-red music-yellow music-cyan))])
-	  (void)))
+	  ;; set initial position so preimg shows up properly
+	  ;; TODO: DRY this with the control function?
+	  (when with-ring
+		(position-bullets-around (bullet-x center-blt) (bullet-y center-blt)
+								 33.0 0.0 ring))
+	  (position-bullets-around (bullet-x center-blt) (bullet-y center-blt)
+							   12.0 (torad (mod (* 2 (+ start-frames
+														frames))
+												360.0))
+							   notes)))
   (ease-to values 0.0 80.0 20 enm)
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 40)

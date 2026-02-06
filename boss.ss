@@ -589,10 +589,10 @@
 					 (fl/ pi 2.0) y-len 5.0
 					 40 120 ctrl)))
 	  ;; corners
-	  (spawn-bullet 'big-star-blue x-left y-top 5 values)
-	  (spawn-bullet 'big-star-blue x-right y-top 5 values)
-	  (spawn-bullet 'big-star-blue x-left y-bot 5 values)
-	  (spawn-bullet 'big-star-blue x-right y-bot 5 values)
+	  (spawn-bullet 'big-star-blue x-left y-top 15 values)
+	  (spawn-bullet 'big-star-blue x-right y-top 15 values)
+	  (spawn-bullet 'big-star-blue x-left y-bot 15 values)
+	  (spawn-bullet 'big-star-blue x-right y-bot 15 values)
 	  ;; goalbox
 	  (spawn-laser 'fixed-laser-blue -67.0 y-bot
 				   pi (flabs (fl- x-left -67.0)) 5.0
@@ -606,6 +606,8 @@
 	  (spawn-laser 'fixed-laser-blue 67.0 y-bot
 				   (fl/ pi 2.0) 50.0 5.0
 				   40 120 ctrl)))
+  (wait 120)
+  (raylib:play-sound (sebundle-laser sounds))
   (wait-while
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
