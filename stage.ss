@@ -13,7 +13,7 @@
 	(wait 30)
 	(dotimes 4
 	  (-> (fb)
-		  (fbcounts 1 3)
+		  (fbcount 1 3)
 		  (fbspeed 4.0 6.0)
 		  (fbshootenm enm bullet 5 (sebundle-shoot0 sounds)))
 	  (wait 50)))
@@ -33,7 +33,7 @@
   (define (rain task)
 	(define pat
 	  (-> (fb)
-		  (fbcounts 10 1)
+		  (fbcount 10 1)
 		  (fbspeed 4.0 6.0)
 		  (fbabsolute-aim)
 		  (fbang 270.0 6.0)))
@@ -182,7 +182,7 @@
   (define (shoot task)
 	(interval-loop 20
 	  (-> (fb)
-		  (fbcounts 4 3)
+		  (fbcount 4 3)
 		  (fbang 0.0 25.0)
 		  (fbspeed 6.0 7.0)
 		  (fbshootenm enm 'small-ball-red 5 (sebundle-shoot0 sounds)))))
@@ -338,7 +338,7 @@
 	  (dotimes 3
 		(-> (fb)
 			(fbabsolute-aim)
-			(fbcounts 3)
+			(fbcount 3)
 			(fbspeed 4.0 4.0)
 			(fbang (if flip 265.0 275.0) 10.0)
 			(fbshoot (enm-x enm) (enm-y enm)
@@ -392,7 +392,7 @@
 	  (interval-loop 2
 		(let ([ang (todeg (atan (- (enm-y enm) cy) (- (enm-x enm) cx)))])
 		  (-> (fb)
-			  (fbcounts 1)
+			  (fbcount 1)
 			  (fbspeed 9.0)
 			  (fbang (- ang 90.0) 5.0)
 			  (fbabsolute-aim)
@@ -405,7 +405,7 @@
 	  (λ (task)
 		(loop-forever
 		 (-> (fb)
-			 (fbcounts 2)
+			 (fbcount 2)
 			 (fbspeed 6.0)
 			 (fbang 0.0 12.0)
 			 (fbshootenm enm 'small-star-red 2 #f))))
@@ -548,7 +548,7 @@
 
   (let loop ([first #t])
 	(let ([points (-> (fb)
-					  (fbcounts 8)
+					  (fbcount 8)
 					  (fbang 0.0 25.0)
 					  (fbspeed 6.0)
 					  (fbcollect (enm-x enm) (enm-y enm)))])
@@ -667,13 +667,13 @@
 	  (interval-loop 40
 		(dotimes 5
 		  (-> (fb)
-			  (fbcounts 3)
+			  (fbcount 3)
 			  (fbabsolute-aim)
 			  (fbang -90.0 70.0)
 			  (fbspeed 2.0)
 			  (fbshootenm enm 'small-star-red 2 #f))
 		  (-> (fb)
-			  (fbcounts 3)
+			  (fbcount 3)
 			  (fbabsolute-aim)
 			  (fbang 90.0 70.0)
 			  (fbspeed 4.0)
@@ -785,7 +785,7 @@
 						 (when (and (zero? layer)
 									(zero? in-layer))
 						   (-> (fb)
-							   (fbcounts 7 7)
+							   (fbcount 7 7)
 							   (fbang 0.0 5.0)
 							   (fbspeed 5.0 7.0)
 							   (fbshootez 0.0 100.0 'pellet-red 5 #f))))
@@ -907,7 +907,7 @@
 					30 enm)
 		   (dotimes 3
 			 (-> (fb)
-				 (fbcounts 3 5)
+				 (fbcount 3 5)
 				 (fbspeed 2.0 4.0)
 				 (fbang 0.0 20.0)
 				 (fbshootenm enm (cdr pair) 5 (sebundle-shoot0 sounds)))
@@ -925,7 +925,7 @@
 	(λ (task)
 	  (interval-loop 15
 		(-> (fb)
-			(fbcounts 1 3)
+			(fbcount 1 3)
 			(fbspeed 4.0 5.0)
 			(fbshootenm enm blttype 2 (sebundle-shoot0 sounds)))))
 	(constantly #t)
@@ -942,7 +942,7 @@
 	(λ (task)
 	  (interval-loop 15
 		(-> (fb)
-			(fbcounts 1 3)
+			(fbcount 1 3)
 			(fbspeed 4.0 5.0)
 			(fbshootenm enm blttype 2 (sebundle-shoot0 sounds)))))
 	(constantly #t)
@@ -1062,7 +1062,7 @@
 		   (+ (enm-x enm) (if right-side -50.0 50.0))
 		   (enm-y enm) 20 enm)
   (-> (fb)
-	  (fbcounts 1 10)
+	  (fbcount 1 10)
 	  (fbspeed 1.0 (fl+ 5.5 (centered-roll game-rng 0.7)))
 	  (fbabsolute-aim)
 	  (fbang (if right-side 180.0 0.0) 0.0)
@@ -1138,12 +1138,12 @@
 	(interval-loop 5
 	  (-> (fb)
 		  (fbspeed 5.0)
-		  (fbcounts 2 1)
+		  (fbcount 2 1)
 		  (fbang 0.0 45.0)
 		  (fbshootenm enm 'music-red 2 #f))
 	  (-> (fb)
 		  (fbspeed 5.0)
-		  (fbcounts 1 3)
+		  (fbcount 1 3)
 		  (fbshootenm enm 'music-blue 2 #f))))
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ease-to values 200.0 (enm-y enm) 100 enm)
@@ -1172,7 +1172,7 @@
   (for-each
    (λ (bubble heart)
 	 (-> (fb)
-		 (fbcounts 1 5)
+		 (fbcount 1 5)
 		 (fbspeed 4.0 8.0)
 		 (fbshootenm enm bubble 2 (sebundle-bell sounds)))
 	 (-> (cb)
@@ -1258,7 +1258,7 @@
 	  (interval-loop 60
 		(-> (fb)
 			(fbang 0.0 25.0)
-			(fbcounts 5)
+			(fbcount 5)
 			(fbspeed 4.0)
 			(fbshootenm enm 'medium-ball-red 10 #f))))
 	keep-running task)
@@ -1280,7 +1280,7 @@
 						(curry linear-step-accelerate-forever
 							   ang1 0.5 0.07 2.0))
 		  (-> (fb)
-			  (fbcounts 5 2)
+			  (fbcount 5 2)
 			  (fbabsolute-aim)
 			  (fbang (todeg (fl+ ang1 (fl* 3.0 (fl/ pi 4.0)))) 30.0)
 			  (fbspeed 3.0 5.0)
@@ -1290,7 +1290,7 @@
 							   ang2
 							   0.5 0.07 2.0))
 		  (-> (fb)
-			  (fbcounts 5 2)
+			  (fbcount 5 2)
 			  (fbabsolute-aim)
 			  (fbang (todeg (fl+ ang2 (fl* 3.0 (fl/ pi 4.0)))) 30.0)
 			  (fbspeed 3.0 5.0)
@@ -1368,7 +1368,7 @@
 							(when (and (zero? layer)
 									   (zero? in-layer))
 							  (-> (fb)
-								  (fbcounts final-way 7)
+								  (fbcount final-way 7)
 								  (fbabsolute-aim)
 								  (fbang
 								   (todeg

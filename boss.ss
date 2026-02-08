@@ -286,7 +286,7 @@
 			  (interval-loop 30
 				(dotimes 3
 				  (-> (fb)
-					  (fbcounts 3)
+					  (fbcount 3)
 					  (fbang 0.0 15.0)
 					  (fbspeed 4.75)
 					  (fbshootenm aiko 'heart-blue 5 (sebundle-shoot0 sounds)))
@@ -480,7 +480,7 @@
 		 (interval-loop 5
 		   (-> (fb)
 			   (fbabsolute-aim)
-			   (fbcounts 1 5)
+			   (fbcount 1 5)
 			   (fbspeed 1.0 4.0)
 			   (fbang (flatan (fl- (enm-y hazuki) (enm-y enm))
 							  (fl- (enm-x hazuki) (enm-x enm))))
@@ -544,13 +544,13 @@
 				   [right-ang (fl- 180.0 init-left-ang)]
 				   [i 0])
 		  (-> (fb)
-			  (fbcounts 1 3)
+			  (fbcount 1 3)
 			  (fbabsolute-aim)
 			  (fbang left-ang)
 			  (fbspeed 3.0 5.0)
 			  (fbshootenm aiko 'yinyang-blue 5 #f linear-step-with-bounce))
 		  (-> (fb)
-			  (fbcounts 1 3)
+			  (fbcount 1 3)
 			  (fbabsolute-aim)
 			  (fbang right-ang)
 			  (fbspeed 3.0 5.0)
@@ -629,7 +629,7 @@
 			  (cbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds))))
 		(interval-loop 46
 		  (-> (fb)
-			  (fbcounts 7)
+			  (fbcount 7)
 			  (fbspeed 3.0)
 			  (fbang 0.0 8.0)
 			  (fbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds)))))

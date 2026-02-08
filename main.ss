@@ -1937,10 +1937,10 @@
 (define (fbabsolute-aim fb)
   (fan-builder-aimed-at-player-set! fb #f)
   fb)
-(define fbcounts
+(define fbcount
   (case-lambda
 	[(fb row-width)
-	 (fbcounts fb row-width 1)]
+	 (fbcount fb row-width 1)]
 	[(fb row-width rows)
 	 (assert (and (positive? rows) (positive? row-width)))
 	 (fan-builder-rows-set! fb rows)
