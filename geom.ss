@@ -1,14 +1,15 @@
 ;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 ;; math and geometry library.
-;; doesn't use the raylib ftypes, which would
-;; require manually managing memory
+;; doesn't use the raylib ftypes, which would require manually managing memory
+;; chez reader mode required to give names like -pi and -hpi
+#!chezscheme
 (library (geom)
   (export rectangle-x rectangle-y rectangle-width rectangle-height make-rectangle
 		  (rename (vector2-x v2x) (vector2-y v2y))
 		  vec2 v2+ v2- v2* v2zero v2unit
 		  check-collision-circles check-collision-recs check-collision-circle-rec
 		  lerp eval-bezier-quad eval-bezier-cubic
-		  pi tau
+		  pi -pi tau hpi -hpi
 		  torad todeg eround epsilon-equal clamp
 		  ease-in-quad ease-out-quad ease-in-out-quad
 		  ease-out-cubic
@@ -20,8 +21,11 @@
   (define (lerp a b progress)
 	(+ a (* progress (- b a))))
 
-  (define pi 3.141592)
-  (define tau 6.28318)
+  (define pi 3.141592653589793)
+  (define -pi (fl- pi))
+  (define hpi (fl/ pi 2.0))
+  (define -hpi (fl- hpi))
+  (define tau 6.283185307179586)
   (define (torad x)
 	(fl* (fl/ pi 180.0) x))
   (define (todeg x)

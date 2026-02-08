@@ -559,6 +559,45 @@
 (define +poc-y+ 160)
 (define +oob-bullet-despawn-fuzz+ 80)
 
+(define (hit-x-impl x y ty facing)
+  (define res
+	(fl+ x (fl*
+			(fl/ (flcos facing) (flsin facing))
+			(fl- (fx2fl ty) y))))
+  (and (<= +playfield-min-x+ res +playfield-max-x+)
+	   res))
+
+(define (hit-top-x x y facing)
+  (define rfacing (flmod facing tau))
+  ;; facing bottom half of screen, cannot hit top
+  (and (not (fl<= 0.0 rfacing pi))
+	   (hit-x-impl x y +playfield-min-y+ rfacing)))
+
+(define (hit-bot-x x y facing)
+  (define rfacing (flmod facing tau))
+  ;; facing top of screen, cannot hit top
+  (and (not (fl<= pi rfacing tau))
+	   (hit-x-impl x y +playfield-max-y+ rfacing)))
+
+(define (hit-y-impl x y tx facing)
+  (define res
+	(fl+ y (fl* (fl/ (flsin facing) (flcos facing))
+				(fl- (fx2fl tx) x))))
+  (and (<= +playfield-min-y+ res +playfield-max-y+)
+	   res))
+
+(define (hit-left-y x y facing)
+  (define rfacing (flmod facing tau))
+  ;; facing right side of screen, cannot hit left
+  (and (not (or (fl<= 0.0 rfacing hpi)
+				(fl<= (fl* 3.0 hpi) rfacing tau)))
+	   (hit-y-impl x y +playfield-min-x+ rfacing)))
+
+(define (hit-right-y x y facing)
+  (define rfacing (flmod facing tau))
+  ;; facing left side of screen, cannot hit right
+  (and (not (fl<= hpi rfacing (fl* 3.0 hpi)))
+	   (hit-y-impl x y +playfield-max-x+ rfacing)))
 
 ;; This is the general shape of replay records, except instead of a record
 ;; We'll store it as a plain vector to save space from having to serialize
@@ -4662,6 +4701,12 @@
   (set! want-quit #f)
   (kill-all-tasks)
   (fork-thread main))
+
+;; abuses the itemvalue particle to show debugging info
+(define (debug-str x y dur str)
+  (spawn-particle
+   (particletype itemvalue)
+   x y dur (cons #xf5f5f500 str)))
 
 (define (main-with-backtrace)
   (define (print-stacktrace e)

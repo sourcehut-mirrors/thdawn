@@ -2,7 +2,8 @@
 (library (funcutils)
   (export constantly vector-for-each-truthy for-each-indexed
 		  dotimes curry vector-for-all vector-for-each-indexed
-		  vector-find vector-find-index vector-index vector-popcnt -> ->> thunk
+		  vector-find vector-find-index vector-index vector-popcnt thunk
+		  -> ->> some-> some->>
 		  vector-add vector-pop vector-truncate when-let assqdr)
   (import (chezscheme))
 
@@ -35,6 +36,26 @@
 	   (->> (f fargs ... x) rst ...)]
 	  [(_ x f rst ...)
 	   (->> (f x) rst ...)]))
+
+  (define-syntax some->
+	(syntax-rules ()
+	  [(_ x) x]
+	  [(_ x (f fargs ...) rst ...)
+	   (let ([res (f x fargs ...)])
+		 (and res
+			  (some-> res rst ...)))]
+	  [(_ x f rst ...)
+	   (some-> (f x) rst ...)]))
+
+  (define-syntax some->>
+	(syntax-rules ()
+	  [(_ x) x]
+	  [(_ x (f fargs ...) rst ...)
+	   (let ([res (f fargs ... x)])
+		 (and res
+			  (some->> res rst ...)))]
+	  [(_ x f rst ...)
+	   (some->> (f x) rst ...)]))
 
   (define-syntax thunk
 	(syntax-rules ()

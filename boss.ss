@@ -491,33 +491,52 @@
   (common-spell-postlude bossinfo hazuki)
   (aiko-non2 task hazuki))
 
-(define (aiko-non2 task hazuki)
-  (define bars (bossinfo-healthbars (enm-extras hazuki)))
-  (define _ (wait 90))
-  (define aiko
-	(spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
-				 (λ (task enm)
-				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-							60 enm))
-				 '()
-				 (thunk #f)))
-  (define bossinfo (blank-aiko-bossinfo))
-  (define (keep-running?)
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health aiko))))
-  (set! current-chapter 28)
-  (spawn-subtask "hazuki leave"
-	(λ (_)
-	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
-	  (delete-enemy hazuki))
-	(constantly #t)
-	task)
-  (adjust-bars-non bars)
-  (bossinfo-healthbars-set! bossinfo bars)
-  (enm-extras-set! aiko bossinfo)
-  (declare-nonspell aiko 1800 6000)
-  (wait 60)
-  (spawn-subtask "atk"
+(define (aiko-non2-laser-ctrl is-right aiko blt)
+  (define start-ang (fl/ pi -2.0))
+  (define dang (torad 160.0))
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i 300)]
+	(let-values ([(x) (enm-x aiko)]
+				 [(y) (enm-y aiko)]
+				 [(facing)
+				  (if is-right
+					  (fl+ start-ang (inexact (lerp 0 dang (ease-out-quad (/ i 300)))))
+					  (fl- start-ang
+						   (inexact (lerp 0 dang (ease-out-quad (/ i 300))))))]
+				 [(ring-wave ring-rem) (div-and-mod i 15)])
+	  (bullet-x-set! blt x)
+	  (bullet-y-set! blt y)
+	  (bullet-facing-set! blt facing)
+	  (when (and (fxzero? ring-rem) (fx<= i 180))
+		(for-each
+		 (λ (x y)
+		   (when (and x y)
+			 (-> (cb)
+				 (cbcount 20 3)
+				 (cbspeed 2.0 4.0)
+				 (cbshoot x y
+				   (λ (layer in-layer speed facing)
+					 (define type (vnth '#(small-star-orange
+										   small-star-green
+										   small-star-cyan)
+										layer))
+					 (-> (spawn-bullet
+						  type x y 10 (curry linear-step-forever facing speed))
+						 (bullet-facing-set! facing)))))
+			 (raylib:play-sound (sebundle-bell sounds))))
+		 (list (hit-top-x x y facing)
+			   (hit-bot-x x y facing)
+			   (fx2fl +playfield-min-x+)
+			   (fx2fl +playfield-max-x+))
+		 (list (fx2fl +playfield-min-y+)
+			   (fx2fl +playfield-max-y+)
+			   (hit-left-y x y facing)
+			   (hit-right-y x y facing)))))
+	(yield))
+  (loop-forever))
+
+;; todo: put this attack somewhere else
+#;(spawn-subtask "atk"
 	(λ (task)
 	  (define init-left-ang (fx2fl (roll-range game-rng 90 150)))
 	  (interval-loop 30
@@ -550,6 +569,72 @@
 				  (cbshootenm aiko 'music-cyan 5 (sebundle-bell sounds)))))
 		(boss-standard-wander-once aiko 40 50 30)))
 	keep-running? task)
+
+(define (aiko-non2 task hazuki)
+  (define bars (bossinfo-healthbars (enm-extras hazuki)))
+  (define _ (wait 90))
+  (define aiko
+	(spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
+				 (λ (task enm)
+				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+							60 enm))
+				 '()
+				 (thunk #f)))
+  (define bossinfo (blank-aiko-bossinfo))
+  (define (keep-running?)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health aiko))))
+  (set! current-chapter 28)
+  (spawn-subtask "hazuki leave"
+	(λ (_)
+	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
+	  (delete-enemy hazuki))
+	(constantly #t)
+	task)
+  (adjust-bars-non bars)
+  (bossinfo-healthbars-set! bossinfo bars)
+  (enm-extras-set! aiko bossinfo)
+  (declare-nonspell aiko 1800 6000)
+  (wait 60)
+  (raylib:play-sound (sebundle-laser sounds))
+  (parameterize ([ovr-uncancelable #t])
+	(for-each
+	 (λ (is-right)
+	   (spawn-laser 'fixed-laser-blue
+					(enm-x aiko) (enm-y aiko)
+					(fl/ pi -2.0)
+					(fx2fl +playfield-height+)
+					5.0
+					40 30 (curry aiko-non2-laser-ctrl is-right aiko)))
+	 '(#f #t)))
+  (wait 30)
+  (let* ([timeup (thunk (fx<= (bossinfo-remaining-timer bossinfo) 900))]
+		 [rage (thunk (or (timeup) (fl<= player-y (fl+ (enm-y aiko) 100.0))))])
+	(spawn-subtask "rage rings"
+	  (λ (task)
+		(interval-loop 23
+		  (when (rage)
+			(-> (cb)
+				(cbcount 48)
+				(cbspeed 4.0)
+				(cbang (if (roll-bool game-rng) 0.0 2.0))
+				(cbshootenm aiko 'kunai-red 2 (sebundle-shoot0 sounds))))))
+	  keep-running? task)
+	(spawn-subtask "rings"
+	  (λ (task)
+		(interval-loop-while 60 (fx<= (bossinfo-elapsed-frames bossinfo) 350)
+		  (-> (cb)
+			  (cbcount 12)
+			  (cbspeed 3.0)
+			  (cbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds))))
+		(interval-loop 46
+		  (-> (fb)
+			  (fbcounts 7)
+			  (fbspeed 3.0)
+			  (fbang 0.0 8.0)
+			  (fbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds)))))
+	  keep-running? task))
+  (ease-to values +middle-boss-x+ 225.0 300 aiko)
   (wait-while keep-running?)
   (common-nonspell-postlude bossinfo)
   (aiko-sp2 task aiko))
@@ -560,7 +645,6 @@
   (declare-spell aiko 9)
   (wait 90)
   (raylib:play-sound (sebundle-longcharge sounds))
-  (ease-to ease-in-out-quad 0.0 225.0 30 aiko)
   (parameterize ([ovr-uncancelable #t])
 	(let* ([x-margin 24]
 		   [x-left (fx2fl (+ +playfield-min-x+ x-margin))]
@@ -579,15 +663,15 @@
 		(spawn-laser 'fixed-laser-blue
 					 x-left y-top
 					 0.0 x-len 5.0
-					 40 120 ctrl)
+					 40 60 ctrl)
 		;; left edge
 		(spawn-laser 'fixed-laser-blue x-left y-top
 					 (fl/ pi 2.0) y-len 5.0
-					 40 120 ctrl)
+					 40 60 ctrl)
 		;; right edge
 		(spawn-laser 'fixed-laser-blue x-right y-top
 					 (fl/ pi 2.0) y-len 5.0
-					 40 120 ctrl)))
+					 40 60 ctrl)))
 	  ;; corners
 	  (spawn-bullet 'big-star-blue x-left y-top 15 values)
 	  (spawn-bullet 'big-star-blue x-right y-top 15 values)
@@ -596,17 +680,17 @@
 	  ;; goalbox
 	  (spawn-laser 'fixed-laser-blue -67.0 y-bot
 				   pi (flabs (fl- x-left -67.0)) 5.0
-				   40 120 ctrl)
+				   40 60 ctrl)
 	  (spawn-laser 'fixed-laser-blue -67.0 y-bot
 				   (fl/ pi 2.0) 50.0 5.0
-				   40 120 ctrl)
+				   40 60 ctrl)
 	  (spawn-laser 'fixed-laser-blue 67.0 y-bot
 				   0.0 (fl- x-right 67.0) 5.0
-				   40 120 ctrl)
+				   40 60 ctrl)
 	  (spawn-laser 'fixed-laser-blue 67.0 y-bot
 				   (fl/ pi 2.0) 50.0 5.0
-				   40 120 ctrl)))
-  (wait 120)
+				   40 60 ctrl)))
+  (wait 60)
   (raylib:play-sound (sebundle-laser sounds))
   (wait-while
    (thunk
