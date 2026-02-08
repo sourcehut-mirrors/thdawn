@@ -148,6 +148,11 @@ Something related to wisps/ghosts/fear of ghosts
 Could be the stereotypical kill the ghost familiars that chase you around and they explode either when killed or after a timeout
 Or we could do a CIV thing where the ghosts attack and we have to save her haha
 
+above is too insulting to hazuki as a character, maybe flip it around and have her be a
+ghostbuster? not sure what that means yet exactly, but still have wisps around and maybe
+she's attacking them but also attacks you, and if you help her out you get rewarded.
+Tide-ebbing jewel clone? lol
+
 Sp7 Aiko
 
 Something like pong/soccer/penalty shootout

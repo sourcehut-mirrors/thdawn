@@ -1,3 +1,24 @@
+* [2026-02-08 Sun]
+(late night Saturday)
+Redid Aiko non2. I think forcing the player to the bottom of the field should be the point
+of the non instead of hinting at bouncy bullets, because the ball in sp2 works different
+anyways (it won't kill the player). Meaning we have to explain it with some other hint in
+the spell anyways.
+
+I like the little moonlight-ray clone I ended up with. it's pretty easy, in line with most
+final nons in extra stages being breathers.
+
+The previous bullet pattern we can give to another nonspell, maybe aiko sp1 or girl's nons.
+
+One thing I need to fix but it's too late at night: Damage-delegator bosses ignore
+superarmor, as a result of the previous damage refactor.
+
+Starting to feel the pain of the fan/circle builders having a big cliff between the paved
+path (cb/fbshootenm and cb/fbshootez) and not (cb/fbshoot). For example, if i want to
+customize the bullet type based on position in the fan/ring if have to drop to fbshoot and
+instantly have to pay all the boilerplate. Wonder if spending time to hack up some
+sequence utils/transducer stuff like clojure will be worth the time.
+
 * [2026-02-04 Wed]
 Hacked up Aiko non2. It's simple but serves the purpose of telling the player more bouncy
 bullets are coming up ahead. As always, there's some balancing adjustments needed but the
