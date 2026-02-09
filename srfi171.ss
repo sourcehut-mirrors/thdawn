@@ -52,9 +52,8 @@
 
   ;; A special value to be used as a placeholder where no value has been set and #f
   ;; doesn't cut it. Not exported, and not really needed.
-  (define-record-type (<nothing> make-nothing nothing?)
-	(fields))
-  (define nothing (make-nothing))
+  (define nothing (box #f))
+  (define (nothing? x) (eq? nothing x))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Reducing functions meant to be used at the end at the transducing
