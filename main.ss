@@ -2654,7 +2654,10 @@
 	#xffffff80]
    [(and (fxpositive? (enm-damaged-recently enm))
 		 (< (fxmod frames 4) 2))
-	(if (enm-lowhealth enm) crit-damage-flash damage-flash)]
+	(let ([target (or (and (is-boss? enm)
+								 (bossinfo-redirect-damage (enm-extras enm)))
+							enm)])
+	  (if (enm-lowhealth target) crit-damage-flash damage-flash))]
    [else -1]))
 
 (define (draw-boss textures enm render-x render-y)
