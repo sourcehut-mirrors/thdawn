@@ -2437,7 +2437,11 @@
 	 (if (enm-invincible? enm)
 		 (when playsound
 		   (raylib:play-sound (sebundle-damageresist sounds)))
-		 (let* ([superarmor (positive? (enm-superarmor enm))]
+		 (let* ([superarmor (or (positive? (enm-superarmor enm))
+								(and (is-boss? enm)
+									 (let ([o (bossinfo-redirect-damage
+											   (enm-extras enm))])
+									   (and o (positive? (enm-superarmor o))))))]
 				[amount (cond
 						 [superarmor
 						  (max 1 (eround (* 0.1 amount)))]
