@@ -10,8 +10,20 @@
   (define (assqdr key alist)
 	(cdr (assq key alist)))
 
-  (define (curry proc . curry-args)
-	(lambda rest (apply proc (append curry-args rest))))
+  (define curry
+	(case-lambda
+	  ([proc a]
+	   (lambda rest (apply proc a rest)))
+	  ([proc a b]
+	   (lambda rest (apply proc a b rest)))
+	  ([proc a b c]
+	   (lambda rest (apply proc a b c rest)))
+	  ([proc a b c d]
+	   (lambda rest (apply proc a b c d rest)))
+	  ([proc a b c d e]
+	   (lambda rest (apply proc a b c d e rest)))
+	  ([proc a b c d e . more]
+	   (lambda rest (apply proc a b c d e (append more rest))))))
 
   (define (vector-for-all proc v)
 	(define n (vector-length v))
