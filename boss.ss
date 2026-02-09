@@ -677,7 +677,7 @@
 	  (spawn-bullet 'big-star-blue x-right y-top 15 values)
 	  (spawn-bullet 'big-star-blue x-left y-bot 15 values)
 	  (spawn-bullet 'big-star-blue x-right y-bot 15 values)
-	  ;; goalbox
+	  ;; bottom
 	  (spawn-laser 'fixed-laser-blue -67.0 y-bot
 				   pi (flabs (fl- x-left -67.0)) 5.0
 				   40 60 ctrl)
@@ -689,7 +689,22 @@
 				   40 60 ctrl)
 	  (spawn-laser 'fixed-laser-blue 67.0 y-bot
 				   (fl/ pi 2.0) 50.0 5.0
-				   40 60 ctrl)))
+				   40 60 ctrl)
+	  ;; penalty box (ball won't bounce off these lasers)
+	  ;; top
+	  (-> (spawn-laser 'fixed-laser-cyan -85.0 (fl- y-bot 90.0)
+					   0.0 160.0 3.0
+					   40 60 ctrl)
+		  (bullet-addflags (bltflags noshine)))
+	  ;; left
+	  (spawn-laser 'fixed-laser-cyan -85.0 (fl- y-bot 90.0)
+				   hpi 85.0 3.0
+				   40 60 ctrl)
+	  ;; right
+	  (spawn-laser 'fixed-laser-cyan 85.0 (fl- y-bot 90.0)
+				   hpi 85.0 3.0
+				   40 60 ctrl)
+	  ))
   (wait 60)
   (raylib:play-sound (sebundle-laser sounds))
   (wait-while
