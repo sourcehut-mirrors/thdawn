@@ -29,14 +29,26 @@
    port-reduce
    generator-reduce)
   (import (chezscheme))
-  
-  (define (compose . functions)
-	(define (make-chain thunk chain)
-      (lambda args
-		(call-with-values (lambda () (apply thunk args)) chain)))
-	(if (null? functions)
-		values
-		(fold-left make-chain (car functions) (cdr functions))))
+
+  (define compose
+	(case-lambda
+	  [() values]
+	  [(f) f]
+	  [(f g)
+	   (lambda args
+		 (call-with-values (lambda () (apply g args)) f))]
+	  [(f g h)
+	   (lambda args
+		 (call-with-values
+			 (lambda () (call-with-values (lambda () (apply h args)) g))
+		   f))]
+	  [functions
+	   (define (make-chain chain thunk)
+		 (lambda args
+		   (call-with-values (lambda () (apply thunk args)) chain)))
+	   (if (null? functions)
+		   values
+		   (fold-left make-chain (car functions) (cdr functions)))]))
 
   ;; A reduced value is stops the transduction.
   (define-record-type (<reduced> reduced reduced?)
