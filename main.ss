@@ -4009,7 +4009,7 @@
 							   (/ (enm-health enm) cur-atk-max-health))))])])
 		(raylib:draw-rectangle-gradient-v
 		 x
-		 (+ +playfield-render-offset-y+ +playfield-min-y+)
+		 (+ +playfield-render-offset-y+ +playfield-min-y+ 1)
 		 width 5
 		 (healthbar-top-color hb)
 		 (healthbar-bottom-color hb))
