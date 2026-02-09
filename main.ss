@@ -4,7 +4,8 @@
 ;; file as a r6rs Program
 (import (chezscheme))
 (import (add-prefix (raylib) raylib:)
-		(coro) (geom) (funcutils) (config))
+		(coro) (geom) (funcutils) (config)
+		(srfi171meta) (srfi171))
 (alias λ lambda)
 (define-enumeration vkey
   (up down left right shoot bomb focus pause
