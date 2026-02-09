@@ -2302,10 +2302,10 @@
   (or (enm-hasflag? enm (enmflag invincible))
 	  (and (is-boss? enm)
 		   (fxpositive? bombing)
-		   (or (fxnonnegative? (bossinfo-active-spell-id (enm-extras enm)))
+		   (or (bossinfo-active-spell-id (enm-extras enm))
 			   (let ([delegate (bossinfo-redirect-damage (enm-extras enm))])
-				 (and delegate (fxnonnegative?
-								(bossinfo-active-spell-id (enm-extras delegate)))))))))
+				 (and delegate
+					  (bossinfo-active-spell-id (enm-extras delegate))))))))
 
 (define (calculate-spell-bonus bossinfo)
   (define grace-period 180)
@@ -2686,7 +2686,7 @@
   ;; The compromise is to use Raylib's DrawRing, but only for a small sector (i.e. segments=1).
   ;; while having a loop on the Scheme side to continuously update the shape rect
   ;; TODO: Find a permanent solution for this clowntown
-  (when (fxnonnegative? (bossinfo-active-spell-id bossinfo))
+  (when (bossinfo-active-spell-id bossinfo)
 	(let* ([boss-tex (txbundle-boss-flip textures)]
 		   [save-tex (raylib:get-shapes-texture)]
 		   [save-rect (raylib:get-shapes-texture-rectangle)]
@@ -3432,7 +3432,7 @@
   (bossinfo-remaining-timer-set! bossinfo 0)
   (bossinfo-active-spell-bonus-set! bossinfo #f)
   (bossinfo-active-spell-id-set!
-   bossinfo -1))
+   bossinfo #f))
 
 (define (common-nonspell-postlude bossinfo)
   (cancel-all #t)
@@ -3685,7 +3685,7 @@
   (make-bossinfo name name-color
 				 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
 				 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
-				 -1 #f #f 0 0 0 #f (immutable-vector)))
+				 #f #f #f 0 0 0 #f (immutable-vector)))
 (define (blank-doremi-bossinfo)
   (blank-bossinfo "Harukaze Doremi" #xff7fbcff))
 (define (blank-hazuki-bossinfo)
@@ -3981,7 +3981,7 @@
   (define remaining-timer (bossinfo-remaining-timer bossinfo))
   (define elapsed-frames (bossinfo-elapsed-frames bossinfo))
   (define spid (bossinfo-active-spell-id bossinfo))
-  (define spname (and (fxnonnegative? spid)
+  (define spname (and spid
 					  (spell-descriptor-name (vnth spells spid))))
   (define healthbars (bossinfo-healthbars bossinfo))
   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
@@ -4366,10 +4366,10 @@
 						   background-draw-bounds
 						   v2zero 0.0 bgcolor)
   (let ([enm (vector-find
-			   (λ (e)
-				 (and e (is-boss? e)
-					  (fxnonnegative? (bossinfo-active-spell-id (enm-extras e)))))
-			   live-enm)])
+			  (λ (e)
+				(and e (is-boss? e)
+					 (bossinfo-active-spell-id (enm-extras e))))
+			  live-enm)])
 	(when enm
 	  (let* ([bossinfo (enm-extras enm)]
 			 [bgid (spell-descriptor-bgid
@@ -4381,7 +4381,7 @@
 			      (eround (lerp 0 #xe0 (/ elapsed 60))))])
 		(when bgid
 		  (render-spell-background textures bgid alpha)))))
-  
+
   (when show-hitboxes
 	(raylib:draw-line (+ +playfield-render-offset-x+ +playfield-min-x+)
 					  (+ +playfield-render-offset-y+ +poc-y+)
