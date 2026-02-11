@@ -627,6 +627,17 @@
 			  (cbcount 12)
 			  (cbspeed 3.0)
 			  (cbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds))))
+		(raylib:play-sound (sebundle-longcharge sounds))
+		(spawn-subtask "decor"
+		  (λ (task)
+			(interval-loop 23
+			  (-> (fb)
+				  (fbcount 15)
+				  (fbspeed 4.0)
+				  (fbabsolute-aim)
+				  (fbang -90.0 12.0)
+				  (fbshootenm aiko 'big-star-orange 2 (sebundle-bell sounds)))))
+		  keep-running? task)
 		(interval-loop 46
 		  (-> (fb)
 			  (fbcount 7)
@@ -639,8 +650,14 @@
   (common-nonspell-postlude bossinfo)
   (aiko-sp2 task aiko))
 
+(define (aiko-sp2-ball-ctrl blt)
+  (void))
+
 (define (aiko-sp2 task aiko)
   (define bossinfo (enm-extras aiko))
+  (define (keep-running?)
+	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
+		 (fxpositive? (enm-health aiko))))
   (set! current-chapter 29)
   (declare-spell aiko 9)
   (wait 90)
@@ -703,14 +720,10 @@
 	  ;; right
 	  (spawn-laser 'fixed-laser-cyan 85.0 (fl- y-bot 90.0)
 				   hpi 85.0 3.0
-				   40 60 ctrl)
-	  ))
+				   40 60 ctrl)))
   (wait 60)
   (raylib:play-sound (sebundle-laser sounds))
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health aiko)))))
+  (wait-while keep-running?)
   (common-spell-postlude bossinfo aiko)
   (group-sp3 task aiko))
 
