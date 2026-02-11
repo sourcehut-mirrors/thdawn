@@ -66,11 +66,13 @@
    ;; on fixed lasers, do not render the spinning shine sprite at the laser origin
    ;; no effect on non-fixed laser types
    noshine
+   noclip ;; do not hurt the player through the standard collision logic
    )
   bltflags)
 ;; global overrides. when in effect, all spawned bullets automatically gain the
 ;; corresponding flags. makes callsite code cleaner at the cost of some global state
 (define ovr-uncancelable (make-parameter #f))
+(define ovr-noclip (make-parameter #f))
 
 (define empty-bltflags (bltflags))
 (define-enumeration enmflag
@@ -1718,6 +1720,8 @@
 	  (vector-set! live-bullets idx blt)
 	  (when (ovr-uncancelable)
 		(bullet-addflags blt (bltflags uncancelable)))
+	  (when (ovr-noclip)
+		(bullet-addflags blt (bltflags noclip)))
 	  (spawn-task "bullet"
 				  (λ (task)
 					(do [(i 0 (fx1+ i))]
@@ -2580,7 +2584,9 @@
 			   (cons 'rot (* (roll visual-rng) 360.0))))
 		(raylib:play-sound (sebundle-graze sounds)))
 
-	  (when (check-player-collision bullet +hit-radius+)
+	  (when (and
+			 (not (bullet-hasflag? bullet (bltflag noclip)))
+			 (check-player-collision bullet +hit-radius+))
 		(unless is-laser
 		  (cancel-bullet bullet))
 		(damage-player))))
@@ -3812,10 +3818,11 @@
 	(reset-to chapter-select))
 
 
-  ;; (when (raylib:is-key-down key-space)
-  ;; 	(parameterize ([ovr-uncancelable #t])
-  ;; 	  (spawn-bullet 'yinyang-blue player-x player-y 5
-  ;; 					aiko-sp2-ball-ctrl)))
+  (when (raylib:is-key-down key-space)
+	(parameterize ([ovr-uncancelable #t]
+				   [ovr-noclip #t])
+	  (spawn-bullet 'yinyang-blue player-x player-y 5
+					aiko-sp2-ball-ctrl)))
   (when (raylib:is-key-pressed key-a)
 	(when (> spline-editor-selected-position 0)
 	  (set! spline-editor-selected-position (sub1 spline-editor-selected-position))))

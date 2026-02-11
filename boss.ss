@@ -675,6 +675,9 @@
 			[xv (flcos facing)]
 			[yv (flsin facing)])
 		(cond
+		 [(> ny (+ +playfield-max-y+ 10))
+		  (damage-player)
+		  (linear-step-forever facing 3.0 blt)]
 		 [(or
 		   ;; top
 		   (and (> oy aiko-sp2-y-top)
