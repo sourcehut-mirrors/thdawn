@@ -3811,6 +3811,11 @@
   (when (and (not (paused?)) (raylib:is-key-pressed key-r))
 	(reset-to chapter-select))
 
+
+  ;; (when (raylib:is-key-down key-space)
+  ;; 	(parameterize ([ovr-uncancelable #t])
+  ;; 	  (spawn-bullet 'yinyang-blue player-x player-y 5
+  ;; 					aiko-sp2-ball-ctrl)))
   (when (raylib:is-key-pressed key-a)
 	(when (> spline-editor-selected-position 0)
 	  (set! spline-editor-selected-position (sub1 spline-editor-selected-position))))

@@ -627,7 +627,7 @@
 			  (cbcount 12)
 			  (cbspeed 3.0)
 			  (cbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds))))
-		(raylib:play-sound (sebundle-longcharge sounds))
+		(raylib:play-sound (sebundle-shortcharge sounds))
 		(spawn-subtask "decor"
 		  (λ (task)
 			(interval-loop 23
@@ -650,8 +650,56 @@
   (common-nonspell-postlude bossinfo)
   (aiko-sp2 task aiko))
 
+(define aiko-sp2-x-margin 24)
+(define aiko-sp2-x-left)
+(define aiko-sp2-x-left (fx2fl (+ +playfield-min-x+ aiko-sp2-x-margin)))
+(define aiko-sp2-x-right (fx2fl (- +playfield-max-x+ aiko-sp2-x-margin)))
+(define aiko-sp2-x-len (fl- aiko-sp2-x-right aiko-sp2-x-left))
+(define aiko-sp2-y-margin-top 34)
+(define aiko-sp2-y-margin-bot 23)
+(define aiko-sp2-y-top (fx2fl aiko-sp2-y-margin-top))
+(define aiko-sp2-y-bot (fx2fl (- +playfield-max-y+ aiko-sp2-y-margin-bot)))
+(define aiko-sp2-y-len (fl- aiko-sp2-y-bot aiko-sp2-y-top))
+(define aiko-sp2-goal-left -67.0)
+(define aiko-sp2-goal-right (fl- aiko-sp2-goal-left))
+(define aiko-sp2-laser-radius 5.0)
+
 (define (aiko-sp2-ball-ctrl blt)
-  (void))
+  (let loop ([facing (centered-roll game-rng pi)])
+	(let ([ox (bullet-x blt)]
+		  [oy (bullet-y blt)])
+	  (linear-step facing 3.0 blt)
+	  (yield)
+	  (let ([nx (bullet-x blt)]
+			[ny (bullet-y blt)]
+			[xv (flcos facing)]
+			[yv (flsin facing)])
+		(cond
+		 [(or
+		   ;; top
+		   (and (> oy aiko-sp2-y-top)
+				(<= ny aiko-sp2-y-top))
+		   ;; bottom
+		   (and (or (<= aiko-sp2-x-left nx aiko-sp2-goal-left)
+					(<= aiko-sp2-goal-right nx aiko-sp2-x-right))
+				(< oy aiko-sp2-y-bot)
+				(>= ny aiko-sp2-y-bot)))
+		  (loop (flatan (fl- yv) xv))]
+		 [(or
+		   ;; left
+		   (and (> ox aiko-sp2-x-left)
+				(<= nx aiko-sp2-x-left))
+		   ;; right
+		   (and (< ox aiko-sp2-x-right)
+				(>= nx aiko-sp2-x-right))
+		   ;; inner edges of the goal
+		   (and (or (and (> ox aiko-sp2-goal-left)
+						 (<= nx aiko-sp2-goal-left))
+					(and (< ox aiko-sp2-goal-right)
+						 (>= nx aiko-sp2-goal-right)))
+				(>= ny aiko-sp2-y-bot)))
+		  (loop (flatan yv (fl- xv)))]
+		 [else (loop facing)])))))
 
 (define (aiko-sp2 task aiko)
   (define bossinfo (enm-extras aiko))
@@ -663,64 +711,58 @@
   (wait 90)
   (raylib:play-sound (sebundle-longcharge sounds))
   (parameterize ([ovr-uncancelable #t])
-	(let* ([x-margin 24]
-		   [x-left (fx2fl (+ +playfield-min-x+ x-margin))]
-		   [x-right (fx2fl (- +playfield-max-x+ x-margin))]
-		   [x-len (fl- x-right x-left)]
-		   [y-margin-top 34]
-		   [y-margin-bot 23]
-		   [y-top (fx2fl y-margin-top)]
-		   [y-bot (fx2fl (- +playfield-max-y+ y-margin-bot))]
-		   [y-len (fl- y-bot y-top)]
-		   [ctrl (λ (_blt) (loop-forever))])
+	(let ([ctrl (λ (_blt) (loop-forever))])
 	  (for-each
 	   (λ (l) (bullet-addflags l (bltflags noshine)))
 	   (list
 		;; top edge
 		(spawn-laser 'fixed-laser-blue
-					 x-left y-top
-					 0.0 x-len 5.0
+					 aiko-sp2-x-left aiko-sp2-y-top
+					 0.0 aiko-sp2-x-len aiko-sp2-laser-radius
 					 40 60 ctrl)
 		;; left edge
-		(spawn-laser 'fixed-laser-blue x-left y-top
-					 (fl/ pi 2.0) y-len 5.0
+		(spawn-laser 'fixed-laser-blue aiko-sp2-x-left aiko-sp2-y-top
+					 (fl/ pi 2.0) aiko-sp2-y-len aiko-sp2-laser-radius
 					 40 60 ctrl)
 		;; right edge
-		(spawn-laser 'fixed-laser-blue x-right y-top
-					 (fl/ pi 2.0) y-len 5.0
+		(spawn-laser 'fixed-laser-blue aiko-sp2-x-right aiko-sp2-y-top
+					 (fl/ pi 2.0) aiko-sp2-y-len aiko-sp2-laser-radius
 					 40 60 ctrl)))
 	  ;; corners
-	  (spawn-bullet 'big-star-blue x-left y-top 15 values)
-	  (spawn-bullet 'big-star-blue x-right y-top 15 values)
-	  (spawn-bullet 'big-star-blue x-left y-bot 15 values)
-	  (spawn-bullet 'big-star-blue x-right y-bot 15 values)
+	  (spawn-bullet 'big-star-blue aiko-sp2-x-left aiko-sp2-y-top 15 values)
+	  (spawn-bullet 'big-star-blue aiko-sp2-x-right aiko-sp2-y-top 15 values)
+	  (spawn-bullet 'big-star-blue aiko-sp2-x-left aiko-sp2-y-bot 15 values)
+	  (spawn-bullet 'big-star-blue aiko-sp2-x-right aiko-sp2-y-bot 15 values)
 	  ;; bottom
-	  (spawn-laser 'fixed-laser-blue -67.0 y-bot
-				   pi (flabs (fl- x-left -67.0)) 5.0
+	  (spawn-laser 'fixed-laser-blue -67.0 aiko-sp2-y-bot
+				   pi (flabs (fl- aiko-sp2-x-left -67.0)) aiko-sp2-laser-radius
 				   40 60 ctrl)
-	  (spawn-laser 'fixed-laser-blue -67.0 y-bot
-				   (fl/ pi 2.0) 50.0 5.0
+	  (spawn-laser 'fixed-laser-blue -67.0 aiko-sp2-y-bot
+				   (fl/ pi 2.0) 50.0 aiko-sp2-laser-radius
 				   40 60 ctrl)
-	  (spawn-laser 'fixed-laser-blue 67.0 y-bot
-				   0.0 (fl- x-right 67.0) 5.0
+	  (spawn-laser 'fixed-laser-blue 67.0 aiko-sp2-y-bot
+				   0.0 (fl- aiko-sp2-x-right 67.0) aiko-sp2-laser-radius
 				   40 60 ctrl)
-	  (spawn-laser 'fixed-laser-blue 67.0 y-bot
-				   (fl/ pi 2.0) 50.0 5.0
+	  (spawn-laser 'fixed-laser-blue 67.0 aiko-sp2-y-bot
+				   (fl/ pi 2.0) 50.0 aiko-sp2-laser-radius
 				   40 60 ctrl)
 	  ;; penalty box (ball won't bounce off these lasers)
 	  ;; top
-	  (-> (spawn-laser 'fixed-laser-cyan -85.0 (fl- y-bot 90.0)
+	  (-> (spawn-laser 'fixed-laser-cyan -85.0 (fl- aiko-sp2-y-bot 90.0)
 					   0.0 160.0 3.0
 					   40 60 ctrl)
 		  (bullet-addflags (bltflags noshine)))
 	  ;; left
-	  (spawn-laser 'fixed-laser-cyan -85.0 (fl- y-bot 90.0)
+	  (spawn-laser 'fixed-laser-cyan -85.0 (fl- aiko-sp2-y-bot 90.0)
 				   hpi 85.0 3.0
 				   40 60 ctrl)
 	  ;; right
-	  (spawn-laser 'fixed-laser-cyan 85.0 (fl- y-bot 90.0)
+	  (spawn-laser 'fixed-laser-cyan 85.0 (fl- aiko-sp2-y-bot 90.0)
 				   hpi 85.0 3.0
-				   40 60 ctrl)))
+				   40 60 ctrl))
+	;; (spawn-bullet 'yinyang-blue 0.0 100.0 5
+	;; 			  aiko-sp2-ball-ctrl)
+	)
   (wait 60)
   (raylib:play-sound (sebundle-laser sounds))
   (wait-while keep-running?)
