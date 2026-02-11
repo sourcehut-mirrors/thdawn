@@ -492,7 +492,7 @@
   (aiko-non2 task hazuki))
 
 (define (aiko-non2-laser-ctrl is-right aiko blt)
-  (define start-ang (fl/ pi -2.0))
+  (define start-ang -hpi)
   (define dang (torad 160.0))
   (do [(i 0 (fx1+ i))]
 	  [(fx= i 300)]
@@ -602,7 +602,7 @@
 	 (λ (is-right)
 	   (spawn-laser 'fixed-laser-blue
 					(enm-x aiko) (enm-y aiko)
-					(fl/ pi -2.0)
+					-hpi
 					(fx2fl +playfield-height+)
 					5.0
 					40 30 (curry aiko-non2-laser-ctrl is-right aiko)))
@@ -725,11 +725,11 @@
 					 40 60 ctrl)
 		;; left edge
 		(spawn-laser 'fixed-laser-blue aiko-sp2-x-left aiko-sp2-y-top
-					 (fl/ pi 2.0) aiko-sp2-y-len aiko-sp2-laser-radius
+					 hpi aiko-sp2-y-len aiko-sp2-laser-radius
 					 40 60 ctrl)
 		;; right edge
 		(spawn-laser 'fixed-laser-blue aiko-sp2-x-right aiko-sp2-y-top
-					 (fl/ pi 2.0) aiko-sp2-y-len aiko-sp2-laser-radius
+					 hpi aiko-sp2-y-len aiko-sp2-laser-radius
 					 40 60 ctrl)))
 	  ;; corners
 	  (spawn-bullet 'big-star-blue aiko-sp2-x-left aiko-sp2-y-top 15 values)
@@ -741,13 +741,13 @@
 				   pi (flabs (fl- aiko-sp2-x-left -67.0)) aiko-sp2-laser-radius
 				   40 60 ctrl)
 	  (spawn-laser 'fixed-laser-blue -67.0 aiko-sp2-y-bot
-				   (fl/ pi 2.0) 50.0 aiko-sp2-laser-radius
+				   hpi 50.0 aiko-sp2-laser-radius
 				   40 60 ctrl)
 	  (spawn-laser 'fixed-laser-blue 67.0 aiko-sp2-y-bot
 				   0.0 (fl- aiko-sp2-x-right 67.0) aiko-sp2-laser-radius
 				   40 60 ctrl)
 	  (spawn-laser 'fixed-laser-blue 67.0 aiko-sp2-y-bot
-				   (fl/ pi 2.0) 50.0 aiko-sp2-laser-radius
+				   hpi 50.0 aiko-sp2-laser-radius
 				   40 60 ctrl)
 	  ;; penalty box (ball won't bounce off these lasers)
 	  ;; top

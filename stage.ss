@@ -1072,7 +1072,7 @@
 					(dotimes 60
 					  (linear-step facing speed blt)
 					  (yield))
-					(linear-step-forever (fl/ pi 2.0) 3.0 blt))))
+					(linear-step-forever hpi 3.0 blt))))
   (wait 60)
   (spawn-subtask "rings"
 	(λ (task)
