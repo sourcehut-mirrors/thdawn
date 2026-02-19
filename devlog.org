@@ -1,3 +1,34 @@
+* [2026-02-18 Wed]
+
+Only a bit of light work today but i think it's worth pausing briefly to figure out how
+the enemy and ball control tasks will coordinate for aiko sp2.
+
+Balls are transient as they can leave the playfield and despawn.
+
+Enemy task will coordinate spawning the ball and respawning it if it leaves the field.
+
+The ball control function itself is responsible only for its motion, nothing else.
+
+We'll have a "signal" box like we've done previously to turn on and off the ball's motion.
+
+Enemy task will go roughly like this:
+
+- Go to ball (turn off its motion)
+- Take ball to shooting spot
+- play little "run up" animation and sfx
+- "kick" ball, aka give it a direction and speed, unfreeze its motion
+- wait a bit for it to bounce around, either hardcoded time cap or until speed goes below
+  a certain point (former probably easier and can be hardcoded based on the bounds of the
+  initial speed)
+- repeat
+
+Another thing to think about is how the ball will behave when colliding with the player.
+
+Probably will need something like this
+https://stackoverflow.com/questions/35211114/2d-elastic-ball-collision-physics but I have
+a suspicion that we'll probably have to do quite a bit of tweaking because the player's
+speed will always be pretty low compared to the ball.
+
 * [2026-02-08 Sun]
 (late night Saturday)
 Redid Aiko non2. I think forcing the player to the bottom of the field should be the point
