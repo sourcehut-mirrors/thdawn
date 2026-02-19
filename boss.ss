@@ -711,6 +711,10 @@
 		 (fxpositive? (enm-health aiko))))
   (set! current-chapter 29)
   (declare-spell aiko 9)
+  ;; this is just for debug jumps, the previous nonspell should already leave
+  ;; us here
+  (enm-x-set! aiko +middle-boss-x+)
+  (enm-y-set! aiko 225.0)
   (wait 90)
   (raylib:play-sound (sebundle-longcharge sounds))
   (parameterize ([ovr-uncancelable #t])

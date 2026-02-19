@@ -58,7 +58,8 @@
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
 		  circle-hint-opaque
-		  circle-hint clear-bonus)
+		  circle-hint clear-bonus
+		  text-hint)
   make-particletype-set)
 (define-enumeration bltflag
   (uncancelable ;; cannot be cancelled by bombs or other standard cancels
@@ -3005,13 +3006,36 @@
 
 (define (draw-particles textures fonts)
   (define (each p)
+	(define age (particle-age p))
+	(define max-age (particle-max-age p))
+	(define (draw-centered-field-text text y size color)
+	  (define-values (width _)
+		(raylib:measure-text-ex (fontbundle-cabin fonts) text size 0.0))
+	  (raylib:draw-text-ex
+	   (fontbundle-cabin fonts)
+	   text
+	   (+ +playfield-render-offset-x+ (/ width -2.0))
+	   y
+	   size 0.0
+	   (cond
+		[(< age 30)
+		 (override-alpha
+		  color
+		  (eround (lerp 0 255 (ease-out-cubic (/ age 30)))))]
+		[(< age 120) color]
+		[else
+		 (override-alpha
+		  color
+		  (eround (lerp 255 0
+						(/ (- age 120)
+						   (- max-age 120)))))])))
 	(define render-x (+ (particle-x p) +playfield-render-offset-x+))
 	(define render-y (+ (particle-y p) +playfield-render-offset-y+))
 	(define extra-data (particle-extra-data p))
 	(define type (particle-type p))
 	(case type
 	  ([maple maple-grayscale]
-	   (let* ([t (/ (particle-age p) (particle-max-age p))]
+	   (let* ([t (/ age max-age)]
 			  [sz (lerp (assqdr 'initsz extra-data) 16 t)]
 			  [rot (assqdr 'rot extra-data)])
 		 (draw-sprite-pro-with-rotation
@@ -3020,22 +3044,22 @@
 		  (make-rectangle render-x render-y sz sz)
 		  (packcolor 255 255 255 (eround (lerp 255 0 t))))))
 	  ([graze]
-	   (let* ([t (/ (particle-age p) (particle-max-age p))]
+	   (let* ([t (/ age max-age)]
 			  [sz (lerp 6 0 t)]
 			  [rot (assqdr 'rot (particle-extra-data p))])
 		 (raylib:draw-rectangle-pro render-x render-y sz sz
 									(/ sz 2) (/ sz 2)
 									rot #xf5f5f5f5)))
 	  ([enmdeath]
-	   (let ([age (/ (particle-age p) (particle-max-age p))])
+	   (let ([t (/ age max-age)])
 		 (raylib:draw-circle-lines-v
 		  render-x render-y
 		  (inexact (lerp (assqdr 'start-radius extra-data)
 						 (assqdr 'end-radius extra-data)
-						 age))
-		  (packcolor 255 255 255 (eround (lerp 255 0 age))))))
+						 t))
+		  (packcolor 255 255 255 (eround (lerp 255 0 t))))))
 	  ([cancel]
-	   (let* ([age (floor (/ (particle-age p) 3))]
+	   (let* ([age (floor (/ age 3))]
 			  [v (if (fx< age 4) 0.0 64.0)]
 			  [u (* 64 (fxmod age 4))])
 		 (raylib:draw-texture-pro
@@ -3044,9 +3068,7 @@
 		  (make-rectangle (- render-x 24.0) (- render-y 24.0) 48.0 48.0)
 		  v2zero 0.0 -1)))
 	  ([itemvalue]
-	   (let ([alpha (round (lerp 255 0
-								 (ease-in-quad
-								  (/ (particle-age p) (particle-max-age p)))))]
+	   (let ([alpha (round (lerp 255 0 (ease-in-quad (/ age max-age))))]
 			 [color (car extra-data)]
 			 [value (cdr extra-data)]
 			 [render-x (fl+ render-x 10.0)])
@@ -3068,35 +3090,14 @@
 	   (let ([color (assqdr 'color extra-data)]
 			 [r (lerp (assqdr 'r1 extra-data)
 					  (assqdr 'r2 extra-data)
-					  (/ (particle-age p) (particle-max-age p)))])
+					  (/ age max-age))])
 		 ((if (eq? type 'circle-hint-opaque)
 			  raylib:draw-circle-v
 			  raylib:draw-circle-lines-v)
 		  render-x render-y
 		  r color)))
 	  ([spellbonus clear-bonus]
-	   (let*-values ([(width _) (raylib:measure-text-ex
-								 (fontbundle-cabin fonts)
-								 extra-data 24.0 0.0)]
-					 [(age) (particle-age p)])
-		 (raylib:draw-text-ex
-		  (fontbundle-cabin fonts)
-		  extra-data
-		  (+ +playfield-render-offset-x+ (/ width -2.0))
-		  75.0
-		  24.0 0.0
-		  (cond
-		   [(< age 30)
-			(fxlogior
-			 #xffffff00
-			 (eround (lerp 0 255 (ease-out-cubic (/ age 30)))))]
-		   [(< age 120) -1]
-		   [else
-			(fxlogior
-			 #xffffff00
-			 (eround (lerp 255 0
-						   (/ (- age 120)
-							  (- (particle-max-age p) 120)))))]))))))
+	   (draw-centered-field-text extra-data 75.0 24.0 -1))))
   (vector-for-each-truthy each live-particles))
 
 (define-record-type miscent
