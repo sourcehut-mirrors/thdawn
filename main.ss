@@ -3008,27 +3008,31 @@
   (define (each p)
 	(define age (particle-age p))
 	(define max-age (particle-max-age p))
-	(define (draw-centered-field-text text y size color)
-	  (define-values (width _)
+	(define (draw-centered-field-text text y size color bg)
+	  (define-values (width height)
 		(raylib:measure-text-ex (fontbundle-cabin fonts) text size 0.0))
+	  (define render-x (+ +playfield-render-offset-x+ (/ width -2.0)))
+	  (define alpha
+		(cond
+		 [(< age 30)
+		  (eround (lerp 0 255 (ease-out-cubic (/ age 30))))]
+		 [(< age 120) color]
+		 [else
+		  (eround (lerp 255 0 (/ (- age 120)
+								 (- max-age 120))))]))
+	  (when bg
+		(raylib:draw-rectangle-rec
+		 (fl- render-x 5.0)
+		 (fl- render-y 5.0)
+		 (fl+ width 10.0)
+		 (fl+ height 10.0)
+		 (override-alpha #x888888aa (fxmin alpha #xaa))))
 	  (raylib:draw-text-ex
 	   (fontbundle-cabin fonts)
 	   text
-	   (+ +playfield-render-offset-x+ (/ width -2.0))
-	   y
+	   render-x y
 	   size 0.0
-	   (cond
-		[(< age 30)
-		 (override-alpha
-		  color
-		  (eround (lerp 0 255 (ease-out-cubic (/ age 30)))))]
-		[(< age 120) color]
-		[else
-		 (override-alpha
-		  color
-		  (eround (lerp 255 0
-						(/ (- age 120)
-						   (- max-age 120)))))])))
+	   (override-alpha color alpha)))
 	(define render-x (+ (particle-x p) +playfield-render-offset-x+))
 	(define render-y (+ (particle-y p) +playfield-render-offset-y+))
 	(define extra-data (particle-extra-data p))
@@ -3097,7 +3101,12 @@
 		  render-x render-y
 		  r color)))
 	  ([spellbonus clear-bonus]
-	   (draw-centered-field-text extra-data 75.0 24.0 -1))))
+	   (draw-centered-field-text extra-data 75.0 24.0 -1 #f))
+	  ([text-hint]
+	   (let ([text (assqdr 'text extra-data)]
+			 [size (assqdr 'size extra-data)]
+			 [color (assqdr 'color extra-data)])
+		 (draw-centered-field-text text render-y size color #t)))))
   (vector-for-each-truthy each live-particles))
 
 (define-record-type miscent

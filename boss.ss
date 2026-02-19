@@ -770,6 +770,11 @@
 	;; (spawn-bullet 'yinyang-blue 0.0 100.0 5
 	;; 			  aiko-sp2-ball-ctrl)
 	)
+  (spawn-particle
+   (particletype text-hint) 0.0 280.0 150
+   '((text . "Don't let Aiko score a goal!")
+	 (size . 24.0)
+	 (color . #x00ffffff)))
   (wait 60)
   (raylib:play-sound (sebundle-laser sounds))
   (wait-while keep-running?)
