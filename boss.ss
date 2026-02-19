@@ -677,7 +677,7 @@
 		(cond
 		 [(> ny (+ +playfield-max-y+ 10))
 		  (damage-player)
-		  (linear-step-forever facing 3.0 blt)]
+		  (cancel-bullet blt #t)]
 		 [(or
 		   ;; top
 		   (and (> oy aiko-sp2-y-top)
