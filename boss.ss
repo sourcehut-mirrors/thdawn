@@ -777,6 +777,15 @@
 	 (color . #x00ffffff)))
   (wait 60)
   (raylib:play-sound (sebundle-laser sounds))
+  (spawn-subtask "protection"
+	(λ (task)
+	  (interval-loop 20
+		(when (fl< player-y 300.0)
+		  (-> (cb)
+			  (cbcount 36)
+			  (cbspeed 2.0)
+			  (cbshootenm aiko 'small-star-magenta 2 #f)))))
+	keep-running? task)
   (wait-while keep-running?)
   (common-spell-postlude bossinfo aiko)
   (group-sp3 task aiko))
