@@ -1,3 +1,15 @@
+* [2026-02-20 Fri]
+Hacked up the main loop for aiko sp2. It surprisingly works pretty well and fun to see
+take shape.
+
+Things to iron out:
+- Collision is all sorts of wack. Should probably just hardcode a bunch of rectangles for
+  the lasers and use the circle-rec function in geom.ss rather than doing a bunch of
+  boundary check stuff. But then will run into tunneling issues. Seems complex -.-
+- Timings and positions and stuff
+- Smarter choice of what direction to shoot in
+- Maybe some more decoration bullets
+
 * [2026-02-18 Wed]
 
 Only a bit of light work today but i think it's worth pausing briefly to figure out how
@@ -13,14 +25,14 @@ We'll have a "signal" box like we've done previously to turn on and off the ball
 
 Enemy task will go roughly like this:
 
-- Go to ball (turn off its motion)
+- Go to ball (turn off its motion). If no ball, spawn it.
 - Take ball to shooting spot
 - play little "run up" animation and sfx
 - "kick" ball, aka give it a direction and speed, unfreeze its motion
 - wait a bit for it to bounce around, either hardcoded time cap or until speed goes below
   a certain point (former probably easier and can be hardcoded based on the bounds of the
-  initial speed)
-- repeat
+  initial speed), or if the ball leaves the play field
+- wait a bit, then repeat
 
 Another thing to think about is how the ball will behave when colliding with the player.
 

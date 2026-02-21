@@ -651,7 +651,6 @@
   (aiko-sp2 task aiko))
 
 (define aiko-sp2-x-margin 24)
-(define aiko-sp2-x-left)
 (define aiko-sp2-x-left (fx2fl (+ +playfield-min-x+ aiko-sp2-x-margin)))
 (define aiko-sp2-x-right (fx2fl (- +playfield-max-x+ aiko-sp2-x-margin)))
 (define aiko-sp2-x-len (fl- aiko-sp2-x-right aiko-sp2-x-left))
@@ -664,45 +663,71 @@
 (define aiko-sp2-goal-right (fl- aiko-sp2-goal-left))
 (define aiko-sp2-laser-radius 5.0)
 
-(define (aiko-sp2-ball-ctrl blt)
-  (let loop ([facing (centered-roll game-rng pi)])
-	(let ([ox (bullet-x blt)]
-		  [oy (bullet-y blt)])
-	  (linear-step facing 3.0 blt)
-	  (yield)
-	  (let ([nx (bullet-x blt)]
-			[ny (bullet-y blt)]
-			[xv (flcos facing)]
-			[yv (flsin facing)])
-		(cond
-		 [(> ny (+ +playfield-max-y+ 10))
-		  (damage-player)
-		  (cancel-bullet blt #t)]
-		 [(or
-		   ;; top
-		   (and (> oy aiko-sp2-y-top)
-				(<= ny aiko-sp2-y-top))
-		   ;; bottom
-		   (and (or (<= aiko-sp2-x-left nx aiko-sp2-goal-left)
-					(<= aiko-sp2-goal-right nx aiko-sp2-x-right))
-				(< oy aiko-sp2-y-bot)
-				(>= ny aiko-sp2-y-bot)))
-		  (loop (flatan (fl- yv) xv))]
-		 [(or
-		   ;; left
-		   (and (> ox aiko-sp2-x-left)
-				(<= nx aiko-sp2-x-left))
-		   ;; right
-		   (and (< ox aiko-sp2-x-right)
-				(>= nx aiko-sp2-x-right))
-		   ;; inner edges of the goal
-		   (and (or (and (> ox aiko-sp2-goal-left)
-						 (<= nx aiko-sp2-goal-left))
-					(and (< ox aiko-sp2-goal-right)
-						 (>= nx aiko-sp2-goal-right)))
-				(>= ny aiko-sp2-y-bot)))
-		  (loop (flatan yv (fl- xv)))]
-		 [else (loop facing)])))))
+(define (aiko-sp2-ball-ctrl msg-box aiko blt)
+  (let loop ([state 'stop]
+			 [facing 0.0]
+			 [speed 0.0])
+	(let ([msg (unbox msg-box)])
+	  (when msg
+		(set-box! msg-box #f)
+		(record-case msg
+		  [(stop) ()
+		   (loop 'stop 0.0 0.0)]
+		  [(attach) ()
+		   (loop 'attach 0.0 0.0)]
+		  [(move) (facing speed)
+		   (loop 'move facing speed)])))
+
+	(case state
+	  [(stop)
+	   (yield)
+	   (loop state facing speed)]
+	  [(attach)
+	   (bullet-x-set! blt (enm-x aiko))
+	   (bullet-y-set! blt (enm-y aiko))
+	   (yield)
+	   (loop state facing speed)]
+	  [(move)
+	   (when (flnegative? speed)
+		 (loop 'stop 0.0 0.0))
+	   (let ([ox (bullet-x blt)]
+			 [oy (bullet-y blt)])
+		 (linear-step facing speed blt)
+		 (yield)
+		 (let ([nx (bullet-x blt)]
+			   [ny (bullet-y blt)]
+			   [xv (flcos facing)]
+			   [yv (flsin facing)]
+			   [new-speed (fl- speed 0.01)])
+		   (cond
+			[(> ny (+ +playfield-max-y+ 10))
+			 (damage-player)
+			 (cancel-bullet blt #t)]
+			[(or
+			  ;; top
+			  (and (> oy aiko-sp2-y-top)
+				   (<= ny aiko-sp2-y-top))
+			  ;; bottom
+			  (and (or (<= aiko-sp2-x-left nx aiko-sp2-goal-left)
+					   (<= aiko-sp2-goal-right nx aiko-sp2-x-right))
+				   (< oy aiko-sp2-y-bot)
+				   (>= ny aiko-sp2-y-bot)))
+			 (loop state (flatan (fl- yv) xv) new-speed)]
+			[(or
+			  ;; left
+			  (and (> ox aiko-sp2-x-left)
+				   (<= nx aiko-sp2-x-left))
+			  ;; right
+			  (and (< ox aiko-sp2-x-right)
+				   (>= nx aiko-sp2-x-right))
+			  ;; inner edges of the goal
+			  (and (or (and (> ox aiko-sp2-goal-left)
+							(<= nx aiko-sp2-goal-left))
+					   (and (< ox aiko-sp2-goal-right)
+							(>= nx aiko-sp2-goal-right)))
+				   (>= ny aiko-sp2-y-bot)))
+			 (loop state (flatan yv (fl- xv)) new-speed)]
+			[else (loop state facing new-speed)])))])))
 
 (define (aiko-sp2 task aiko)
   (define bossinfo (enm-extras aiko))
@@ -766,10 +791,7 @@
 	  ;; right
 	  (spawn-laser 'fixed-laser-cyan 85.0 (fl- aiko-sp2-y-bot 90.0)
 				   hpi 85.0 3.0
-				   40 60 ctrl))
-	;; (spawn-bullet 'yinyang-blue 0.0 100.0 5
-	;; 			  aiko-sp2-ball-ctrl)
-	)
+				   40 60 ctrl)))
   (spawn-particle
    (particletype text-hint) 0.0 280.0 150
    '((text . "Don't let Aiko score a goal!")
@@ -785,6 +807,43 @@
 			  (cbcount 36)
 			  (cbspeed 2.0)
 			  (cbshootenm aiko 'small-star-magenta 2 #f)))))
+	keep-running? task)
+  (spawn-subtask "main"
+	(λ (task)
+	  (define (spawn-ball)
+		(parameterize ([ovr-uncancelable #t]
+					   [ovr-noclip #t])
+		  (spawn-bullet 'yinyang-blue 0.0 200.0 5
+						(curry aiko-sp2-ball-ctrl msg-box aiko))))
+	  (define msg-box (box #f))
+	  (define cur-ball (spawn-ball))
+	  (ease-to values 0.0 190.0 60 aiko)
+	  (wait 60)
+	  ;; at the beginning of each wave, aiko and ball are both assumed to be
+	  ;; in their proper initial positions
+	  (let wave ([start-frames frames])
+		(raylib:play-sound (sebundle-longcharge sounds))
+		(ease-to values 0.0 160.0 30 aiko)
+		(wait 10)
+		(ease-to values 0.0 190.0 10 aiko)
+		(raylib:play-sound (sebundle-shoot0 sounds))
+		(set-box! msg-box (list 'move (torad (fx2fl (roll game-rng 360))) 8.0))
+		(wait-until (thunk (or (fx> (fx- frames start-frames) 480)
+							   (not (vector-index cur-ball live-bullets)))))
+		(if (vector-index cur-ball live-bullets)
+			(begin
+			  (set-box! msg-box '(stop))
+			  (ease-to values (bullet-x cur-ball) (bullet-y cur-ball) 60 aiko)
+			  (set-box! msg-box '(attach))
+			  (ease-to values 0.0 200.0 60 aiko)
+			  (set-box! msg-box '(stop))
+			  (ease-to values 0.0 190.0 10 aiko)
+			  (wave frames))
+			(begin
+			  (ease-to values 0.0 190.0 60 aiko)
+			  (set! cur-ball (spawn-ball))
+			  (wait 60)
+			  (wave frames)))))
 	keep-running? task)
   (wait-while keep-running?)
   (common-spell-postlude bossinfo aiko)
