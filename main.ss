@@ -3837,10 +3837,12 @@
 
 
   (when (raylib:is-key-down key-space)
-	(parameterize ([ovr-uncancelable #t]
-				   [ovr-noclip #t])
+	(parameterize ([ovr-noclip #t])
 	  (spawn-bullet 'yinyang-blue player-x player-y 5
-					aiko-sp2-ball-ctrl)))
+					(curry aiko-sp2-ball-ctrl
+						   (box (list 'move (torad (fx2fl (roll visual-rng 360)))
+									  8.0))
+						   #f))))
   (when (raylib:is-key-pressed key-a)
 	(when (> spline-editor-selected-position 0)
 	  (set! spline-editor-selected-position (sub1 spline-editor-selected-position))))
@@ -4004,7 +4006,15 @@
 	(raylib:draw-circle-v render-player-x render-player-y +graze-radius+
 						  green)
 	(raylib:draw-circle-v render-player-x render-player-y +hit-radius+
-						  red)))
+						  red)
+	(for-each
+	 (λ (r)
+	   (raylib:draw-rectangle-rec
+		(+ (rectangle-x r) +playfield-render-offset-x+)
+		(+ (rectangle-y r) +playfield-render-offset-y+)
+		(rectangle-width r) (rectangle-height r)
+		red))
+	 (append aiko-sp2-horiz-rects aiko-sp2-vertical-rects))))
 
 (define (draw-boss-hud position enm textures fonts)
   (define bossinfo (enm-extras enm))

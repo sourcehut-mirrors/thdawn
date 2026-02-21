@@ -662,8 +662,65 @@
 (define aiko-sp2-goal-left -67.0)
 (define aiko-sp2-goal-right (fl- aiko-sp2-goal-left))
 (define aiko-sp2-laser-radius 5.0)
+(define aiko-sp2-bot-len (fl- aiko-sp2-x-right aiko-sp2-goal-right))
+
+(define aiko-sp2-vertical-rects
+  (list
+   ;; left
+   (make-rectangle
+	(fl- aiko-sp2-x-left aiko-sp2-laser-radius)
+	aiko-sp2-y-top
+	(fl* 2.0 aiko-sp2-laser-radius)
+	aiko-sp2-y-len)
+   ;; right
+   (make-rectangle
+	(fl- aiko-sp2-x-right aiko-sp2-laser-radius)
+	aiko-sp2-y-top
+	(fl* 2.0 aiko-sp2-laser-radius)
+	aiko-sp2-y-len)
+   ;; goal left
+   (make-rectangle
+	(fl- aiko-sp2-goal-left aiko-sp2-laser-radius)
+	aiko-sp2-y-bot
+	(fl* 2.0 aiko-sp2-laser-radius)
+	(fx2fl (fx+ aiko-sp2-y-margin-bot 10)))
+   ;; goal right
+   (make-rectangle
+	(fl- aiko-sp2-goal-right aiko-sp2-laser-radius)
+	aiko-sp2-y-bot
+	(fl* 2.0 aiko-sp2-laser-radius)
+	(fx2fl (fx+ aiko-sp2-y-margin-bot 10)))))
+(define aiko-sp2-horiz-rects
+  (list
+   ;; top
+   (make-rectangle
+	aiko-sp2-x-left
+	(fl- aiko-sp2-y-top aiko-sp2-laser-radius)
+	aiko-sp2-x-len
+	(fl* 2.0 aiko-sp2-laser-radius))
+   ;; bottom left
+   (make-rectangle
+	aiko-sp2-x-left
+	(fl- aiko-sp2-y-bot aiko-sp2-laser-radius)
+	(fl+ aiko-sp2-bot-len aiko-sp2-laser-radius) ;; extend to make a sharp corner
+	(fl* 2.0 aiko-sp2-laser-radius))
+   ;; bottom right
+   (make-rectangle
+	(fl- aiko-sp2-goal-right aiko-sp2-laser-radius) ;; extend to make a sharp corner
+	(fl- aiko-sp2-y-bot aiko-sp2-laser-radius)
+	aiko-sp2-bot-len
+	(fl* 2.0 aiko-sp2-laser-radius))))
+
 
 (define (aiko-sp2-ball-ctrl msg-box aiko blt)
+  (define (collide rects)
+	(find
+	 (λ (r) (check-collision-circle-rec
+			 (bullet-x blt) (bullet-y blt)
+			 (bullet-hit-radius (bullet-type blt))
+			 (rectangle-x r) (rectangle-y r)
+			 (rectangle-width r) (rectangle-height r)))
+	 rects))
   (let loop ([state 'stop]
 			 [facing 0.0]
 			 [speed 0.0])
@@ -680,6 +737,8 @@
 
 	(case state
 	  [(stop)
+	   (unless aiko
+		 (cancel-bullet blt #t))
 	   (yield)
 	   (loop state facing speed)]
 	  [(attach)
@@ -694,38 +753,30 @@
 			 [oy (bullet-y blt)])
 		 (linear-step facing speed blt)
 		 (yield)
-		 (let ([nx (bullet-x blt)]
-			   [ny (bullet-y blt)]
-			   [xv (flcos facing)]
-			   [yv (flsin facing)]
+		 (let ([nx (bullet-x blt)] [ny (bullet-y blt)]
+			   [xv (flcos facing)] [yv (flsin facing)]
+			   [collide-horiz (collide aiko-sp2-horiz-rects)]
+			   [collide-vert (collide aiko-sp2-vertical-rects)]
 			   [new-speed (fl- speed 0.01)])
+		   ;; awful hax
+		   (when (and collide-horiz collide-vert)
+			 ;; hitting the left corner
+			 ;; if the y is above the horizontal line, treat it as a horizontal coll
+			 ;; else vertical
+			 (if (< ny (rectangle-y collide-horiz))
+				 (set! collide-vert #f)
+				 (set! collide-horiz #f)))
 		   (cond
 			[(> ny (+ +playfield-max-y+ 10))
 			 (damage-player)
 			 (cancel-bullet blt #t)]
-			[(or
-			  ;; top
-			  (and (> oy aiko-sp2-y-top)
-				   (<= ny aiko-sp2-y-top))
-			  ;; bottom
-			  (and (or (<= aiko-sp2-x-left nx aiko-sp2-goal-left)
-					   (<= aiko-sp2-goal-right nx aiko-sp2-x-right))
-				   (< oy aiko-sp2-y-bot)
-				   (>= ny aiko-sp2-y-bot)))
+			[collide-horiz
+			 (bullet-x-set! blt ox)
+			 (bullet-y-set! blt oy)
 			 (loop state (flatan (fl- yv) xv) new-speed)]
-			[(or
-			  ;; left
-			  (and (> ox aiko-sp2-x-left)
-				   (<= nx aiko-sp2-x-left))
-			  ;; right
-			  (and (< ox aiko-sp2-x-right)
-				   (>= nx aiko-sp2-x-right))
-			  ;; inner edges of the goal
-			  (and (or (and (> ox aiko-sp2-goal-left)
-							(<= nx aiko-sp2-goal-left))
-					   (and (< ox aiko-sp2-goal-right)
-							(>= nx aiko-sp2-goal-right)))
-				   (>= ny aiko-sp2-y-bot)))
+			[collide-vert
+			 (bullet-x-set! blt ox)
+			 (bullet-y-set! blt oy)
 			 (loop state (flatan yv (fl- xv)) new-speed)]
 			[else (loop state facing new-speed)])))])))
 
@@ -766,16 +817,16 @@
 	  (spawn-bullet 'big-star-blue aiko-sp2-x-left aiko-sp2-y-bot 15 values)
 	  (spawn-bullet 'big-star-blue aiko-sp2-x-right aiko-sp2-y-bot 15 values)
 	  ;; bottom
-	  (spawn-laser 'fixed-laser-blue -67.0 aiko-sp2-y-bot
-				   pi (flabs (fl- aiko-sp2-x-left -67.0)) aiko-sp2-laser-radius
+	  (spawn-laser 'fixed-laser-blue aiko-sp2-goal-left aiko-sp2-y-bot
+				   pi aiko-sp2-bot-len aiko-sp2-laser-radius
 				   40 60 ctrl)
-	  (spawn-laser 'fixed-laser-blue -67.0 aiko-sp2-y-bot
+	  (spawn-laser 'fixed-laser-blue aiko-sp2-goal-left aiko-sp2-y-bot
 				   hpi 50.0 aiko-sp2-laser-radius
 				   40 60 ctrl)
-	  (spawn-laser 'fixed-laser-blue 67.0 aiko-sp2-y-bot
-				   0.0 (fl- aiko-sp2-x-right 67.0) aiko-sp2-laser-radius
+	  (spawn-laser 'fixed-laser-blue aiko-sp2-goal-right aiko-sp2-y-bot
+				   0.0 aiko-sp2-bot-len aiko-sp2-laser-radius
 				   40 60 ctrl)
-	  (spawn-laser 'fixed-laser-blue 67.0 aiko-sp2-y-bot
+	  (spawn-laser 'fixed-laser-blue aiko-sp2-goal-right aiko-sp2-y-bot
 				   hpi 50.0 aiko-sp2-laser-radius
 				   40 60 ctrl)
 	  ;; penalty box (ball won't bounce off these lasers)
@@ -827,7 +878,10 @@
 		(wait 10)
 		(ease-to values 0.0 190.0 10 aiko)
 		(raylib:play-sound (sebundle-shoot0 sounds))
-		(set-box! msg-box (list 'move (torad (fx2fl (roll game-rng 360))) 8.0))
+		(set-box! msg-box (list 'move
+								(facing-player (bullet-x cur-ball)
+											   (bullet-y cur-ball))
+								#;(torad (fx2fl (roll game-rng 360))) 8.0))
 		(wait-until (thunk (or (fx> (fx- frames start-frames) 480)
 							   (not (vector-index cur-ball live-bullets)))))
 		(if (vector-index cur-ball live-bullets)
