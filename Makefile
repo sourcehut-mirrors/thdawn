@@ -1,6 +1,6 @@
 .PHONY: all
 all:
-	./build.ss
+	BUILD_VERSION=$$(git describe --always) ./build.ss
 
 .PHONY: clean
 clean:

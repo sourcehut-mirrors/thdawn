@@ -7,6 +7,13 @@
 		(coro) (geom) (funcutils) (config)
 		(srfi171meta) (srfi171))
 (alias λ lambda)
+(define (game-version)
+  (define-syntax (game-version-impl stx)
+	(syntax-case stx ()
+	  [id (identifier? #'id)
+	  (let ([ver (getenv "BUILD_VERSION")])
+		(datum->syntax #'id (or ver "unknown")))]))
+  game-version-impl)
 (define-enumeration vkey
   (up down left right shoot bomb focus pause
 	  screenshot quick-restart quick-quit)
@@ -1039,7 +1046,8 @@
 					  (nameinput-final-name ni-gui)
 					  (score-entry-score entry)
 					  (score-entry-unixtime entry)
-					  (score-entry-cleared entry)))
+					  (score-entry-cleared entry)
+					  (game-version)))
 				   (with-output-to-file path
 					 (thunk
 					  (write real-entry)
@@ -1355,12 +1363,12 @@
    (λ (ni-gui)
 	 (define hiscore (assq 'hiscore play-data))
 	 (define name (nameinput-final-name ni-gui))
-	 (define entry (make-score-entry name score time cleared))
+	 (define entry (make-score-entry name score time cleared (game-version)))
 	 (set-cdr!
 	  hiscore
 	  (list-sort
 	   (λ (a b) (> (score-entry-score a)
-						(score-entry-score b)))
+				   (score-entry-score b)))
 	   (cons entry (cdr hiscore))))
 	 (save-play-data play-data)
 	 (raylib:play-sound (sebundle-extend sounds))
@@ -2164,9 +2172,9 @@
 	 (make-spell-descriptor "\"Magical Stage\""
 							5940 20000 5000000 'group std std-fail))))
 (define-record-type score-entry
-  (fields name score unixtime cleared)
+  (fields name score unixtime cleared version)
   (sealed #t)
-  (nongenerative #{score-entry byl66r2aw4bzvb0i8cr54d58t-3}))
+  (nongenerative #{score-entry byl66r2aw4bzvb0i8cr54d58t-4}))
 (define play-data #f)
 (define +playdata-path+ "playdata.dat")
 (define (load-play-data)
