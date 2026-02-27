@@ -7,6 +7,7 @@
   (export rectangle-x rectangle-y rectangle-width rectangle-height make-rectangle
 		  v2x v2y vec2 v2+ v2- v2* v2zero v2unit v2sqrlen v2dot
 		  check-collision-circles check-collision-recs check-collision-circle-rec
+		  do-bounce-off
 		  lerp eval-bezier-quad eval-bezier-cubic
 		  pi -pi tau hpi -hpi
 		  torad todeg eround epsilon-equal clamp
@@ -82,7 +83,7 @@
   (define (vec2 x y)
 	;; will assert in dev, but be optimized away in prod
 	(make-vector2 (fl+ x) (fl+ y)))
-  
+
   (define v2zero (vec2 0.0 0.0))
 
   (define (v2unit v)
@@ -171,7 +172,7 @@
 	(define p1y (v2y p1))
 	(define p2x (v2x p2))
 	(define p2y (v2y p2))
-	
+
 	(define x (lerp (lerp p0x p1x t)
 					(lerp p1x p2x t)
 					t))
@@ -187,5 +188,83 @@
 	 (v2* p1 (* 3 invt invt t))
 	 (v2* p2 (* 3 invt t t))
 	 (v2* p3 (* t t t))))
+
+  ;; Next two functions derived from
+  ;; https://github.com/raylib-extras/examples-c/blob/main/rect_circle_collisions/rect_circle_collisions.c
+  ;; Copyright (c) 2022 Jeffery Myers, used under the Zlib license
+  ;; Returns three values: hit point vec2, hit normal vec2
+  ;; whether a horizontal face was hit (meaning the ball needs
+  ;; to bounce vertically) bool
+  (define (point-nearest-rectangle p rect)
+	(define px (v2x p))
+	(define py (v2y p))
+	(define rx (rectangle-x rect))
+	(define ry (rectangle-y rect))
+	(define rw (rectangle-width rect))
+	(define rh (rectangle-height rect))
+
+	(define-values (hit-x xdir)
+	  (if (fl> px (fl+ rx rw))
+		  (values (fl+ rx rw) 1.0)
+		  (values rx -1.0)))
+	(define nearest-horiz
+	  (let* ([to-point (v2- (vec2 hit-x ry) p)]
+			 [dot (v2dot (vec2 0.0 -1.0) to-point)])
+		(vec2
+		 hit-x
+		 (cond
+		  [(fl< dot 0.0) ry]
+		  [(fl>= dot rh) (fl+ ry rh)]
+		  [else (fl+ ry dot)]))))
+
+	(define-values (hit-y ydir)
+	  (if (fl> py (fl+ ry rh))
+		  (values (fl+ ry rh) 1.0)
+		  (values ry -1.0)))
+	(define nearest-vert
+	  (let* ([to-point (v2- (vec2 rx hit-y) p)]
+			 [dot (v2dot (vec2 -1.0 0.0) to-point)])
+		(vec2
+		 (cond
+		  [(fl< dot 0.0) rx]
+		  [(fl> dot rw) (fl+ rx rw)]
+		  [else (fl+ rx dot)])
+		 hit-y)))
+	(if (fl< (v2sqrlen (v2- p nearest-horiz))
+			 (v2sqrlen (v2- p nearest-vert)))
+		(values nearest-horiz (vec2 xdir 0.0))
+		(values nearest-vert (vec2 0.0 ydir))))
+
+  ;; returns (new p, new facing)
+  (define (do-bounce-off p r facing rects)
+	(define result
+	  (fold-left
+	   (lambda (acc rect)
+		 (define p (vector-ref acc 0))
+		 (define-values (hitpoint hitnorm)
+		   (point-nearest-rectangle p rect))
+		 (define to-hit (v2- hitpoint p))
+		 (define hit-horizontal-face (flzero? (v2x hitnorm)))
+		 (when (fl< (v2sqrlen to-hit) (fl* r r))
+		   ;; Compute deepest part of ball
+		   (let* ([proj (v2+ p (v2* (v2unit to-hit) r))]
+				  ;; Nudge enough to get deepest part out to the hitpoint
+				  [new-p
+				   (if hit-horizontal-face
+					   (vec2 (v2x p)
+							 (fl+ (v2y p) (fl- (v2y hitpoint) (v2y proj))))
+					   (vec2 (fl+ (v2x p) (fl- (v2x hitpoint) (v2x proj)))
+							 (v2y p)))])
+			 (vector-set! acc 0 new-p))
+		   ;; Bounce
+		   (if hit-horizontal-face
+			   (vector-set! acc 2 (fl- (vector-ref acc 2)))
+			   (vector-set! acc 1 (fl- (vector-ref acc 1)))))
+		 acc)
+	   (vector p (flcos facing) (flsin facing))
+	   rects))
+	(values (vector-ref result 0)
+			(flatan (vector-ref result 2)
+					(vector-ref result 1))))
 
   )

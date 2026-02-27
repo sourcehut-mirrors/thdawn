@@ -681,13 +681,13 @@
    ;; goal left
    (make-rectangle
 	(fl- aiko-sp2-goal-left aiko-sp2-laser-radius)
-	aiko-sp2-y-bot
+	(fl- aiko-sp2-y-bot aiko-sp2-laser-radius)
 	(fl* 2.0 aiko-sp2-laser-radius)
 	(fx2fl (fx+ aiko-sp2-y-margin-bot 10)))
    ;; goal right
    (make-rectangle
 	(fl- aiko-sp2-goal-right aiko-sp2-laser-radius)
-	aiko-sp2-y-bot
+	(fl- aiko-sp2-y-bot aiko-sp2-laser-radius)
 	(fl* 2.0 aiko-sp2-laser-radius)
 	(fx2fl (fx+ aiko-sp2-y-margin-bot 10)))))
 (define aiko-sp2-horiz-rects
@@ -702,25 +702,18 @@
    (make-rectangle
 	aiko-sp2-x-left
 	(fl- aiko-sp2-y-bot aiko-sp2-laser-radius)
-	(fl+ aiko-sp2-bot-len aiko-sp2-laser-radius) ;; extend to make a sharp corner
+	(fl- aiko-sp2-bot-len aiko-sp2-laser-radius)
 	(fl* 2.0 aiko-sp2-laser-radius))
    ;; bottom right
    (make-rectangle
-	(fl- aiko-sp2-goal-right aiko-sp2-laser-radius) ;; extend to make a sharp corner
+	(fl- aiko-sp2-goal-right aiko-sp2-laser-radius)
 	(fl- aiko-sp2-y-bot aiko-sp2-laser-radius)
-	aiko-sp2-bot-len
+	(fl+ aiko-sp2-bot-len (fl* 2.0 aiko-sp2-laser-radius))
 	(fl* 2.0 aiko-sp2-laser-radius))))
+(define aiko-sp2-rects (append aiko-sp2-vertical-rects aiko-sp2-horiz-rects))
 
 
 (define (aiko-sp2-ball-ctrl msg-box aiko blt)
-  (define (collide rects)
-	(find
-	 (λ (r) (check-collision-circle-rec
-			 (bullet-x blt) (bullet-y blt)
-			 (bullet-hit-radius (bullet-type blt))
-			 (rectangle-x r) (rectangle-y r)
-			 (rectangle-width r) (rectangle-height r)))
-	 rects))
   (let loop ([state 'stop]
 			 [facing 0.0]
 			 [speed 0.0])
@@ -753,32 +746,21 @@
 			 [oy (bullet-y blt)])
 		 (linear-step facing speed blt)
 		 (yield)
-		 (let ([nx (bullet-x blt)] [ny (bullet-y blt)]
-			   [xv (flcos facing)] [yv (flsin facing)]
-			   [collide-horiz (collide aiko-sp2-horiz-rects)]
-			   [collide-vert (collide aiko-sp2-vertical-rects)]
-			   [new-speed (fl- speed 0.01)])
-		   ;; awful hax
-		   (when (and collide-horiz collide-vert)
-			 ;; hitting the left corner
-			 ;; if the y is above the horizontal line, treat it as a horizontal coll
-			 ;; else vertical
-			 (if (< ny (rectangle-y collide-horiz))
-				 (set! collide-vert #f)
-				 (set! collide-horiz #f)))
-		   (cond
-			[(> ny (+ +playfield-max-y+ 10))
-			 (damage-player)
-			 (cancel-bullet blt #t)]
-			[collide-horiz
-			 (bullet-x-set! blt ox)
-			 (bullet-y-set! blt oy)
-			 (loop state (flatan (fl- yv) xv) new-speed)]
-			[collide-vert
-			 (bullet-x-set! blt ox)
-			 (bullet-y-set! blt oy)
-			 (loop state (flatan yv (fl- xv)) new-speed)]
-			[else (loop state facing new-speed)])))])))
+
+		 (when (> (bullet-y blt) (+ +playfield-max-y+ 10))
+		   (damage-player)
+		   (cancel-bullet blt #t)
+		   ;; hacky imperative return to stop doing further processing
+		   ;; we won't resume anymore because we canceled the bullet
+		   (yield))
+
+		 (let-values ([(new-pos new-facing)
+					   (do-bounce-off (vec2 (bullet-x blt) (bullet-y blt))
+									  (bullet-hit-radius (bullet-type blt))
+									  facing aiko-sp2-rects)])
+		   (bullet-x-set! blt (v2x new-pos))
+		   (bullet-y-set! blt (v2y new-pos))
+		   (loop state new-facing (fl- speed 0.01))))])))
 
 (define (aiko-sp2 task aiko)
   (define bossinfo (enm-extras aiko))

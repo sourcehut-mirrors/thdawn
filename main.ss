@@ -4014,7 +4014,16 @@
 		(+ (rectangle-y r) +playfield-render-offset-y+)
 		(rectangle-width r) (rectangle-height r)
 		red))
-	 (append aiko-sp2-horiz-rects aiko-sp2-vertical-rects))))
+	 aiko-sp2-horiz-rects)
+	(for-each
+	 (λ (r)
+	   (raylib:draw-rectangle-rec
+		(+ (rectangle-x r) +playfield-render-offset-x+)
+		(+ (rectangle-y r) +playfield-render-offset-y+)
+		(rectangle-width r) (rectangle-height r)
+		green))
+	 aiko-sp2-vertical-rects)
+	))
 
 (define (draw-boss-hud position enm textures fonts)
   (define bossinfo (enm-extras enm))
