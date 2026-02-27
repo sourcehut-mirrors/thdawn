@@ -1,3 +1,15 @@
+* [2026-02-27 Fri]
+Imported a new collision algorithm from the raylib-extras examples. It seems to work a lot
+better.
+
+Next immediate thing to implement is the ball bouncing off the player, then it's tweaking
+and balancing as discussed earlier.
+
+Also looked a bit into how macos/windows builds will work. For mac, seems like
+https://github.com/quickemu-project/quickemu is the most convenient, and just running the
+build steps in the VM and extracting the result. Can commit some scripts later to make sure
+it's somewhat reproducible.
+
 * [2026-02-20 Fri]
 Hacked up the main loop for aiko sp2. It surprisingly works pretty well and fun to see
 take shape.
