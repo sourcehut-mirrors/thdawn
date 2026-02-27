@@ -5,8 +5,7 @@
 #!chezscheme
 (library (geom)
   (export rectangle-x rectangle-y rectangle-width rectangle-height make-rectangle
-		  (rename (vector2-x v2x) (vector2-y v2y))
-		  vec2 v2+ v2- v2* v2zero v2unit
+		  v2x v2y vec2 v2+ v2- v2* v2zero v2unit v2sqrlen v2dot
 		  check-collision-circles check-collision-recs check-collision-circle-rec
 		  lerp eval-bezier-quad eval-bezier-cubic
 		  pi -pi tau hpi -hpi
@@ -77,6 +76,8 @@
   (define-record-type vector2
 	(fields x y)
 	(sealed #t))
+  (alias v2x vector2-x)
+  (alias v2y vector2-y)
 
   (define (vec2 x y)
 	;; will assert in dev, but be optimized away in prod
@@ -85,35 +86,44 @@
   (define v2zero (vec2 0.0 0.0))
 
   (define (v2unit v)
-	(define x (vector2-x v))
-	(define y (vector2-y v))
+	(define x (v2x v))
+	(define y (v2y v))
 	(define norm (flsqrt (fl+ (fl* x x) (fl* y y))))
 	(vec2 (fl/ x norm) (fl/ y norm)))
+
+  (define (v2sqrlen v)
+	(define x (v2x v))
+	(define y (v2y v))
+	(fl+ (fl* x x) (fl* y y)))
+
+  (define (v2dot a b)
+	(fl+ (fl* (v2x a) (v2x b))
+		 (fl* (v2y a) (v2y b))))
 
   (define v2+
 	(case-lambda
 	  [(a b)
 	   (vec2
-		(fl+ (vector2-x a) (vector2-x b))
-		(fl+ (vector2-y a) (vector2-y b)))]
+		(fl+ (v2x a) (v2x b))
+		(fl+ (v2y a) (v2y b)))]
 	  [(a b . rest)
 	   (vec2
-		(fold-left (lambda (acc v) (fl+ acc (vector2-x v)))
-				   (fl+ (vector2-x a) (vector2-x b))
+		(fold-left (lambda (acc v) (fl+ acc (v2x v)))
+				   (fl+ (v2x a) (v2x b))
 				   rest)
-		(fold-left (lambda (acc v) (fl+ acc (vector2-y v)))
-				   (fl+ (vector2-y a) (vector2-y b))
+		(fold-left (lambda (acc v) (fl+ acc (v2y v)))
+				   (fl+ (v2y a) (v2y b))
 				   rest))]))
 
   (define (v2- a b)
 	(vec2
-	 (fl- (vector2-x a) (vector2-x b))
-	 (fl- (vector2-y a) (vector2-y b))))
+	 (fl- (v2x a) (v2x b))
+	 (fl- (v2y a) (v2y b))))
 
   (define (v2* v scalar)
 	(vec2
-	 (fl* scalar (vector2-x v))
-	 (fl* scalar (vector2-y v))))
+	 (fl* scalar (v2x v))
+	 (fl* scalar (v2y v))))
 
   ;; NB: Collides when the two circles are orthogonal,
   ;; Not when they have any intersection.
@@ -155,12 +165,12 @@
 		(<= corner-distance-sq (* r r)))]))
 
   (define (eval-bezier-quad p0 p1 p2 t)
-	(define p0x (vector2-x p0))
-	(define p0y (vector2-y p0))
-	(define p1x (vector2-x p1))
-	(define p1y (vector2-y p1))
-	(define p2x (vector2-x p2))
-	(define p2y (vector2-y p2))
+	(define p0x (v2x p0))
+	(define p0y (v2y p0))
+	(define p1x (v2x p1))
+	(define p1y (v2y p1))
+	(define p2x (v2x p2))
+	(define p2y (v2y p2))
 	
 	(define x (lerp (lerp p0x p1x t)
 					(lerp p1x p2x t)
