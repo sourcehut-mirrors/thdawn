@@ -192,9 +192,7 @@
   ;; Next two functions derived from
   ;; https://github.com/raylib-extras/examples-c/blob/main/rect_circle_collisions/rect_circle_collisions.c
   ;; Copyright (c) 2022 Jeffery Myers, used under the Zlib license
-  ;; Returns three values: hit point vec2, hit normal vec2
-  ;; whether a horizontal face was hit (meaning the ball needs
-  ;; to bounce vertically) bool
+  ;; Returns (hit point vec2, hit-horizontal-face bool)
   (define (point-nearest-rectangle p rect)
 	(define px (v2x p))
 	(define py (v2y p))
@@ -232,8 +230,8 @@
 		 hit-y)))
 	(if (fl< (v2sqrlen (v2- p nearest-vert))
 			 (v2sqrlen (v2- p nearest-horiz)))
-		(values nearest-vert (vec2 xdir 0.0))
-		(values nearest-horiz (vec2 0.0 ydir))))
+		(values nearest-vert #f)
+		(values nearest-horiz #t)))
 
   ;; returns (new p, new facing)
   (define (do-bounce-off p r facing rects)
@@ -241,10 +239,9 @@
 	  (fold-left
 	   (lambda (acc rect)
 		 (define p (vector-ref acc 0))
-		 (define-values (hitpoint hitnorm)
+		 (define-values (hitpoint hit-horizontal-face)
 		   (point-nearest-rectangle p rect))
 		 (define to-hit (v2- hitpoint p))
-		 (define hit-horizontal-face (flzero? (v2x hitnorm)))
 		 (when (fl< (v2sqrlen to-hit) (fl* r r))
 		   ;; Compute deepest part of ball
 		   (let* ([proj (v2+ p (v2* (v2unit to-hit) r))]
