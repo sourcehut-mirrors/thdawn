@@ -203,37 +203,37 @@
 	(define rw (rectangle-width rect))
 	(define rh (rectangle-height rect))
 
+	;; collisions with vertical surfaces
 	(define-values (hit-x xdir)
 	  (if (fl> px (fl+ rx rw))
 		  (values (fl+ rx rw) 1.0)
 		  (values rx -1.0)))
-	(define nearest-horiz
-	  (let* ([to-point (v2- (vec2 hit-x ry) p)]
-			 [dot (v2dot (vec2 0.0 -1.0) to-point)])
+	(define nearest-vert
+	  (let ([dist-from-ry (fl- py ry)])
 		(vec2
 		 hit-x
 		 (cond
-		  [(fl< dot 0.0) ry]
-		  [(fl>= dot rh) (fl+ ry rh)]
-		  [else (fl+ ry dot)]))))
+		  [(fl< dist-from-ry 0.0) ry]
+		  [(fl>= dist-from-ry rh) (fl+ ry rh)]
+		  [else (fl+ ry dist-from-ry)]))))
 
+	;; collisions with horizontal surfaces
 	(define-values (hit-y ydir)
 	  (if (fl> py (fl+ ry rh))
 		  (values (fl+ ry rh) 1.0)
 		  (values ry -1.0)))
-	(define nearest-vert
-	  (let* ([to-point (v2- (vec2 rx hit-y) p)]
-			 [dot (v2dot (vec2 -1.0 0.0) to-point)])
+	(define nearest-horiz
+	  (let ([dist-from-rx (fl- px rx)])
 		(vec2
 		 (cond
-		  [(fl< dot 0.0) rx]
-		  [(fl> dot rw) (fl+ rx rw)]
-		  [else (fl+ rx dot)])
+		  [(fl< dist-from-rx 0.0) rx]
+		  [(fl> dist-from-rx rw) (fl+ rx rw)]
+		  [else (fl+ rx dist-from-rx)])
 		 hit-y)))
-	(if (fl< (v2sqrlen (v2- p nearest-horiz))
-			 (v2sqrlen (v2- p nearest-vert)))
-		(values nearest-horiz (vec2 xdir 0.0))
-		(values nearest-vert (vec2 0.0 ydir))))
+	(if (fl< (v2sqrlen (v2- p nearest-vert))
+			 (v2sqrlen (v2- p nearest-horiz)))
+		(values nearest-vert (vec2 xdir 0.0))
+		(values nearest-horiz (vec2 0.0 ydir))))
 
   ;; returns (new p, new facing)
   (define (do-bounce-off p r facing rects)
