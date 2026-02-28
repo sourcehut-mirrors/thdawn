@@ -763,25 +763,15 @@
 		   ;; bullets in the rest of the game.
 		   (when (fl<= (fl+ (fl* dx dx) (fl* dy dy))
 					   (fl* maxdist maxdist))
-			 (let* ([v1 (vec2 (fl- (bullet-x blt) ox)
-							  (fl- (bullet-y blt) oy))]
-					[v2 (v2* last-player-movement-dir 4.0)]
-					[x1 (vec2 (bullet-x blt) (bullet-y blt))]
-					[x2 (vec2 player-x player-y)]
-					[m1 1.0]
-					;; player has much larger mass as we essentially ignore
-					;; and don't apply any movement the ball imparts on the player
-					[m2 5.0]
-					[x1-x2 (v2- x1 x2)]
-					[new-vel
-					 (v2- v1 (v2* x1-x2
-								  (fl* (fl/ (fl* 2.0 m2)
-											(fl+ m1 m2))
-									   (fl/ (v2dot (v2- v1 v2) x1-x2)
-											(v2sqrlen x1-x2)))))]
-					[new-dir (v2unit new-vel)]
-					[new-speed (flsqrt (v2sqrlen new-vel))])
-			   (loop state (flatan (v2y new-dir) (v2x new-dir)) new-speed))))
+			 (if (and (flzero? (v2x last-player-movement-dir))
+					  (flzero? (v2y last-player-movement-dir)))
+				 ;; just push the ball away and give a small speed boost
+				 (loop state (flatan (fl- (bullet-y blt) player-y)
+									 (fl- (bullet-x blt) player-x))
+					   (fl* speed 1.01))
+				 (loop state (flatan (v2y last-player-movement-dir)
+									 (v2x last-player-movement-dir))
+					   (fl* speed 1.01)))))
 
 		 ;; bounce off walls
 		 (let-values ([(new-pos new-facing)
