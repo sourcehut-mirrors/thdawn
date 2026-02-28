@@ -754,6 +754,36 @@
 		   ;; we won't resume anymore because we canceled the bullet
 		   (yield))
 
+		 ;; collide with player
+		 (let ([dx (fl- (bullet-x blt) player-x)]
+			   [dy (fl- (bullet-y blt) player-y)]
+			   [maxdist (fl+ (bullet-hit-radius (bullet-type blt))
+							 +graze-radius+)])
+		   ;; NB: standard intersection test, not the orthogonal one we use for
+		   ;; bullets in the rest of the game.
+		   (when (fl<= (fl+ (fl* dx dx) (fl* dy dy))
+					   (fl* maxdist maxdist))
+			 (let* ([v1 (vec2 (fl- (bullet-x blt) ox)
+							  (fl- (bullet-y blt) oy))]
+					[v2 (v2* last-player-movement-dir 4.0)]
+					[x1 (vec2 (bullet-x blt) (bullet-y blt))]
+					[x2 (vec2 player-x player-y)]
+					[m1 1.0]
+					;; player has much larger mass as we essentially ignore
+					;; and don't apply any movement the ball imparts on the player
+					[m2 5.0]
+					[x1-x2 (v2- x1 x2)]
+					[new-vel
+					 (v2- v1 (v2* x1-x2
+								  (fl* (fl/ (fl* 2.0 m2)
+											(fl+ m1 m2))
+									   (fl/ (v2dot (v2- v1 v2) x1-x2)
+											(v2sqrlen x1-x2)))))]
+					[new-dir (v2unit new-vel)]
+					[new-speed (flsqrt (v2sqrlen new-vel))])
+			   (loop state (flatan (v2y new-dir) (v2x new-dir)) new-speed))))
+
+		 ;; bounce off walls
 		 (let-values ([(new-pos new-facing)
 					   (do-bounce-off (vec2 (bullet-x blt) (bullet-y blt))
 									  (bullet-hit-radius (bullet-type blt))
