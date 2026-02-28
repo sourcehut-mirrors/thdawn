@@ -417,7 +417,6 @@
 
 (define-syntax (define-stage-accessor stx)
   (syntax-case stx ()
-	[(_) #'(void)]
 	[(k field)
 	 (with-syntax ([field-accessor
 					(datum->syntax #'k (string->symbol
@@ -430,7 +429,7 @@
 													   (symbol->string
 														(syntax->datum #'field))
 													   "-set!")))])
-	   #`(define-syntax field
+	   #'(define-syntax field
 		   (identifier-syntax
 			[field (field-accessor current-stage-ctx)]
 			[(set! field e) (field-mutator current-stage-ctx e)])))]))
@@ -446,7 +445,7 @@
   live-bullets live-enm live-misc-ents
   frames iframes respawning start-shot-frames
   bombing death-timer graze player-x player-y item-value current-score
-  life-stock bomb-stock game-rng
+  life-stock bomb-stock game-rng last-player-movement-dir
   bomb-sweep-x-left bomb-sweep-x-right bomb-sweep-y-up bomb-sweep-y-down
   initial-bomb-sweep-x-left initial-bomb-sweep-x-right
   initial-bomb-sweep-y-up initial-bomb-sweep-y-down
@@ -687,7 +686,10 @@
    (mutable dialogue-idx)
    ;; for timed messages, forbid advancing dialogue-idx until
    ;; `frames' exceeds this timestamp
-   (mutable dialogue-pinned-until))
+   (mutable dialogue-pinned-until)
+   ;; unit vector of the direction the player moved in the last frame, zero vector
+   ;; if no movement
+   (mutable last-player-movement-dir))
   (sealed #t))
 
 (define (fresh-stage-ctx replay)
@@ -704,7 +706,7 @@
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
    0 0 #f
-   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1))
+   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1 v2zero))
 
 (define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
@@ -3928,15 +3930,18 @@
 	(set! player-dx-render (fx1+ player-dx-render))]
    [(> player-dx-render 0)
 	(set! player-dx-render (fx1- player-dx-render))])
-  (when (not (and (flzero? (v2x dir)) (flzero? (v2y dir))))
-	(let* ([speed (if focused-immediate 2.25 4.125)]
-		   [velvec (v2* (v2unit dir) speed)]
-		   [new-x (clamp (fl+ player-x (v2x velvec))
-						 +playfield-min-x+ +playfield-max-x+)]
-		   [new-y (clamp (fl+ player-y (v2y velvec))
-						 +playfield-min-y+ +playfield-max-y+)])
-	  (set! player-x new-x)
-	  (set! player-y new-y)))
+  (if (not (and (flzero? (v2x dir)) (flzero? (v2y dir))))
+	  (let* ([speed (if focused-immediate 2.25 4.125)]
+			 [ndir (v2unit dir)]
+			 [velvec (v2* ndir speed)]
+			 [new-x (clamp (fl+ player-x (v2x velvec))
+						   +playfield-min-x+ +playfield-max-x+)]
+			 [new-y (clamp (fl+ player-y (v2y velvec))
+						   +playfield-min-y+ +playfield-max-y+)])
+		(set! player-x new-x)
+		(set! player-y new-y)
+		(set! last-player-movement-dir ndir))
+	  (set! last-player-movement-dir v2zero))
   (when (< player-y +poc-y+)
 	(autocollect-all-items)))
 
