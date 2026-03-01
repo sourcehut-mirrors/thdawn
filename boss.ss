@@ -793,7 +793,7 @@
 									   'small-star-orange 'small-star-red))
 							   nx ny 5
 							   (curry linear-step-forever facing speed)))])
-			   (if (fl> ny 300.0)
+			   (if (fl> ny 340.0)
 				   (-> (cb)
 					   (cbcount 14 2)
 					   (cbspeed 2.0 4.0)
@@ -898,30 +898,49 @@
 	  (ease-to values 0.0 190.0 60 aiko)
 	  (wait 60)
 	  ;; at the beginning of each wave, aiko and ball are both assumed to be
-	  ;; in their proper initial positions
+	  ;; in their proper initial y: ball at 200, aiko at 190
 	  (let wave ([start-frames frames])
 		(raylib:play-sound (sebundle-longcharge sounds))
-		(ease-to values 0.0 160.0 30 aiko)
+		(ease-to ease-in-out-quart
+				 (case (roll game-rng 3)
+				   [(0) -20.0]
+				   [(1) 0.0]
+				   [(2) 20.0])
+				 160.0 30 aiko)
 		(wait 10)
 		(ease-to values 0.0 190.0 10 aiko)
+		(-> (fb)
+			(fbcount 5 3)
+			(fbang 0.0 5.0)
+			(fbspeed 3.0 4.0)
+			(fbshootenm aiko 'small-ball-white 5 #f))
 		(raylib:play-sound (sebundle-shoot0 sounds))
-		(set-box! msg-box (list 'move
-								(facing-player (bullet-x cur-ball)
-											   (bullet-y cur-ball))
-								#;(torad (fx2fl (roll game-rng 360))) 8.0))
+		(let* ([target-x
+				(cond
+				 [(fl>= player-x 28.0)
+				  (fx2fl (- (roll game-rng 28)))]
+				 [(fl<= player-x -28.0)
+				  (fx2fl (roll game-rng 28))]
+				 [else (if (roll-bool game-rng) -48.0 48.0)])]
+			   [target-y (fx2fl +playfield-max-y+)]
+			   [ball-facing
+				(flatan (fl- target-y (bullet-y cur-ball))
+						(fl- target-x (bullet-x cur-ball)))])
+		  (set-box! msg-box (list 'move ball-facing 8.0)))
 		(wait-until (thunk (or (fx> (fx- frames start-frames) 480)
 							   (not (vector-index cur-ball live-bullets)))))
 		(if (vector-index cur-ball live-bullets)
 			(begin
 			  (set-box! msg-box '(stop))
-			  (ease-to values (bullet-x cur-ball) (bullet-y cur-ball) 60 aiko)
+			  (ease-to ease-in-out-quad
+					   (bullet-x cur-ball) (bullet-y cur-ball) 60 aiko)
 			  (set-box! msg-box '(attach))
-			  (ease-to values 0.0 200.0 60 aiko)
+			  (ease-to ease-in-out-quad 0.0 190.0 60 aiko)
 			  (set-box! msg-box '(stop))
-			  (ease-to values 0.0 190.0 10 aiko)
+			  (wait 10)
 			  (wave frames))
 			(begin
-			  (ease-to values 0.0 190.0 60 aiko)
+			  (ease-to ease-in-out-quad 0.0 190.0 60 aiko)
 			  (set! cur-ball (spawn-ball))
 			  (wait 60)
 			  (wave frames)))))
