@@ -729,7 +729,7 @@
   (- (* (roll rng) 2 radius)
 	 radius))
 (define (roll-bool rng)
-  (fl< (roll rng) 0.5))
+  (fxzero? (roll rng 2)))
 (define (roll-range rng min max) ;; both bounds inclusive
   (fx+ min (roll rng (fx1+ (fx- max min)))))
 (define chapter-select 0)
@@ -2167,8 +2167,10 @@
 							6000 500 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Ah...G-...G-Ghost!\""
 							3000 9000 3000000 'hazuki std std-fail)
-	 (make-spell-descriptor "Athlete Sign \"Penalty Shootout\""
-							6000 9000 3000000 'aiko std std-fail)
+	 (make-spell-descriptor "Athlete Sign \"Aiko's Pinball Penalty Shootout\""
+							2400 25000 3000000 'aiko
+							'((bomb . 1) (point . 50))
+							'((bomb . 1) (point . 10)))
 	 (make-spell-descriptor "\"One Flower, One World\""
 							2400 -1 5000000 'group std std-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
@@ -2312,6 +2314,12 @@
 	(λ (e) (and e (eq? 'boss-hazuki (enm-type e)))) live-enm)
    (vector-find
 	(λ (e) (and e (eq? 'boss-aiko (enm-type e)))) live-enm)))
+(define (find-spellcaster)
+  (vector-find
+   (λ (e)
+	 (and e (is-boss? e)
+		  (bossinfo-active-spell-id (enm-extras e))))
+   live-enm))
 
 (define (enm-invincible? enm)
   (or (enm-hasflag? enm (enmflag invincible))
@@ -3110,7 +3118,9 @@
 			  raylib:draw-circle-lines-v)
 		  render-x render-y
 		  r color)))
-	  ([spellbonus clear-bonus]
+	  ([spellbonus]
+	   (draw-centered-field-text extra-data render-y 24.0 -1 #f))
+	  ([clear-bonus]
 	   (draw-centered-field-text extra-data 75.0 24.0 -1 #f))
 	  ([text-hint]
 	   (let ([text (assqdr 'text extra-data)]
@@ -3438,8 +3448,8 @@
   (spawn-particle
    (particletype spellbonus)
    ;; Position dynamically calculated at render to avoid
-   ;; the enemy tasks needing to access the fonts
-   0.0 0.0 180
+   ;; the enemy tasks needing to access the fonts.
+   0.0 75.0 180
    (if failed
 	   "Bonus Failed..."
 	   (format "GET Spell Bonus!! ~:d" bonus)))
@@ -3957,9 +3967,23 @@
 			  (+ player-y +playfield-render-offset-y+))))
 
 (define (draw-player textures)
+  (define spellcaster (find-spellcaster))
+  (define aiko-sp2 (and spellcaster
+						(fx= 9 (bossinfo-active-spell-id (enm-extras spellcaster)))))
+  (define aiko-sp2-overlay
+	(and aiko-sp2 (fx>= (bossinfo-elapsed-frames (enm-extras spellcaster))
+						120)))
   (define-values (render-player-x render-player-y)
 	(get-player-render-pos))
-  ;; player sprite (todo: directional moving sprites)
+  (when aiko-sp2-overlay
+	(let* ([real-elapsed (fx- (bossinfo-elapsed-frames (enm-extras spellcaster)) 120)]
+		   ;; render it just a bit bigger than the real thing, looks better
+		   [radius (if (fx>= real-elapsed 60)
+					   (fl+ +graze-radius+ 5.0)
+					   (lerp 0.0 (fl+ +graze-radius+ 5.0)
+							 (/ real-elapsed 60)))])
+	(raylib:draw-circle-v render-player-x render-player-y
+						  radius #x7cfc00e0)))
   (raylib:draw-texture-rec
    (txbundle-reimu textures)
    (cond
@@ -4000,34 +4024,36 @@
 	  render-x render-y -1))
    option-xs option-ys)
 
-  (let ([focus-progress (/ focus-frames +max-focus-frames+)])
-	(raylib:draw-circle-lines-v
-	 render-player-x render-player-y
-	 (lerp +vacuum-radius-unfocused+ +vacuum-radius-focused+
-		   focus-progress)
-	 (packcolor 255 255 255 (eround (lerp 16 128 focus-progress)))))
+  (unless aiko-sp2-overlay
+	(let ([focus-progress (/ focus-frames +max-focus-frames+)])
+	  (raylib:draw-circle-lines-v
+	   render-player-x render-player-y
+	   (lerp +vacuum-radius-unfocused+ +vacuum-radius-focused+
+			 focus-progress)
+	   (packcolor 255 255 255 (eround (lerp 16 128 focus-progress))))))
 
   (when show-hitboxes
 	(raylib:draw-circle-v render-player-x render-player-y +graze-radius+
 						  green)
 	(raylib:draw-circle-v render-player-x render-player-y +hit-radius+
 						  red)
-	(for-each
-	 (λ (r)
-	   (raylib:draw-rectangle-rec
-		(+ (rectangle-x r) +playfield-render-offset-x+)
-		(+ (rectangle-y r) +playfield-render-offset-y+)
-		(rectangle-width r) (rectangle-height r)
-		red))
-	 aiko-sp2-horiz-rects)
-	(for-each
-	 (λ (r)
-	   (raylib:draw-rectangle-rec
-		(+ (rectangle-x r) +playfield-render-offset-x+)
-		(+ (rectangle-y r) +playfield-render-offset-y+)
-		(rectangle-width r) (rectangle-height r)
-		green))
-	 aiko-sp2-vertical-rects)
+	(when aiko-sp2
+	  (for-each
+	   (λ (r)
+		 (raylib:draw-rectangle-rec
+		  (+ (rectangle-x r) +playfield-render-offset-x+)
+		  (+ (rectangle-y r) +playfield-render-offset-y+)
+		  (rectangle-width r) (rectangle-height r)
+		  red))
+	   aiko-sp2-horiz-rects)
+	  (for-each
+	   (λ (r)
+		 (raylib:draw-rectangle-rec
+		  (+ (rectangle-x r) +playfield-render-offset-x+)
+		  (+ (rectangle-y r) +playfield-render-offset-y+)
+		  (rectangle-width r) (rectangle-height r)
+		  green))
+	   aiko-sp2-vertical-rects))
 	))
 
 (define (draw-boss-hud position enm textures fonts)
@@ -4419,11 +4445,7 @@
 						   (make-rectangle 0.0 bg3-scroll 256.0 224.0)
 						   background-draw-bounds
 						   v2zero 0.0 bgcolor)
-  (let ([enm (vector-find
-			  (λ (e)
-				(and e (is-boss? e)
-					 (bossinfo-active-spell-id (enm-extras e))))
-			  live-enm)])
+  (let ([enm (find-spellcaster)])
 	(when enm
 	  (let* ([bossinfo (enm-extras enm)]
 			 [bgid (spell-descriptor-bgid

@@ -11,7 +11,7 @@
    pause menuselect menuback
    timeout timeoutwarn item damage0 damage1
    dropbomb droplife
-   laser damageresist laugh)
+   laser damageresist laugh opshow brasscharge)
   (sealed #t))
 (define sounds #f)
 (define (each-sound proc)
@@ -40,7 +40,8 @@
 				"se_timeout.wav" "se_timeout2.wav"
 				"se_item00.wav" "se_damage00.wav" "se_damage01.wav"
 				"se_bonus2.wav" "se_bonus.wav"
-				"se_old_lazer01.wav" "se_nodamage.wav" "se_fault.wav"))))
+				"se_old_lazer01.wav" "se_nodamage.wav" "se_fault.wav"
+				"se_opshow.wav" "se_boon01.wav"))))
   (update-sound-volumes))
 (define (unload-sfx)
   (each-sound raylib:unload-sound)

@@ -594,8 +594,8 @@
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! aiko bossinfo)
-  (declare-nonspell aiko 1800 6000)
-  (wait 60)
+  (declare-nonspell aiko 1800 6500)
+  (wait 90)
   (raylib:play-sound (sebundle-laser sounds))
   (parameterize ([ovr-uncancelable #t])
 	(for-each
@@ -605,9 +605,9 @@
 					-hpi
 					(fx2fl +playfield-height+)
 					5.0
-					40 30 (curry aiko-non2-laser-ctrl is-right aiko)))
+					40 60 (curry aiko-non2-laser-ctrl is-right aiko)))
 	 '(#f #t)))
-  (wait 30)
+  (wait 60)
   (let* ([timeup (thunk (fx<= (bossinfo-remaining-timer bossinfo) 900))]
 		 [rage (thunk (or (timeup) (fl<= player-y (fl+ (enm-y aiko) 100.0))))])
 	(spawn-subtask "rage rings"
@@ -622,7 +622,7 @@
 	  keep-running? task)
 	(spawn-subtask "rings"
 	  (λ (task)
-		(interval-loop-while 60 (fx<= (bossinfo-elapsed-frames bossinfo) 350)
+		(interval-loop-while 60 (fx<= (bossinfo-elapsed-frames bossinfo) 410)
 		  (-> (cb)
 			  (cbcount 12)
 			  (cbspeed 3.0)
@@ -668,15 +668,16 @@
   (list
    ;; left
    (make-rectangle
-	(fl- aiko-sp2-x-left aiko-sp2-laser-radius)
+	;; extra buffer for high speed collisions lmao
+	(fl- aiko-sp2-x-left aiko-sp2-laser-radius 40.0)
 	aiko-sp2-y-top
-	(fl* 2.0 aiko-sp2-laser-radius)
+	(fl+ (fl* 2.0 aiko-sp2-laser-radius) 40.0)
 	aiko-sp2-y-len)
    ;; right
    (make-rectangle
 	(fl- aiko-sp2-x-right aiko-sp2-laser-radius)
 	aiko-sp2-y-top
-	(fl* 2.0 aiko-sp2-laser-radius)
+	(fl+ (fl* 2.0 aiko-sp2-laser-radius) 40.0)
 	aiko-sp2-y-len)
    ;; goal left
    (make-rectangle
@@ -716,32 +717,33 @@
 (define (aiko-sp2-ball-ctrl msg-box aiko blt)
   (let loop ([state 'stop]
 			 [facing 0.0]
-			 [speed 0.0])
+			 [speed 0.0]
+			 [frames-moving 0])
 	(let ([msg (unbox msg-box)])
 	  (when msg
 		(set-box! msg-box #f)
 		(record-case msg
 		  [(stop) ()
-		   (loop 'stop 0.0 0.0)]
+		   (loop 'stop 0.0 0.0 0)]
 		  [(attach) ()
-		   (loop 'attach 0.0 0.0)]
+		   (loop 'attach 0.0 0.0 0)]
 		  [(move) (facing speed)
-		   (loop 'move facing speed)])))
+		   (loop 'move facing speed 0)])))
 
 	(case state
 	  [(stop)
 	   (unless aiko
 		 (cancel-bullet blt #t))
 	   (yield)
-	   (loop state facing speed)]
+	   (loop state facing speed 0)]
 	  [(attach)
 	   (bullet-x-set! blt (enm-x aiko))
 	   (bullet-y-set! blt (enm-y aiko))
 	   (yield)
-	   (loop state facing speed)]
+	   (loop state facing speed 0)]
 	  [(move)
 	   (when (flnegative? speed)
-		 (loop 'stop 0.0 0.0))
+		 (loop 'stop 0.0 0.0 0))
 	   (let ([ox (bullet-x blt)]
 			 [oy (bullet-y blt)])
 		 (linear-step facing speed blt)
@@ -771,7 +773,32 @@
 							   (fl- (bullet-x blt) player-x))
 					   (flatan (v2y last-player-movement-dir)
 									 (v2x last-player-movement-dir)))
-				   (fl* speed 1.01))))
+				   (fl* speed 1.01)
+				   (fx1+ frames-moving))))
+
+		 ;; collide with aiko
+		 (when (fx> frames-moving 10) ;; prevent damaging on kick
+		   (let ([dx (fl- (bullet-x blt) (enm-x aiko))]
+				 [dy (fl- (bullet-y blt) (enm-y aiko))]
+				 [maxdist (fl+ (bullet-hit-radius (bullet-type blt))
+							   30.0)])
+			 (when (fl<= (fl+ (fl* dx dx) (fl* dy dy))
+						 (fl* maxdist maxdist))
+			   (let ([old-health (enm-health aiko)])
+				 (damage-enemy aiko 2800)
+				 ;; Extra bonus if the ball was the killing blow
+				 (when (and (fxpositive? old-health)
+							(fxnonpositive? (enm-health aiko)))
+				   (spawn-particle
+					(particletype spellbonus)
+					0.0 100.0 180
+					(format "EX Bonus!! ~:d" 5000000))
+				   (set! current-score (+ current-score 5000000))))
+			   (loop state
+					 (flatan (fl- (bullet-y blt) (enm-y aiko))
+							 (fl- (bullet-x blt) (enm-x aiko)))
+					 (fl* speed 1.01)
+					 (fx1+ frames-moving)))))
 
 		 ;; bounce off walls
 		 (let*-values ([(new-pos new-facing)
@@ -788,24 +815,24 @@
 							  (spawn-bullet
 							   (if low
 								   (if (zero? layer)
-									   'small-star-yellow 'small-star-white)
+									   'small-star-white 'small-star-yellow)
 								   (if (zero? layer)
 									   'small-star-orange 'small-star-red))
 							   nx ny 5
 							   (curry linear-step-forever facing speed)))])
-			   (if (fl> ny 340.0)
+			   (if (fl> ny 288.0)
 				   (-> (cb)
-					   (cbcount 14 2)
+					   (cbcount 12 2)
 					   (cbspeed 2.0 4.0)
-					   (cbang 12.85)
+					   (cbang 15.0)
 					   (cbshoot nx ny (curry consume #t)))
 				   (-> (cb)
-					   (cbcount 36 2)
+					   (cbcount 24 2)
 					   (cbspeed 3.0 5.0)
 					   (cbabsolute-aim)
 					   (cbang (fx2fl (roll game-rng 360)))
 					   (cbshoot nx ny (curry consume #f))))))
-		   (loop state new-facing (fl- speed 0.01))))])))
+		   (loop state new-facing (fl- speed 0.01) (fx1+ frames-moving))))])))
 
 (define (aiko-sp2 task aiko)
   (define bossinfo (enm-extras aiko))
@@ -818,8 +845,11 @@
   ;; us here
   (enm-x-set! aiko +middle-boss-x+)
   (enm-y-set! aiko 225.0)
-  (wait 90)
-  (raylib:play-sound (sebundle-longcharge sounds))
+  ;; also just for debug jumps to show the right size
+  (let ([bars (bossinfo-healthbars bossinfo)])
+	(healthbar-width-set! (vnth bars (sub1 (vlen bars))) 25))
+  (wait 120)
+  (raylib:play-sound (sebundle-brasscharge sounds))
   (parameterize ([ovr-uncancelable #t])
 	(let ([ctrl (λ (_blt) (loop-forever))])
 	  (for-each
@@ -891,7 +921,7 @@
 	  (define (spawn-ball)
 		(parameterize ([ovr-uncancelable #t]
 					   [ovr-noclip #t])
-		  (spawn-bullet 'yinyang-blue 0.0 200.0 5
+		  (spawn-bullet 'yinyang-green 0.0 200.0 5
 						(curry aiko-sp2-ball-ctrl msg-box aiko))))
 	  (define msg-box (box #f))
 	  (define cur-ball (spawn-ball))
@@ -910,23 +940,32 @@
 		(wait 10)
 		(ease-to values 0.0 190.0 10 aiko)
 		(-> (fb)
-			(fbcount 5 3)
-			(fbang 0.0 5.0)
+			(fbcount 3 3)
+			(fbang 0.0 10.0)
 			(fbspeed 3.0 4.0)
 			(fbshootenm aiko 'small-ball-white 5 #f))
 		(raylib:play-sound (sebundle-shoot0 sounds))
-		(let* ([target-x
-				(cond
-				 [(fl>= player-x 28.0)
-				  (fx2fl (- (roll game-rng 28)))]
-				 [(fl<= player-x -28.0)
-				  (fx2fl (roll game-rng 28))]
-				 [else (if (roll-bool game-rng) -48.0 48.0)])]
-			   [target-y (fx2fl +playfield-max-y+)]
+		(let* ([try-bounce-shot
+				(and (fl< player-y 380.0)
+					 (or (fl<= -28.0 player-x 28.0)
+						 (fxzero? (roll game-rng 3))))]
+			   [target-x
+				(if try-bounce-shot
+					(cond
+					 [(fl>= player-x 28.0) -161.0]
+					 [(fl<= player-x -28.0) 161.0]
+					 [else (if (roll-bool game-rng) -161.0 161.0)])
+					(cond
+					 [(fl>= player-x 28.0)
+					  (fx2fl (- (roll game-rng 20)))]
+					 [(fl<= player-x -28.0)
+					  (fx2fl (roll game-rng 20))]
+					 [else (if (roll-bool game-rng) -38.0 38.0)]))]
+			   [target-y (if try-bounce-shot 330.0 (fx2fl +playfield-max-y+))]
 			   [ball-facing
 				(flatan (fl- target-y (bullet-y cur-ball))
 						(fl- target-x (bullet-x cur-ball)))])
-		  (set-box! msg-box (list 'move ball-facing 8.0)))
+		  (set-box! msg-box (list 'move ball-facing 9.0)))
 		(wait-until (thunk (or (fx> (fx- frames start-frames) 480)
 							   (not (vector-index cur-ball live-bullets)))))
 		(if (vector-index cur-ball live-bullets)
