@@ -1275,12 +1275,12 @@
 	  (raylib:play-sound (sebundle-menuselect sounds)))]
    [(enum-set-member? (vkey left) edge-pressed)
 	(cond
-	 [(= selected 1) (decrease-sound-volume)]
-	 [(= selected 2) (decrease-music-volume)])]
+	 [(= selected 2) (decrease-sound-volume)]
+	 [(= selected 3) (decrease-music-volume)])]
    [(enum-set-member? (vkey right) edge-pressed)
 	(cond
-	 [(= selected 1) (increase-sound-volume)]
-	 [(= selected 2) (increase-music-volume)])]
+	 [(= selected 2) (increase-sound-volume)]
+	 [(= selected 3) (increase-music-volume)])]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
 	((menu-item-on-select (vnth opts selected)) self)]
@@ -1293,12 +1293,12 @@
   (define items (setting-gui-menu-options self))
   (define selected (setting-gui-selected-option self))
   (define x 40.0)
-  (define start-y 200)
+  (define start-y 100)
   (define step-y 20)
   (define size 25.0)
   (define alpha 255)
   (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
-  (when (and (fx= selected 1) (fxzero? (fxmod true-frames 90)))
+  (when (and (fx= selected 2) (fxzero? (fxmod true-frames 90)))
 	(raylib:play-sound (sebundle-playerdie sounds)))
   (do [(i 0 (add1 i))]
 	  [(>= i (vlen items))]
@@ -1325,6 +1325,11 @@
 	 (make-menu-item
 	  (thunk "Back")
 	  (λ (_gui) (set! gui-stack (cdr gui-stack))))
+	 (make-menu-item
+	  (thunk "Reset to default")
+	  (λ (_gui)
+		(set! config (reset-config))
+		(refresh-keybindings)))
 	 (make-menu-item
 	  (thunk
 	   (string-append "SFX Volume: < "

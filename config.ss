@@ -2,7 +2,7 @@
 ;; The config is just an alist. This is because nongenerative records can't handle old
 ;; data when new fields are added.
 (library (config)
-  (export read-config save-config)
+  (export reset-config read-config save-config)
   (import (chezscheme))
 
   (include "keyconsts.ss")
@@ -31,6 +31,10 @@
 			   default-config])
 	  (with-input-from-file config-path
 		read)))
+
+  (define (reset-config)
+	(save-config default-config)
+	(read-config))
 
   (define (save-config data)
 	(with-output-to-file config-path
