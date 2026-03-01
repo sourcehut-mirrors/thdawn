@@ -87,6 +87,7 @@
   (invincible
    nocollide ;; cannot run into the player
    aura-red aura-green aura-blue aura-magenta ;; add decorative aura
+   autocollect ;; drops are automatically collected
    )
   enmflags)
 (define empty-enmflags (enmflags))
@@ -1785,18 +1786,22 @@
 		   23 #f)
 		  (delete-bullet bullet)))))
 
-(define (spawn-drop-with-autocollect x y drop)
-  (define ent (spawn-misc-ent drop x y -3.0 0.1))
+(define (spawn-drops-with-autocollect drops x y)
+  (define ents (spawn-drops drops x y))
   (spawn-task "delayed autocollect"
-			  (λ (task) (wait 45) (miscent-autocollect-set! ent #t))
-			  (constantly #t)))
+	(λ (task)
+	  (wait 45)
+	  (for-each (λ (e) (miscent-autocollect-set! e #t)) ents))
+	(constantly #t)))
 
 (define cancel-bullet-with-drop
   (case-lambda
 	([bullet drop] (cancel-bullet-with-drop bullet drop #f))
 	([bullet drop force]
 	 (when (cancel-bullet bullet force)
-	   (spawn-drop-with-autocollect (bullet-x bullet) (bullet-y bullet) drop)))))
+	   (spawn-drops-with-autocollect
+		(list (cons drop 1))
+		(bullet-x bullet) (bullet-y bullet))))))
 
 (define (cancel-all force)
   (vector-for-each-truthy
@@ -2485,30 +2490,35 @@
 			   (kill-enemy target)))))]))
 
 (define (spawn-drops drops x y)
-  (for-each
-   (λ (drop)
+  (fold-left
+   (λ (acc drop)
 	 (define type (car drop))
 	 (define count (cdr drop))
-	 (do [(i 0 (fx1+ i))]
-		 [(fx>= i count)]
-	   ;; skip fuzz on the very first item, so that in the simple case of a single
-	   ;; drop, it doesn't awkwardly get spawned away from the enemy
-	   (let* ([skip-fuzz (and (fxzero? i)
-							  (eq? drop (car drops)))]
-			  [fuzz-x (if skip-fuzz 0.0 (- (roll game-rng 100) 50.0))]
-			  [fuzz-y (if skip-fuzz 0.0 (- (roll game-rng 30) 15.0))])
-		 (let ([ent (spawn-misc-ent
-					 type
-					 (+ x fuzz-x) (+ y fuzz-y)
-					 -3.0 0.08)])
-		   (when (fxpositive? bombing)
-			 (spawn-task "delayed autocollect"
-						 (λ (task) (wait 45) (miscent-autocollect-set! ent #t))
-						 (constantly #t)))))))
+	 (let loop ([i 0] [acc acc])
+	   (if (fx>= i count)
+		   acc
+		   ;; skip fuzz on the very first item, so that in the simple case of a single
+		   ;; drop, it doesn't awkwardly get spawned away from the enemy
+		   (let* ([skip-fuzz (and (fxzero? i)
+								  (eq? drop (car drops)))]
+				  [fuzz-x (if skip-fuzz 0.0 (- (roll game-rng 100) 50.0))]
+				  [fuzz-y (if skip-fuzz 0.0 (- (roll game-rng 30) 15.0))])
+			 (let ([ent (spawn-misc-ent
+						 type
+						 (+ x fuzz-x) (+ y fuzz-y)
+						 -3.0 0.08)])
+			   (when (fxpositive? bombing)
+				 (spawn-task "delayed autocollect"
+				   (λ (task) (wait 45) (miscent-autocollect-set! ent #t))
+				   (constantly #t)))
+			   (loop (fx1+ i) (cons ent acc)))))))
+   '()
    drops))
 
 (define (spawn-enm-drops enm)
-  (spawn-drops (enm-drops enm) (enm-x enm) (enm-y enm)))
+  (if (enm-hasflag? enm (enmflag autocollect))
+	  (spawn-drops-with-autocollect (enm-drops enm) (enm-x enm) (enm-y enm))
+	  (spawn-drops (enm-drops enm) (enm-x enm) (enm-y enm))))
 
 (define (damage-player)
   ;; if player is already dying, don't reset this

@@ -703,8 +703,9 @@
 	(set-box! yys-killed next)
 	(when (= next (* 2 (length xs)))
 	  ;; all yinyangs killed, reward
-	  (spawn-drops '((bomb . 1) (life-frag . 1))
-				   0.0 (fx2fl +poc-y+)))
+	  (spawn-drops-with-autocollect
+	   '((bomb . 1) (life-frag . 1))
+	   0.0 (fx2fl +poc-y+)))
 	#t)
   (set! current-chapter 5)
   (spawn-enemy (enmtype big-fairy) 0.0 -20.0 2500 ch5-bigfairy
@@ -712,12 +713,14 @@
   (wait 360)
   (for-each
    (λ (pair)
-	 (spawn-enemy (enmtype magenta-yinyang)
-				  (car pair) (centered-roll game-rng 10.0)
-				  250 ch5-yinyang '((point . 5)) on-death)
-	 (spawn-enemy (enmtype magenta-yinyang)
+	 (-> (spawn-enemy (enmtype magenta-yinyang)
+					  (car pair) (centered-roll game-rng 10.0)
+					  250 ch5-yinyang '((point . 5)) on-death)
+		 (enm-addflags (enmflags autocollect)))
+	 (-> (spawn-enemy (enmtype magenta-yinyang)
 				  (cdr pair) (centered-roll game-rng 10.0)
 				  250 ch5-yinyang '((point . 5)) on-death)
+		 (enm-addflags (enmflags autocollect)))
 	 (wait 50))
    xs)
   (wait-until (thunk (>= frames 6339)))
