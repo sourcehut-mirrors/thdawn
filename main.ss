@@ -2121,7 +2121,7 @@
 	[(cb x y type delay sound control-function)
 	 (define offset (circle-builder-offset cb))
 	 (cbshoot cb x y
-			  (λ (row col speed facing)
+			  (λ (layer in-layer speed facing)
 				(when sound
 				  (raylib:play-sound sound))
 				(-> (spawn-bullet type

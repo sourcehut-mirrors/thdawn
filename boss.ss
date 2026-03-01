@@ -763,23 +763,48 @@
 		   ;; bullets in the rest of the game.
 		   (when (fl<= (fl+ (fl* dx dx) (fl* dy dy))
 					   (fl* maxdist maxdist))
-			 (if (and (flzero? (v2x last-player-movement-dir))
-					  (flzero? (v2y last-player-movement-dir)))
-				 ;; just push the ball away and give a small speed boost
-				 (loop state (flatan (fl- (bullet-y blt) player-y)
-									 (fl- (bullet-x blt) player-x))
-					   (fl* speed 1.01))
-				 (loop state (flatan (v2y last-player-movement-dir)
-									 (v2x last-player-movement-dir))
-					   (fl* speed 1.01)))))
+			 ;; just push the ball away and give a small speed boost
+			 (loop state
+				   (if (and (flzero? (v2x last-player-movement-dir))
+							(flzero? (v2y last-player-movement-dir)))
+					   (flatan (fl- (bullet-y blt) player-y)
+							   (fl- (bullet-x blt) player-x))
+					   (flatan (v2y last-player-movement-dir)
+									 (v2x last-player-movement-dir)))
+				   (fl* speed 1.01))))
 
 		 ;; bounce off walls
-		 (let-values ([(new-pos new-facing)
-					   (do-bounce-off (vec2 (bullet-x blt) (bullet-y blt))
-									  (bullet-hit-radius (bullet-type blt))
-									  facing aiko-sp2-rects)])
-		   (bullet-x-set! blt (v2x new-pos))
-		   (bullet-y-set! blt (v2y new-pos))
+		 (let*-values ([(new-pos new-facing)
+						(do-bounce-off (vec2 (bullet-x blt) (bullet-y blt))
+									   (bullet-hit-radius (bullet-type blt))
+									   facing aiko-sp2-rects)]
+					   [(nx) (v2x new-pos)]
+					   [(ny) (v2y new-pos)])
+		   (bullet-x-set! blt nx)
+		   (bullet-y-set! blt ny)
+		   (when (not (epsilon-equal new-facing facing))
+			 (let ([consume (λ (low layer in-layer speed facing)
+							  (raylib:play-sound (sebundle-bell sounds))
+							  (spawn-bullet
+							   (if low
+								   (if (zero? layer)
+									   'small-star-yellow 'small-star-white)
+								   (if (zero? layer)
+									   'small-star-orange 'small-star-red))
+							   nx ny 5
+							   (curry linear-step-forever facing speed)))])
+			   (if (fl> ny 300.0)
+				   (-> (cb)
+					   (cbcount 14 2)
+					   (cbspeed 2.0 4.0)
+					   (cbang 12.85)
+					   (cbshoot nx ny (curry consume #t)))
+				   (-> (cb)
+					   (cbcount 36 2)
+					   (cbspeed 3.0 5.0)
+					   (cbabsolute-aim)
+					   (cbang (fx2fl (roll game-rng 360)))
+					   (cbshoot nx ny (curry consume #f))))))
 		   (loop state new-facing (fl- speed 0.01))))])))
 
 (define (aiko-sp2 task aiko)
