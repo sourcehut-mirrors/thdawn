@@ -1,3 +1,27 @@
+* [2026-03-01 Sun]
+Finally done with Aiko sp2.
+
+Lots of adjustments, but I think I landed on something that seems hard at first but is
+actually pretty simple.
+
+Basically, when low on the screen, all the stars the ball spawns are aimed around the
+player. The player should stay unfocused, ignore those stars, and concentrate on dodging
+the stars from higher up on screen and hitting the ball.  And it's possible to shoot down
+the spell even if you aren't trying very hard to hit Aiko with the ball, you just lose the
+secret bonus.
+
+Slotted the old Aiko non2 in as Aiko non1 and made the note bullets multicolored. This
+sprite sheet has pretty awful note bullets though :/.
+
+Nerfed Aiko sp1 by making it so the third wave always spawns nearer to the middle; from
+experience this makes the spell quite a bit easier to dodge. Also, instead of randomly
+picking the colors for each spiral, make them static so players can learn to dodge based
+on the colors of the bullets.
+
+Anyways, with this, all of Aiko's attacks are done now. Next, I'll probably return to
+Hazuki sp2, or maybe Doremi sp2. The gimmick spells are always easier and more fun since I
+can kinda let loose and do whatever.
+
 * [2026-02-27 Fri]
 Imported a new collision algorithm from the raylib-extras examples. It seems to work a lot
 better.
