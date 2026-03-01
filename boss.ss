@@ -189,6 +189,10 @@
 				 '()
 				 (thunk #f)))
   (define bossinfo (blank-aiko-bossinfo))
+  (define keep-running?
+	(thunk
+	 (and (positive? (bossinfo-remaining-timer bossinfo))
+		  (positive? (enm-health aiko)))))
   (set! current-chapter 20)
   (spawn-subtask "hazuki leave"
 	(λ (_)
@@ -199,11 +203,50 @@
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! aiko bossinfo)
-  (declare-nonspell aiko 1800 1000)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health aiko)))))
+  (declare-nonspell aiko 1800 6000)
+  (wait 60)
+  (spawn-subtask "atk"
+	(λ (task)
+	  (define init-left-ang (fx2fl (roll-range game-rng 90 150)))
+	  (interval-loop 30
+		(let loop ([left-ang init-left-ang]
+				   [right-ang (fl- 180.0 init-left-ang)]
+				   [i 0])
+		  (-> (fb)
+			  (fbcount 1 3)
+			  (fbabsolute-aim)
+			  (fbang left-ang)
+			  (fbspeed 3.0 5.0)
+			  (fbshootenm aiko 'yinyang-blue 5 #f linear-step-with-bounce))
+		  (-> (fb)
+			  (fbcount 1 3)
+			  (fbabsolute-aim)
+			  (fbang right-ang)
+			  (fbspeed 3.0 5.0)
+			  (fbshootenm aiko 'yinyang-blue 5 (sebundle-shoot0 sounds)
+						  linear-step-with-bounce))
+		  (if (< i 10)
+			  (begin
+				(wait 10)
+				(loop (fl- left-ang 20.0)
+					  (fl+ right-ang 20.0)
+					  (add1 i)))
+			  (-> (cb)
+				  (cbspeed 4.0 4.75)
+				  (cbcount 36 4)
+				  (cbang 0.0 (if (roll-bool game-rng) 3.0 -3.0))
+				  (cbshoot (enm-x aiko) (enm-y aiko)
+					(λ (layer in-layer speed facing)
+					  (raylib:play-sound (sebundle-bell sounds))
+					  (spawn-bullet
+					   (vnth '#(music-yellow music-cyan music-blue music-magenta)
+							 layer)
+					   (enm-x aiko) (enm-y aiko) 5
+					   (curry linear-step-forever facing speed))))
+				  #;(cbshootenm aiko 'music-cyan 5 (sebundle-bell sounds)))))
+		(boss-standard-wander-once aiko 40 50 30)))
+	keep-running? task)
+  (wait-while keep-running?)
   (common-nonspell-postlude bossinfo)
   (aiko-sp1 task aiko))
 
@@ -212,15 +255,15 @@
   (do [(i 0 (add1 i))]
 	  [(= i 3)]
 	(let ([winding (if (roll-bool game-rng) 1.0 -1.0)]
-		  [colors (vrand
+		  [colors (vnth
 				   '#(#(small-star-blue small-star-cyan)
 					  #(small-star-orange small-star-white)
 					  #(small-star-red small-star-magenta))
-				   game-rng)]
+				   i)]
 		  [x (case i
 			   [(0) (fx2fl (roll-range game-rng -115 -80))]
 			   [(1) (fx2fl (roll-range game-rng 80 115))]
-			   [(2) (centered-roll game-rng 115.0)])]
+			   [(2) (centered-roll game-rng 50.0)])]
 		  [y (vnth '#(150.0 230.0 300.0) i)])
 	  (spawn-particle (particletype circle-hint-opaque)
 					  x y 40 '((color . #x8b008ba0)
@@ -303,7 +346,8 @@
 		  (positive? (enm-health aiko)))))
   (set! current-chapter 21)
   (declare-spell aiko 5)
-  (wait 100)
+  (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 45 aiko)
+  (wait 55)
   (loop-while
    (keep-running)
    (let ([t (spawn-subtask "wave"
@@ -534,41 +578,6 @@
 			   (hit-right-y x y facing)))))
 	(yield))
   (loop-forever))
-
-;; todo: put this attack somewhere else
-#;(spawn-subtask "atk"
-	(λ (task)
-	  (define init-left-ang (fx2fl (roll-range game-rng 90 150)))
-	  (interval-loop 30
-		(let loop ([left-ang init-left-ang]
-				   [right-ang (fl- 180.0 init-left-ang)]
-				   [i 0])
-		  (-> (fb)
-			  (fbcount 1 3)
-			  (fbabsolute-aim)
-			  (fbang left-ang)
-			  (fbspeed 3.0 5.0)
-			  (fbshootenm aiko 'yinyang-blue 5 #f linear-step-with-bounce))
-		  (-> (fb)
-			  (fbcount 1 3)
-			  (fbabsolute-aim)
-			  (fbang right-ang)
-			  (fbspeed 3.0 5.0)
-			  (fbshootenm aiko 'yinyang-blue 5 (sebundle-shoot0 sounds)
-						  linear-step-with-bounce))
-		  (if (< i 10)
-			  (begin
-				(wait 10)
-				(loop (fl- left-ang 20.0)
-					  (fl+ right-ang 20.0)
-					  (add1 i)))
-			  (-> (cb)
-				  (cbspeed 4.0 4.75)
-				  (cbcount 36 4)
-				  (cbang 0.0 (if (roll-bool game-rng ) 3.0 -3.0))
-				  (cbshootenm aiko 'music-cyan 5 (sebundle-bell sounds)))))
-		(boss-standard-wander-once aiko 40 50 30)))
-	keep-running? task)
 
 (define (aiko-non2 task hazuki)
   (define bars (bossinfo-healthbars (enm-extras hazuki)))
@@ -932,10 +941,7 @@
 	  (let wave ([start-frames frames])
 		(raylib:play-sound (sebundle-longcharge sounds))
 		(ease-to ease-in-out-quart
-				 (case (roll game-rng 3)
-				   [(0) -20.0]
-				   [(1) 0.0]
-				   [(2) 20.0])
+				 (vnth '#(-20.0 0.0 20.0) (roll game-rng 3))
 				 160.0 30 aiko)
 		(wait 10)
 		(ease-to values 0.0 190.0 10 aiko)
