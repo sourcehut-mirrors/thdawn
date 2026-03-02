@@ -1,3 +1,16 @@
+* [2026-03-02 Mon]
+No dev work today (Sunday), but jotting something down quickly before i forget it.
+
+For the spell circle following to not be terrible.
+
+Essentially, track when the boss stops and starts moving. When she starts moving, store
+the initial position and time. Then, continuous set the spell circle position to (lerp
+initial-pos cur-pos (/ elapsed 30)). As the boss continuous to move, this will naturally
+create the "trailing" effect we desire. Once the boss stops moving, the circle will
+eventually catch up and then stop once the moving flag becomes false.
+
+Not sure why it took me two whole ass years to think of this, but yeah. Should work.
+
 * [2026-03-01 Sun]
 Finally done with Aiko sp2.
 

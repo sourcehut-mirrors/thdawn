@@ -1289,6 +1289,10 @@
 	(if (= selected 0) ;; Back
 		((menu-item-on-select (vnth opts selected)) self)
 		(setting-gui-selected-option-set! self 0))]))
+(define (setting-gui-tick self)
+  (define selected (setting-gui-selected-option self))
+  (when (and (fx= selected 2) (fxzero? (fxmod true-frames 90)))
+	(raylib:play-sound (sebundle-playerdie sounds))))
 (define (setting-render self textures fonts)
   (define items (setting-gui-menu-options self))
   (define selected (setting-gui-selected-option self))
@@ -1296,10 +1300,16 @@
   (define start-y 100)
   (define step-y 20)
   (define size 25.0)
-  (define alpha 255)
   (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
-  (when (and (fx= selected 2) (fxzero? (fxmod true-frames 90)))
-	(raylib:play-sound (sebundle-playerdie sounds)))
+  (let*-values ([(title) "Fiddle Some Knobs"]
+				[(twidth _theight)
+				 (raylib:measure-text-ex
+				  (fontbundle-bubblegum fonts)
+				  title
+				  40.0 0.0)])
+	(raylib:draw-text-ex
+	 (fontbundle-bubblegum fonts) title
+	 (fl- 320.0 (fl/ twidth 2.0)) 15.0 40.0 0.0 -1))
   (do [(i 0 (add1 i))]
 	  [(>= i (vlen items))]
 	(raylib:draw-text-ex
@@ -1309,8 +1319,8 @@
 	 (if (and (= i selected)
 			  (or (not (setting-gui-waiting-for-rebind self))
 				  (fx< (fxmod true-frames 14) 7)))
-		 (packcolor 200 122 255 alpha)
-		 (packcolor 255 255 255 alpha)))))
+		 selected-color
+		 -1))))
 
 (define-record-type keybind-menu-item
   (parent menu-item)
@@ -1319,7 +1329,7 @@
 
 (define (mk-setting-gui)
   (make-setting-gui
-   setting-handle-input values setting-render
+   setting-handle-input setting-gui-tick setting-render
    (vector-append
 	(vector
 	 (make-menu-item

@@ -26,6 +26,8 @@ As in, when you work pick something off the list and get at it.
 * shot collide with enemy effect
 
 ## Medium-term TODOs
+* make sure IO is properly platform-independent (need to set transcoder newline format,
+  currently defaulting to platform default)
 * borderless fullscreen support
 * improve midsp1 wandering
 * menu system prettification
