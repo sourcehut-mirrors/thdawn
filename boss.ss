@@ -923,7 +923,7 @@
 		  (-> (cb)
 			  (cbcount 36)
 			  (cbspeed 2.0)
-			  (cbshootenm aiko 'small-star-magenta 2 #f)))))
+			  (cbshootenm aiko 'kunai-magenta 5 #f)))))
 	keep-running? task)
   (spawn-subtask "main"
 	(λ (task)
@@ -977,11 +977,13 @@
 		(if (vector-index cur-ball live-bullets)
 			(begin
 			  (set-box! msg-box '(stop))
+			  (enm-addflags aiko (enmflags nocollide))
 			  (ease-to ease-in-out-quad
 					   (bullet-x cur-ball) (bullet-y cur-ball) 60 aiko)
 			  (set-box! msg-box '(attach))
 			  (ease-to ease-in-out-quad 0.0 190.0 60 aiko)
 			  (set-box! msg-box '(stop))
+			  (enm-clrflags aiko (enmflags nocollide))
 			  (wait 10)
 			  (wave frames))
 			(begin
