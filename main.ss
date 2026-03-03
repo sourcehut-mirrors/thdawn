@@ -7,6 +7,13 @@
 		(coro) (geom) (funcutils) (config)
 		(srfi171meta) (srfi171))
 (alias λ lambda)
+
+;; for dev only, makes a function lazily looked up at runtime so
+;; you can hot-reload its body. Mostly useful for the gui methods.
+(define-syntax lazify
+  (syntax-rules ()
+	[(_ f)
+	 (lambda _args (apply f _args))]))
 (define (game-version)
   (define-syntax (game-version-impl stx)
 	(syntax-case stx ()
@@ -778,12 +785,14 @@
 (define (render-ingame-menu fonts items selected x start-y step-y size alpha)
   (do [(i 0 (add1 i))]
 	  [(>= i (vlen items))]
-	(let ([item (vnth items i)])
+	(let ([item (vnth items i)]
+		  [isel (= i selected)])
 	  (raylib:draw-text-ex
 	   (fontbundle-bubblegum fonts)
 	   ((menu-item-label item))
-	   x (+ start-y (* step-y i)) size 0.0
-	   (if (= i selected)
+	   (if isel (+ x 15) x)
+	   (+ start-y (* step-y i)) size 0.0
+	   (if isel
 		   (packcolor 200 122 255 alpha) (packcolor 255 255 255 alpha))))))
 
 (define-record-type title-gui
@@ -841,7 +850,7 @@
   (render-ingame-menu
    fonts
    (title-gui-menu-options self) (title-gui-selected-option self)
-   20.0 200 50 30.0 255))
+   40.0 200 50 30.0 255))
 (define want-quit #f)
 (define (mk-title-gui)
   (make-title-gui
