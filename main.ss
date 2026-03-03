@@ -816,8 +816,28 @@
 	(if (= selected 4) ;; Quit
 		((menu-item-on-select (vnth opts selected)) self)
 		(title-gui-selected-option-set! self 4))]))
+
+(define title-img-bounds (make-rectangle 0.0 0.0 576.0 324.0))
+(define screen-bounds (make-rectangle 0.0 0.0 640.0 480.0))
+(define screen-bounds-flip-y (make-rectangle 0.0 0.0 640.0 -480.0))
+(define double-screen-bounds (make-rectangle 0.0 0.0 1280.0 960.0))
+(define (draw-title-bg textures)
+  (raylib:clear-background #x000000ff)
+  (raylib:draw-texture-pro (txbundle-title1 textures)
+						   title-img-bounds
+						   screen-bounds
+						   v2zero 0.0 -1)
+  (raylib:draw-texture-pro (txbundle-title2 textures)
+						   title-img-bounds
+						   (make-rectangle -150.0 -30.0 1152 648)
+						   v2zero 0.0 -1)
+  (raylib:draw-texture-pro (txbundle-title4 textures)
+						   title-img-bounds
+						   screen-bounds
+						   v2zero 0.0 -1))
+
 (define (title-render self textures fonts)
-  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
+  (draw-title-bg textures)
   (render-ingame-menu
    fonts
    (title-gui-menu-options self) (title-gui-selected-option self)
@@ -825,7 +845,7 @@
 (define want-quit #f)
 (define (mk-title-gui)
   (make-title-gui
-   title-handle-input values title-render
+   title-handle-input values (λ (self textures fonts) (title-render self textures fonts))
    (vector
 	(make-menu-item
 	 (thunk "Game Start")
@@ -911,7 +931,7 @@
 	 (fontbundle-sharetechmono fonts)
 	 (make-string +name-max+ #\*)
 	 40.0 0.0))
-  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
+  (draw-title-bg textures)
   (raylib:draw-text-ex
    (fontbundle-sharetechmono fonts) name
    (fl- 320.0 (fl/ width 2.0)) 100.0 40.0 0.0 -1)
@@ -1088,7 +1108,7 @@
 	(raylib:measure-text-ex
 	 (fontbundle-sharetechmono fonts)
 	 page-str 20.0 0.0))
-  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
+  (draw-title-bg textures)
   (raylib:draw-rectangle-lines 20 70 (- 640 40) (- 480 200) -1)
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts) title
@@ -1199,7 +1219,7 @@
 	(div-and-mod play-secs0 60))
   (define-values (play-hrs play-mins)
 	(div-and-mod play-mins0 60))
-  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
+  (draw-title-bg textures)
   (raylib:draw-text-ex bubblegum "Play Data"
 					   (fl- (/ 640.0 2.0) (fl/ title-width 2.0))
 					   15.0 40.0 0.0 -1)
@@ -1300,7 +1320,7 @@
   (define start-y 100)
   (define step-y 20)
   (define size 25.0)
-  (raylib:draw-rectangle-gradient-h 0 0 640 480 #xff0000ff #x0000ffff)
+  (draw-title-bg textures)
   (let*-values ([(title) "Fiddle Some Knobs"]
 				[(twidth _theight)
 				 (raylib:measure-text-ex
@@ -1500,7 +1520,7 @@
 	(define alpha (eround (lerp 0 255 progress)))
 	(define title
 	  (case type
-		[(normal) "Paused"]
+		[(normal) "A Moment's Reprieve"]
 		[(gameclear) "All Clear!!"]
 		[(gameover) "Game Over..."]
 		[(replay) "Replay Paused"]
@@ -1510,7 +1530,7 @@
 	   (fontbundle-bubblegum fonts)
 	   title 32.0 0.0))
 	(raylib:draw-rectangle-rec
-	 0.0 0.0 1280.0 960.0 (packcolor 96 96 96 (eround (lerp 0 160 progress))))
+	 0.0 0.0 640.0 480.0 (packcolor 96 96 96 (eround (lerp 0 160 progress))))
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
 	 title
@@ -4573,8 +4593,8 @@
    ;; here flips it again to correct for that. It's unfortunate that in
    ;; trying to paper over an OpenGL design choice, Raylib actually introduces
    ;; another mismatch.
-   (make-rectangle 0.0 0.0 640.0 -480.0)
-   (make-rectangle 0.0 0.0 1280.0 960.0) v2zero 0.0 -1)
+   screen-bounds-flip-y
+   double-screen-bounds v2zero 0.0 -1)
   (raylib:end-drawing))
 
 (include "stage.ss")

@@ -119,6 +119,7 @@
    bullet1 bullet2 bullet3 bullet4 bullet5 bullet6
    bullet-music fireball
    bg1 bg2 bg3 bg4
+   title1 title2 title4
    bulletcancel hint
    bullet-ball-huge
    laser1 laser2 laser3 laser4
@@ -138,6 +139,7 @@
 					 "bullet_music.png" "bullet_fireball.png"
 					 "background_1.png" "background_2.png"
 					 "background_3.png" "background_4.png"
+					 "title_1.png" "title_2.png" "title_4.png"
 					 "etbreak.png" "hint.png"
 					 "bullet_ball_huge.png"
 					 "laser1.png" "laser2.png" "laser3.png" "laser4.png"
