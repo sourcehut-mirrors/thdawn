@@ -4453,7 +4453,15 @@
 (define bullet-cc (make-cost-center))
 (define miscent-cc (make-cost-center))
 
-(define (render-spell-background textures id alpha)
+(define (render-spell-background textures id elapsed)
+  (define max-alpha
+	(case id
+	  [(group doremi hazuki) #xe0]
+	  [(aiko) #xc0]))
+  (define alpha
+	(if (fx> elapsed 60)
+		max-alpha
+		(eround (lerp 0 max-alpha (/ elapsed 60)))))
   (define tex
 	(case id
 	  [(group) (txbundle-spellbg-group textures)]
@@ -4520,13 +4528,9 @@
 	  (let* ([bossinfo (enm-extras enm)]
 			 [bgid (spell-descriptor-bgid
 					(vnth spells (bossinfo-active-spell-id bossinfo)))]
-			 [elapsed (bossinfo-elapsed-frames bossinfo)]
-			 [alpha
-			  (if (fx> elapsed 60)
-				  #xe0
-			      (eround (lerp 0 #xe0 (/ elapsed 60))))])
+			 [elapsed (bossinfo-elapsed-frames bossinfo)])
 		(when bgid
-		  (render-spell-background textures bgid alpha)))))
+		  (render-spell-background textures bgid elapsed)))))
 
   (when show-hitboxes
 	(raylib:draw-line (+ +playfield-render-offset-x+ +playfield-min-x+)
