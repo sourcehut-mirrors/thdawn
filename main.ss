@@ -2250,15 +2250,15 @@
 	(thunk (pretty-print data))
 	'truncate))
 
-(define +boss-lazy-spellcircle-context+ 30)
+(define +spellcircle-context+ 60)
 (define-record-type bossinfo
   (fields
    name
    name-color
-   ;; holds last +boss-lazy-spellcircle-context+ frames of positions
-   ;; from oldest to latest; used for the spell circle to trail behind the boss
-   (mutable old-xs)
-   (mutable old-ys)
+   (mutable moved-last-frame)
+   (mutable start-move-frame)
+   (mutable start-move-x)
+   (mutable start-move-y)
    ;; index into spells array of the active spell, -1 if none
    (mutable active-spell-id)
    (mutable active-spell-bonus)
@@ -2406,28 +2406,14 @@
 	(when (fxpositive? damaged-recently)
 	  (enm-damaged-recently-set! enm (fx1- damaged-recently)))
 	(enm-ox-set! enm (enm-x enm))
-	(enm-oy-set! enm (enm-y enm))
-	(when (is-boss? enm)
-	  (let* ([bossinfo (enm-extras enm)]
-			 [old-xs (bossinfo-old-xs bossinfo)]
-			 [old-ys (bossinfo-old-ys bossinfo)])
-		;; shift left by one
-		(flvector-copy! old-xs 1
-						old-xs 0
-						(fx1- +boss-lazy-spellcircle-context+))
-		(flvector-copy! old-ys 1
-						old-ys 0
-						(fx1- +boss-lazy-spellcircle-context+))
-		;; add the new positions at end
-		(flvector-set! old-xs (fx1- +boss-lazy-spellcircle-context+) (enm-x enm))
-		(flvector-set! old-ys (fx1- +boss-lazy-spellcircle-context+) (enm-y enm)))))
+	(enm-oy-set! enm (enm-y enm)))
   (vector-for-each-truthy each live-enm))
 
 (define (posttick-enemies)
   (define (each enm)
-	(when (is-boss? enm)
-	  (let* ([bossinfo (enm-extras enm)]
-			 [timer (bossinfo-remaining-timer bossinfo)])
+	(define bossinfo (and (is-boss? enm) (enm-extras enm)))
+	(when bossinfo
+	  (let ([timer (bossinfo-remaining-timer bossinfo)])
 		(unless (fxzero? timer)
 		  (bossinfo-remaining-timer-set! bossinfo (fx1- timer))
 		  (when (and (fx<= timer 600)
@@ -2441,13 +2427,33 @@
 		   [x (enm-x enm)] [y (enm-y enm)]
 		   [stationary-x (epsilon-equal ox x)]
 		   [stationary-y (epsilon-equal oy y)]
-		   [dx (enm-dx-render enm)])
+		   [dx (enm-dx-render enm)]
+		   [record-start-move
+			(thunk
+			 (when bossinfo
+			   (when (and (not (bossinfo-moved-last-frame bossinfo))
+						  ;; prevent the circle jumping around if the boss starts
+						  ;; moving again within +spellcircle-context+ time
+						  ;; doing this makes the circle not be lazy for that motion
+						  ;; (sticking directly to the boss because the t value
+						  ;; computed for the lerp becomes greater than the context)
+						  ;; but that's better than having it jump around.
+						  ;; TODO: maybe improve this
+						  (>= (- frames (bossinfo-start-move-frame bossinfo))
+							  +spellcircle-context+))
+				 (bossinfo-start-move-frame-set! bossinfo frames)
+				 (bossinfo-start-move-x-set! bossinfo x)
+				 (bossinfo-start-move-y-set! bossinfo y))
+			   (bossinfo-moved-last-frame-set! bossinfo #t)))])
 	  (cond
-	   ;; Didn't move: don't update at all
-	   [(and stationary-x stationary-y) #f]
+	   ;; Didn't move: don't update dx-render at all
+	   [(and stationary-x stationary-y)
+		(when bossinfo
+		  (bossinfo-moved-last-frame-set! bossinfo #f))]
 	   ;; Stationary on x (moving on y): Go back towards zero
 	   ;; TODO: Do we really want this?
 	   [stationary-x
+		(record-start-move)
 		(cond
 		 [(flnegative? dx) (enm-dx-render-set!
 							enm (flmin 0.0 (fl+ dx (abs (fl- y oy)))))]
@@ -2455,6 +2461,7 @@
 							enm (flmax 0.0 (fl- dx (abs (fl- y oy)))))])]
 	   ;; Moving on x: Go in the direction we're moving (up to a cap)
 	   [else
+	    (record-start-move)
 		(enm-dx-render-set! enm (clamp (fl+ dx (fl- x ox)) -10.0 10.0))])))
   (vector-for-each-truthy each live-enm))
 
@@ -2741,10 +2748,20 @@
 
 (define (draw-boss textures enm render-x render-y)
   (define bossinfo (enm-extras enm))
+  (define lazy-t (-> (- frames (bossinfo-start-move-frame bossinfo))
+					 (/ +spellcircle-context+)
+					 (clamp 0 1)
+					 (ease-in-out-quad)))
   (define lazy-render-x (+ +playfield-render-offset-x+
-						   (flvector-ref (bossinfo-old-xs bossinfo) 0)))
+						   (lerp
+							(bossinfo-start-move-x bossinfo)
+							(enm-x enm)
+							lazy-t)))
   (define lazy-render-y (+ +playfield-render-offset-y+
-						   (flvector-ref (bossinfo-old-ys bossinfo) 0)))
+						   (lerp
+							(bossinfo-start-move-y bossinfo)
+							(enm-y enm)
+							lazy-t)))
   ;; add the spawn timestamp to seed the rotation so multiple bosses don't
   ;; render their aura the exact same way
   (let* ([t (fx+ frames (enm-time-spawned enm))]
@@ -3773,8 +3790,7 @@
 
 (define (blank-bossinfo name name-color)
   (make-bossinfo name name-color
-				 (make-flvector +boss-lazy-spellcircle-context+ 0.0)
-				 (make-flvector +boss-lazy-spellcircle-context+ 100.0)
+				 #f frames 0.0 0.0
 				 #f #f #f 0 0 0 #f (immutable-vector)))
 (define (blank-doremi-bossinfo)
   (blank-bossinfo "Harukaze Doremi" #xff7fbcff))

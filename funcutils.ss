@@ -4,7 +4,7 @@
 		  dotimes curry vector-for-all vector-for-each-indexed
 		  vector-find vector-find-index vector-index vector-popcnt thunk
 		  -> ->> some-> some->>
-		  vector-add vector-pop vector-truncate when-let assqdr)
+		  vector-add vector-pop vector-truncate when-let if-let assqdr)
   (import (chezscheme))
 
   (define (assqdr key alist)
@@ -87,6 +87,17 @@
 	   (let ([var expr])
 		 (when var
 		   b1 b2 ...))]))
+
+  (define-syntax if-let
+	(syntax-rules ()
+	  [(_ ([var expr]) b1 b2 ...)
+	   (let ([var expr])
+		 (and var b1 b2 ...))]
+	  [(_ ([v1 e1] [v2 e2] ...) b1 b2 ...)
+	   (let ([v1 e1])
+		 (and v1
+			  (if-let ([v2 e2] ...)
+					  b1 b2 ...)))]))
   
   (define constantly
 	;; some common stuff to avoid gc spamming
