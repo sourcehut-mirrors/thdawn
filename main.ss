@@ -737,8 +737,8 @@
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
 
-;; stack of active guis, front of the list always receives all input
-;; rendered bottom to top (reverse order)
+;; stack of active guis, from top priority to lowest
+;; only top gui receives input and gets rendered
 ;; if a stage is active, it is rendered before any gui
 (define gui-stack '())
 (define (replace-gui gui)
@@ -845,7 +845,7 @@
 (define want-quit #f)
 (define (mk-title-gui)
   (make-title-gui
-   title-handle-input values (λ (self textures fonts) (title-render self textures fonts))
+   title-handle-input values title-render
    (vector
 	(make-menu-item
 	 (thunk "Game Start")
@@ -4572,9 +4572,9 @@
 (define (do-render-all textures fonts)
   (when current-stage-ctx
 	(do-render-game textures fonts))
-  (for-each
-   (λ (g) ((gui-render g) g textures fonts))
-   (reverse gui-stack)))
+  (unless (null? gui-stack)
+	(let ([top (car gui-stack)])
+	  ((gui-render top) top textures fonts))))
 
 (define (render-all render-texture render-texture-inner textures fonts)
   (raylib:begin-texture-mode render-texture)
