@@ -793,7 +793,8 @@
 	   (if isel (+ x 15) x)
 	   (+ start-y (* step-y i)) size 0.0
 	   (if isel
-		   (packcolor 200 122 255 alpha) (packcolor 255 255 255 alpha))))))
+		   (override-alpha selected-color alpha)
+		   (override-alpha -1 alpha))))))
 
 (define-record-type title-gui
   (parent gui)
@@ -1368,7 +1369,9 @@
 	  (thunk "Reset to default")
 	  (λ (_gui)
 		(set! config (reset-config))
-		(refresh-keybindings)))
+		(refresh-keybindings)
+		(update-music-volumes)
+		(update-sound-volumes)))
 	 (make-menu-item
 	  (thunk
 	   (string-append "SFX Volume: < "
@@ -1539,13 +1542,13 @@
 	   (fontbundle-bubblegum fonts)
 	   title 32.0 0.0))
 	(raylib:draw-rectangle-rec
-	 0.0 0.0 640.0 480.0 (packcolor 96 96 96 (eround (lerp 0 160 progress))))
+	 0.0 0.0 640.0 480.0 (override-alpha #x60606000 (eround (lerp 0 160 progress))))
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
 	 title
 	 (+ (/ twidth -2.0) +playfield-render-offset-x+)
 	 (eround (lerp 120 150 progress))
-	 32.0 0.0 (packcolor 200 122 255 alpha))
+	 32.0 0.0 (override-alpha selected-color alpha))
 	(render-ingame-menu fonts opts selected
 						(eround (lerp 80 100 progress))
 						200 20 20.0 alpha))
@@ -3135,7 +3138,7 @@
 		  textures type
 		  (fl+ rot (flmod (* frames 3.0) 360.0))
 		  (make-rectangle render-x render-y sz sz)
-		  (packcolor 255 255 255 (eround (lerp 255 0 t))))))
+		  (override-alpha -1 (eround (lerp 255 0 t))))))
 	  ([graze]
 	   (let* ([t (/ age max-age)]
 			  [sz (lerp 6 0 t)]
@@ -3150,7 +3153,7 @@
 		  (inexact (lerp (assqdr 'start-radius extra-data)
 						 (assqdr 'end-radius extra-data)
 						 t))
-		  (packcolor 255 255 255 (eround (lerp 255 0 t))))))
+		  (override-alpha -1 (eround (lerp 255 0 t))))))
 	  ([cancel]
 	   (let* ([age (floor (/ age 3))]
 			  [v (if (fx< age 4) 0.0 64.0)]
@@ -4100,7 +4103,7 @@
 	   render-player-x render-player-y
 	   (lerp +vacuum-radius-unfocused+ +vacuum-radius-focused+
 			 focus-progress)
-	   (packcolor 255 255 255 (eround (lerp 16 128 focus-progress))))))
+	   (override-alpha -1 (eround (lerp 16 128 focus-progress))))))
 
   (when show-hitboxes
 	(raylib:draw-circle-v render-player-x render-player-y +graze-radius+
@@ -4570,7 +4573,7 @@
 	   (raylib:rotatef (mod frames 360.0) 0.0 0.0 1.0) ;; spin
 	   (draw-sprite textures 'focus-sigil
 					0.0 0.0 ;; manually translated to final position above
-					(packcolor 255 255 255 (eround (* 255 focus-sigil-strength)))))))
+					(override-alpha -1 (eround (* 255 focus-sigil-strength)))))))
 
   (when (positive? bombing)
 	(draw-bomb textures))
