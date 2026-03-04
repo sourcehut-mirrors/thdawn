@@ -831,23 +831,23 @@
 (define screen-bounds (make-rectangle 0.0 0.0 640.0 480.0))
 (define screen-bounds-flip-y (make-rectangle 0.0 0.0 640.0 -480.0))
 (define double-screen-bounds (make-rectangle 0.0 0.0 1280.0 960.0))
-(define (draw-title-bg textures)
+(define (draw-title-bg textures tint)
   (raylib:clear-background #x000000ff)
   (raylib:draw-texture-pro (txbundle-title1 textures)
 						   title-img-bounds
 						   screen-bounds
-						   v2zero 0.0 -1)
+						   v2zero 0.0 tint)
   (raylib:draw-texture-pro (txbundle-title2 textures)
 						   title-img-bounds
 						   (make-rectangle -150.0 -30.0 1152 648)
-						   v2zero 0.0 -1)
+						   v2zero 0.0 tint)
   (raylib:draw-texture-pro (txbundle-title4 textures)
 						   title-img-bounds
 						   screen-bounds
-						   v2zero 0.0 -1))
+						   v2zero 0.0 tint))
 
 (define (title-render self textures fonts)
-  (draw-title-bg textures)
+  (draw-title-bg textures -1)
   (render-ingame-menu
    fonts
    (title-gui-menu-options self) (title-gui-selected-option self)
@@ -941,7 +941,7 @@
 	 (fontbundle-sharetechmono fonts)
 	 (make-string +name-max+ #\*)
 	 40.0 0.0))
-  (draw-title-bg textures)
+  (draw-title-bg textures #x808080ff)
   (raylib:draw-text-ex
    (fontbundle-sharetechmono fonts) name
    (fl- 320.0 (fl/ width 2.0)) 100.0 40.0 0.0 -1)
@@ -1118,7 +1118,7 @@
 	(raylib:measure-text-ex
 	 (fontbundle-sharetechmono fonts)
 	 page-str 20.0 0.0))
-  (draw-title-bg textures)
+  (draw-title-bg textures #x808080ff)
   (raylib:draw-rectangle-lines 20 70 (- 640 40) (- 480 200) -1)
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts) title
@@ -1229,7 +1229,7 @@
 	(div-and-mod play-secs0 60))
   (define-values (play-hrs play-mins)
 	(div-and-mod play-mins0 60))
-  (draw-title-bg textures)
+  (draw-title-bg textures #x808080ff)
   (raylib:draw-text-ex bubblegum "Play Data"
 					   (fl- (/ 640.0 2.0) (fl/ title-width 2.0))
 					   15.0 40.0 0.0 -1)
@@ -1330,7 +1330,7 @@
   (define start-y 100)
   (define step-y 20)
   (define size 25.0)
-  (draw-title-bg textures)
+  (draw-title-bg textures #x808080ff)
   (let*-values ([(title) "Fiddle Some Knobs"]
 				[(twidth _theight)
 				 (raylib:measure-text-ex
