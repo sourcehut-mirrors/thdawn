@@ -3198,10 +3198,8 @@
 			  raylib:draw-circle-lines-v)
 		  render-x render-y
 		  r color)))
-	  ([spellbonus]
+	  ([spellbonus clear-bonus]
 	   (draw-centered-field-text extra-data render-y 24.0 -1 #f))
-	  ([clear-bonus]
-	   (draw-centered-field-text extra-data 75.0 24.0 -1 #f))
 	  ([text-hint]
 	   (let ([text (assqdr 'text extra-data)]
 			 [size (assqdr 'size extra-data)]

@@ -1085,7 +1085,7 @@
 	 (particletype clear-bonus)
 	 ;; Position dynamically calculated at render to avoid
 	 ;; needing to access the fonts here
-	 0.0 0.0 240
+	 0.0 75.0 240
 	 (format "Clear Bonus: ~:d" clear-bonus)))
   (when (is-liveplay)
 	(let ([pair (assq 'games-cleared play-data)])
