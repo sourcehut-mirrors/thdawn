@@ -627,6 +627,7 @@
    edge-released
    level-pressed
    rng-state
+   ;; if non-#f, seconds that the game was paused between this frame and the previous one, preformatted as a string
    unpaused)
   (sealed #t))
 (define (make-replay-record frame edge-pressed edge-released level-pressed)
@@ -697,7 +698,11 @@
    (mutable dialogue-pinned-until)
    ;; unit vector of the direction the player moved in the last frame, zero vector
    ;; if no movement
-   (mutable last-player-movement-dir))
+   (mutable last-player-movement-dir)
+   ;; Set when a pause gui is opened. when non-#f, the next frame after unpausing, the
+   ;; time difference from this timestamp to the current time is computed and saved in the
+   ;; replay.
+   (mutable paused-at))
   (sealed #t))
 
 (define (fresh-stage-ctx replay)
@@ -714,7 +719,7 @@
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
    0 0 #f
-   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1 v2zero))
+   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1 v2zero #f))
 
 (define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
@@ -3104,14 +3109,15 @@
 	  (define-values (width height)
 		(raylib:measure-text-ex (fontbundle-cabin fonts) text size 0.0))
 	  (define render-x (+ +playfield-render-offset-x+ (/ width -2.0)))
+	  (define start-fadeout-age (- max-age 30))
 	  (define alpha
 		(cond
 		 [(< age 30)
 		  (eround (lerp 0 255 (ease-out-cubic (/ age 30))))]
-		 [(< age 120) color]
+		 [(< age start-fadeout-age) color]
 		 [else
-		  (eround (lerp 255 0 (/ (- age 120)
-								 (- max-age 120))))]))
+		  (eround (lerp 255 0 (/ (- age start-fadeout-age)
+								 (- max-age start-fadeout-age))))]))
 	  (when bg
 		(raylib:draw-rectangle-rec
 		 (fl- render-x 5.0)
@@ -3958,6 +3964,15 @@
 					(enum-set->list (inputset-level-pressed inputs)))])
 			(when (= 1 (fxmod frames 100))
 			  (save-rng-state r))
+			(when-let ([paused-at (stage-ctx-paused-at current-stage-ctx)])
+			  (let* ([elapsed (time-difference (current-time 'time-monotonic)
+											   paused-at)]
+					 [fmt (format "~,2f"
+								  (inexact
+								   (+ (time-second elapsed)
+									  (/ (time-nanosecond elapsed) 1000000000))))])
+				(save-pause-duration r fmt))
+			  (stage-ctx-paused-at-set! current-stage-ctx #f))
 			(stage-ctx-replay-output-set!
 			 current-stage-ctx
 			 (cons r (stage-ctx-replay-output current-stage-ctx))))
@@ -3973,6 +3988,12 @@
 				(when (vnth r 4)
 				  (assert (equal? (vnth r 4)
 								  (pseudo-random-generator->vector game-rng))))
+				(when (vnth r 5)
+				  (spawn-particle
+				   (particletype text-hint) 0.0 20.0 90
+				   `((text . ,(string-append "Paused for " (vnth r 5)))
+					 (size . 24.0)
+					 (color . #xff0000ff))))
 				(handle-game-input
 				 (make-inputset '()
 								(vkeys-proc (vector-ref r 1))
@@ -3988,6 +4009,7 @@
 								 (pausetype replay)))
 							gui-stack))
 	  (raylib:play-sound (sebundle-pause sounds))
+	  (stage-ctx-paused-at-set! current-stage-ctx (current-time 'time-monotonic))
 	  (when current-music
 		(raylib:pause-music-stream current-music)))
 
