@@ -1624,7 +1624,8 @@
 		  (fl+ (enm-y enm) (fl* dist (flsin facing)))))
 
 (define (player-invincible?)
-  (fxpositive? iframes))
+  (or (fxpositive? iframes)
+	  (stage-ctx-dialogue current-stage-ctx)))
 
 (define (paused?)
   (memp pause-gui? gui-stack))
