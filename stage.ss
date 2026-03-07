@@ -431,7 +431,7 @@
 						(iota 6))])
 	(spawn-enemy (enmtype big-fairy) -210.0 150.0 500
 				 (curry ch3-w1-leader-fairy #f) five-point-items
-				 (λ () (ch3-w1-leader-on-death followers))))
+				 (thunk (ch3-w1-leader-on-death followers))))
   (wait 400)
   (let ([followers (map (λ (i)
 						  (spawn-enemy
@@ -441,7 +441,7 @@
 						(iota 6))])
 	(spawn-enemy (enmtype big-fairy) 220.0 180.0 500
 				 (curry ch3-w1-leader-fairy #t) five-point-items
-				 (λ () (ch3-w1-leader-on-death followers))))
+				 (thunk (ch3-w1-leader-on-death followers))))
   (wait 240)
   (dotimes 4
 	(spawn-particle
@@ -450,7 +450,6 @@
 	 30 '((color . -1) (r1 . 300.0) (r2 . 80.0)))
 	(wait 30))
   (wait 40)
-  ;; TODO: hint particle telling player to get in middle of screen?
   (let ([cx 0.0]
 		[cy 224.0]
 		[delay-per 27]
@@ -1028,10 +1027,10 @@
 	(wait 10))
   (let ([drops '((point . 15))]
 		[on-death (let ([killed (box 0)])
-					(λ ()
-					  (set-box! killed (add1 (unbox killed)))
-					  (when (= (unbox killed) 3)
-						(spawn-drops '((bomb-frag . 1)) 0.0 110.0))))])
+					(thunk
+					 (set-box! killed (add1 (unbox killed)))
+					 (when (= (unbox killed) 3)
+					   (spawn-drops '((bomb-frag . 1)) 0.0 110.0))))])
 	(spawn-enemy (enmtype big-fairy) -90.0 -20.0 400 ch9-w2 drops on-death)
 	(spawn-enemy (enmtype big-fairy) 0.0 -30.0 400 ch9-w2 drops on-death)
 	(spawn-enemy (enmtype big-fairy) 90.0 -20.0 400 ch9-w2 drops on-death))
@@ -1240,8 +1239,8 @@
 
 (define (midboss2-control task enm)
   (define bossinfo (enm-extras enm))
-  (define keep-running
-	(λ () (positive? (bossinfo-remaining-timer bossinfo))))
+  (define (keep-running)
+	(positive? (bossinfo-remaining-timer bossinfo)))
   (ease-to values 0.0 100.0 20 enm)
   (wait 50)
 
