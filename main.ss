@@ -1856,9 +1856,9 @@
 		(bullet-x bullet) (bullet-y bullet))))))
 
 (define (cancel-all force)
-  (vector-for-each-truthy
+  (vector-for-each
    (λ (blt)
-	 (cancel-bullet-with-drop blt 'small-piv force))
+	 (and blt (cancel-bullet-with-drop blt 'small-piv force)))
    live-bullets))
 
 (define (despawn-out-of-bound-bullet bullet)
@@ -2407,9 +2407,9 @@
 
 (define (fail-current-attack)
   (define (each enm)
-	(when (is-boss? enm)
+	(when (and enm (is-boss? enm))
 	  (bossinfo-active-attack-failed-set! (enm-extras enm) #t)))
-  (vector-for-each-truthy each live-enm))
+  (vector-for-each each live-enm))
 
 (define (pretick-enemies)
   (define (each enm)
@@ -3109,112 +3109,115 @@
 		(delete-particle p))))
   (vector-for-each each live-particles))
 
+(define (draw-centered-field-text fonts age max-age text render-y size color bg)
+  (define-values (width height)
+	(raylib:measure-text-ex (fontbundle-cabin fonts) text size 0.0))
+  (define render-x (+ +playfield-render-offset-x+ (/ width -2.0)))
+  (define start-fadeout-age (- max-age 30))
+  (define alpha
+	(cond
+	 [(< age 30)
+	  (eround (lerp 0 255 (ease-out-cubic (/ age 30))))]
+	 [(< age start-fadeout-age) color]
+	 [else
+	  (eround (lerp 255 0 (/ (- age start-fadeout-age)
+							 (- max-age start-fadeout-age))))]))
+  (when bg
+	(raylib:draw-rectangle-rec
+	 (fl- render-x 5.0)
+	 (fl- render-y 5.0)
+	 (fl+ width 10.0)
+	 (fl+ height 10.0)
+	 (override-alpha #x888888aa (fxmin alpha #xaa))))
+  (raylib:draw-text-ex
+   (fontbundle-cabin fonts)
+   text
+   render-x render-y
+   size 0.0
+   (override-alpha color alpha)))
+
 (define (draw-particles textures fonts)
   (define (each p)
-	(define age (particle-age p))
-	(define max-age (particle-max-age p))
-	(define (draw-centered-field-text text y size color bg)
-	  (define-values (width height)
-		(raylib:measure-text-ex (fontbundle-cabin fonts) text size 0.0))
-	  (define render-x (+ +playfield-render-offset-x+ (/ width -2.0)))
-	  (define start-fadeout-age (- max-age 30))
-	  (define alpha
-		(cond
-		 [(< age 30)
-		  (eround (lerp 0 255 (ease-out-cubic (/ age 30))))]
-		 [(< age start-fadeout-age) color]
-		 [else
-		  (eround (lerp 255 0 (/ (- age start-fadeout-age)
-								 (- max-age start-fadeout-age))))]))
-	  (when bg
-		(raylib:draw-rectangle-rec
-		 (fl- render-x 5.0)
-		 (fl- render-y 5.0)
-		 (fl+ width 10.0)
-		 (fl+ height 10.0)
-		 (override-alpha #x888888aa (fxmin alpha #xaa))))
-	  (raylib:draw-text-ex
-	   (fontbundle-cabin fonts)
-	   text
-	   render-x y
-	   size 0.0
-	   (override-alpha color alpha)))
-	(define render-x (+ (particle-x p) +playfield-render-offset-x+))
-	(define render-y (+ (particle-y p) +playfield-render-offset-y+))
-	(define extra-data (particle-extra-data p))
-	(define type (particle-type p))
-	(case type
-	  ([maple maple-grayscale]
-	   (let* ([t (/ age max-age)]
-			  [sz (lerp (assqdr 'initsz extra-data) 16.0 t)]
-			  [rot (assqdr 'rot extra-data)])
-		 (draw-sprite-pro-with-rotation
-		  textures type
-		  (fl+ rot (flmod (* frames 3.0) 360.0))
-		  (make-rectangle render-x render-y sz sz)
-		  (override-alpha -1 (eround (lerp 255 0 t))))))
-	  ([graze]
-	   (let* ([t (/ age max-age)]
-			  [sz (lerp 6.0 0.0 t)]
-			  [rot (assqdr 'rot (particle-extra-data p))])
-		 (raylib:draw-rectangle-pro render-x render-y sz sz
-									(fl/ sz 2.0) (fl/ sz 2.0)
-									rot #xf5f5f5f5)))
-	  ([enmdeath]
-	   (let ([t (/ age max-age)])
-		 (raylib:draw-circle-lines-v
-		  render-x render-y
-		  (inexact (lerp (assqdr 'start-radius extra-data)
-						 (assqdr 'end-radius extra-data)
-						 t))
-		  (override-alpha -1 (eround (lerp 255 0 t))))))
-	  ([cancel]
-	   (let* ([age (floor (/ age 3))]
-			  [v (if (fx< age 4) 0.0 64.0)]
-			  [u (fx2fl (* 64 (fxmod age 4)))])
-		 (raylib:draw-texture-pro
-		  (txbundle-bulletcancel textures)
-		  (make-rectangle u v 64.0 64.0)
-		  (make-rectangle (- render-x 24.0) (- render-y 24.0) 48.0 48.0)
-		  v2zero 0.0 -1)))
-	  ([itemvalue]
-	   (let ([alpha (round (lerp 255 0 (ease-in-quad (/ age max-age))))]
-			 [color (car extra-data)]
-			 [value (cdr extra-data)]
-			 [render-x (fl+ render-x 10.0)])
-		 (let-values ([(width _) (raylib:measure-text-ex
-								  (fontbundle-cabin fonts)
-								  value 16.0 0.0)])
-		   (raylib:draw-text-ex
-			(fontbundle-cabin fonts)
-			value
-			;; display to the left if we wouldn't have room on the right
-			;; this is done here instead of when the particle is spawned so that
-			;; we don't have to pass the fonts to the game logic
-			(if (> (+ render-x width) +playfield-max-render-x+)
-				(- render-x width 20.0)
-				render-x)
-			render-y
-			16.0 0.0 (fxlogior color alpha)))))
-	  ([circle-hint circle-hint-opaque]
-	   (let ([color (assqdr 'color extra-data)]
-			 [r (lerp (assqdr 'r1 extra-data)
-					  (assqdr 'r2 extra-data)
-					  (/ age max-age))])
-		 ((if (eq? type 'circle-hint-opaque)
-			  raylib:draw-circle-v
-			  raylib:draw-circle-lines-v)
-		  render-x render-y
-		  r color)))
-	  ([spellbonus clear-bonus]
-	   (draw-centered-field-text extra-data render-y 24.0 -1 #f))
-	  ([text-hint]
-	   (let ([text (assqdr 'text extra-data)]
-			 [size (assqdr 'size extra-data)]
-			 [color (assqdr 'color extra-data)])
-		 (draw-centered-field-text text render-y size color #t)))))
-  ;; TODO: switch to vector-for-each
-  (vector-for-each-truthy each live-particles))
+	(when p
+	  (let ([age (particle-age p)]
+			[max-age (particle-max-age p)]
+			[render-x (+ (particle-x p) +playfield-render-offset-x+)]
+			[render-y (+ (particle-y p) +playfield-render-offset-y+)]
+			[extra-data (particle-extra-data p)]
+			[type (particle-type p)])
+		(case type
+		  ([maple maple-grayscale]
+		   (let* ([t (/ age max-age)]
+				  [sz (lerp (assqdr 'initsz extra-data) 16.0 t)]
+				  [rot (assqdr 'rot extra-data)])
+			 (draw-sprite-pro-with-rotation
+			  textures type
+			  (fl+ rot (flmod (* frames 3.0) 360.0))
+			  (make-rectangle render-x render-y sz sz)
+			  (override-alpha -1 (eround (lerp 255 0 t))))))
+		  ([graze]
+		   (let* ([t (/ age max-age)]
+				  [sz (lerp 6.0 0.0 t)]
+				  [rot (assqdr 'rot (particle-extra-data p))])
+			 (raylib:draw-rectangle-pro render-x render-y sz sz
+										(fl/ sz 2.0) (fl/ sz 2.0)
+										rot #xf5f5f5f5)))
+		  ([enmdeath]
+		   (let ([t (/ age max-age)])
+			 (raylib:draw-circle-lines-v
+			  render-x render-y
+			  (inexact (lerp (assqdr 'start-radius extra-data)
+							 (assqdr 'end-radius extra-data)
+							 t))
+			  (override-alpha -1 (eround (lerp 255 0 t))))))
+		  ([cancel]
+		   (let* ([age (floor (/ age 3))]
+				  [v (if (fx< age 4) 0.0 64.0)]
+				  [u (fx2fl (* 64 (fxmod age 4)))])
+			 (raylib:draw-texture-pro
+			  (txbundle-bulletcancel textures)
+			  (make-rectangle u v 64.0 64.0)
+			  (make-rectangle (- render-x 24.0) (- render-y 24.0) 48.0 48.0)
+			  v2zero 0.0 -1)))
+		  ([itemvalue]
+		   (let ([alpha (round (lerp 255 0 (ease-in-quad (/ age max-age))))]
+				 [color (car extra-data)]
+				 [value (cdr extra-data)]
+				 [render-x (fl+ render-x 10.0)])
+			 (let-values ([(width _) (raylib:measure-text-ex
+									  (fontbundle-cabin fonts)
+									  value 16.0 0.0)])
+			   (raylib:draw-text-ex
+				(fontbundle-cabin fonts)
+				value
+				;; display to the left if we wouldn't have room on the right
+				;; this is done here instead of when the particle is spawned so that
+				;; we don't have to pass the fonts to the game logic
+				(if (> (+ render-x width) +playfield-max-render-x+)
+					(- render-x width 20.0)
+					render-x)
+				render-y
+				16.0 0.0 (fxlogior color alpha)))))
+		  ([circle-hint circle-hint-opaque]
+		   (let ([color (assqdr 'color extra-data)]
+				 [r (lerp (assqdr 'r1 extra-data)
+						  (assqdr 'r2 extra-data)
+						  (/ age max-age))])
+			 ((if (eq? type 'circle-hint-opaque)
+				  raylib:draw-circle-v
+				  raylib:draw-circle-lines-v)
+			  render-x render-y
+			  r color)))
+		  ([spellbonus clear-bonus]
+		   (draw-centered-field-text
+			fonts age max-age extra-data render-y 24.0 -1 #f))
+		  ([text-hint]
+		   (let ([text (assqdr 'text extra-data)]
+				 [size (assqdr 'size extra-data)]
+				 [color (assqdr 'color extra-data)])
+			 (draw-centered-field-text
+			  fonts age max-age text render-y size color #t)))))))
+  (vector-for-each each live-particles))
 
 (define-record-type miscent
   (fields
@@ -3231,9 +3234,9 @@
   (not (eq? (miscent-type ent) 'mainshot)))
 
 (define (autocollect-all-items)
-  (vector-for-each-truthy
+  (vector-for-each
    (λ (ent)
-	 (when (miscent-supports-autocollect? ent)
+	 (when (and ent (miscent-supports-autocollect? ent))
 	   (miscent-autocollect-set! ent #t)))
    live-misc-ents))
 
@@ -3287,123 +3290,126 @@
 
 (define (tick-misc-ents)
   (define (each ent)
-	(define type (miscent-type ent))
-	(define terminal-velocity
-	  (case type
-		([point life-frag big-piv life bomb-frag small-piv bomb] 10.0)
-		(else +inf.0)))
-	(define (do-standard-movement)
-	  (let ([vy (miscent-vy ent)]
-			[ay (miscent-ay ent)])
-		(when (not (zero? vy))
-	  	  (miscent-y-set! ent (+ (miscent-y ent) vy)))
-		(when (and (not (zero? ay)) (< vy terminal-velocity))
-		  (miscent-vy-set! ent (+ vy ay)))))
-	(case type
-	  ((mainshot)
-	   (do-standard-movement)
-	   (call/1cc
-		(λ (return)
-		  (vector-for-each
-		   (λ (enm)
-			 (when enm
-			   (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
-				 (when (and
-						(not (enm-invincible? enm))
-						(check-collision-recs
-						 ehx ehy ehw ehh
-						 (- (miscent-x ent) 6)
-						 (- (miscent-y ent) 10)
-						 12 16))
-				   (delete-misc-ent ent)
-				   (damage-enemy enm 25)
-				   (return)))))
-		   live-enm)
-		  (when (< (miscent-y ent) +playfield-min-y+)
-			(delete-misc-ent ent)))))
-	  ([needle]
-	   (do-standard-movement)
-	   (call/1cc
-		(λ (return)
-		  (vector-for-each
-		   (λ (enm)
-			 (when enm
-			   (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
-				 (when (and
-						(not (enm-invincible? enm))
-						(check-collision-recs
-						 ehx ehy ehw ehh
-						 (- (miscent-x ent) 5)
-						 (- (miscent-y ent) 6)
-						 10 52))
-				   (delete-misc-ent ent)
-				   (damage-enemy enm 10)
-				   (return)))))
-		   live-enm)
-		  (when (< (miscent-y ent) (- +playfield-min-y+ 50)) ;; extra fuzz for length
-			(delete-misc-ent ent)))))
-	  ([point life-frag big-piv life bomb-frag small-piv bomb]
-	   (when (stage-ctx-dialogue current-stage-ctx)
-		 (miscent-autocollect-set! ent #t))
-	   (cond
-		[(miscent-autocollect ent)
-		 ;; todo dedupe with below
-		 ;; todo acceleration?
-		 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
-											(- player-y (miscent-y ent))))])
-		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 8)))
-		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 8))))]
-		[(check-collision-circle-rec
-		  player-x player-y (if focused-immediate +vacuum-radius-focused+
-								+vacuum-radius-unfocused+)
-		  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
-		  16 16)
-		 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
-											(- player-y (miscent-y ent))))])
-		   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 6)))
-		   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 6)))
-		   ;; reset this to something reasonable
-		   (miscent-vy-set! ent 1.0))]
-		[else (do-standard-movement)])
-	   (when (check-collision-circle-rec
-			  player-x player-y +hit-radius+
+	(when ent
+	  (let* ([type (miscent-type ent)]
+			 [terminal-velocity
+			  (case type
+				([point life-frag big-piv life bomb-frag small-piv bomb] 10.0)
+				(else +inf.0))]
+			 [do-standard-movement
+			  (thunk
+			   (let ([vy (miscent-vy ent)]
+					 [ay (miscent-ay ent)])
+				 (when (not (zero? vy))
+	  			   (miscent-y-set! ent (+ (miscent-y ent) vy)))
+				 (when (and (not (zero? ay)) (< vy terminal-velocity))
+				   (miscent-vy-set! ent (+ vy ay)))))])
+		(case type
+		  ([mainshot]
+		   (do-standard-movement)
+		   (call/1cc
+			(λ (return)
+			  (vector-for-each
+			   (λ (enm)
+				 (when enm
+				   (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
+					 (when (and
+							(not (enm-invincible? enm))
+							(check-collision-recs
+							 ehx ehy ehw ehh
+							 (- (miscent-x ent) 6)
+							 (- (miscent-y ent) 10)
+							 12 16))
+					   (delete-misc-ent ent)
+					   (damage-enemy enm 25)
+					   (return)))))
+			   live-enm)
+			  (when (< (miscent-y ent) +playfield-min-y+)
+				(delete-misc-ent ent)))))
+		  ([needle]
+		   (do-standard-movement)
+		   (call/1cc
+			(λ (return)
+			  (vector-for-each
+			   (λ (enm)
+				 (when enm
+				   (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
+					 (when (and
+							(not (enm-invincible? enm))
+							(check-collision-recs
+							 ehx ehy ehw ehh
+							 (- (miscent-x ent) 5)
+							 (- (miscent-y ent) 6)
+							 10 52))
+					   (delete-misc-ent ent)
+					   (damage-enemy enm 10)
+					   (return)))))
+			   live-enm)
+			  ;; extra fuzz for length
+			  (when (< (miscent-y ent) (- +playfield-min-y+ 50))
+				(delete-misc-ent ent)))))
+		  ([point life-frag big-piv life bomb-frag small-piv bomb]
+		   (when (stage-ctx-dialogue current-stage-ctx)
+			 (miscent-autocollect-set! ent #t))
+		   (cond
+			[(miscent-autocollect ent)
+			 ;; todo dedupe with below
+			 ;; todo acceleration?
+			 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
+												(- player-y (miscent-y ent))))])
+			   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 8)))
+			   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 8))))]
+			[(check-collision-circle-rec
+			  player-x player-y (if focused-immediate +vacuum-radius-focused+
+									+vacuum-radius-unfocused+)
 			  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
 			  16 16)
-		 (case type
-		   ([point]
-			(raylib:play-sound (sebundle-item sounds))
-			(let* ([value-multiplier (if (or (miscent-autocollect ent) (< player-y +poc-y+))
-										 1.0
-										 (max 0.25
-											  (- 1.0 (/ (- player-y +poc-y+)
-														(- +playfield-max-y+ +poc-y+)))))]
-				   [value (round-score (* item-value value-multiplier))])
-			  (set! current-score (+ current-score value))
-			  (spawn-particle
-			   (particletype itemvalue)
-			   (miscent-x ent) (- (miscent-y ent) 10.0)
-			   60 (cons (if (= 1 value-multiplier)
-							#xffd70000
-							#xf5f5f500)
-						(number->string value)))))
-		   ([life-frag] (add-lives 1/3))
-		   ([life] (add-lives 1))
-		   ([bomb-frag] (add-bombs 1/3))
-		   ([bomb] (add-bombs 1))
-		   ([small-piv]
-			(raylib:play-sound (sebundle-item sounds))
-			(set! item-value (+ 50 item-value))
-			(set! current-score (+ 100 current-score)))
-		   ([big-piv]
-			(raylib:play-sound (sebundle-item sounds))
-			(set! item-value (+ 200 item-value))
-			(set! current-score (+ 1000 current-score))))
-		 (delete-misc-ent ent))
-	   (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
-		 (delete-misc-ent ent))))
-	(miscent-livetime-set! ent (add1 (miscent-livetime ent))))
-  ;; TODO: switch to vector-for-each
-  (vector-for-each-truthy each live-misc-ents))
+			 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
+												(- player-y (miscent-y ent))))])
+			   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 6)))
+			   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 6)))
+			   ;; reset this to something reasonable
+			   (miscent-vy-set! ent 1.0))]
+			[else (do-standard-movement)])
+		   (when (check-collision-circle-rec
+				  player-x player-y +hit-radius+
+				  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
+				  16 16)
+			 (case type
+			   ([point]
+				(raylib:play-sound (sebundle-item sounds))
+				(let* ([value-multiplier
+						(if (or (miscent-autocollect ent) (< player-y +poc-y+))
+							1.0
+							(max 0.25
+								 (- 1.0 (/ (- player-y +poc-y+)
+										   (- +playfield-max-y+ +poc-y+)))))]
+					   [value (round-score (* item-value value-multiplier))])
+				  (set! current-score (+ current-score value))
+				  (spawn-particle
+				   (particletype itemvalue)
+				   (miscent-x ent) (- (miscent-y ent) 10.0)
+				   60 (cons (if (= 1 value-multiplier)
+								#xffd70000
+								#xf5f5f500)
+							(number->string value)))))
+			   ([life-frag] (add-lives 1/3))
+			   ([life] (add-lives 1))
+			   ([bomb-frag] (add-bombs 1/3))
+			   ([bomb] (add-bombs 1))
+			   ([small-piv]
+				(raylib:play-sound (sebundle-item sounds))
+				(set! item-value (+ 50 item-value))
+				(set! current-score (+ 100 current-score)))
+			   ([big-piv]
+				(raylib:play-sound (sebundle-item sounds))
+				(set! item-value (+ 200 item-value))
+				(set! current-score (+ 1000 current-score))))
+			 (delete-misc-ent ent))
+		   (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
+			 (delete-misc-ent ent))))
+		(miscent-livetime-set! ent (add1 (miscent-livetime ent))))))
+  (vector-for-each each live-misc-ents))
 
 (define (miscent-should-spin? ent)
   (memq (miscent-type ent) '(point life life-frag bomb bomb-frag)))
