@@ -1245,10 +1245,10 @@
   (ease-to values 0.0 100.0 20 enm)
   (wait 50)
 
-  (vector-for-each-truthy
-   (λ (enm)
-	 (unless (is-boss? enm)
-	   (kill-enemy enm)))
+  (vector-for-each
+   (λ (e)
+	 (when (and e (not (eq? e enm)))
+	   (kill-enemy e)))
    live-enm)
   (autocollect-all-items)
   (declare-spell enm 1)

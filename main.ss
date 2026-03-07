@@ -1862,15 +1862,16 @@
    live-bullets))
 
 (define (despawn-out-of-bound-bullet bullet)
-  (let ([x (bullet-x bullet)]
-		[y (bullet-y bullet)])
-	(when (and
-		   (not (bullet-hasflag? bullet (bltflag noprune)))
-		   (or (> x (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+))
-			   (< x (- +playfield-min-x+ +oob-bullet-despawn-fuzz+))
-			   (< y (- +playfield-min-y+ +oob-bullet-despawn-fuzz+))
-			   (> y (+ +playfield-max-y+ +oob-bullet-despawn-fuzz+))))
-	  (delete-bullet bullet))))
+  (when bullet
+	(let ([x (bullet-x bullet)]
+		  [y (bullet-y bullet)])
+	  (when (and
+			 (not (bullet-hasflag? bullet (bltflag noprune)))
+			 (or (> x (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+))
+				 (< x (- +playfield-min-x+ +oob-bullet-despawn-fuzz+))
+				 (< y (- +playfield-min-y+ +oob-bullet-despawn-fuzz+))
+				 (> y (+ +playfield-max-y+ +oob-bullet-despawn-fuzz+))))
+		(delete-bullet bullet)))))
 
 (define (bullet-family type)
   (define bt (symbol-hashtable-ref bullet-types type #f))
@@ -1882,88 +1883,90 @@
 
 (define (draw-lasers textures sorted-bullets)
   (define (each bullet)
-	(let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
-		   [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
-		   [type (bullet-type bullet)]
-		   [bt (symbol-hashtable-ref bullet-types type #f)]
-		   [livetime (bullet-livetime bullet)])
-	  (case (bullet-family type)
-		([fixed-laser]
-		 (let* ([length (laser-length bullet)]
-				[full-radius (laser-radius bullet)]
-				[start-despawning-at (laser-start-despawning-at bullet)]
-				[radius (cond
-						 [(fx<= livetime -10) 2.0]
-						 [(fx<= livetime 0)
-						  (lerp 2.0 full-radius
-								(- 1 (/ livetime -10)))]
-						 [start-despawning-at
-						  (lerp full-radius 0.0
-								(/ (- frames start-despawning-at)
-								   (laser-despawn-time bullet)))]
-						 [else full-radius])])
-		   (draw-laser-sprite textures type render-x render-y
-							  length radius (bullet-facing bullet)
-							  (and (not (bullet-hasflag? bullet (bltflag noshine)))
-								   (blttype-preimg-sprite bt))))))))
-  (vector-for-each-truthy each sorted-bullets))
+	(when bullet
+	  (let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
+			 [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
+			 [type (bullet-type bullet)]
+			 [bt (symbol-hashtable-ref bullet-types type #f)]
+			 [livetime (bullet-livetime bullet)])
+		(case (bullet-family type)
+		  ([fixed-laser]
+		   (let* ([length (laser-length bullet)]
+				  [full-radius (laser-radius bullet)]
+				  [start-despawning-at (laser-start-despawning-at bullet)]
+				  [radius (cond
+						   [(fx<= livetime -10) 2.0]
+						   [(fx<= livetime 0)
+							(lerp 2.0 full-radius
+								  (- 1 (/ livetime -10)))]
+						   [start-despawning-at
+							(lerp full-radius 0.0
+								  (/ (- frames start-despawning-at)
+									 (laser-despawn-time bullet)))]
+						   [else full-radius])])
+			 (draw-laser-sprite textures type render-x render-y
+								length radius (bullet-facing bullet)
+								(and (not (bullet-hasflag? bullet (bltflag noshine)))
+									 (blttype-preimg-sprite bt)))))))))
+  (vector-for-each each sorted-bullets))
 
 
 (define (draw-bullets textures sorted-bullets)
   (define (each bullet)
-	(let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
-		   [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
-		   [type (bullet-type bullet)]
-		   [bt (symbol-hashtable-ref bullet-types type #f)]
-		   [livetime (bullet-livetime bullet)])
-	  (if (and (not (eq? 'fixed-laser (bullet-family type)))
-			   (fxnegative? livetime))
-		  (let* ([preimg-begin (blttype-preimg-begin-size bt)]
-				 [preimg-end (blttype-preimg-end-size bt)]
-				 ;; reversed because the factor is negative
-				 [radius (lerp preimg-end preimg-begin
-							   (/ livetime (bullet-initial-livetime bullet)))])
-			(draw-sprite-pro
-			 textures (blttype-preimg-sprite bt)
-			 (make-rectangle (- render-x radius) (- render-y radius)
-							 (* 2.0 radius) (* 2.0 radius))
-			 -1))
-		(let ()
-		  (case (bullet-family type)
-			;; basic
-			([pellet small-ball medium-ball glow-orb]
-			 (draw-sprite textures type render-x render-y #xffffffff))
-			;; aimed in direction of movement
-			([butterfly ellipse arrowhead amulet ice-shard rice
-						rest knife bacteria kunai droplet heart arrow]
-			 (draw-sprite-with-rotation textures type
-										(todeg (bullet-facing bullet))
-										render-x render-y -1))
-			;; spinny
-			([small-star big-star]
-			 (draw-sprite-with-rotation textures type (fxmod (fx* frames 5) 360)
-										render-x render-y -1))
-			([bubble yinyang]
-			 (draw-sprite-with-rotation textures type (fxmod (fx* frames 8) 360)
-										render-x render-y -1))
-			([music]
-			 (let ([sprite
-					(vnth-mod (symbol-hashtable-ref cached-music-sprites type #f)
-							  (fx/ frames 10))])
-			   (draw-sprite-with-rotation textures sprite 90.0
-										  render-x render-y -1)))
-			([fireball]
-			 (let ([sprite
-					(vnth-mod (symbol-hashtable-ref cached-fireball-sprites type #f)
-							  (fx/ frames 7))])
-			   (draw-sprite-with-rotation
-				textures sprite
-				(todeg (bullet-facing bullet))
-				render-x render-y -1))))
-		  (when show-hitboxes
-			(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
-								  red))))))
-  (vector-for-each-truthy each sorted-bullets))
+	(when bullet
+	  (let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
+			 [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
+			 [type (bullet-type bullet)]
+			 [bt (symbol-hashtable-ref bullet-types type #f)]
+			 [livetime (bullet-livetime bullet)])
+		(if (and (not (eq? 'fixed-laser (bullet-family type)))
+				 (fxnegative? livetime))
+			(let* ([preimg-begin (blttype-preimg-begin-size bt)]
+				   [preimg-end (blttype-preimg-end-size bt)]
+				   ;; reversed because the factor is negative
+				   [radius (lerp preimg-end preimg-begin
+								 (/ livetime (bullet-initial-livetime bullet)))])
+			  (draw-sprite-pro
+			   textures (blttype-preimg-sprite bt)
+			   (make-rectangle (- render-x radius) (- render-y radius)
+							   (* 2.0 radius) (* 2.0 radius))
+			   -1))
+			(let ()
+			  (case (bullet-family type)
+				;; basic
+				([pellet small-ball medium-ball glow-orb]
+				 (draw-sprite textures type render-x render-y #xffffffff))
+				;; aimed in direction of movement
+				([butterfly ellipse arrowhead amulet ice-shard rice
+							rest knife bacteria kunai droplet heart arrow]
+				 (draw-sprite-with-rotation textures type
+											(todeg (bullet-facing bullet))
+											render-x render-y -1))
+				;; spinny
+				([small-star big-star]
+				 (draw-sprite-with-rotation textures type (fxmod (fx* frames 5) 360)
+											render-x render-y -1))
+				([bubble yinyang]
+				 (draw-sprite-with-rotation textures type (fxmod (fx* frames 8) 360)
+											render-x render-y -1))
+				([music]
+				 (let ([sprite
+						(vnth-mod (symbol-hashtable-ref cached-music-sprites type #f)
+								  (fx/ frames 10))])
+				   (draw-sprite-with-rotation textures sprite 90.0
+											  render-x render-y -1)))
+				([fireball]
+				 (let ([sprite
+						(vnth-mod (symbol-hashtable-ref cached-fireball-sprites type #f)
+								  (fx/ frames 7))])
+				   (draw-sprite-with-rotation
+					textures sprite
+					(todeg (bullet-facing bullet))
+					render-x render-y -1))))
+			  (when show-hitboxes
+				(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
+									  red)))))))
+  (vector-for-each each sorted-bullets))
 
 (define (draw-bomb textures)
   (raylib:draw-rectangle-gradient-h
@@ -2410,68 +2413,70 @@
 
 (define (pretick-enemies)
   (define (each enm)
-	(define damaged-recently (enm-damaged-recently enm))
-	(when (fxpositive? damaged-recently)
-	  (enm-damaged-recently-set! enm (fx1- damaged-recently)))
-	(enm-ox-set! enm (enm-x enm))
-	(enm-oy-set! enm (enm-y enm)))
-  (vector-for-each-truthy each live-enm))
+	(when enm
+	  (let ([damaged-recently (enm-damaged-recently enm)])
+		(when (fxpositive? damaged-recently)
+		  (enm-damaged-recently-set! enm (fx1- damaged-recently))))
+	  (enm-ox-set! enm (enm-x enm))
+	  (enm-oy-set! enm (enm-y enm))))
+  (vector-for-each each live-enm))
 
 (define (posttick-enemies)
   (define (each enm)
-	(define bossinfo (and (is-boss? enm) (enm-extras enm)))
-	(when bossinfo
-	  (let ([timer (bossinfo-remaining-timer bossinfo)])
-		(unless (fxzero? timer)
-		  (bossinfo-remaining-timer-set! bossinfo (fx1- timer))
-		  (when (and (fx<= timer 600)
-					 (fxzero? (fxmod timer 60)))
-			(if (fx<= timer 300)
-			  (raylib:play-sound (sebundle-timeoutwarn sounds))
-			  (raylib:play-sound (sebundle-timeout sounds)))))))
-	(when (positive? (enm-superarmor enm))
-	  (enm-superarmor-set! enm (sub1 (enm-superarmor enm))))
-	(let* ([ox (enm-ox enm)] [oy (enm-oy enm)]
-		   [x (enm-x enm)] [y (enm-y enm)]
-		   [stationary-x (epsilon-equal ox x)]
-		   [stationary-y (epsilon-equal oy y)]
-		   [dx (enm-dx-render enm)]
-		   [record-start-move
-			(thunk
-			 (when bossinfo
-			   (when (and (not (bossinfo-moved-last-frame bossinfo))
-						  ;; prevent the circle jumping around if the boss starts
-						  ;; moving again within +spellcircle-context+ time
-						  ;; doing this makes the circle not be lazy for that motion
-						  ;; (sticking directly to the boss because the t value
-						  ;; computed for the lerp becomes greater than the context)
-						  ;; but that's better than having it jump around.
-						  ;; TODO: maybe improve this
-						  (>= (- frames (bossinfo-start-move-frame bossinfo))
-							  +spellcircle-context+))
-				 (bossinfo-start-move-frame-set! bossinfo frames)
-				 (bossinfo-start-move-x-set! bossinfo x)
-				 (bossinfo-start-move-y-set! bossinfo y))
-			   (bossinfo-moved-last-frame-set! bossinfo #t)))])
-	  (cond
-	   ;; Didn't move: don't update dx-render at all
-	   [(and stationary-x stationary-y)
+	(when enm
+	  (let ([bossinfo (and (is-boss? enm) (enm-extras enm))])
 		(when bossinfo
-		  (bossinfo-moved-last-frame-set! bossinfo #f))]
-	   ;; Stationary on x (moving on y): Go back towards zero
-	   ;; TODO: Do we really want this?
-	   [stationary-x
-		(record-start-move)
-		(cond
-		 [(flnegative? dx) (enm-dx-render-set!
-							enm (flmin 0.0 (fl+ dx (abs (fl- y oy)))))]
-		 [(flpositive? dx) (enm-dx-render-set!
-							enm (flmax 0.0 (fl- dx (abs (fl- y oy)))))])]
-	   ;; Moving on x: Go in the direction we're moving (up to a cap)
-	   [else
-	    (record-start-move)
-		(enm-dx-render-set! enm (clamp (fl+ dx (fl- x ox)) -10.0 10.0))])))
-  (vector-for-each-truthy each live-enm))
+		  (let ([timer (bossinfo-remaining-timer bossinfo)])
+			(unless (fxzero? timer)
+			  (bossinfo-remaining-timer-set! bossinfo (fx1- timer))
+			  (when (and (fx<= timer 600)
+						 (fxzero? (fxmod timer 60)))
+				(if (fx<= timer 300)
+					(raylib:play-sound (sebundle-timeoutwarn sounds))
+					(raylib:play-sound (sebundle-timeout sounds)))))))
+		(when (positive? (enm-superarmor enm))
+		  (enm-superarmor-set! enm (sub1 (enm-superarmor enm))))
+		(let* ([ox (enm-ox enm)] [oy (enm-oy enm)]
+			   [x (enm-x enm)] [y (enm-y enm)]
+			   [stationary-x (epsilon-equal ox x)]
+			   [stationary-y (epsilon-equal oy y)]
+			   [dx (enm-dx-render enm)]
+			   [record-start-move
+				(thunk
+				 (when bossinfo
+				   (when (and (not (bossinfo-moved-last-frame bossinfo))
+							  ;; prevent the circle jumping around if the boss starts
+							  ;; moving again within +spellcircle-context+ time
+							  ;; doing this makes the circle not be lazy for that motion
+							  ;; (sticking directly to the boss because the t value
+							  ;; computed for the lerp becomes greater than the context)
+							  ;; but that's better than having it jump around.
+							  ;; TODO: maybe improve this
+							  (>= (- frames (bossinfo-start-move-frame bossinfo))
+								  +spellcircle-context+))
+					 (bossinfo-start-move-frame-set! bossinfo frames)
+					 (bossinfo-start-move-x-set! bossinfo x)
+					 (bossinfo-start-move-y-set! bossinfo y))
+				   (bossinfo-moved-last-frame-set! bossinfo #t)))])
+		  (cond
+		   ;; Didn't move: don't update dx-render at all
+		   [(and stationary-x stationary-y)
+			(when bossinfo
+			  (bossinfo-moved-last-frame-set! bossinfo #f))]
+		   ;; Stationary on x (moving on y): Go back towards zero
+		   ;; TODO: Do we really want this?
+		   [stationary-x
+			(record-start-move)
+			(cond
+			 [(flnegative? dx) (enm-dx-render-set!
+								enm (flmin 0.0 (fl+ dx (abs (fl- y oy)))))]
+			 [(flpositive? dx) (enm-dx-render-set!
+								enm (flmax 0.0 (fl- dx (abs (fl- y oy)))))])]
+		   ;; Moving on x: Go in the direction we're moving (up to a cap)
+		   [else
+			(record-start-move)
+			(enm-dx-render-set! enm (clamp (fl+ dx (fl- x ox)) -10.0 10.0))])))))
+  (vector-for-each each live-enm))
 
 ;; TODO put the optional args in an alist or something?
 (define spawn-enemy
@@ -2644,49 +2649,50 @@
 
 (define (process-collisions)
   (define (each-bullet bullet)
-	(define is-laser (eq? 'fixed-laser (bullet-family (bullet-type bullet))))
-	(when (bullet-active? bullet)
-	  (when (and (if is-laser
-					 (fx>= (fx- frames (laser-last-grazed-at bullet)) 4)
-					 (not (bullet-grazed bullet)))
-				 (check-player-collision bullet +graze-radius+))
-		(set! graze (fx1+ graze))
-		(set! item-value (fx+ 10 item-value))
-		(set! current-score (fx+ 1000 current-score))
-		(if is-laser
-			(laser-last-grazed-at-set! bullet frames)
-			(bullet-grazed-set! bullet #t))
-		(spawn-particle
-		 (particletype graze)
-		 player-x player-y
-		 25
-		 (list (cons 'dir
-					 ;; 80% of the time, particle flies towards bullet
-					 ;; 20% of the time, away from it
-					 (torad (fl+ (centered-roll visual-rng 90.0)
-								 (if (fl< (bullet-x bullet) player-x)
-									 180.0 0.0)
-								 (if (fl< (roll visual-rng) 0.2)
-									 180.0 0.0))))
-			   (cons 'speed (fl+ 1.0 (fl* 2.0 (roll visual-rng))))
-			   (cons 'rot (fl* (roll visual-rng) 360.0))))
-		(raylib:play-sound (sebundle-graze sounds)))
+	(when (and bullet (bullet-active? bullet))
+	  (let ([is-laser (eq? 'fixed-laser (bullet-family (bullet-type bullet)))])
+		(when (and (if is-laser
+					   (fx>= (fx- frames (laser-last-grazed-at bullet)) 4)
+					   (not (bullet-grazed bullet)))
+				   (check-player-collision bullet +graze-radius+))
+		  (set! graze (fx1+ graze))
+		  (set! item-value (fx+ 10 item-value))
+		  (set! current-score (fx+ 1000 current-score))
+		  (if is-laser
+			  (laser-last-grazed-at-set! bullet frames)
+			  (bullet-grazed-set! bullet #t))
+		  (spawn-particle
+		   (particletype graze)
+		   player-x player-y
+		   25
+		   (list (cons 'dir
+					   ;; 80% of the time, particle flies towards bullet
+					   ;; 20% of the time, away from it
+					   (torad (fl+ (centered-roll visual-rng 90.0)
+								   (if (fl< (bullet-x bullet) player-x)
+									   180.0 0.0)
+								   (if (fl< (roll visual-rng) 0.2)
+									   180.0 0.0))))
+				 (cons 'speed (fl+ 1.0 (fl* 2.0 (roll visual-rng))))
+				 (cons 'rot (fl* (roll visual-rng) 360.0))))
+		  (raylib:play-sound (sebundle-graze sounds)))
 
-	  (when (and
-			 (not (bullet-hasflag? bullet (bltflag noclip)))
-			 (check-player-collision bullet +hit-radius+))
-		(unless is-laser
-		  (cancel-bullet bullet))
-		(damage-player))))
-  (define (each-enm enm)
-	(unless (enm-hasflag? enm (enmflag nocollide))
-	  (let-values ([(x y w h) (enm-collision-box enm)])
-		(when (check-collision-circle-rec
-			   player-x player-y +hit-radius+
-			   x y w h)
+		(when (and
+			   (not (bullet-hasflag? bullet (bltflag noclip)))
+			   (check-player-collision bullet +hit-radius+))
+		  (unless is-laser
+			(cancel-bullet bullet))
 		  (damage-player)))))
-  (vector-for-each-truthy each-bullet live-bullets)
-  (vector-for-each-truthy each-enm live-enm))
+  (define (each-enm enm)
+	(when enm
+	  (unless (enm-hasflag? enm (enmflag nocollide))
+		(let-values ([(x y w h) (enm-collision-box enm)])
+		  (when (check-collision-circle-rec
+				 player-x player-y +hit-radius+
+				 x y w h)
+			(damage-player))))))
+  (vector-for-each each-bullet live-bullets)
+  (vector-for-each each-enm live-enm))
 
 (define (enm-collision-box enm)
   (case (enm-type enm)
@@ -2847,130 +2853,131 @@
 
 (define (draw-enemies textures)
   (define (each enm)
-	(let ([render-x (+ (enm-x enm) +playfield-render-offset-x+)]
-		  [render-y (+ (enm-y enm) +playfield-render-offset-y+)]
-		  [dx (enm-dx-render enm)]
-		  [type (enm-type enm)]
-		  [tint (enm-tint enm)])
-	  (case type
-		([boss-doremi boss-hazuki boss-aiko]
-		 (draw-boss textures enm render-x render-y))
-		([red-yinyang green-yinyang blue-yinyang magenta-yinyang]
-		 (draw-sprite textures type render-x render-y -1)
-		 (let ([outer-sprite
-				(case type
-				  ([red-yinyang] 'red-yinyang-outer)
-				  ([green-yinyang] 'green-yinyang-outer)
-				  ([blue-yinyang] 'blue-yinyang-outer)
-				  ([magenta-yinyang] 'magenta-yinyang-outer))])
-		   (draw-sprite-with-scale-rotation
-			textures
-			outer-sprite
-			(flmod (* frames -4.0) 360.0)
-			1.4 render-x render-y tint)
-		   (draw-sprite-with-rotation
-			textures
-			outer-sprite
-			(flmod (* frames 8.0) 360.0)
-			render-x render-y tint)))
-		([red-wisp blue-wisp green-wisp yellow-wisp]
-		 (let* ([sprites
-				 (case type
-				   ([red-wisp] '#(red-wisp0 red-wisp1 red-wisp2
-											red-wisp3 red-wisp4 red-wisp5
-											red-wisp6 red-wisp7))
-				   ([blue-wisp] '#(blue-wisp0 blue-wisp1 blue-wisp2
-											  blue-wisp3 blue-wisp4 blue-wisp5
-											  blue-wisp6 blue-wisp7))
-				   ([green-wisp] '#(green-wisp0 green-wisp1 green-wisp2
-												green-wisp3 green-wisp4 green-wisp5
-												green-wisp6 green-wisp7))
-				   ([yellow-wisp] '#(yellow-wisp0 yellow-wisp1 yellow-wisp2
-												  yellow-wisp3 yellow-wisp4 yellow-wisp5
-												  yellow-wisp6 yellow-wisp7)))]
-				[t (fx+ frames (enm-time-spawned enm))]
-				[sprite (vnth-mod sprites (fx/ t 5))]
-				[aura-sprite
-				 (cond
-				  [(enm-hasflag? enm (enmflag aura-red))
-				   'aura-red]
-				  [(enm-hasflag? enm (enmflag aura-green))
-				   'aura-green]
-				  [(enm-hasflag? enm (enmflag aura-blue))
-				   'aura-blue]
-				  [(enm-hasflag? enm (enmflag aura-magenta))
-				   'aura-magenta]
-				  [else #f])])
-		   (when aura-sprite
+	(when enm
+	  (let ([render-x (+ (enm-x enm) +playfield-render-offset-x+)]
+			[render-y (+ (enm-y enm) +playfield-render-offset-y+)]
+			[dx (enm-dx-render enm)]
+			[type (enm-type enm)]
+			[tint (enm-tint enm)])
+		(case type
+		  ([boss-doremi boss-hazuki boss-aiko]
+		   (draw-boss textures enm render-x render-y))
+		  ([red-yinyang green-yinyang blue-yinyang magenta-yinyang]
+		   (draw-sprite textures type render-x render-y -1)
+		   (let ([outer-sprite
+				  (case type
+					([red-yinyang] 'red-yinyang-outer)
+					([green-yinyang] 'green-yinyang-outer)
+					([blue-yinyang] 'blue-yinyang-outer)
+					([magenta-yinyang] 'magenta-yinyang-outer))])
 			 (draw-sprite-with-scale-rotation
-			  textures aura-sprite
-			  (fxmod (fx* 2 t) 360)
-			  (fl+ 1.2 0.2 (fl* 0.2 (flsin (/ t 10.0))))
-			  render-x render-y -1))
-		   (draw-sprite textures sprite render-x render-y -1)))
-		([yellow-fairy red-fairy green-fairy blue-fairy
-					   medium-red-fairy medium-blue-fairy big-fairy]
-		 (cond
-		  [(fl< (abs dx) 5.0)
-		   (let* ([fwd-sprites
+			  textures
+			  outer-sprite
+			  (flmod (* frames -4.0) 360.0)
+			  1.4 render-x render-y tint)
+			 (draw-sprite-with-rotation
+			  textures
+			  outer-sprite
+			  (flmod (* frames 8.0) 360.0)
+			  render-x render-y tint)))
+		  ([red-wisp blue-wisp green-wisp yellow-wisp]
+		   (let* ([sprites
 				   (case type
-					 ([yellow-fairy] '#(yellow-fairy1 yellow-fairy2
-													  yellow-fairy3 yellow-fairy4))
-					 ([red-fairy] '#(red-fairy1 red-fairy2 red-fairy3 red-fairy4))
-					 ([green-fairy] '#(green-fairy1 green-fairy2 green-fairy3 green-fairy4))
-					 ([blue-fairy] '#(blue-fairy1 blue-fairy2 blue-fairy3 blue-fairy4))
-					 ([medium-blue-fairy] '#(medium-blue-fairy0 medium-blue-fairy1 medium-blue-fairy2 medium-blue-fairy3))
-					 ([medium-red-fairy] '#(medium-red-fairy0 medium-red-fairy1 medium-red-fairy2 medium-red-fairy3))
-					 ([big-fairy] '#(big-fairy0 big-fairy1 big-fairy2 big-fairy3)))]
-				  [sprite (vnth-mod fwd-sprites (fx/ frames 5))])
-			 (draw-sprite textures sprite render-x render-y tint))]
-		  [(fl< (abs dx) 10.0)
-		   (let* ([transition-sprites
-				   (case type
-					 ([yellow-fairy] '#(yellow-fairy5))
-					 ([red-fairy] '#(red-fairy5))
-					 ([green-fairy] '#(green-fairy5))
-					 ([blue-fairy] '#(blue-fairy5))
-					 ([medium-blue-fairy] '#(medium-blue-fairy4 medium-blue-fairy5 medium-blue-fairy6 medium-blue-fairy7))
-					 ([medium-red-fairy] '#(medium-red-fairy4 medium-red-fairy5 medium-red-fairy6 medium-red-fairy7))
-					 ([big-fairy] '#(big-fairy4 big-fairy5 big-fairy6 big-fairy7)))]
-				  [sprite (vnth-mod transition-sprites (fx/ frames 7))])
-			 (if (flnegative? dx)
-				 (draw-sprite-mirror-x textures sprite render-x render-y tint)
-				 (draw-sprite textures sprite render-x render-y tint)))]
-		  [else
-		   (let* ([side-sprites
-				   (case type
-					 ([yellow-fairy]
-					  '#(yellow-fairy6 yellow-fairy7 yellow-fairy8
-									   yellow-fairy9 yellow-fairy10 yellow-fairy11))
-					 ([red-fairy]
-					  '#(red-fairy6 red-fairy7 red-fairy8
-									red-fairy9 red-fairy10 red-fairy11))
-					 ([green-fairy]
-					  '#(green-fairy6 green-fairy7 green-fairy8
-									  green-fairy9 green-fairy10 green-fairy11))
-					 ([blue-fairy]
-					  '#(blue-fairy6 blue-fairy7 blue-fairy8
-									 blue-fairy9 blue-fairy10 blue-fairy11))
-					 ([medium-blue-fairy] '#(medium-blue-fairy8 medium-blue-fairy9 medium-blue-fairy10 medium-blue-fairy11))
-					 ([medium-red-fairy] '#(medium-red-fairy8 medium-red-fairy9 medium-red-fairy10 medium-red-fairy11))
-					 ([big-fairy] '#(big-fairy8 big-fairy9 big-fairy10 big-fairy11)))]
-				  [sprite (vnth-mod side-sprites (fx/ frames 7))])
-			 (if (flnegative? dx)
-				 (draw-sprite-mirror-x textures sprite render-x render-y tint)
-				 (draw-sprite textures sprite render-x render-y tint)))])))
-	  (when show-hitboxes
-		(let-values ([(x y w h) (enm-hurtbox enm)])
-		  (raylib:draw-rectangle-rec
-		   (+ x +playfield-render-offset-x+)
-		   (+ y +playfield-render-offset-y+) w h green))
-		(unless (enm-hasflag? enm (enmflag nocollide))
-		  (let-values ([(x y w h) (enm-collision-box enm)])
+					 ([red-wisp] '#(red-wisp0 red-wisp1 red-wisp2
+											  red-wisp3 red-wisp4 red-wisp5
+											  red-wisp6 red-wisp7))
+					 ([blue-wisp] '#(blue-wisp0 blue-wisp1 blue-wisp2
+												blue-wisp3 blue-wisp4 blue-wisp5
+												blue-wisp6 blue-wisp7))
+					 ([green-wisp] '#(green-wisp0 green-wisp1 green-wisp2
+												  green-wisp3 green-wisp4 green-wisp5
+												  green-wisp6 green-wisp7))
+					 ([yellow-wisp] '#(yellow-wisp0 yellow-wisp1 yellow-wisp2
+													yellow-wisp3 yellow-wisp4 yellow-wisp5
+													yellow-wisp6 yellow-wisp7)))]
+				  [t (fx+ frames (enm-time-spawned enm))]
+				  [sprite (vnth-mod sprites (fx/ t 5))]
+				  [aura-sprite
+				   (cond
+					[(enm-hasflag? enm (enmflag aura-red))
+					 'aura-red]
+					[(enm-hasflag? enm (enmflag aura-green))
+					 'aura-green]
+					[(enm-hasflag? enm (enmflag aura-blue))
+					 'aura-blue]
+					[(enm-hasflag? enm (enmflag aura-magenta))
+					 'aura-magenta]
+					[else #f])])
+			 (when aura-sprite
+			   (draw-sprite-with-scale-rotation
+				textures aura-sprite
+				(fxmod (fx* 2 t) 360)
+				(fl+ 1.2 0.2 (fl* 0.2 (flsin (/ t 10.0))))
+				render-x render-y -1))
+			 (draw-sprite textures sprite render-x render-y -1)))
+		  ([yellow-fairy red-fairy green-fairy blue-fairy
+						 medium-red-fairy medium-blue-fairy big-fairy]
+		   (cond
+			[(fl< (abs dx) 5.0)
+			 (let* ([fwd-sprites
+					 (case type
+					   ([yellow-fairy] '#(yellow-fairy1 yellow-fairy2
+														yellow-fairy3 yellow-fairy4))
+					   ([red-fairy] '#(red-fairy1 red-fairy2 red-fairy3 red-fairy4))
+					   ([green-fairy] '#(green-fairy1 green-fairy2 green-fairy3 green-fairy4))
+					   ([blue-fairy] '#(blue-fairy1 blue-fairy2 blue-fairy3 blue-fairy4))
+					   ([medium-blue-fairy] '#(medium-blue-fairy0 medium-blue-fairy1 medium-blue-fairy2 medium-blue-fairy3))
+					   ([medium-red-fairy] '#(medium-red-fairy0 medium-red-fairy1 medium-red-fairy2 medium-red-fairy3))
+					   ([big-fairy] '#(big-fairy0 big-fairy1 big-fairy2 big-fairy3)))]
+					[sprite (vnth-mod fwd-sprites (fx/ frames 5))])
+			   (draw-sprite textures sprite render-x render-y tint))]
+			[(fl< (abs dx) 10.0)
+			 (let* ([transition-sprites
+					 (case type
+					   ([yellow-fairy] '#(yellow-fairy5))
+					   ([red-fairy] '#(red-fairy5))
+					   ([green-fairy] '#(green-fairy5))
+					   ([blue-fairy] '#(blue-fairy5))
+					   ([medium-blue-fairy] '#(medium-blue-fairy4 medium-blue-fairy5 medium-blue-fairy6 medium-blue-fairy7))
+					   ([medium-red-fairy] '#(medium-red-fairy4 medium-red-fairy5 medium-red-fairy6 medium-red-fairy7))
+					   ([big-fairy] '#(big-fairy4 big-fairy5 big-fairy6 big-fairy7)))]
+					[sprite (vnth-mod transition-sprites (fx/ frames 7))])
+			   (if (flnegative? dx)
+				   (draw-sprite-mirror-x textures sprite render-x render-y tint)
+				   (draw-sprite textures sprite render-x render-y tint)))]
+			[else
+			 (let* ([side-sprites
+					 (case type
+					   ([yellow-fairy]
+						'#(yellow-fairy6 yellow-fairy7 yellow-fairy8
+										 yellow-fairy9 yellow-fairy10 yellow-fairy11))
+					   ([red-fairy]
+						'#(red-fairy6 red-fairy7 red-fairy8
+									  red-fairy9 red-fairy10 red-fairy11))
+					   ([green-fairy]
+						'#(green-fairy6 green-fairy7 green-fairy8
+										green-fairy9 green-fairy10 green-fairy11))
+					   ([blue-fairy]
+						'#(blue-fairy6 blue-fairy7 blue-fairy8
+									   blue-fairy9 blue-fairy10 blue-fairy11))
+					   ([medium-blue-fairy] '#(medium-blue-fairy8 medium-blue-fairy9 medium-blue-fairy10 medium-blue-fairy11))
+					   ([medium-red-fairy] '#(medium-red-fairy8 medium-red-fairy9 medium-red-fairy10 medium-red-fairy11))
+					   ([big-fairy] '#(big-fairy8 big-fairy9 big-fairy10 big-fairy11)))]
+					[sprite (vnth-mod side-sprites (fx/ frames 7))])
+			   (if (flnegative? dx)
+				   (draw-sprite-mirror-x textures sprite render-x render-y tint)
+				   (draw-sprite textures sprite render-x render-y tint)))])))
+		(when show-hitboxes
+		  (let-values ([(x y w h) (enm-hurtbox enm)])
 			(raylib:draw-rectangle-rec
 			 (+ x +playfield-render-offset-x+)
-			 (+ y +playfield-render-offset-y+) w h red))))))
-  (vector-for-each-truthy each live-enm))
+			 (+ y +playfield-render-offset-y+) w h green))
+		  (unless (enm-hasflag? enm (enmflag nocollide))
+			(let-values ([(x y w h) (enm-collision-box enm)])
+			  (raylib:draw-rectangle-rec
+			   (+ x +playfield-render-offset-x+)
+			   (+ y +playfield-render-offset-y+) w h red)))))))
+  (vector-for-each each live-enm))
 
 (define (linear-step-forever facing speed blt)
   (bullet-facing-set! blt facing)
@@ -3088,18 +3095,19 @@
 
 (define (tick-particles)
   (define (each p)
-	(particle-age-set! p (fx1+ (particle-age p)))
-	(case (particle-type p)
-	  ([graze maple maple-grayscale]
-	   (let ([dir (assqdr 'dir (particle-extra-data p))]
-			 [speed (assqdr 'speed (particle-extra-data p))])
-		 (particle-x-set! p (+ (particle-x p) (* speed (cos dir))))
-		 (particle-y-set! p (+ (particle-y p) (* speed (sin dir))))))
-	  ([itemvalue]
-	   (particle-y-set! p (- (particle-y p) 0.5))))
-	(when (fx> (particle-age p) (particle-max-age p))
-	  (delete-particle p)))
-  (vector-for-each-truthy each live-particles))
+	(when p
+	  (particle-age-set! p (fx1+ (particle-age p)))
+	  (case (particle-type p)
+		([graze maple maple-grayscale]
+		 (let ([dir (assqdr 'dir (particle-extra-data p))]
+			   [speed (assqdr 'speed (particle-extra-data p))])
+		   (particle-x-set! p (+ (particle-x p) (* speed (cos dir))))
+		   (particle-y-set! p (+ (particle-y p) (* speed (sin dir))))))
+		([itemvalue]
+		 (particle-y-set! p (- (particle-y p) 0.5))))
+	  (when (fx> (particle-age p) (particle-max-age p))
+		(delete-particle p))))
+  (vector-for-each each live-particles))
 
 (define (draw-particles textures fonts)
   (define (each p)
@@ -3205,6 +3213,7 @@
 			 [size (assqdr 'size extra-data)]
 			 [color (assqdr 'color extra-data)])
 		 (draw-centered-field-text text render-y size color #t)))))
+  ;; TODO: switch to vector-for-each
   (vector-for-each-truthy each live-particles))
 
 (define-record-type miscent
@@ -3295,19 +3304,20 @@
 	   (do-standard-movement)
 	   (call/1cc
 		(λ (return)
-		  (vector-for-each-truthy
+		  (vector-for-each
 		   (λ (enm)
-			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
-			   (when (and
-					  (not (enm-invincible? enm))
-					  (check-collision-recs
-					   ehx ehy ehw ehh
-					   (- (miscent-x ent) 6)
-					   (- (miscent-y ent) 10)
-					   12 16))
-				 (delete-misc-ent ent)
-				 (damage-enemy enm 25)
-				 (return))))
+			 (when enm
+			   (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
+				 (when (and
+						(not (enm-invincible? enm))
+						(check-collision-recs
+						 ehx ehy ehw ehh
+						 (- (miscent-x ent) 6)
+						 (- (miscent-y ent) 10)
+						 12 16))
+				   (delete-misc-ent ent)
+				   (damage-enemy enm 25)
+				   (return)))))
 		   live-enm)
 		  (when (< (miscent-y ent) +playfield-min-y+)
 			(delete-misc-ent ent)))))
@@ -3315,19 +3325,20 @@
 	   (do-standard-movement)
 	   (call/1cc
 		(λ (return)
-		  (vector-for-each-truthy
+		  (vector-for-each
 		   (λ (enm)
-			 (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
-			   (when (and
-					  (not (enm-invincible? enm))
-					  (check-collision-recs
-					   ehx ehy ehw ehh
-					   (- (miscent-x ent) 5)
-					   (- (miscent-y ent) 6)
-					   10 52))
-				 (delete-misc-ent ent)
-				 (damage-enemy enm 10)
-				 (return))))
+			 (when enm
+			   (let-values ([(ehx ehy ehw ehh) (enm-hurtbox enm)])
+				 (when (and
+						(not (enm-invincible? enm))
+						(check-collision-recs
+						 ehx ehy ehw ehh
+						 (- (miscent-x ent) 5)
+						 (- (miscent-y ent) 6)
+						 10 52))
+				   (delete-misc-ent ent)
+				   (damage-enemy enm 10)
+				   (return)))))
 		   live-enm)
 		  (when (< (miscent-y ent) (- +playfield-min-y+ 50)) ;; extra fuzz for length
 			(delete-misc-ent ent)))))
@@ -3391,6 +3402,7 @@
 	   (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
 		 (delete-misc-ent ent))))
 	(miscent-livetime-set! ent (add1 (miscent-livetime ent))))
+  ;; TODO: switch to vector-for-each
   (vector-for-each-truthy each live-misc-ents))
 
 (define (miscent-should-spin? ent)
@@ -3398,42 +3410,43 @@
 
 (define (draw-misc-ents textures)
   (define (each ent)
-	(define type (miscent-type ent))
-	(define render-x (+ +playfield-render-offset-x+ (miscent-x ent)))
-	(define render-y (+ +playfield-render-offset-y+ (miscent-y ent)))
-	(case type
-	  ((mainshot)
-	   (draw-sprite-with-rotation
-		textures 'mainshot -90
-		render-x render-y #xffffffdd)
-	   (when show-hitboxes
-		 (raylib:draw-rectangle-rec
-		  (fl- render-x 6.0) (fl- render-y 10.0) 12.0 16.0
-		  red)
-		 (raylib:draw-circle-v render-x render-y 2.0 green)))
-	  ([needle]
-	   ;; todo: different rendering when it hits something?
-	   (draw-sprite-with-rotation
-		textures 'needle -90
-		render-x render-y #xffffffdd)
-	   (when show-hitboxes
-		 (raylib:draw-rectangle-rec
-		  (fl- render-x 5.0) (fl- render-y 6.0) 10.0 52.0
-		  red)
-		 (raylib:draw-circle-v render-x render-y 2.0 green)))
-	  ([point life-frag big-piv life bomb-frag small-piv bomb]
-	   (let ([livetime (miscent-livetime ent)])
-		 (if (and (fx<= livetime 24) (miscent-should-spin? ent))
-			 (draw-sprite-with-rotation
-			  textures type (* 45.0 (floor (/ livetime 3)))
-			  render-x render-y -1)
-			 (draw-sprite textures type render-x render-y
-						  (if (memq type '(big-piv small-piv)) #xffffffc0 -1))))
-	   (when show-hitboxes
-		 (raylib:draw-rectangle-rec
-		  (fl- render-x 8.0) (fl- render-y 8.0) 16.0 16.0
-		  red)))))
-  (vector-for-each-truthy each live-misc-ents))
+	(when ent
+	  (let ([type (miscent-type ent)]
+			[render-x (+ +playfield-render-offset-x+ (miscent-x ent))]
+			[render-y (+ +playfield-render-offset-y+ (miscent-y ent))])
+		(case type
+		  ([mainshot]
+		   (draw-sprite-with-rotation
+			textures 'mainshot -90
+			render-x render-y #xffffffdd)
+		   (when show-hitboxes
+			 (raylib:draw-rectangle-rec
+			  (fl- render-x 6.0) (fl- render-y 10.0) 12.0 16.0
+			  red)
+			 (raylib:draw-circle-v render-x render-y 2.0 green)))
+		  ([needle]
+		   ;; todo: different rendering when it hits something?
+		   (draw-sprite-with-rotation
+			textures 'needle -90
+			render-x render-y #xffffffdd)
+		   (when show-hitboxes
+			 (raylib:draw-rectangle-rec
+			  (fl- render-x 5.0) (fl- render-y 6.0) 10.0 52.0
+			  red)
+			 (raylib:draw-circle-v render-x render-y 2.0 green)))
+		  ([point life-frag big-piv life bomb-frag small-piv bomb]
+		   (let ([livetime (miscent-livetime ent)])
+			 (if (and (fx<= livetime 24) (miscent-should-spin? ent))
+				 (draw-sprite-with-rotation
+				  textures type (* 45.0 (floor (/ livetime 3)))
+				  render-x render-y -1)
+				 (draw-sprite textures type render-x render-y
+							  (if (memq type '(big-piv small-piv)) #xffffffc0 -1))))
+		   (when show-hitboxes
+			 (raylib:draw-rectangle-rec
+			  (fl- render-x 8.0) (fl- render-y 8.0) 16.0 16.0
+			  red)))))))
+  (vector-for-each each live-misc-ents))
 
 (define (ease-to easer x y duration enm)
   (define x0 (enm-x enm))
@@ -3538,9 +3551,9 @@
    30 '((start-radius . 2)
 		(end-radius . 85)))
   (cancel-all #t)
-  (vector-for-each-truthy
+  (vector-for-each
    (λ (e)
-	 (when (not (is-boss? e))
+	 (when (and e (not (is-boss? e)))
 	   (kill-enemy e)))
    live-enm)
   (bossinfo-remaining-timer-set! bossinfo 0)
@@ -3665,9 +3678,9 @@
 			   [(xrx xry xrw xrh) (bomb-sweep-x-right-hitbox)]
 			   [(yux yuy yuw yuh) (bomb-sweep-y-up-hitbox)]
 			   [(ydx ydy ydw ydh) (bomb-sweep-y-down-hitbox)])
-	(vector-for-each-truthy
+	(vector-for-each
 	 (λ (blt)
-	   (when (bullet-active? blt)
+	   (when (and blt (bullet-active? blt))
 		 (let ([x (bullet-x blt)]
 			   [y (bullet-y blt)]
 			   [hit-radius (bullet-hit-radius (bullet-type blt))])
@@ -3681,14 +3694,15 @@
 												 ydx ydy ydw ydh))
 			 (cancel-bullet-with-drop blt 'small-piv)))))
 	 live-bullets)
-	(vector-for-each-truthy
+	(vector-for-each
 	 (λ (enm)
-	   (let-values ([(x y w h) (enm-hurtbox enm)])
-		 (when (or (check-collision-recs x y w h xlx xly xlw xlh)
-				   (check-collision-recs x y w h xrx xry xrw xrh)
-				   (check-collision-recs x y w h yux yuy yuw yuh)
-				   (check-collision-recs x y w h ydx ydy ydw ydh))
-		   (damage-enemy enm 35 #f))))
+	   (when enm
+		 (let-values ([(x y w h) (enm-hurtbox enm)])
+		   (when (or (check-collision-recs x y w h xlx xly xlw xlh)
+					 (check-collision-recs x y w h xrx xry xrw xrh)
+					 (check-collision-recs x y w h yux yuy yuw yuh)
+					 (check-collision-recs x y w h ydx ydy ydw ydh))
+			 (damage-enemy enm 35 #f)))))
 	 live-enm))
   (set! bombing (sub1 bombing)))
 
@@ -4787,7 +4801,7 @@
 (define (tick-game)
   (unless (paused?)
 	(tick-player)
-	(vector-for-each-truthy
+	(vector-for-each
 	 despawn-out-of-bound-bullet
 	 live-bullets)
 	(pretick-enemies)

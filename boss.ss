@@ -507,9 +507,10 @@
 	(λ (task)
 	  (let-values ([(x y w h) (enm-collision-box hazuki)])
 		(loop-forever
-		 (vector-for-each-truthy
+		 (vector-for-each
 		  (λ (blt)
-			(when (and (memq (bullet-family (bullet-type blt)) '(pellet small-ball))
+			(when (and blt
+					   (memq (bullet-family (bullet-type blt)) '(pellet small-ball))
 					   (check-collision-circle-rec
 						(bullet-x blt) (bullet-y blt)
 						(bullet-hit-radius (bullet-type blt))
