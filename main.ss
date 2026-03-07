@@ -2664,13 +2664,13 @@
 		 (list (cons 'dir
 					 ;; 80% of the time, particle flies towards bullet
 					 ;; 20% of the time, away from it
-					 (torad (+ (centered-roll visual-rng 90.0)
-							   (if (< (bullet-x bullet) player-x)
-								   180.0 0.0)
-							   (if (< (roll visual-rng) 0.2)
-								   180.0 0.0))))
-			   (cons 'speed (+ 1.0 (* 2.0 (roll visual-rng))))
-			   (cons 'rot (* (roll visual-rng) 360.0))))
+					 (torad (fl+ (centered-roll visual-rng 90.0)
+								 (if (fl< (bullet-x bullet) player-x)
+									 180.0 0.0)
+								 (if (fl< (roll visual-rng) 0.2)
+									 180.0 0.0))))
+			   (cons 'speed (fl+ 1.0 (fl* 2.0 (roll visual-rng))))
+			   (cons 'rot (fl* (roll visual-rng) 360.0))))
 		(raylib:play-sound (sebundle-graze sounds)))
 
 	  (when (and
@@ -2692,51 +2692,51 @@
 (define (enm-collision-box enm)
   (case (enm-type enm)
 	([red-fairy green-fairy blue-fairy yellow-fairy]
-	 (values (- (enm-x enm) 8)
-			 (- (enm-y enm) 8)
-			 16 16))
+	 (values (fl- (enm-x enm) 8.0)
+			 (fl- (enm-y enm) 8.0)
+			 16.0 16.0))
 	([boss-doremi boss-hazuki boss-aiko]
-	 (values (- (enm-x enm) 24)
-			 (- (enm-y enm) 24)
-			 48 48))
+	 (values (fl- (enm-x enm) 24.0)
+			 (fl- (enm-y enm) 24.0)
+			 48.0 48.0))
 	([medium-blue-fairy medium-red-fairy
 						red-yinyang green-yinyang blue-yinyang magenta-yinyang]
-	 (values (- (enm-x enm) 11)
-			 (- (enm-y enm) 11)
-			 22 22))
+	 (values (fl- (enm-x enm) 11.0)
+			 (fl- (enm-y enm) 11.0)
+			 22.0 22.0))
 	([blue-wisp green-wisp red-wisp yellow-wisp]
-	 (values (- (enm-x enm) 9)
-			 (- (enm-y enm) 9)
-			 18 18))
+	 (values (fl- (enm-x enm) 9.0)
+			 (fl- (enm-y enm) 9.0)
+			 18.0 18.0))
 	([big-fairy]
-	 (values (- (enm-x enm) 15)
-			 (- (enm-y enm) 15)
-			 30 30))))
+	 (values (fl- (enm-x enm) 15.0)
+			 (fl- (enm-y enm) 15.0)
+			 30.0 30.0))))
 
 (define (enm-hurtbox enm)
   (case (enm-type enm)
 	([red-fairy green-fairy blue-fairy yellow-fairy]
-	 (values (- (enm-x enm) 16)
-			 (- (enm-y enm) 16)
-			 32 32))
+	 (values (fl- (enm-x enm) 16.0)
+			 (fl- (enm-y enm) 16.0)
+			 32.0 32.0))
 	([boss-doremi boss-hazuki boss-aiko]
-	 (values (- (enm-x enm) 24)
-			 (- (enm-y enm) 24)
-			 48 48))
+	 (values (fl- (enm-x enm) 24.0)
+			 (fl- (enm-y enm) 24.0)
+			 48.0 48.0))
 	([medium-blue-fairy medium-red-fairy
 						red-yinyang green-yinyang blue-yinyang magenta-yinyang
 						blue-wisp green-wisp red-wisp yellow-wisp]
-	 (values (- (enm-x enm) 16)
-			 (- (enm-y enm) 16)
-			 32 32))
+	 (values (fl- (enm-x enm) 16.0)
+			 (fl- (enm-y enm) 16.0)
+			 32.0 32.0))
 	([blue-wisp green-wisp red-wisp yellow-wisp]
-	 (values (- (enm-x enm) 14)
-			 (- (enm-y enm) 14)
-			 28 28))
+	 (values (fl- (enm-x enm) 14.0)
+			 (fl- (enm-y enm) 14.0)
+			 28.0 28.0))
 	([big-fairy]
-	 (values (- (enm-x enm) 22)
-			 (- (enm-y enm) 22)
-			 44 44))))
+	 (values (fl- (enm-x enm) 22.0)
+			 (fl- (enm-y enm) 22.0)
+			 44.0 44.0))))
 
 (define (enm-tint enm)
   (cond
@@ -3148,10 +3148,10 @@
 		  (override-alpha -1 (eround (lerp 255 0 t))))))
 	  ([graze]
 	   (let* ([t (/ age max-age)]
-			  [sz (lerp 6 0 t)]
+			  [sz (lerp 6.0 0.0 t)]
 			  [rot (assqdr 'rot (particle-extra-data p))])
 		 (raylib:draw-rectangle-pro render-x render-y sz sz
-									(/ sz 2) (/ sz 2)
+									(fl/ sz 2.0) (fl/ sz 2.0)
 									rot #xf5f5f5f5)))
 	  ([enmdeath]
 	   (let ([t (/ age max-age)])
@@ -3409,7 +3409,7 @@
 		render-x render-y #xffffffdd)
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
-		  (- render-x 6) (- render-y 10) 12 16
+		  (fl- render-x 6.0) (fl- render-y 10.0) 12.0 16.0
 		  red)
 		 (raylib:draw-circle-v render-x render-y 2.0 green)))
 	  ([needle]
@@ -3419,7 +3419,7 @@
 		render-x render-y #xffffffdd)
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
-		  (- render-x 5) (- render-y 6) 10 52
+		  (fl- render-x 5.0) (fl- render-y 6.0) 10.0 52.0
 		  red)
 		 (raylib:draw-circle-v render-x render-y 2.0 green)))
 	  ([point life-frag big-piv life bomb-frag small-piv bomb]
@@ -3432,7 +3432,7 @@
 						  (if (memq type '(big-piv small-piv)) #xffffffc0 -1))))
 	   (when show-hitboxes
 		 (raylib:draw-rectangle-rec
-		  (- render-x 8) (- render-y 8) 16 16
+		  (fl- render-x 8.0) (fl- render-y 8.0) 16.0 16.0
 		  red)))))
   (vector-for-each-truthy each live-misc-ents))
 
@@ -4352,28 +4352,22 @@
 	   440.0 220.0 24.0 24.0
 	   (get-color (vkey left)))
 	  (raylib:draw-rectangle-rec
-	   466.0 220.0
-	   24.0 24.0
+	   466.0 220.0 24.0 24.0
 	   (get-color (vkey down)))
 	  (raylib:draw-rectangle-rec
-	   466.0 194.0
-	   24.0 24.0
+	   466.0 194.0 24.0 24.0
 	   (get-color (vkey up)))
 	  (raylib:draw-rectangle-rec
-	   492.0 220.0
-	   24.0 24.0
+	   492.0 220.0 24.0 24.0
 	   (get-color (vkey right)))
 	  (raylib:draw-rectangle-rec
-	   532.0 220.0
-	   24.0 24.0
+	   532.0 220.0 24.0 24.0
 	   (get-color (vkey focus)))
 	  (raylib:draw-rectangle-rec
-	   558.0 220.0
-	   24.0 24.0
+	   558.0 220.0 24.0 24.0
 	   (get-color (vkey shoot)))
 	  (raylib:draw-rectangle-rec
-	   584.0 220.0
-	   24.0 24.0
+	   584.0 220.0 24.0 24.0
 	   (get-color (vkey bomb)))))
 
   ;; this is kinda dumb but whatever
