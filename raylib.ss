@@ -76,8 +76,8 @@
   (define global-vector2
 	(make-ftype-pointer RayVector2 (foreign-alloc (ftype-sizeof RayVector2))))
   (define (load-global-vector2 x y)
-	(ftype-set! RayVector2 (x) global-vector2 (inexact x))
-	(ftype-set! RayVector2 (y) global-vector2 (inexact y)))
+	(ftype-set! RayVector2 (x) global-vector2 x)
+	(ftype-set! RayVector2 (y) global-vector2 y))
   (define (unload-global-vector2)
 	(define x (ftype-ref RayVector2 (x) global-vector2))
 	(define y (ftype-ref RayVector2 (y) global-vector2))

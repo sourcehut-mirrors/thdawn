@@ -795,8 +795,8 @@
 	  (raylib:draw-text-ex
 	   (fontbundle-bubblegum fonts)
 	   ((menu-item-label item))
-	   (if isel (+ x 15) x)
-	   (+ start-y (* step-y i)) size 0.0
+	   (if isel (fl+ x 15.0) x)
+	   (fx2fl (+ start-y (* step-y i))) size 0.0
 	   (if isel
 		   (override-alpha selected-color alpha)
 		   (override-alpha -1 alpha))))))
@@ -1331,7 +1331,6 @@
 (define (setting-render self textures fonts)
   (define items (setting-gui-menu-options self))
   (define selected (setting-gui-selected-option self))
-  (define x 40.0)
   (define start-y 100)
   (define step-y 20)
   (define size 25.0)
@@ -1350,7 +1349,7 @@
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
 	 ((menu-item-label (vnth items i)))
-	 x (+ start-y (* step-y i)) size 0.0
+	 40.0 (fx2fl (+ start-y (* step-y i))) size 0.0
 	 (if (and (= i selected)
 			  (or (not (setting-gui-waiting-for-rebind self))
 				  (fx< (fxmod true-frames 14) 7)))
@@ -1551,11 +1550,11 @@
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
 	 title
-	 (+ (/ twidth -2.0) +playfield-render-offset-x+)
-	 (eround (lerp 120 150 progress))
+	 (+ (fl/ twidth -2.0) +playfield-render-offset-x+)
+	 (lerp 120.0 150.0 progress)
 	 32.0 0.0 (override-alpha selected-color alpha))
 	(render-ingame-menu fonts opts selected
-						(eround (lerp 80 100 progress))
+						(lerp 80.0 100.0 progress)
 						200 20 20.0 alpha))
   (define restart-opt
 	(make-menu-item
@@ -3185,9 +3184,9 @@
 			;; this is done here instead of when the particle is spawned so that
 			;; we don't have to pass the fonts to the game logic
 			(if (> (+ render-x width) +playfield-max-render-x+)
-				(eround (- render-x width 20.0))
-				(eround render-x))
-			(eround render-y)
+				(- render-x width 20.0)
+				render-x)
+			render-y
 			16.0 0.0 (fxlogior color alpha)))))
 	  ([circle-hint circle-hint-opaque]
 	   (let ([color (assqdr 'color extra-data)]
@@ -4163,8 +4162,8 @@
   (define healthbars (bossinfo-healthbars bossinfo))
   (raylib:draw-text-ex (fontbundle-bubblegum fonts)
 					   (bossinfo-name bossinfo)
-					   (+ +playfield-min-render-x+ 5)
-					   (+ +playfield-min-render-y+ 5 (* position 15.0))
+					   (fx2fl (+ +playfield-min-render-x+ 5))
+					   (fx2fl (+ +playfield-min-render-y+ 5 (* position 15)))
 					   16.0 0.0
 					   (if (and (fl< player-x -70.0)
 								(fl< player-y 80.0))
@@ -4204,8 +4203,8 @@
 						 (format "~2,'0d"
 								 (exact (ceiling
 								  (/ remaining-timer 60.0))))
-						 (- +playfield-max-render-x+ 18)
-						 (- +playfield-min-render-y+ 0)
+						 (fx2fl (- +playfield-max-render-x+ 18))
+						 (fx2fl (- +playfield-min-render-y+ 0))
 						 20.0 0.0
 						 (cond
 						  [(fx<= remaining-timer 300) #xf08080ff]
@@ -4299,15 +4298,15 @@
   (raylib:draw-text-ex
    (fontbundle-cabin fonts)
    (assqdr 'text current)
-   (+ +playfield-min-render-x+ 10)
-   (- +playfield-max-render-y+ 50)
+   (fx2fl (+ +playfield-min-render-x+ 10))
+   (fx2fl (- +playfield-max-render-y+ 50))
    18.0 0.0 text-color)
   (unless (< frames (stage-ctx-dialogue-pinned-until current-stage-ctx))
 	(raylib:draw-poly
 	 (- +playfield-max-render-x+ 20.0)
-	 (+ (- +playfield-max-render-y+ 20.0)
-		(if (< (fxmod frames 60) 30)
-			3.0 0.0))
+	 (fl+ (- +playfield-max-render-y+ 20.0)
+		  (if (< (fxmod frames 60) 30)
+			  3.0 0.0))
 	 3 5.0 90.0 -1)))
 
 (define (draw-hud textures fonts)
@@ -4315,32 +4314,32 @@
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
    (format "Score: ~:d" current-score)
-   440 15 24.0 0.0 -1)
+   440.0 15.0 24.0 0.0 -1)
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
    "Life"
-   440 45
+   440.0 45.0
    24.0 0.0 #xFF69FCFF)
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
    "Bomb"
-   440 75
+   440.0 75.0
    24.0 0.0 #x72E57AFF)
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
    (format "Graze: ~d" graze)
-   440 105
+   440.0 105.0
    24.0 0.0 -1)
   (raylib:draw-text-ex
    (fontbundle-bubblegum fonts)
    (format "Value: ~:d" item-value)
-   440 135
+   440.0 135.0
    24.0 0.0 #x49D0FFFF)
   (when (is-replay)
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum fonts)
 	 "REPLAY"
-	 440 165
+	 440.0 165.0
 	 24.0 0.0 red)
 	;; TODO config option for liveplays?
 	(let ([get-color
