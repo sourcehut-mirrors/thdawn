@@ -367,12 +367,12 @@
 	(foreign-procedure __atomic "DrawTextureRec"
 					   ((& Texture) (& RayRect)
 						(& RayVector2) (& Color)) void))
-  (define (draw-texture-rec tex rect v rgba)
+  (define (draw-texture-rec tex rect x y rgba)
 	(load-global-rectangle
 	 global-rectangle
 	 (rectangle-x rect) (rectangle-y rect)
 	 (rectangle-width rect) (rectangle-height rect))
-	(load-global-vector2 (v2x v) (v2y v))
+	(load-global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-texture-rec0 tex global-rectangle global-vector2 global-color))
 

@@ -486,7 +486,7 @@
   (raylib:draw-texture-rec
    ((sprite-descriptor-tx-accessor data) textures)
    (sprite-descriptor-bounds data)
-   (vec2 (fl+ x (v2x cshift)) (fl+ y (v2y cshift)))
+   (fl+ x (v2x cshift)) (fl+ y (v2y cshift))
    color))
 
 (define (draw-sprite-mirror-x textures sprite-id x y color)
@@ -497,7 +497,7 @@
    ((sprite-descriptor-tx-accessor data) textures)
    (make-rectangle (rectangle-x bounds) (rectangle-y bounds)
 				   (- (rectangle-width bounds)) (rectangle-height bounds))
-   (vec2 (fl+ x (v2x cshift)) (fl+ y (v2y cshift)))
+   (fl+ x (v2x cshift)) (fl+ y (v2y cshift))
    color))
 
 (define (draw-sprite-pro textures sprite-id dest color)
@@ -518,7 +518,7 @@
    (raylib:draw-texture-rec
 	((sprite-descriptor-tx-accessor data) textures)
 	(sprite-descriptor-bounds data)
-	v2zero
+	0.0 0.0
 	color)))
 
 (define (draw-sprite-pro-with-rotation textures sprite-id rotation dest color)
@@ -540,7 +540,7 @@
    (raylib:draw-texture-rec
 	((sprite-descriptor-tx-accessor data) textures)
 	(sprite-descriptor-bounds data)
-	v2zero
+	0.0 0.0
 	color))
   )
 
@@ -4120,7 +4120,7 @@
 	[else
 	 (let ([x-texture-index (+ 3 (truncate (mod (/ frames 9) 5)))])
 	   (make-rectangle (fx2fl (* 32 x-texture-index)) 48.0 32.0 48.0))])
-   (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
+   (fl- render-player-x 16.0) (fl- render-player-y 24.0)
    (if (and (player-invincible?) (< (mod frames 4) 2))
 	   invincible-flash
 	   -1))
