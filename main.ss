@@ -844,7 +844,7 @@
 						   v2zero 0.0 tint)
   (raylib:draw-texture-pro (txbundle-title2 textures)
 						   title-img-bounds
-						   (make-rectangle -150.0 -30.0 1152 648)
+						   (make-rectangle -150.0 -30.0 1152.0 648.0)
 						   v2zero 0.0 tint)
   (raylib:draw-texture-pro (txbundle-title4 textures)
 						   title-img-bounds
@@ -3139,7 +3139,7 @@
 	(case type
 	  ([maple maple-grayscale]
 	   (let* ([t (/ age max-age)]
-			  [sz (lerp (assqdr 'initsz extra-data) 16 t)]
+			  [sz (lerp (assqdr 'initsz extra-data) 16.0 t)]
 			  [rot (assqdr 'rot extra-data)])
 		 (draw-sprite-pro-with-rotation
 		  textures type
@@ -3164,7 +3164,7 @@
 	  ([cancel]
 	   (let* ([age (floor (/ age 3))]
 			  [v (if (fx< age 4) 0.0 64.0)]
-			  [u (* 64 (fxmod age 4))])
+			  [u (fx2fl (* 64 (fxmod age 4)))])
 		 (raylib:draw-texture-pro
 		  (txbundle-bulletcancel textures)
 		  (make-rectangle u v 64.0 64.0)
@@ -3569,7 +3569,7 @@
 		   60 `((speed . ,(fl+ (centered-roll visual-rng 0.75) 1.5))
 				(dir . ,(centered-roll visual-rng pi))
 				(rot . ,(fl* (roll visual-rng) 360.0))
-				(initsz . 55)))
+				(initsz . 55.0)))
 		  (yield)))
 	  (constantly #t))
 	(ease-to values
@@ -3586,7 +3586,7 @@
 	 60 `((speed . ,(fl+ (centered-roll visual-rng 1.5) 2.5))
 		  (dir . ,(centered-roll visual-rng pi))
 		  (rot . ,(fl* (roll visual-rng) 360.0))
-		  (initsz . 70))))
+		  (initsz . 70.0))))
   (unless short
 	(delete-enemy enm)))
 
@@ -4086,21 +4086,21 @@
    (cond
 	[(fxzero? player-dx-render)
 	 (let ([x-texture-index (truncate (mod (/ frames 9) 8))])
-	   (make-rectangle (* 32.0 x-texture-index) 0.0 32.0 48.0))]
+	   (make-rectangle (fx2fl (* 32 x-texture-index)) 0.0 32.0 48.0))]
 	[(fx<= 1 player-dx-render 3)
 	 (make-rectangle 32.0 96.0 32.0 48.0)]
 	[(fx<= 4 player-dx-render 7)
 	 (make-rectangle 64.0 96.0 32.0 48.0)]
 	[(fx> player-dx-render 7)
 	 (let ([x-texture-index (+ 3 (truncate (mod (/ frames 9) 5)))])
-	   (make-rectangle (* 32.0 x-texture-index) 96.0 32.0 48.0))]
+	   (make-rectangle (fx2fl (* 32 x-texture-index)) 96.0 32.0 48.0))]
 	[(fx<= -3 player-dx-render -1)
 	 (make-rectangle 32.0 48.0 32.0 48.0)]
 	[(fx<= -7 player-dx-render -4)
 	 (make-rectangle 64.0 48.0 32.0 48.0)]
 	[else
 	 (let ([x-texture-index (+ 3 (truncate (mod (/ frames 9) 5)))])
-	   (make-rectangle (* 32.0 x-texture-index) 48.0 32.0 48.0))])
+	   (make-rectangle (fx2fl (* 32 x-texture-index)) 48.0 32.0 48.0))])
    (vec2 (- render-player-x 16.0) (- render-player-y 24.0))
    (if (and (player-invincible?) (< (mod frames 4) 2))
 	   invincible-flash
@@ -4270,13 +4270,13 @@
 						 2))
 			   #xffffffc0))
 
-(define dialog-src-bounds (make-rectangle 0 0 368 60))
+(define dialog-src-bounds (make-rectangle 0.0 0.0 368.0 60.0))
 (define dialog-dest-bounds
   (make-rectangle
-   +playfield-min-render-x+
-   (- +playfield-max-render-y+ 60)
-   +playfield-width+
-   60))
+   (fx2fl +playfield-min-render-x+)
+   (fx2fl (- +playfield-max-render-y+ 60))
+   (fx2fl +playfield-width+)
+   60.0))
 
 (define (draw-dialogue textures fonts current)
   (define text-color
@@ -4926,27 +4926,28 @@
    (particletype itemvalue)
    x y dur (cons #xf5f5f500 str)))
 
+(define (print-stacktrace e)
+  (define ins (inspect/object (condition-continuation e)))
+  (define depth (ins 'depth))
+  (display "Crash! Please report this to the developer along with the version information.\n")
+  (display "Bytes Allocated: ")
+  (display (bytes-allocated))
+  (newline)
+  (display-condition e)
+  (newline)
+  (display "\nBacktrace:\n")
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i depth)]
+	(let* ([frame (ins 'link* i)]
+		   [source-obj (frame 'source-object)])
+	  (display (or ((frame 'code) 'name) "anonymous"))
+	  (when source-obj
+		(display " @ ")
+		(display source-obj))
+	  ;; todo: still maybe want the 'source, but truncated?
+	  (newline))))
+
 (define (main-with-backtrace)
-  (define (print-stacktrace e)
-	(define ins (inspect/object (condition-continuation e)))
-	(define depth (ins 'depth))
-	(display "Crash! Please report this to the developer along with the version information.\n")
-	(display "Bytes Allocated: ")
-	(display (bytes-allocated))
-	(newline)
-	(display-condition e)
-	(newline)
-	(display "\nBacktrace:\n")
-	(do [(i 0 (fx1+ i))]
-		[(fx= i depth)]
-	  (let* ([frame (ins 'link* i)]
-			 [source-obj (frame 'source-object)])
-		(display (or ((frame 'code) 'name) "anonymous"))
-		(when source-obj
-		  (display " @ ")
-		  (display source-obj))
-		;; todo: still maybe want the 'source, but truncated?
-		(newline))))
   (guard (e [(continuation-condition? e)
 			 (print-stacktrace e)])
 	(main)))

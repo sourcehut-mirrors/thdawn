@@ -69,10 +69,13 @@
   (define (ease-out-circ x)
 	(sqrt (- 1 (* (- x 1) (- x 1)))))
 
-  (define-record-type rectangle
+  (define-record-type (rectangle $make-rectangle rectangle?)
 	(fields
 	 x y width height)
 	(sealed #t))
+  (define (make-rectangle x y w h)
+	;; will assert in dev, but be optimized away in prod
+	($make-rectangle (fl+ x) (fl+ y) (fl+ w) (fl+ h)))
 
   (define-record-type vector2
 	(fields x y)
