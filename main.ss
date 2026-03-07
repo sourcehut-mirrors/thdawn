@@ -3754,15 +3754,13 @@
 ;; gathers the pending input to be used for the current frame
 ;; No gameplay-facing keys should be checked outside this function.
 ;; Debug-facing keys can still be checked outside.
-;; In the future this function will also be responsible for writing the key state
-;; to replays, or reading it from the replay.
 (define (gather-input)
   (define edge-pressed-raw
-	(let ([result '()])
-	  (do [(k (raylib:get-key-pressed) (raylib:get-key-pressed))]
-		  [(zero? k)]
-		(set! result (cons k result)))
-	  (reverse! result)))
+	(let loop ([result '()]
+			   [k (raylib:get-key-pressed)])
+	  (if (zero? k)
+		  (reverse! result)
+		  (loop (cons k result) (raylib:get-key-pressed)))))
   (define level-pressed
 	(fold-left
 	 (λ (acc pair)
@@ -3948,6 +3946,9 @@
 			 (not (zero? (vlen spline-editor-positions))))
 	(set! spline-editor-positions (vector-pop spline-editor-positions))))
 
+;; NEVER for gameplay!
+(define level-pressed-input-for-display (vkeys))
+
 (define (handle-input)
   (define inputs (gather-input))
   (define ep (inputset-edge-pressed inputs))
@@ -3982,7 +3983,8 @@
 			  (begin
 				(play-music (musbundle-lupinasu-no-komoriuta-piano music))
 				(replace-gui (mk-pause-gui (pausetype replaydone))))
-			  (let ([r (vnth v idx)])
+			  (let* ([r (vnth v idx)]
+					 [level-pressed (vkeys-proc (vnth r 3))])
 				(assert (= (vnth r 0) frames))
 				(when (vnth r 4)
 				  (assert (equal? (vnth r 4)
@@ -3993,11 +3995,12 @@
 				   `((text . ,(string-append "Paused for " (vnth r 5)))
 					 (size . 24.0)
 					 (color . #xff0000ff))))
+				(set! level-pressed-input-for-display level-pressed)
 				(handle-game-input
 				 (make-inputset '()
-								(vkeys-proc (vector-ref r 1))
-								(vkeys-proc (vector-ref r 2))
-								(vkeys-proc (vector-ref r 3))))
+								(vkeys-proc (vnth r 1))
+								(vkeys-proc (vnth r 2))
+							    level-pressed))
 				(stage-ctx-replay-idx-set! current-stage-ctx
 										   (fx1+ idx))))))
 
@@ -4338,7 +4341,40 @@
 	 (fontbundle-bubblegum fonts)
 	 "REPLAY"
 	 440 165
-	 24.0 0.0 red))
+	 24.0 0.0 red)
+	;; TODO config option for liveplays?
+	(let ([get-color
+		   (λ (key)
+			 (if (enum-set-member? key level-pressed-input-for-display)
+				 selected-color
+				 #x606060ff))])
+	  (raylib:draw-rectangle-rec
+	   440.0 220.0 24.0 24.0
+	   (get-color (vkey left)))
+	  (raylib:draw-rectangle-rec
+	   466.0 220.0
+	   24.0 24.0
+	   (get-color (vkey down)))
+	  (raylib:draw-rectangle-rec
+	   466.0 194.0
+	   24.0 24.0
+	   (get-color (vkey up)))
+	  (raylib:draw-rectangle-rec
+	   492.0 220.0
+	   24.0 24.0
+	   (get-color (vkey right)))
+	  (raylib:draw-rectangle-rec
+	   532.0 220.0
+	   24.0 24.0
+	   (get-color (vkey focus)))
+	  (raylib:draw-rectangle-rec
+	   558.0 220.0
+	   24.0 24.0
+	   (get-color (vkey shoot)))
+	  (raylib:draw-rectangle-rec
+	   584.0 220.0
+	   24.0 24.0
+	   (get-color (vkey bomb)))))
 
   ;; this is kinda dumb but whatever
   (let-values ([(doremi hazuki aiko) (find-bosses)]

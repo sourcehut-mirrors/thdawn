@@ -138,6 +138,7 @@ Nons: Hearts
 Sp4 Trio
 something where bullets from each char interact with each other
 (might require some refactors like bullet tagging, etc.)
+maybe something about the fairy familiars
 
 Sp5 Doremi (gimmick start spells here)
 Something steak related
