@@ -26,9 +26,8 @@
 
   (define (read-config)
 	(guard (e [(i/o-file-does-not-exist-error? e)
-			   (with-output-to-file config-path
-				 (lambda () (pretty-print default-config)))
-			   default-config])
+			   (save-config default-config)
+			   (read-config)])
 	  (with-input-from-file config-path
 		read)))
 
@@ -37,6 +36,7 @@
 	(read-config))
 
   (define (save-config data)
-	(with-output-to-file config-path
+	(with-output-to-file "config.dat.tmp"
 	  (lambda () (pretty-print data))
-	  'truncate)))
+	  'truncate)
+	(rename-file "config.dat.tmp" config-path)))

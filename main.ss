@@ -1071,6 +1071,7 @@
 	(if (replist-gui-records-to-save self)
 		(let* ([path (rep-path (replist-gui-selected-page self)
 							   (replist-gui-selected-row self))]
+			   [tmppath (string-append path ".tmp")]
 			   [entry (car (replist-gui-records-to-save self))]
 			   [records (cdr (replist-gui-records-to-save self))]
 			   [ni-gui
@@ -1083,13 +1084,14 @@
 					  (score-entry-unixtime entry)
 					  (score-entry-cleared entry)
 					  (game-version)))
-				   (with-output-to-file path
+				   (with-output-to-file tmppath
 					 (thunk
 					  (write real-entry)
 					  (newline)
 					  (for-each (λ (r) (write r) (newline))
 								records))
 					 'truncate)
+				   (rename-file tmppath path)
 				   (raylib:play-sound (sebundle-extend sounds))
 				   (replist-refresh self)
 				   (set! gui-stack (cdr gui-stack))))])
@@ -2240,23 +2242,23 @@
 (define +playdata-path+ "playdata.dat")
 (define (load-play-data)
   (guard (e [(i/o-file-does-not-exist-error? e)
-			 (with-output-to-file +playdata-path+
-			   (thunk (pretty-print
-					   `((spell-history . ,(vector-map (λ (_) '(0 . 0))
-													   spells))
-						 ;; sorted by score descending
-						 (hiscore . ())
-						 (play-frames . 0)
-						 (games-started . 0)
-						 (games-cleared . 0)))))
+			 (save-play-data
+			  `((spell-history . ,(vector-map (λ (_) '(0 . 0))
+											  spells))
+				;; sorted by score descending
+				(hiscore . ())
+				(play-frames . 0)
+				(games-started . 0)
+				(games-cleared . 0)))
 			 (load-play-data)])
 	(with-input-from-file +playdata-path+
 	  read)))
 (define (save-play-data data)
-  ;; todo: consider tmpfile+atomic rename
-  (with-output-to-file +playdata-path+
+  (with-output-to-file "playdata.dat.tmp"
 	(thunk (pretty-print data))
-	'truncate))
+	'truncate)
+  ;; TODO: make sure this works on Windows
+  (rename-file "playdata.dat.tmp" +playdata-path+))
 
 (define +spellcircle-context+ 60)
 (define-record-type bossinfo
