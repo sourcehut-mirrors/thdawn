@@ -2218,7 +2218,7 @@
 							6000 500 1000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
 							2400 9000 1000000 'aiko std std-fail)
-	 (make-spell-descriptor "Witchy Sign \"\""
+	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
 							6000 500 3000000 'group std std-fail)
 	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""
 							6000 500 3000000 'doremi std std-fail)
@@ -3258,7 +3258,7 @@
 
 (define (add-bombs amt)
   (define old-stock bomb-stock)
-  (define limit 8)
+  (define limit 5)
   (define new-stock (+ bomb-stock amt))
   (define amt-over-limit (- new-stock limit))
   (if (positive? amt-over-limit)
