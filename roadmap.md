@@ -138,7 +138,10 @@ Nons: Hearts
 Sp4 Trio
 something where bullets from each char interact with each other
 (might require some refactors like bullet tagging, etc.)
+
 maybe something about the fairy familiars
+"fairy kaleidoscope", fairies spinning in tight inner circle, the girls circle in the
+opposite direction outside, lots of decoration bullets to make it like a kaleidoscope
 
 Sp5 Doremi (gimmick start spells here)
 Something steak related

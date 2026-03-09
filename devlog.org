@@ -1,3 +1,18 @@
+* [2026-03-07 Sat]
+Did some work a couple days ago to have the spellcircle not be terrible. I'm satisfied
+with it.
+
+Went on a pretty big diversion yesterday and today to profile memory usage and optimze it
+(to the point of making a Chez Scheme PR to make cost-centers nameable).
+
+Some ideas included unboxing/exploding a lot of temporary vec2/rectangle structs spammed
+during render. However, after prototyping a lot of those ideas it didn't seem to actually
+do much, so I'm shelving it for now. It was nice to go on the diversion, but I should
+really be focusing on the actual content of the game.
+
+I think next I'll probably work on group sp2 (something with the fairies) or the survival
+(flower).
+
 * [2026-03-02 Mon]
 No dev work today (Sunday), but jotting something down quickly before i forget it.
 

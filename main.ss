@@ -865,9 +865,6 @@
 	(make-menu-item
 	 (thunk "Game Start")
 	 (λ (gui)
-	   (let ([pair (assq 'games-started play-data)])
-		 (set-cdr! pair (add1 (cdr pair)))
-		 (save-play-data play-data))
 	   (start-game)
 	   (replace-gui #f)))
 	(make-menu-item
@@ -3171,7 +3168,7 @@
 							 t))
 			  (override-alpha -1 (eround (lerp 255 0 t))))))
 		  ([cancel]
-		   (let* ([age (floor (/ age 3))]
+		   (let* ([age (quotient age 3)]
 				  [v (if (fx< age 4) 0.0 64.0)]
 				  [u (fx2fl (* 64 (fxmod age 4)))])
 			 (raylib:draw-texture-pro
@@ -3444,7 +3441,7 @@
 		   (let ([livetime (miscent-livetime ent)])
 			 (if (and (fx<= livetime 24) (miscent-should-spin? ent))
 				 (draw-sprite-with-rotation
-				  textures type (* 45.0 (floor (/ livetime 3)))
+				  textures type (fx2fl (* 45 (quotient livetime 3)))
 				  render-x render-y -1)
 				 (draw-sprite textures type render-x render-y
 							  (if (memq type '(big-piv small-piv)) #xffffffc0 -1))))
