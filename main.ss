@@ -2308,7 +2308,8 @@
 			 red-yinyang green-yinyang blue-yinyang magenta-yinyang
 			 medium-red-fairy medium-blue-fairy
 			 big-fairy boss-doremi boss-hazuki boss-aiko
-			 red-wisp green-wisp blue-wisp yellow-wisp)
+			 red-wisp green-wisp blue-wisp yellow-wisp
+			 dodo rere mimi)
   make-enmtype-set)
 (define-record-type enm
   (fields
@@ -2327,7 +2328,7 @@
    (mutable flags)
    ;; alist of (miscent type . count) to drop on death.
    (mutable drops)
-   ;; optional nullary function to be called when the enemy health reaches zero
+   ;; optional function of enemy to be called when the enemy health reaches zero
    ;; if this returns #f, then the standard death logic is suppressed
    on-death
    ;; when positive, enemy has super armor. decreases automatically every frame.
@@ -2505,7 +2506,7 @@
 
 (define (kill-enemy enm)
   (let ([do-standard-logic (or (not (enm-on-death enm))
-							   ((enm-on-death enm)))])
+							   ((enm-on-death enm) enm))])
 	(when do-standard-logic
 	  (spawn-enm-drops enm)
 	  (raylib:play-sound (sebundle-enmdie sounds))
@@ -2515,9 +2516,7 @@
 	   (+ (enm-y enm) (centered-roll visual-rng 20.0))
 	   30 '((start-radius . 2)
 			(end-radius . 85)))
-	  (let ([idx (vector-index enm live-enm)])
-		(when idx
-		  (vector-set! live-enm idx #f))))))
+	  (delete-enemy enm))))
 
 (define damage-enemy
   (case-lambda
@@ -2695,7 +2694,7 @@
 
 (define (enm-collision-box enm)
   (case (enm-type enm)
-	([red-fairy green-fairy blue-fairy yellow-fairy]
+	([red-fairy green-fairy blue-fairy yellow-fairy dodo rere mimi]
 	 (values (fl- (enm-x enm) 8.0)
 			 (fl- (enm-y enm) 8.0)
 			 16.0 16.0))
@@ -2719,7 +2718,7 @@
 
 (define (enm-hurtbox enm)
   (case (enm-type enm)
-	([red-fairy green-fairy blue-fairy yellow-fairy]
+	([red-fairy green-fairy blue-fairy yellow-fairy dodo rere mimi]
 	 (values (fl- (enm-x enm) 16.0)
 			 (fl- (enm-y enm) 16.0)
 			 32.0 32.0))
@@ -2728,8 +2727,7 @@
 			 (fl- (enm-y enm) 24.0)
 			 48.0 48.0))
 	([medium-blue-fairy medium-red-fairy
-						red-yinyang green-yinyang blue-yinyang magenta-yinyang
-						blue-wisp green-wisp red-wisp yellow-wisp]
+						red-yinyang green-yinyang blue-yinyang magenta-yinyang]
 	 (values (fl- (enm-x enm) 16.0)
 			 (fl- (enm-y enm) 16.0)
 			 32.0 32.0))
@@ -2743,12 +2741,13 @@
 			 44.0 44.0))))
 
 (define (enm-tint enm)
+  (define is-familiar (memq (enm-type enm) '(dodo rere mimi)))
   (cond
-   [(and (not (is-boss? enm))
+   [(and (not (or is-familiar (is-boss? enm)))
 		 (enm-invincible? enm)
 		 (< (fxmod frames 4) 2))
 	invincible-flash]
-   [(and (is-boss? enm)
+   [(and (or is-familiar (is-boss? enm))
 		 (enm-invincible? enm))
 	#xffffff80]
    [(and (fxpositive? (enm-damaged-recently enm))
@@ -2915,16 +2914,20 @@
 				render-x render-y -1))
 			 (draw-sprite textures sprite render-x render-y -1)))
 		  ([yellow-fairy red-fairy green-fairy blue-fairy
-						 medium-red-fairy medium-blue-fairy big-fairy]
+						 medium-red-fairy medium-blue-fairy big-fairy
+						 dodo rere mimi]
 		   (cond
 			[(fl< (abs dx) 5.0)
 			 (let* ([fwd-sprites
 					 (case type
-					   ([yellow-fairy] '#(yellow-fairy1 yellow-fairy2
-														yellow-fairy3 yellow-fairy4))
-					   ([red-fairy] '#(red-fairy1 red-fairy2 red-fairy3 red-fairy4))
+					   ([yellow-fairy rere]
+						'#(yellow-fairy1 yellow-fairy2
+										 yellow-fairy3 yellow-fairy4))
+					   ([red-fairy dodo]
+						'#(red-fairy1 red-fairy2 red-fairy3 red-fairy4))
 					   ([green-fairy] '#(green-fairy1 green-fairy2 green-fairy3 green-fairy4))
-					   ([blue-fairy] '#(blue-fairy1 blue-fairy2 blue-fairy3 blue-fairy4))
+					   ([blue-fairy mimi]
+						'#(blue-fairy1 blue-fairy2 blue-fairy3 blue-fairy4))
 					   ([medium-blue-fairy] '#(medium-blue-fairy0 medium-blue-fairy1 medium-blue-fairy2 medium-blue-fairy3))
 					   ([medium-red-fairy] '#(medium-red-fairy0 medium-red-fairy1 medium-red-fairy2 medium-red-fairy3))
 					   ([big-fairy] '#(big-fairy0 big-fairy1 big-fairy2 big-fairy3)))]
@@ -2933,10 +2936,10 @@
 			[(fl< (abs dx) 10.0)
 			 (let* ([transition-sprites
 					 (case type
-					   ([yellow-fairy] '#(yellow-fairy5))
-					   ([red-fairy] '#(red-fairy5))
+					   ([yellow-fairy rere] '#(yellow-fairy5))
+					   ([red-fairy dodo] '#(red-fairy5))
 					   ([green-fairy] '#(green-fairy5))
-					   ([blue-fairy] '#(blue-fairy5))
+					   ([blue-fairy mimi] '#(blue-fairy5))
 					   ([medium-blue-fairy] '#(medium-blue-fairy4 medium-blue-fairy5 medium-blue-fairy6 medium-blue-fairy7))
 					   ([medium-red-fairy] '#(medium-red-fairy4 medium-red-fairy5 medium-red-fairy6 medium-red-fairy7))
 					   ([big-fairy] '#(big-fairy4 big-fairy5 big-fairy6 big-fairy7)))]
@@ -2947,16 +2950,16 @@
 			[else
 			 (let* ([side-sprites
 					 (case type
-					   ([yellow-fairy]
+					   ([yellow-fairy rere]
 						'#(yellow-fairy6 yellow-fairy7 yellow-fairy8
 										 yellow-fairy9 yellow-fairy10 yellow-fairy11))
-					   ([red-fairy]
+					   ([red-fairy dodo]
 						'#(red-fairy6 red-fairy7 red-fairy8
 									  red-fairy9 red-fairy10 red-fairy11))
 					   ([green-fairy]
 						'#(green-fairy6 green-fairy7 green-fairy8
 										green-fairy9 green-fairy10 green-fairy11))
-					   ([blue-fairy]
+					   ([blue-fairy mimi]
 						'#(blue-fairy6 blue-fairy7 blue-fairy8
 									   blue-fairy9 blue-fairy10 blue-fairy11))
 					   ([medium-blue-fairy] '#(medium-blue-fairy8 medium-blue-fairy9 medium-blue-fairy10 medium-blue-fairy11))
@@ -3849,7 +3852,7 @@
 									   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
 												(cdr dur) enm))
 									 '()
-									 (thunk #f))]
+									 (constantly #f))]
 				   [bossinfo (blank-bossinfo "Harukaze Doremi" #xff69fcff)])
 			   (enm-extras-set! enm bossinfo))]
 			[(hazuki-enter)
@@ -3858,7 +3861,7 @@
 									   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
 												(cdr dur) enm))
 									 '()
-									 (thunk #f))]
+									 (constantly #f))]
 				   [bossinfo (blank-bossinfo "Fujiwara Hazuki" #xffa500ff)])
 			   (enm-extras-set! enm bossinfo))]
 			[(aiko-enter)
@@ -3867,7 +3870,7 @@
 									   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
 												(cdr dur) enm))
 									 '()
-									 (thunk #f))]
+									 (constantly #f))]
 				   [bossinfo (blank-bossinfo "Senoo Aiko" #x00ffffff)])
 			   (enm-extras-set! enm bossinfo))])))])))
 
@@ -4749,13 +4752,13 @@
 		  [(14 15 16 23 24 31)
 		   (let* ([doremi (spawn-enemy 'boss-doremi
 									   +middle-boss-x+ +middle-boss-y+
-									   500 values '() (thunk #f))]
+									   500 values '() (constantly #f))]
 				  [hazuki (spawn-enemy 'boss-hazuki
 									   +left-boss-x+ +left-boss-y+
-									   500 values '() (thunk #f))]
+									   500 values '() (constantly #f))]
 				  [aiko (spawn-enemy 'boss-aiko
 									   +right-boss-x+ +right-boss-y+
-									   500 values '() (thunk #f))]
+									   500 values '() (constantly #f))]
 				  [bossinfo (blank-doremi-bossinfo)])
 			 (bossinfo-healthbars-set! bossinfo bars)
 			 (enm-extras-set! doremi bossinfo)
@@ -4769,7 +4772,7 @@
 		  [(17 18 25 26)
 		   (let* ([doremi (spawn-enemy 'boss-doremi
 									   +middle-boss-x+ +middle-boss-y+
-									   500 values '() (thunk #f))]
+									   500 values '() (constantly #f))]
 				  [bossinfo (blank-doremi-bossinfo)])
 			 (bossinfo-healthbars-set! bossinfo bars)
 			 (enm-extras-set! doremi bossinfo)
@@ -4781,7 +4784,7 @@
 		  [(19 20 27 28)
 		   (let* ([hazuki (spawn-enemy 'boss-hazuki
 									   +middle-boss-x+ +middle-boss-y+
-									   500 values '() (thunk #f))]
+									   500 values '() (constantly #f))]
 				  [bossinfo (blank-hazuki-bossinfo)])
 			 (bossinfo-healthbars-set! bossinfo bars)
 			 (enm-extras-set! hazuki bossinfo)
@@ -4793,7 +4796,7 @@
 		  [(21 22 29 30)
 		   (let* ([aiko (spawn-enemy 'boss-aiko
 									 +middle-boss-x+ +middle-boss-y+
-									 500 values '() (thunk #f))]
+									 500 values '() (constantly #f))]
 				  [bossinfo (blank-aiko-bossinfo)])
 			 (bossinfo-healthbars-set! bossinfo bars)
 			 (enm-extras-set! aiko bossinfo)

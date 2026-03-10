@@ -319,7 +319,7 @@
 	task)
   (spawn-subtask "shoot" shoot (constantly #t) task)
   (ch3-fairy-sin-move flip task enm))
-(define (ch3-w1-leader-on-death followers)
+(define (ch3-w1-leader-on-death followers _leader)
   (for-each
    (λ (f)
 	 (when (> (enm-health f) 0)
@@ -431,7 +431,7 @@
 						(iota 6))])
 	(spawn-enemy (enmtype big-fairy) -210.0 150.0 500
 				 (curry ch3-w1-leader-fairy #f) five-point-items
-				 (thunk (ch3-w1-leader-on-death followers))))
+				 (curry ch3-w1-leader-on-death followers)))
   (wait 400)
   (let ([followers (map (λ (i)
 						  (spawn-enemy
@@ -441,7 +441,7 @@
 						(iota 6))])
 	(spawn-enemy (enmtype big-fairy) 220.0 180.0 500
 				 (curry ch3-w1-leader-fairy #t) five-point-items
-				 (thunk (ch3-w1-leader-on-death followers))))
+				 (curry ch3-w1-leader-on-death followers)))
   (wait 240)
   (dotimes 4
 	(spawn-particle
@@ -610,8 +610,8 @@
   (set! current-chapter 4)
   (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500 midboss-control
 						  '((bomb . 1) (point . 30))
-						  (thunk #f))]
-		[bossinfo (blank-bossinfo "Harukaze Doremi" #xff7fbcff)])
+						  (constantly #f))]
+		[bossinfo (blank-doremi-bossinfo)])
 	(bossinfo-healthbars-set!
 	 bossinfo
 	 (immutable-vector (make-healthbar -1 0.0 #xf5f5f5ff #x808080ff)))
@@ -697,7 +697,7 @@
 			   (-20.0 . 0.0) (0.0 . 20.0)
 			   (-80.0 . -20.0) (-10.0 . 50.0)))
   (define yys-killed (box 0))
-  (define (on-death)
+  (define (on-death _yy)
 	(define next (1+ (unbox yys-killed)))
 	(set-box! yys-killed next)
 	(when (= next (* 2 (length xs)))
@@ -1027,10 +1027,10 @@
 	(wait 10))
   (let ([drops '((point . 15))]
 		[on-death (let ([killed (box 0)])
-					(thunk
-					 (set-box! killed (add1 (unbox killed)))
-					 (when (= (unbox killed) 3)
-					   (spawn-drops '((bomb-frag . 1)) 0.0 110.0))))])
+					(λ (_)
+					  (set-box! killed (add1 (unbox killed)))
+					  (when (= (unbox killed) 3)
+						(spawn-drops '((bomb-frag . 1)) 0.0 110.0))))])
 	(spawn-enemy (enmtype big-fairy) -90.0 -20.0 400 ch9-w2 drops on-death)
 	(spawn-enemy (enmtype big-fairy) 0.0 -30.0 400 ch9-w2 drops on-death)
 	(spawn-enemy (enmtype big-fairy) 90.0 -20.0 400 ch9-w2 drops on-death))
@@ -1312,8 +1312,8 @@
   (set! current-chapter 11)
   (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500 midboss2-control
 						  '((life . 1) (point . 50))
-						  (thunk #f))]
-		[bossinfo (blank-bossinfo "Harukaze Doremi" #xff7fbcff)])
+						  (constantly #f))]
+		[bossinfo (blank-doremi-bossinfo)])
 	(bossinfo-healthbars-set!
 	 bossinfo
 	 (immutable-vector (make-healthbar -1 0.0 #xf5f5f5ff #x808080ff)))

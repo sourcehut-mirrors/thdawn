@@ -147,7 +147,7 @@
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
 							60 enm))
 				 '()
-				 (thunk #f)))
+				 (constantly #f)))
   (define bossinfo (blank-hazuki-bossinfo))
   (set! current-chapter 18)
   (spawn-subtask "doremi leave"
@@ -187,7 +187,7 @@
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
 							60 enm))
 				 '()
-				 (thunk #f)))
+				 (constantly #f)))
   (define bossinfo (blank-aiko-bossinfo))
   (define keep-running?
 	(thunk
@@ -360,6 +360,35 @@
   (common-spell-postlude bossinfo aiko)
   (group-non2 task aiko))
 
+(define (non2-familiar-on-death dead-signalbox enm)
+  ;; invincible so on-death doesn't get spam-called, and we get rendered transparent
+  (enm-addflags enm (enmflags invincible nocollide))
+  (set-box! dead-signalbox #t)
+  ;; same as standard logic but doesn't delete the enemy
+  (spawn-enm-drops enm)
+  (raylib:play-sound (sebundle-enmdie sounds))
+  (spawn-particle
+   (particletype enmdeath)
+   (+ (enm-x enm) (centered-roll visual-rng 20.0))
+   (+ (enm-y enm) (centered-roll visual-rng 20.0))
+   30 '((start-radius . 2)
+		(end-radius . 85)))
+  #f)
+(define (non2-dodo-control dead-signalbox task enm)
+  (wait-until (thunk (unbox dead-signalbox)))
+  (wait 180)
+  (raylib:play-sound (sebundle-longcharge sounds))
+  (enm-health-set! enm 1000)
+  (enm-clrflags enm (enmflags invincible nocollide))
+  (set-box! dead-signalbox #f)
+  (non2-dodo-control dead-signalbox task enm))
+
+(define (non2-rere-control dead-signalbox task rere)
+  #f)
+
+(define (non2-mimi-control dead-signalbox task mimi)
+  #f)
+
 (define (group-non2 task aiko)
   (define bossinfo (blank-doremi-bossinfo))
   (define _ (wait 90))
@@ -369,14 +398,17 @@
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
 							60 enm))
 				 '()
-				 (thunk #f)))
+				 (constantly #f)))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) -100.0 -100.0 500
 				 (λ (task enm)
 				   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
 							60 enm))
 				 '()
-				 (thunk #f)))
+				 (constantly #f)))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health doremi))))
   (set! current-chapter 22)
   (enm-extras-set! doremi bossinfo)
   (enm-extras-set! hazuki (blank-hazuki-bossinfo))
@@ -389,11 +421,16 @@
   (bossinfo-redirect-damage-set!
    (enm-extras aiko) doremi)
   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
-  (declare-nonspell doremi 1800 1000)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi)))))
+  (declare-nonspell doremi 1800 5000)
+  (let* ([dodo-dead-signalbox (box #f)]
+		 [dodo (spawn-enemy
+				'dodo
+				0.0 200.0 200
+				(curry non2-dodo-control dodo-dead-signalbox)
+				default-drop
+				(curry non2-familiar-on-death dodo-dead-signalbox))])
+	(wait-while keep-running)
+	(delete-enemy dodo))
   (common-nonspell-postlude bossinfo)
   (group-sp2 task doremi hazuki aiko))
 
@@ -457,7 +494,7 @@
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
 							60 enm))
 				 '()
-				 (thunk #f)))
+				 (constantly #f)))
   (define bossinfo (blank-hazuki-bossinfo))
   (set! current-chapter 26)
   (spawn-subtask "doremi leave"
@@ -529,8 +566,7 @@
 			   (fbspeed 1.0 4.0)
 			   (fbang (flatan (fl- (enm-y hazuki) (enm-y enm))
 							  (fl- (enm-x hazuki) (enm-x enm))))
-			   (fbshootenm enm 'pellet-white 2 #f)))
-		 (void)))
+			   (fbshootenm enm 'pellet-white 2 #f)))))
 	  (enm-addflags (enmflags aura-red)))
   (wait-while keep-running)
   (common-spell-postlude bossinfo hazuki)
@@ -589,7 +625,7 @@
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
 							60 enm))
 				 '()
-				 (thunk #f)))
+				 (constantly #f)))
   (define bossinfo (blank-aiko-bossinfo))
   (define (keep-running?)
 	(and (positive? (bossinfo-remaining-timer bossinfo))
@@ -1006,14 +1042,14 @@
 				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
 							60 enm))
 				 '()
-				 (thunk #f)))
+				 (constantly #f)))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) -100.0 -100.0 500
 				 (λ (task enm)
 				   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
 							60 enm))
 				 '()
-				 (thunk #f)))
+				 (constantly #f)))
   (set! current-chapter 30)
   (enm-extras-set! doremi bossinfo)
   (enm-extras-set! hazuki (blank-hazuki-bossinfo))

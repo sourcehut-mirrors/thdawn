@@ -11,9 +11,9 @@
 
 
 
-+-----------------+
-| 2. Installation |
-+-----------------+
++-------------------------------+
+| 2. Installation and Execution |
++-------------------------------+
 
 Extract this ZIP archive to any place of your choosing.
 
@@ -27,6 +27,9 @@ Starting the game depends on your platform:
 For other platforms, the game may still build and run if Chez Scheme and Raylib are ported
 to your platform. Refer to the README.md in the source code distribution to compile the
 game for your platform. Reports of success are welcome!
+
+Settings are read from "config.dat". If your settings somehow get messed up and you can't
+fix it in game, delete that file and restart the game.
 
 +-----------------+
 | 3. Removal      |
@@ -43,7 +46,7 @@ If you wish to keep your play data (spell histories, high scores, etc.), back up
 | 4. Questions    |
 +-----------------+
 
-Questions and constructive feedback are always welcome.
+Questions, bug reports, and constructive feedback are always welcome.
 
 You can see and reply to messages others have sent here:
 https://lists.sr.ht/~williewillus/games-discuss
