@@ -4211,13 +4211,14 @@
 							   width0)
 						   (if (= -1 cur-atk-max-health)
 							   (/ remaining-timer (bossinfo-total-timer bossinfo))
-							   (/ (enm-health enm) cur-atk-max-health))))])])
+							   (/ (enm-health enm) cur-atk-max-health))))])]
+			 [alpha (if (fl< player-y 20.0) 128 255)])
 		(raylib:draw-rectangle-gradient-v
 		 x
 		 (+ +playfield-render-offset-y+ +playfield-min-y+ 1)
 		 width 5
-		 (healthbar-top-color hb)
-		 (healthbar-bottom-color hb))
+		 (override-alpha (healthbar-top-color hb) alpha)
+		 (override-alpha (healthbar-bottom-color hb) alpha))
 		(loop (+ x (healthbar-width hb) (healthbar-post-padding hb))
 			  (add1 i)))))
   (unless (fxzero? remaining-timer)
@@ -4228,10 +4229,14 @@
 						 (fx2fl (- +playfield-max-render-x+ 18))
 						 (fx2fl (- +playfield-min-render-y+ 0))
 						 20.0 0.0
-						 (cond
-						  [(fx<= remaining-timer 300) #xf08080ff]
-						  [(fx<= remaining-timer 600) #xffb6c1ff]
-						  [else -1]))
+						 (fxlogior
+						  (cond
+						   [(fx<= remaining-timer 300) #xf0808000]
+						   [(fx<= remaining-timer 600) #xffb6c100]
+						   [else #xffffff00])
+						  (if (and (fl> player-x 110.0)
+								   (fl< player-y 80.0))
+							  #x80 #xff)))
 	(when spname
 	  (let*-values ([(bonus) (calculate-spell-bonus bossinfo)]
 					[(history) (vnth (assqdr 'spell-history play-data) spid)]
