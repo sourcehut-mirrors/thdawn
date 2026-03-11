@@ -739,8 +739,8 @@
 (define +max-focus-frames+ 10)
 (define visual-rng (make-pseudo-random-generator))
 (define (centered-roll rng radius)
-  (- (* (roll rng) 2 radius)
-	 radius))
+  (fl- (fl* (roll rng) 2.0 radius)
+	   radius))
 (define (roll-bool rng)
   (fxzero? (roll rng 2)))
 (define (roll-range rng min max) ;; both bounds inclusive
@@ -2504,18 +2504,21 @@
 	(when idx
 	  (vector-set! live-enm idx #f))))
 
+(define (enemy-death-effects enm)
+  (raylib:play-sound (sebundle-enmdie sounds))
+  (spawn-particle
+   (particletype enmdeath)
+   (+ (enm-x enm) (centered-roll visual-rng 20.0))
+   (+ (enm-y enm) (centered-roll visual-rng 20.0))
+   30 '((start-radius . 2)
+		(end-radius . 85))))
+
 (define (kill-enemy enm)
   (let ([do-standard-logic (or (not (enm-on-death enm))
 							   ((enm-on-death enm) enm))])
 	(when do-standard-logic
 	  (spawn-enm-drops enm)
-	  (raylib:play-sound (sebundle-enmdie sounds))
-	  (spawn-particle
-	   (particletype enmdeath)
-	   (+ (enm-x enm) (centered-roll visual-rng 20.0))
-	   (+ (enm-y enm) (centered-roll visual-rng 20.0))
-	   30 '((start-radius . 2)
-			(end-radius . 85)))
+	  (enemy-death-effects enm)
 	  (delete-enemy enm))))
 
 (define damage-enemy
@@ -2916,6 +2919,24 @@
 		  ([yellow-fairy red-fairy green-fairy blue-fairy
 						 medium-red-fairy medium-blue-fairy big-fairy
 						 dodo rere mimi]
+		   (let ([t (fx+ frames (enm-time-spawned enm))]
+				 [aura-sprite
+				  (cond
+				   [(enm-hasflag? enm (enmflag aura-red))
+					'aura-red]
+				   [(enm-hasflag? enm (enmflag aura-green))
+					'aura-green]
+				   [(enm-hasflag? enm (enmflag aura-blue))
+					'aura-blue]
+				   [(enm-hasflag? enm (enmflag aura-magenta))
+					'aura-magenta]
+				   [else #f])])
+			 (when aura-sprite
+			   (draw-sprite-with-scale-rotation
+				textures aura-sprite
+				(fxmod (fx* 2 t) 360)
+				(fl+ 1.2 0.2 (fl* 0.2 (flsin (/ t 10.0))))
+				render-x render-y -1)))
 		   (cond
 			[(fl< (abs dx) 5.0)
 			 (let* ([fwd-sprites

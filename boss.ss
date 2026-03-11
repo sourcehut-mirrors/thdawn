@@ -366,28 +366,117 @@
   (set-box! dead-signalbox #t)
   ;; same as standard logic but doesn't delete the enemy
   (spawn-enm-drops enm)
-  (raylib:play-sound (sebundle-enmdie sounds))
-  (spawn-particle
-   (particletype enmdeath)
-   (+ (enm-x enm) (centered-roll visual-rng 20.0))
-   (+ (enm-y enm) (centered-roll visual-rng 20.0))
-   30 '((start-radius . 2)
-		(end-radius . 85)))
+  (enemy-death-effects enm)
   #f)
+
 (define (non2-dodo-control dead-signalbox task enm)
-  (wait-until (thunk (unbox dead-signalbox)))
-  (wait 180)
-  (raylib:play-sound (sebundle-longcharge sounds))
-  (enm-health-set! enm 1000)
-  (enm-clrflags enm (enmflags invincible nocollide))
-  (set-box! dead-signalbox #f)
-  (non2-dodo-control dead-signalbox task enm))
+  (define (subtask)
+	(spawn-subtask "sub"
+	  (λ (task)
+		(interval-loop 60
+		  (-> (fb)
+			  (fbcount 4 3)
+			  (fbspeed 4.0 5.0)
+			  (fbang 0.0 25.0)
+			  (fbshootenm enm 'butterfly-red 5 (sebundle-shoot0 sounds)))
+		  (-> (fb)
+			  (fbcount 3 2)
+			  (fbspeed 3.5 4.0)
+			  (fbang 0.0 20.0)
+			  (fbshootenm enm 'butterfly-magenta 5 #f))))
+	  (thunk (not (unbox dead-signalbox)))
+	  task))
+  (enm-superarmor-set! enm 85)
+  (wait 25)
+  (raylib:play-sound (sebundle-opshow sounds))
+  (ease-to ease-in-out-quad (enm-x enm) (fl+ 80.0 (enm-y enm)) 60 enm)
+  (let loop ([st (subtask)])
+	(wait-until (thunk (task-dead st)))
+	(wait 180)
+	(raylib:play-sound (sebundle-opshow sounds))
+	(enm-health-set! enm 1000)
+	(enm-clrflags enm (enmflags invincible nocollide))
+	(set-box! dead-signalbox #f)
+	(loop (subtask))))
 
-(define (non2-rere-control dead-signalbox task rere)
-  #f)
+(define (non2-rere-control dead-signalbox task enm)
+  (define (subtask)
+	(spawn-subtask "sub"
+	  (λ (task)
+		(interval-loop 60
+		  (-> (cb)
+			  (cbcount 8)
+			  (cbspeed 2.0)
+			  (cbshootenm enm 'heart-orange 5 (sebundle-shoot0 sounds)
+						  (λ (facing speed blt)
+							(linear-step-decelerate facing speed -0.05 blt)
+							(wait 30)
+							(raylib:play-sound (sebundle-bell sounds))
+							(linear-step-accelerate-forever
+							 facing 0.0 0.08 3.0 blt))))
+		  (-> (cb)
+			  (cbcount 16)
+			  (cbspeed 2.0)
+			  (cbshootenm
+			   enm 'small-ball-yellow 5 (sebundle-shoot0 sounds)
+			   (λ (facing speed blt)
+				 (linear-step-decelerate facing speed -0.05 blt)
+				 (wait 30)
+				 (raylib:play-sound (sebundle-bell sounds))
+				 (linear-step-accelerate-forever
+				  (facing-player (bullet-x blt) (bullet-y blt))
+				  0.0 0.08 3.0 blt))))))
+	  (thunk (not (unbox dead-signalbox)))
+	  task))
+  (enm-superarmor-set! enm 60)
+  (raylib:play-sound (sebundle-opshow sounds))
+  (ease-to ease-in-out-quad (enm-x enm) (fl+ 80.0 (enm-y enm)) 60 enm)
+  (let loop ([st (subtask)])
+	(wait-until (thunk (task-dead st)))
+	(wait 180)
+	(raylib:play-sound (sebundle-opshow sounds))
+	(enm-health-set! enm 1000)
+	(enm-clrflags enm (enmflags invincible nocollide))
+	(set-box! dead-signalbox #f)
+	(loop (subtask))))
 
-(define (non2-mimi-control dead-signalbox task mimi)
-  #f)
+(define (non2-mimi-control dead-signalbox task enm)
+  (define (subtask first)
+	;; TODO: loop subtask automatically after a timeout
+	(define delay (if first 120 60))
+	(raylib:play-sound (sebundle-laser sounds))
+	(spawn-laser 'fixed-laser-blue
+				 (enm-x enm) (enm-y enm)
+				 (facing-player (enm-x enm) (enm-y enm))
+				 (fx2fl +playfield-height+)
+				 5.0 20 delay
+				 (λ (blt)
+				   ;; TODO follow player and despawn timer
+				   (loop-until (unbox dead-signalbox))))
+	(spawn-subtask "sub"
+	  (λ (task)
+		(wait delay)
+		(interval-loop 30
+		  (-> (fb)
+			  (fbspeed 3.2)
+			  (fbcount 20)
+			  (fbabsolute-aim)
+			  (fbang (fl+ (centered-roll game-rng 2.5) (todeg -hpi)) 9.0)
+			  (fbshootenm enm 'small-star-cyan 5 #f))))
+	  (thunk (not (unbox dead-signalbox)))
+	  task))
+  (enm-superarmor-set! enm 70)
+  (wait 10)
+  (raylib:play-sound (sebundle-opshow sounds))
+  (ease-to ease-in-out-quad (enm-x enm) (fl+ 80.0 (enm-y enm)) 60 enm)
+  (let loop ([st (subtask #t)])
+	(wait-until (thunk (task-dead st)))
+	(wait 180)
+	(raylib:play-sound (sebundle-opshow sounds))
+	(enm-health-set! enm 1000)
+	(enm-clrflags enm (enmflags invincible nocollide))
+	(set-box! dead-signalbox #f)
+	(loop (subtask #f))))
 
 (define (group-non2 task aiko)
   (define bossinfo (blank-doremi-bossinfo))
@@ -421,16 +510,37 @@
   (bossinfo-redirect-damage-set!
    (enm-extras aiko) doremi)
   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
-  (declare-nonspell doremi 1800 5000)
+  (declare-nonspell doremi 1800 8000)
   (let* ([dodo-dead-signalbox (box #f)]
-		 [dodo (spawn-enemy
-				'dodo
-				0.0 200.0 200
-				(curry non2-dodo-control dodo-dead-signalbox)
-				default-drop
-				(curry non2-familiar-on-death dodo-dead-signalbox))])
+		 [dodo (-> (spawn-enemy
+					'dodo
+					(enm-x doremi) (enm-y doremi) 200
+					(curry non2-dodo-control dodo-dead-signalbox)
+					default-drop
+					(curry non2-familiar-on-death dodo-dead-signalbox))
+				   (enm-addflags (enmflags aura-red)))]
+		 [rere-dead-signalbox (box #f)]
+		 [rere (-> (spawn-enemy
+					'rere
+					(enm-x hazuki) (enm-y hazuki) 200
+					(curry non2-rere-control rere-dead-signalbox)
+					default-drop
+					(curry non2-familiar-on-death rere-dead-signalbox))
+				   (enm-addflags (enmflags aura-magenta)))]
+		 [mimi-dead-signalbox (box #f)]
+		 [mimi (-> (spawn-enemy
+					'mimi
+					(enm-x aiko) (enm-y aiko) 200
+					(curry non2-mimi-control mimi-dead-signalbox)
+					default-drop
+					(curry non2-familiar-on-death mimi-dead-signalbox))
+				   (enm-addflags (enmflags aura-blue)))])
 	(wait-while keep-running)
-	(delete-enemy dodo))
+	(for-each
+	 (λ (e)
+	   (enemy-death-effects e)
+	   (delete-enemy e))
+	 (list dodo rere mimi)))
   (common-nonspell-postlude bossinfo)
   (group-sp2 task doremi hazuki aiko))
 
