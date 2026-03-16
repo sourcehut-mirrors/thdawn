@@ -1535,7 +1535,7 @@
 	(define alpha (eround (lerp 0 255 progress)))
 	(define title
 	  (case type
-		[(normal) "A Moment's Reprieve"]
+		[(normal) "Taking A Break..."]
 		[(gameclear) "All Clear!!"]
 		[(gameover) "Game Over..."]
 		[(replay) "Replay Paused"]
@@ -2224,7 +2224,7 @@
 							6000 500 3000000 'group std std-fail)
 	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""
 							6000 500 3000000 'doremi std std-fail)
-	 (make-spell-descriptor "Paranormal Sign \"Ah...G-...G-Ghost!\""
+	 (make-spell-descriptor "Paranormal Sign \"Ghostbuster Hazuki\""
 							3000 9000 3000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Athlete Sign \"Aiko's Pinball Penalty Shootout\""
 							2400 25000 3000000 'aiko
@@ -2524,17 +2524,21 @@
 (define damage-enemy
   (case-lambda
 	[(enm amount)
-	 (damage-enemy enm amount #t)]
+	 (damage-enemy enm amount #t #f)]
 	[(enm amount playsound)
+	 (damage-enemy enm amount playsound #f)]
+	[(enm amount playsound ignore-armor)
 	 (set! current-score (+ current-score 20))
 	 (if (enm-invincible? enm)
 		 (when playsound
 		   (raylib:play-sound (sebundle-damageresist sounds)))
-		 (let* ([superarmor (or (positive? (enm-superarmor enm))
-								(and (is-boss? enm)
-									 (let ([o (bossinfo-redirect-damage
-											   (enm-extras enm))])
-									   (and o (positive? (enm-superarmor o))))))]
+		 (let* ([superarmor (and
+							 (not ignore-armor)
+							 (or (positive? (enm-superarmor enm))
+								 (and (is-boss? enm)
+									  (let ([o (bossinfo-redirect-damage
+												(enm-extras enm))])
+										(and o (positive? (enm-superarmor o)))))))]
 				[amount (cond
 						 [superarmor
 						  (max 1 (eround (* 0.1 amount)))]
@@ -2915,7 +2919,7 @@
 				(fxmod (fx* 2 t) 360)
 				(fl+ 1.2 0.2 (fl* 0.2 (flsin (/ t 10.0))))
 				render-x render-y -1))
-			 (draw-sprite textures sprite render-x render-y -1)))
+			 (draw-sprite textures sprite render-x render-y tint)))
 		  ([yellow-fairy red-fairy green-fairy blue-fairy
 						 medium-red-fairy medium-blue-fairy big-fairy
 						 dodo rere mimi]

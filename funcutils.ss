@@ -3,7 +3,7 @@
   (export constantly vector-for-each-truthy for-each-indexed
 		  dotimes curry vector-for-all vector-for-each-indexed
 		  vector-find vector-find-index vector-index vector-popcnt thunk
-		  -> ->> some-> some->>
+		  -> ->> some-> some->> vector-shuffle
 		  vector-add vector-pop vector-truncate when-let if-let assqdr)
   (import (chezscheme))
 
@@ -188,4 +188,15 @@
 	(define result (make-vector new-length))
 	(vector-copy! v 0 result 0 new-length)
 	result)
+
+  (define (vector-shuffle v rng)
+	(define copy (vector-copy v))
+	(define n (vector-length copy))
+	(do [(i 1 (fx1+ i))]
+		[(fx= i n)]
+	  (let ([j (pseudo-random-generator-next! rng i)]
+			[tmp (vector-ref copy i)])
+		(vector-set! copy i (vector-ref copy j))
+		(vector-set! copy j tmp)))
+	copy)
   )

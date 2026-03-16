@@ -460,8 +460,7 @@
 				 (λ (blt)
 				   (define ang-to (facing-player (bullet-x blt) (bullet-y blt)))
 				   (let ([turn-dir
-						  (if (fl< ang-to start-ang-to) -1.0 1.0)
-						  #;(if (fl< -100.0 player-x 30.0) -1.0 1.0)])
+						  (if (fl< ang-to start-ang-to) -1.0 1.0)])
 					 (interval-loop-while 15 (not (stop-pred))
 					   (bullet-facing-set!
 						blt
@@ -642,6 +641,101 @@
   (common-nonspell-postlude bossinfo)
   (hazuki-sp2 task hazuki))
 
+(define (hazuki-sp2-wisp-on-death hazuki enm)
+  ;; don't run when being cleared by the attack ending
+  (when (fxpositive? (enm-health hazuki))
+	(-> (cb)
+		(cbcount 20)
+		(cbspeed 3.5)
+		(cbshootenm enm 'butterfly-orange 5
+					(sebundle-bell sounds)))
+	(-> (cb)
+		(cbcount 12)
+		(cbspeed 3.0)
+		(cbshoot (enm-x enm) (enm-y enm)
+		  (λ (layer in-layer speed facing)
+			(define-values (x y) (dist-away enm facing 20.0))
+			(spawn-bullet 'small-ball-yellow x y 5
+						  (curry linear-step-forever
+								 (fl+ facing pi) speed)))))
+	(damage-enemy hazuki 800 #t #t))
+  )
+
+(define (hazuki-sp2-wave task hazuki)
+  (define start-time frames)
+  (define (get-point i)
+	(define ang (fl+ (fl* (fl/ tau 5.0) (fx2fl i))
+					 (torad -50.0)
+					 (torad (centered-roll game-rng 5.0))))
+	(define dist
+	  (case i
+		[(1 2 3) (fl+ 80.0 (fl* 120.0 (roll game-rng)))]
+		[else (fl+ 80.0 (fl* 100.0 (roll game-rng)))]))
+	(dist-away hazuki ang dist))
+  (define on-death (curry hazuki-sp2-wisp-on-death hazuki))
+  (define enms
+	(let loop ([acc '()]
+			   [i 0])
+	  (if (= i 5)
+		  acc
+		  (let-values ([(x y) (get-point i)])
+			(wait 20)
+			(raylib:play-sound (sebundle-opshow sounds))
+			(loop 
+			 (cons
+			  (-> (spawn-enemy
+				   (enmtype red-wisp) (enm-x hazuki) (enm-y hazuki) 350
+				   (λ (task enm)
+					 (ease-to ease-in-out-quad x y 45 enm)
+					 (loop-forever))
+				   default-drop on-death)
+				  (enm-addflags (enmflags aura-red)))
+			  acc)
+			 (add1 i))))))
+  (define (all-dead)
+	(for-all (λ (e) (fxnonpositive? (enm-health e)))
+			 enms))
+  (define killer-task
+	(spawn-subtask "kill"
+	  (λ (task)
+		(wait-until (thunk (fx>= (fx- frames start-time) 300)))
+		(for-each
+		 (λ (e)
+		   (when (fxpositive? (enm-health e))
+			 (spawn-particle (particletype circle-hint-opaque)
+							 (enm-x e) (enm-y e) 40
+							 '((color . #x8b008ba0)
+							   (r1 . 100.0)
+							   (r2 . 0.0)))))
+		 enms)
+		(raylib:play-sound (sebundle-longcharge sounds))
+		(for-each
+		 (λ (e)
+		   (when (fxpositive? (enm-health e))
+			 (spawn-bullet 'arrowhead-red (enm-x hazuki) (enm-y hazuki) 5
+						   (λ (blt)
+							 (define start-time frames)
+							 (define facing (flatan (fl- (enm-y e) (enm-y hazuki))
+													(fl- (enm-x e) (enm-x hazuki))))
+							 (bullet-facing-set! blt facing)
+							 (interval-loop 1
+							   (linear-step facing 3.2 blt)
+							   (when (fxzero? (fxmod (fx- frames start-time) 5))
+								 (spawn-bullet 'small-ball-magenta
+											   (bullet-x blt) (bullet-y blt) 8
+											   (λ (blt)
+												 (define facing
+												   (fl* tau (roll game-rng)))
+												 (dotimes 90
+												   (linear-step facing 0.1 blt)
+												   (yield))
+												 (cancel-bullet blt)))))))))
+		 enms))
+	  (thunk (not (all-dead)))
+	  task))
+  (wait-until (thunk (task-dead killer-task)))
+  )
+
 (define (hazuki-sp2 task hazuki)
   (define bossinfo (enm-extras hazuki))
   (define (keep-running)
@@ -649,53 +743,14 @@
 		 (positive? (enm-health hazuki))))
   (set! current-chapter 27)
   (declare-spell hazuki 8)
-  ;; (-> (spawn-enemy (enmtype red-wisp) 0.0 200.0 500
-  ;; 				   (λ (_task _enm) (void)))
-  ;; 	  (enm-addflags (enmflags aura-red)))
-  ;; (wait 30)
-  ;; (-> (spawn-enemy (enmtype blue-wisp) 50.0 200.0 500
-  ;; 				   (λ (_task _enm) (void)))
-  ;; 	  (enm-addflags (enmflags aura-blue)))
-  ;; (wait 30)
-  ;; (-> (spawn-enemy (enmtype green-wisp) 100.0 200.0 500
-  ;; 				   (λ (_task _enm) (void)))
-  ;; 	  (enm-addflags (enmflags aura-green)))
-  ;; (wait 30)
-  ;; (-> (spawn-enemy (enmtype yellow-wisp) 150.0 200.0 500
-  ;; 				   (λ (_task _enm) (void)))
-  ;; 	  (enm-addflags (enmflags aura-magenta)))
+  (enm-superarmor-set! hazuki (bossinfo-remaining-timer bossinfo))
   (wait 45)
-  (ease-to ease-out-quad 0.0 215.0 45 hazuki)
-  (raylib:play-sound (sebundle-laugh sounds))
-  ;; friendly fire. hardcoded to the bullet types fired by the wisps.
-  (spawn-subtask "damager"
+  (ease-to ease-out-quad 0.0 179.0 45 hazuki)
+  (spawn-subtask "main"
 	(λ (task)
-	  (let-values ([(x y w h) (enm-collision-box hazuki)])
-		(loop-forever
-		 (vector-for-each
-		  (λ (blt)
-			(when (and blt
-					   (memq (bullet-family (bullet-type blt)) '(pellet small-ball))
-					   (check-collision-circle-rec
-						(bullet-x blt) (bullet-y blt)
-						(bullet-hit-radius (bullet-type blt))
-						x y w h))
-			  (enm-health-set! hazuki (- (enm-health hazuki) 100))
-			  (cancel-bullet blt)))
-		  live-bullets))))
+	  (interval-loop 120
+		(hazuki-sp2-wave task hazuki)))
 	keep-running task)
-  (-> (spawn-enemy
-	   (enmtype red-wisp) -100.0 200.0 500
-	   (λ (task enm)
-		 (interval-loop 5
-		   (-> (fb)
-			   (fbabsolute-aim)
-			   (fbcount 1 5)
-			   (fbspeed 1.0 4.0)
-			   (fbang (flatan (fl- (enm-y hazuki) (enm-y enm))
-							  (fl- (enm-x hazuki) (enm-x enm))))
-			   (fbshootenm enm 'pellet-white 2 #f)))))
-	  (enm-addflags (enmflags aura-red)))
   (wait-while keep-running)
   (common-spell-postlude bossinfo hazuki)
   (aiko-non2 task hazuki))
