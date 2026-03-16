@@ -18,8 +18,19 @@ As in, when you work pick something off the list and get at it.
 * doremi portrait
 * hazuki portrait
 * aiko portrait
-* implement hazuki sp2
-* implement doremi sp2
+* group non1
+* group sp1
+* doremi non1
+* doremi sp1
+* hazuki non1
+* hazuki sp1
+* group sp2 (fairy kaleidoscope)
+* doremi non2
+* doremi sp2
+* hazuki non2
+* hazuki sp2 (ghostbuster hazuki)
+* group sp3 (survival)
+* group sp4 (final)
 * go through all bullet types and appropriately set their preimg sizes
 * freely noodle around with flower patterns for doremi/hazuki nons and spells
 * actually fix the spell circle following to not be Bad tm

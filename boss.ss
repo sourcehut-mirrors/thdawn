@@ -641,25 +641,40 @@
   (common-nonspell-postlude bossinfo)
   (hazuki-sp2 task hazuki))
 
-(define (hazuki-sp2-wisp-on-death hazuki enm)
+(define (hazuki-sp2-wisp-on-death dont-damage-hazuki-box hazuki enm)
   ;; don't run when being cleared by the attack ending
   (when (fxpositive? (enm-health hazuki))
 	(-> (cb)
+		(cbabsolute-aim)
+		(cbang (torad (fl* 360.0 (roll game-rng))))
 		(cbcount 20)
-		(cbspeed 3.5)
-		(cbshootenm enm 'butterfly-orange 5
-					(sebundle-bell sounds)))
-	(-> (cb)
-		(cbcount 12)
-		(cbspeed 3.0)
+		(cbspeed 1.5)
 		(cbshoot (enm-x enm) (enm-y enm)
 		  (λ (layer in-layer speed facing)
-			(define-values (x y) (dist-away enm facing 20.0))
-			(spawn-bullet 'small-ball-yellow x y 5
-						  (curry linear-step-forever
-								 (fl+ facing pi) speed)))))
-	(damage-enemy hazuki 800 #t #t))
-  )
+			(-> (spawn-bullet
+				 'butterfly-orange
+				 (enm-x enm) (enm-y enm) 5
+				 (λ (blt)
+				   (let loop ([facing facing]
+							  [i 0])
+					 (bullet-facing-set! blt facing)
+					 (if (< i 120)
+						 (begin
+						   (linear-step facing speed blt)
+						   (yield)
+						   (loop (fl+ facing (torad 1.8))
+								 (add1 i)))
+						 (linear-step-forever facing speed blt)))))
+				(bullet-facing-set! facing)))))
+	(-> (cb)
+		(cbcount 20)
+		(cbspeed 3.5)
+		(cbshootenm enm 'small-ball-white 5
+					(sebundle-bell sounds)))
+	
+	;; TODO: this is awful lol
+	(unless (unbox dont-damage-hazuki-box)
+	  (damage-enemy hazuki 800 #t #t))))
 
 (define (hazuki-sp2-wave task hazuki)
   (define start-time frames)
@@ -672,65 +687,115 @@
 		[(1 2 3) (fl+ 80.0 (fl* 120.0 (roll game-rng)))]
 		[else (fl+ 80.0 (fl* 100.0 (roll game-rng)))]))
 	(dist-away hazuki ang dist))
-  (define on-death (curry hazuki-sp2-wisp-on-death hazuki))
-  (define enms
+  (define dont-damage-hazuki-box)
+  (define enms-and-boxes
 	(let loop ([acc '()]
 			   [i 0])
 	  (if (= i 5)
-		  acc
-		  (let-values ([(x y) (get-point i)])
+		  (reverse! acc)
+		  (let-values ([(x y) (get-point i)]
+					   [(dont-damage-hazuki-box) (box #f)])
 			(wait 20)
 			(raylib:play-sound (sebundle-opshow sounds))
 			(loop 
 			 (cons
-			  (-> (spawn-enemy
-				   (enmtype red-wisp) (enm-x hazuki) (enm-y hazuki) 350
-				   (λ (task enm)
-					 (ease-to ease-in-out-quad x y 45 enm)
-					 (loop-forever))
-				   default-drop on-death)
-				  (enm-addflags (enmflags aura-red)))
+			  (cons (-> (spawn-enemy
+						 (enmtype red-wisp) (enm-x hazuki) (enm-y hazuki) 350
+						 (λ (task enm)
+						   (ease-to ease-in-out-quad x y 45 enm)
+						   (loop-forever))
+						 default-drop (curry hazuki-sp2-wisp-on-death
+											 dont-damage-hazuki-box hazuki))
+						(enm-addflags (enmflags aura-red)))
+					dont-damage-hazuki-box)
 			  acc)
 			 (add1 i))))))
   (define (all-dead)
-	(for-all (λ (e) (fxnonpositive? (enm-health e)))
-			 enms))
+	(for-all (λ (pair) (fxnonpositive? (enm-health (car pair))))
+			 enms-and-boxes))
   (define killer-task
 	(spawn-subtask "kill"
 	  (λ (task)
 		(wait-until (thunk (fx>= (fx- frames start-time) 300)))
 		(for-each
-		 (λ (e)
+		 (λ (pair)
+		   (define e (car pair))
+		   (wait 20)
 		   (when (fxpositive? (enm-health e))
+			 (raylib:play-sound (sebundle-shortcharge sounds))
 			 (spawn-particle (particletype circle-hint-opaque)
-							 (enm-x e) (enm-y e) 40
+							 (enm-x e) (enm-y e) 30
 							 '((color . #x8b008ba0)
 							   (r1 . 100.0)
-							   (r2 . 0.0)))))
-		 enms)
+							   (r2 . 20.0)))))
+		 enms-and-boxes)
 		(raylib:play-sound (sebundle-longcharge sounds))
 		(for-each
-		 (λ (e)
+		 (λ (pair)
+		   (define e (car pair))
+		   (define dont-damage-hazuki-box (cdr pair))
+		   (define facing (flatan (fl- (enm-y e) (enm-y hazuki))
+								  (fl- (enm-x e) (enm-x hazuki))))
 		   (when (fxpositive? (enm-health e))
-			 (spawn-bullet 'arrowhead-red (enm-x hazuki) (enm-y hazuki) 5
-						   (λ (blt)
-							 (define start-time frames)
-							 (define facing (flatan (fl- (enm-y e) (enm-y hazuki))
-													(fl- (enm-x e) (enm-x hazuki))))
-							 (bullet-facing-set! blt facing)
-							 (interval-loop 1
-							   (linear-step facing 3.2 blt)
-							   (when (fxzero? (fxmod (fx- frames start-time) 5))
-								 (spawn-bullet 'small-ball-magenta
-											   (bullet-x blt) (bullet-y blt) 8
-											   (λ (blt)
-												 (define facing
-												   (fl* tau (roll game-rng)))
-												 (dotimes 90
-												   (linear-step facing 0.1 blt)
-												   (yield))
-												 (cancel-bullet blt)))))))))
-		 enms))
+			 (wait 20)
+			 (-> (spawn-bullet
+				  'glow-orb-red (enm-x hazuki) (enm-y hazuki) 5
+				  (λ (blt)
+					;; TODO: pass in the task handle
+					;; to bullet control funcs so they can use subtasks
+					(define start-time frames)
+					(interval-loop 1
+					  (linear-step facing 6.0 blt)
+					  (let-values ([(x y w h) (enm-hurtbox e)])
+						(when (and
+							   (fxpositive? (enm-health e))
+							   (check-collision-circle-rec
+								(bullet-x blt) (bullet-y blt)
+								(bullet-hit-radius (bullet-type blt))
+								x y w h))
+						  (dotimes 40
+							(spawn-bullet
+							 'pellet-blue
+							 (enm-x e) (enm-y e) 10
+							 (λ (blt)
+							   (define facing (fl* tau (roll game-rng)))
+							   (define speed (roll-flrange
+											  game-rng 1.8 3.0))
+							   (linear-step-decelerate-to
+								facing speed -0.05 0.9 blt)
+							   (linear-step-forever facing 0.9 blt))))
+						  (-> (fb)
+							  (fbcount 5 3)
+							  (fbspeed 4.0 5.0)
+							  (fbang 0.0 10.0)
+							  (fbshootenm e 'small-ball-red 5 #f))
+						  #;(-> (cb)
+							  (cbcount 17)
+							  (cbspeed 5.0)
+							  (cbshoot (enm-x e) (enm-y e)
+								(λ (layer in-layer speed facing)
+								  (define-values (x y) (dist-away e facing 40.0))
+								  (spawn-bullet
+								   'small-ball-red x y 5
+								   (λ (blt)
+									 (linear-step-accelerate (fl+ facing pi) 0.0
+															 0.05 speed blt)
+									 (linear-step-forever (fl+ facing pi) speed blt))))))
+						  (set-box! dont-damage-hazuki-box #t)
+						  (kill-enemy e)
+						  (cancel-bullet blt)))
+					  (when (fxzero? (fxmod (fx- frames start-time) 5))
+						(spawn-bullet 'small-ball-magenta
+									  (bullet-x blt) (bullet-y blt) 8
+									  (λ (blt)
+										(define facing
+										  (fl* tau (roll game-rng)))
+										(dotimes 90
+										  (linear-step facing 0.1 blt)
+										  (yield))
+										(cancel-bullet blt)))))))
+				 (bullet-facing-set! facing))))
+		 enms-and-boxes))
 	  (thunk (not (all-dead)))
 	  task))
   (wait-until (thunk (task-dead killer-task)))

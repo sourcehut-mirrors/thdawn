@@ -745,6 +745,8 @@
   (fxzero? (roll rng 2)))
 (define (roll-range rng min max) ;; both bounds inclusive
   (fx+ min (roll rng (fx1+ (fx- max min)))))
+(define (roll-flrange rng min max)
+  (fl+ min (fl* (roll rng) (fl- max min))))
 (define chapter-select 0)
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
@@ -2514,6 +2516,8 @@
 		(end-radius . 85))))
 
 (define (kill-enemy enm)
+  (when (fxpositive? (enm-health enm))
+	(enm-health-set! enm 0))
   (let ([do-standard-logic (or (not (enm-on-death enm))
 							   ((enm-on-death enm) enm))])
 	(when do-standard-logic
@@ -3045,6 +3049,8 @@
 ;; Returns once the bullet reaches stationary speed
 ;; acceleration should be negative
 (define (linear-step-decelerate facing speed accel blt)
+  (linear-step-decelerate-to facing speed accel 0.0 blt))
+(define (linear-step-decelerate-to facing speed accel min-speed blt)
   (bullet-facing-set! blt facing)
   (let loop ([v speed])
 	(linear-step-separate (fl* v (flcos facing))
@@ -3052,7 +3058,7 @@
 						  blt)
 	(yield)
 	(let ([next-v (fl+ v accel)])
-	  (when (flpositive? next-v)
+	  (when (fl> next-v min-speed)
 		(loop next-v)))))
 
 ;; Returns once the bullet reaches max-speed
