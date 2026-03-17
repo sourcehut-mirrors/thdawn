@@ -65,25 +65,26 @@
 	 (λ (xoff yoff)
 	   (dotimes 10
 		 (spawn-bullet 'pellet-blue (- (enm-x enm) 40.0) (+ yoff (enm-y enm)) 5
-					   (λ (blt)
+					   (λ (task blt)
 						 (wait-until (thunk (>= (- frames start-time) 350)))
-						 (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
+						 (linear-step-forever (* tau (roll game-rng)) 2.0 task blt))))
 	   (unless (flzero? xoff)
 		 (dotimes 10
 		   (spawn-bullet 'pellet-blue (+ xoff (enm-x enm) -40.0)
 						 (+ yoff (enm-y enm)) 5
-						 (λ (blt)
+						 (λ (task blt)
 						   (wait-until (thunk (>= (- frames start-time) 350)))
-						   (linear-step-forever (* tau (roll game-rng)) 2.0 blt)))))
+						   (linear-step-forever (* tau (roll game-rng)) 2.0
+												task blt)))))
 	   (wait 3))
 	 '(5.0 10.0 12.0 15.0 15.0 17.0 17.0 12.0 11.0 0.0 0.0 0.0 0.0 0.0)
 	 '(-40.0 -35.0 -30.0 -25.0 -20.0 -15.0 -10.0 -5.0 0.0 5.0 10.0 15.0 20.0
 			 25.0))
 	(spawn-bullet 'big-star-blue (- (enm-x enm) 50.0) (+ 28.0 (enm-y enm))
-				  5 (λ (blt)
+				  5 (λ (task blt)
 					  (wait-until (thunk (>= (- frames start-time) 350)))
 					  (raylib:play-sound (sebundle-bell sounds))
-					  (linear-step-forever (* tau (roll game-rng)) 2.0 blt))))
+					  (linear-step-forever (* tau (roll game-rng)) 2.0 task blt))))
   (spawn-subtask "movement" movement (constantly #t) task)
   (spawn-subtask "rain" rain (constantly #t) task)
   (spawn-subtask "ring" ring (thunk (fx< (fx- frames start-time) 250)) task)
@@ -97,7 +98,7 @@
   (let ([l (spawn-laser type (+ (enm-x enm) 20.0) (enm-y enm)
 						0.0 (fx2fl +playfield-width+)
 						5.0
-						40 20 (λ (_blt) (wait-until (thunk (>= frames 900)))))])
+						40 20 (λ (_task _blt) (wait-until (thunk (>= frames 900)))))])
 	(bullet-addflags l (bltflags uncancelable)))
   (raylib:play-sound (sebundle-laser sounds))
   (wait-until (thunk (>= frames 880)))
@@ -152,9 +153,9 @@
 	(do [(i 0 (fx1+ i))]
 		[(fx= i 35)]
 	  (let ([facing (torad (fx2fl (* (/ 360 20) i)))]
-			[cfun (λ (blt)
+			[cfun (λ (task blt)
 					(linear-step-forever (facing-player (bullet-x blt) (bullet-y blt))
-										 7.0 blt))])
+										 7.0 task blt))])
 		(-> (spawn-bullet 'ellipse-magenta
 						  (fl+ (enm-x enm) (fl* 40.0 (flcos facing)))
 						  (fl+ (enm-y enm) (fl* 40.0 (flsin facing)))
@@ -346,8 +347,8 @@
 				(spawn-bullet
 				 (if flip 'small-ball-yellow 'small-ball-red)
 				 (enm-x enm) (enm-y enm) 5
-				 (λ (blt)
-				   (linear-step-gravity-forever facing speed 0.1 blt))))))
+				 (λ (task blt)
+				   (linear-step-gravity-forever facing speed 0.1 task blt))))))
 		(wait 2))))
   (spawn-subtask "uninvincible"
 	(λ (task)
@@ -366,7 +367,7 @@
   (define laser-dir (+ (- init-ang pi) (torad 18.0)))
   (define laser (spawn-laser 'fixed-laser-orange (enm-x enm) (enm-y enm) laser-dir
 							 (fl* 2.0 init-dist sin72) 5.0 40 delay
-							 (λ (blt) (loop-until (unbox stop-spinning)))))
+							 (λ (task blt) (loop-until (unbox stop-spinning)))))
   (define (do-spin)
 	(do [(angvel (torad 0.05) (if (fl< angvel (torad 4.0))
 								  (fl+ angvel (torad 0.1))
@@ -493,7 +494,7 @@
 	(letrec* ([center-blt
 			   (spawn-bullet
 				'small-ball-red x y 5
-				(λ (blt)
+				(λ (task blt)
 				  (loop-forever
 				   (linear-step facing speed blt)
 				   (when with-ring
@@ -509,7 +510,7 @@
 						 (λ (_)
 						   (spawn-bullet
 							'pellet-white x y 5
-							(λ (blt)
+							(λ (task blt)
 							  (wait-until
 							   (thunk (not (vector-index center-blt live-bullets))))
 							  (delete-bullet blt))))
@@ -519,7 +520,7 @@
 					  (λ (type)
 						(spawn-bullet
 						 type x y 5
-						 (λ (blt)
+						 (λ (task blt)
 						   (wait-until
 							(thunk (not (vector-index center-blt live-bullets))))
 						   (delete-bullet blt))))
@@ -736,7 +737,7 @@
 		  (-> (spawn-bullet
 			   (if (fxeven? layer) even-type odd-type)
 			   x y 10
-			   (λ (blt)
+			   (λ (task blt)
 				 (define initial-facing facing)
 				 (define turn-dir (torad (if (fxeven? layer) -4.0 4.0)))
 				 (let loop ([facing initial-facing])
@@ -747,7 +748,7 @@
 					   (begin
 						 (raylib:play-sound (sebundle-bell sounds))
 						 (bullet-clrflags blt (bltflags uncancelable))
-						 (linear-step-forever facing speed blt))
+						 (linear-step-forever facing speed task blt))
 					   (loop (fl+ facing turn-dir))))))
 			  (bullet-addflags (bltflags uncancelable)))))))
 
@@ -773,7 +774,7 @@
 		  (-> (spawn-bullet
 			   (if (fxeven? layer) 'music-green 'rest-cyan)
 			   0.0 100.0 10
-			   (λ (blt)
+			   (λ (task blt)
 				 (define initial-facing facing)
 				 (define turn-dir (torad (if (fxeven? layer) -4.0 4.0)))
 				 (raylib:play-sound (sebundle-oldvwoopslow sounds))
@@ -811,17 +812,17 @@
 			  (cbcount 12)
 			  (cbang (fx2fl (+ (* 20 wave) (* 5 i))))
 			  (cbshootenm enm 'heart-red 2 #f
-						  (λ (facing speed blt)
+						  (λ (facing speed task blt)
 							(bullet-facing-set! blt facing)
 							(dotimes 5
 							  (linear-step facing speed blt)
 							  (yield))
 							(wait 30)
 							(raylib:play-sound (sebundle-bell sounds))
-							(linear-step-forever facing speed blt))))
+							(linear-step-forever facing speed task blt))))
 		  (spawn-bullet 'big-star-magenta
 						(enm-x enm) (enm-y enm)
-						2 (λ (blt)
+						2 (λ (task blt)
 							(wait 35)
 							(cancel-bullet blt))))
 		(wait 30)
@@ -968,7 +969,7 @@
 				[center-blt
 				 (spawn-bullet
 				  'big-star-orange x y 5
-				  (λ (blt)
+				  (λ (task blt)
 					(do [(i 0 (fx1+ i))]
 						[(fx= i 241)]
 					  (linear-step facing 5.0 blt)
@@ -982,7 +983,7 @@
 							(λ (_)
 							  (spawn-bullet
 							   'small-star-yellow x y 5
-							   (λ (blt)
+							   (λ (task blt)
 								 (wait-until
 								  (thunk (not (vector-index center-blt live-bullets))))
 								 (delete-bullet blt))))
@@ -1070,11 +1071,11 @@
 	  (fbang (if right-side 180.0 0.0) 0.0)
 	  (fbshootenm enm type
 				  2 (sebundle-shoot0 sounds)
-				  (λ (facing speed blt)
+				  (λ (facing speed task blt)
 					(dotimes 60
 					  (linear-step facing speed blt)
 					  (yield))
-					(linear-step-forever hpi 3.0 blt))))
+					(linear-step-forever hpi 3.0 task blt))))
   (wait 60)
   (spawn-subtask "rings"
 	(λ (task)
@@ -1117,10 +1118,11 @@
 			  (cbang (fx2fl (+ start-ang (* sign i angper))))
 			  (cbspeed 3.0)
 			  (cbshootenm enm 'big-star-magenta 2 (sebundle-shoot0 sounds)
-						  (λ (facing speed blt)
+						  (λ (facing speed task blt)
 							(linear-step-decelerate facing speed -0.1 blt)
 							(wait 10)
-							(linear-step-accelerate-forever facing 0.0 0.7 6.0 blt))))
+							(linear-step-accelerate-forever facing 0.0 0.7 6.0
+															task blt))))
 		  (wait 5))
 		(wait 5)
 		(loop (- sign)
@@ -1167,7 +1169,7 @@
 				  (enm-x enm) (enm-y enm)
 				  (facing-player (enm-x enm) (enm-y enm))
 				  550.0 5.0 5 30
-				  (λ (_blt) (wait 40)))
+				  (λ (_task _blt) (wait 40)))
 	 (wait 25))
    types)
   (wait-until (thunk (>= frames 10872)))
@@ -1357,7 +1359,7 @@
 			 (-> (spawn-bullet
 				  (if (fxeven? layer) even-type odd-type)
 				  x y 10
-				  (λ (blt)
+				  (λ (task blt)
 					(define initial-facing facing)
 					(define turn-dir (torad (if (fxeven? layer) -5.5 5.5)))
 					(let loop ([facing initial-facing])

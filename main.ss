@@ -1793,7 +1793,7 @@
 						[(fx> i delay)]
 					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
 					  (yield))
-					(control-function blt))
+					(control-function task blt))
 				  (thunk (eq? blt (vnth live-bullets idx))))
 	  blt)))
 
@@ -1815,7 +1815,7 @@
 						[(fx> i delay)]
 					  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
 					  (yield))
-					(control-function blt)
+					(control-function task blt)
 					(laser-start-despawning-at-set! blt frames)
 					(wait despawn-time)
 					(delete-bullet blt))
@@ -2073,7 +2073,7 @@
   (reverse! result))
 
 ;; helper for the common case of shooting a fanbuilder from the enemy position
-;; if provided, bullet control function should take facing, speed, bullet
+;; if provided, bullet control function should take facing, speed, task, bullet
 (define fbshootenm
   (case-lambda
 	[(fb enm type delay sound)
@@ -3010,7 +3010,7 @@
 			   (+ y +playfield-render-offset-y+) w h red)))))))
   (vector-for-each each live-enm))
 
-(define (linear-step-forever facing speed blt)
+(define (linear-step-forever facing speed task blt)
   (bullet-facing-set! blt facing)
   (loop-forever (linear-step facing speed blt)))
 
@@ -3035,9 +3035,9 @@
   (bullet-facing-set! blt (flatan (fl- ny oy) (fl- nx ox))))
 (define linear-step-gravity-forever
   (case-lambda
-	([facing speed ay blt]
-	 (linear-step-gravity-forever facing speed ay +inf.0 blt))
-	([facing speed ay max-vy blt]
+	([facing speed ay task blt]
+	 (linear-step-gravity-forever facing speed ay +inf.0 task blt))
+	([facing speed ay max-vy task blt]
 	 (define vx (* speed (cos facing)))
 	 (define vy (* speed (sin facing)))
 	 (bullet-facing-set! blt facing)
@@ -3073,11 +3073,11 @@
 	  (when (fl< next-v max-speed)
 		(loop next-v)))))
 ;; Maintains max-speed once it's reached
-(define (linear-step-accelerate-forever facing speed accel max-speed blt)
+(define (linear-step-accelerate-forever facing speed accel max-speed task blt)
   (linear-step-accelerate facing speed accel max-speed blt)
-  (linear-step-forever facing max-speed blt))
+  (linear-step-forever facing max-speed task blt))
 
-(define (linear-step-with-bounce facing speed blt)
+(define (linear-step-with-bounce facing speed task blt)
   (let loop ()
 	(let ([ox (bullet-x blt)]
 		  [oy (bullet-y blt)])
@@ -3087,16 +3087,16 @@
 			[ny (bullet-y blt)])
 		(cond
 		 [(> ny +playfield-max-y+)
-		  (linear-step-forever facing speed blt)]
+		  (linear-step-forever facing speed task blt)]
 		 [(< ny +playfield-min-y+)
 		  (let ([xv (flcos facing)]
 				[yv (flsin facing)])
-			(linear-step-forever (flatan (fl- yv) xv) speed blt))]
+			(linear-step-forever (flatan (fl- yv) xv) speed task blt))]
 		 [(or (< nx +playfield-min-x+)
 			  (> nx +playfield-max-x+))
 		  (let ([xv (flcos facing)]
 				[yv (flsin facing)])
-			(linear-step-forever (flatan yv (fl- xv)) speed blt))]))
+			(linear-step-forever (flatan yv (fl- xv)) speed task blt))]))
 	  (loop))))
 
 (define-record-type particle
@@ -3974,15 +3974,6 @@
 	(set! chapter-select (max (sub1 chapter-select) 0)))
   (when (and (not (paused?)) (raylib:is-key-pressed key-r))
 	(reset-to chapter-select))
-
-
-  (when (raylib:is-key-down key-space)
-	(parameterize ([ovr-noclip #t])
-	  (spawn-bullet 'yinyang-blue player-x player-y 5
-					(curry aiko-sp2-ball-ctrl
-						   (box (list 'move (torad (fx2fl (roll visual-rng 360)))
-									  8.0))
-						   #f))))
   (when (raylib:is-key-pressed key-a)
 	(when (> spline-editor-selected-position 0)
 	  (set! spline-editor-selected-position (sub1 spline-editor-selected-position))))

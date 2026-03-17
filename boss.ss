@@ -284,7 +284,7 @@
 	  (->
 	   (spawn-bullet
 		'big-star-red x y 2
-		(λ (blt)
+		(λ (task blt)
 		  (-> (cb)
 			  (cbcount 9 17)
 			  (cbspeed 1.8 4.0)
@@ -296,13 +296,13 @@
 				   (spawn-bullet
 					(vnth-mod colors in-layer)
 					x y 10
-					(λ (blt)
+					(λ (task blt)
 					  (linear-step-decelerate facing speed -0.10 blt)
 					  (wait-until (thunk (unbox spread-signal)))
 					  (bullet-clrflags blt (bltflags uncancelable))
 					  (wait (* 10 layer))
 					  (linear-step-accelerate (fl+ facing pi) 0.0 0.02 4.5 blt)
-					  (linear-step-forever (fl+ facing pi) 4.5 blt)))
+					  (linear-step-forever (fl+ facing pi) 4.5 task blt)))
 				   (bullet-addflags (bltflags uncancelable))))))
 		  (wait-until (thunk (unbox spread-signal)))
 		  (wait 30)
@@ -411,23 +411,23 @@
 			  (cbcount 8)
 			  (cbspeed 2.0)
 			  (cbshootenm enm 'heart-orange 5 #f
-						  (λ (facing speed blt)
+						  (λ (facing speed task blt)
 							(linear-step-decelerate facing speed -0.05 blt)
 							(wait 30)
 							(raylib:play-sound (sebundle-bell sounds))
 							(linear-step-accelerate-forever
-							 facing 0.0 0.08 3.0 blt))))
+							 facing 0.0 0.08 3.0 task blt))))
 		  (-> (cb)
 			  (cbcount 16)
 			  (cbspeed 2.0)
 			  (cbshootenm
 			   enm 'small-ball-yellow 5 #f
-			   (λ (facing speed blt)
+			   (λ (facing speed task blt)
 				 (linear-step-decelerate facing speed -0.05 blt)
 				 (wait 30)
 				 (linear-step-accelerate-forever
 				  (facing-player (bullet-x blt) (bullet-y blt))
-				  0.0 0.08 3.0 blt))))))
+				  0.0 0.08 3.0 task blt))))))
 	  (thunk (not (unbox dead-signalbox)))
 	  task))
   (enm-superarmor-set! enm 80)
@@ -457,7 +457,7 @@
 				 start-ang-to
 				 (fx2fl +playfield-height+)
 				 5.0 20 delay
-				 (λ (blt)
+				 (λ (task blt)
 				   (define ang-to (facing-player (bullet-x blt) (bullet-y blt)))
 				   (let ([turn-dir
 						  (if (fl< ang-to start-ang-to) -1.0 1.0)])
@@ -654,7 +654,7 @@
 			(-> (spawn-bullet
 				 'butterfly-orange
 				 (enm-x enm) (enm-y enm) 5
-				 (λ (blt)
+				 (λ (task blt)
 				   (let loop ([facing facing]
 							  [i 0])
 					 (bullet-facing-set! blt facing)
@@ -664,7 +664,7 @@
 						   (yield)
 						   (loop (fl+ facing (torad 1.8))
 								 (add1 i)))
-						 (linear-step-forever facing speed blt)))))
+						 (linear-step-forever facing speed task blt)))))
 				(bullet-facing-set! facing)))))
 	(-> (cb)
 		(cbcount 20)
@@ -740,9 +740,7 @@
 			 (wait 20)
 			 (-> (spawn-bullet
 				  'glow-orb-red (enm-x hazuki) (enm-y hazuki) 5
-				  (λ (blt)
-					;; TODO: pass in the task handle
-					;; to bullet control funcs so they can use subtasks
+				  (λ (task blt)
 					(define start-time frames)
 					(interval-loop 1
 					  (linear-step facing 6.0 blt)
@@ -757,13 +755,13 @@
 							(spawn-bullet
 							 'pellet-blue
 							 (enm-x e) (enm-y e) 10
-							 (λ (blt)
+							 (λ (task blt)
 							   (define facing (fl* tau (roll game-rng)))
 							   (define speed (roll-flrange
 											  game-rng 1.8 3.0))
 							   (linear-step-decelerate-to
 								facing speed -0.05 0.9 blt)
-							   (linear-step-forever facing 0.9 blt))))
+							   (linear-step-forever facing 0.9 task blt))))
 						  (-> (fb)
 							  (fbcount 5 3)
 							  (fbspeed 4.0 5.0)
@@ -777,26 +775,23 @@
 								  (define-values (x y) (dist-away e facing 40.0))
 								  (spawn-bullet
 								   'small-ball-red x y 5
-								   (λ (blt)
+								   (λ (task blt)
 									 (linear-step-accelerate (fl+ facing pi) 0.0
 															 0.05 speed blt)
-									 (linear-step-forever (fl+ facing pi) speed blt))))))
+									 (linear-step-forever (fl+ facing pi) speed task blt))))))
 						  (set-box! dont-damage-hazuki-box #t)
 						  (kill-enemy e)
 						  (cancel-bullet blt)))
 					  (when (fxzero? (fxmod (fx- frames start-time) 1))
 						(spawn-bullet 'small-ball-magenta
 									  (bullet-x blt) (bullet-y blt) 8
-									  (λ (blt)
+									  (λ (task blt)
 										(define facing
 										  (torad (fx2fl
-												  (fx* 24 (fx- frames start-time)))
-											   )
-										  ;(fl* tau (roll game-rng))
-										  )
+												  (fx* 24 (fx- frames start-time)))))
 										(linear-step-accelerate-forever
 										 facing
-										 0.25 0.02 4.0 blt)
+										 0.25 0.02 4.0 task blt)
 										;; (dotimes 90
 										;;   (linear-step facing 0.1 blt)
 										;;   (yield))
@@ -828,7 +823,7 @@
   (common-spell-postlude bossinfo hazuki)
   (aiko-non2 task hazuki))
 
-(define (aiko-non2-laser-ctrl is-right aiko blt)
+(define (aiko-non2-laser-ctrl is-right aiko task blt)
   (define start-ang -hpi)
   (define dang (torad 160.0))
   (do [(i 0 (fx1+ i))]
@@ -1016,7 +1011,7 @@
 (define aiko-sp2-rects (append aiko-sp2-vertical-rects aiko-sp2-horiz-rects))
 
 
-(define (aiko-sp2-ball-ctrl msg-box aiko blt)
+(define (aiko-sp2-ball-ctrl msg-box aiko task blt)
   (let loop ([state 'stop]
 			 [facing 0.0]
 			 [speed 0.0]
@@ -1153,7 +1148,7 @@
   (wait 120)
   (raylib:play-sound (sebundle-brasscharge sounds))
   (parameterize ([ovr-uncancelable #t])
-	(let ([ctrl (λ (_blt) (loop-forever))])
+	(let ([ctrl (λ (_task _blt) (loop-forever))])
 	  (for-each
 	   (λ (l) (bullet-addflags l (bltflags noshine)))
 	   (list
