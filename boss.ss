@@ -679,19 +679,19 @@
 (define (hazuki-sp2-wave task hazuki)
   (define start-time frames)
   (define (get-point i)
-	(define ang (fl+ (fl* (fl/ tau 5.0) (fx2fl i))
-					 (torad -50.0)
-					 (torad (centered-roll game-rng 5.0))))
+	(define ang (fl+ (fl* hpi (fx2fl i))
+					 (torad -20.0)
+					 (torad (centered-roll game-rng 10.0))))
 	(define dist
 	  (case i
-		[(1 2 3) (fl+ 80.0 (fl* 120.0 (roll game-rng)))]
+;		[(1 2) (fl+ 80.0 (fl* 120.0 (roll game-rng)))]
 		[else (fl+ 80.0 (fl* 100.0 (roll game-rng)))]))
 	(dist-away hazuki ang dist))
   (define dont-damage-hazuki-box)
   (define enms-and-boxes
 	(let loop ([acc '()]
 			   [i 0])
-	  (if (= i 5)
+	  (if (= i 4)
 		  (reverse! acc)
 		  (let-values ([(x y) (get-point i)]
 					   [(dont-damage-hazuki-box) (box #f)])
@@ -784,16 +784,24 @@
 						  (set-box! dont-damage-hazuki-box #t)
 						  (kill-enemy e)
 						  (cancel-bullet blt)))
-					  (when (fxzero? (fxmod (fx- frames start-time) 5))
+					  (when (fxzero? (fxmod (fx- frames start-time) 1))
 						(spawn-bullet 'small-ball-magenta
 									  (bullet-x blt) (bullet-y blt) 8
 									  (λ (blt)
 										(define facing
-										  (fl* tau (roll game-rng)))
-										(dotimes 90
-										  (linear-step facing 0.1 blt)
-										  (yield))
-										(cancel-bullet blt)))))))
+										  (torad (fx2fl
+												  (fx* 24 (fx- frames start-time)))
+											   )
+										  ;(fl* tau (roll game-rng))
+										  )
+										(linear-step-accelerate-forever
+										 facing
+										 0.25 0.02 4.0 blt)
+										;; (dotimes 90
+										;;   (linear-step facing 0.1 blt)
+										;;   (yield))
+										;; (cancel-bullet blt)
+										))))))
 				 (bullet-facing-set! facing))))
 		 enms-and-boxes))
 	  (thunk (not (all-dead)))

@@ -1209,7 +1209,7 @@
 					 (if entry
 						 (format "~:d~a" (score-entry-score entry)
 								 (if (score-entry-cleared entry) " (C)" ""))
-						 "000,000,000")]
+						 "0")]
 					[(_ nheight)
 					 (raylib:measure-text-ex bubblegum name 25.0 0.0)]
 					[(swidth _)
