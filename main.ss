@@ -19,7 +19,7 @@
 	(syntax-case stx ()
 	  [id (identifier? #'id)
 	  (let ([ver (getenv "BUILD_VERSION")])
-		(datum->syntax #'id (or ver "unknown")))]))
+		(datum->syntax #'id (or ver "v0.0")))]))
   game-version-impl)
 (define-enumeration vkey
   (up down left right shoot bomb focus pause
@@ -858,7 +858,16 @@
   (render-ingame-menu
    fonts
    (title-gui-menu-options self) (title-gui-selected-option self)
-   40.0 200 50 30.0 255))
+   40.0 200 50 30.0 255)
+  (let-values ([(width height) (raylib:measure-text-ex
+								 (fontbundle-cabin fonts)
+								 (game-version)
+								 20.0 0.0)])
+	(raylib:draw-text-ex
+	 (fontbundle-cabin fonts)
+	 (game-version)
+	 (fl- 640.0 width 5.0) (fl- 480.0 height 5.0)
+	 20.0 0.0 -1)))
 (define want-quit #f)
 (define (mk-title-gui)
   (make-title-gui
@@ -4983,7 +4992,7 @@
 (define (print-stacktrace e)
   (define ins (inspect/object (condition-continuation e)))
   (define depth (ins 'depth))
-  (display "Crash! Please report this to the developer along with the version information.\n")
+  (display "Crash! Please report this to the developer.\n")
   (display "Bytes Allocated: ")
   (display (bytes-allocated))
   (newline)
@@ -5001,10 +5010,12 @@
 	  ;; todo: still maybe want the 'source, but truncated?
 	  (newline))))
 
-(define (main-with-backtrace)
+(define (prod-main)
   (guard (e [(continuation-condition? e)
 			 (print-stacktrace e)])
+	(format (current-output-port) "Running thdawn ~a" (game-version))
+	(newline)
 	(main)))
 
 (scheme-start
- (λ _ (main-with-backtrace)))
+ (λ _ (prod-main)))
