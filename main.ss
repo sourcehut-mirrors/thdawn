@@ -124,6 +124,14 @@
 		 b ...
 		 (wait intvl)
 		 (loop)))]))
+(define-syntax interval-loop-until
+  (syntax-rules ()
+	[(_ intvl cond b ...)
+	 (let loop ()
+	   (unless cond
+		 b ...
+		 (wait intvl)
+		 (loop)))]))
 (define-syntax interval-loop-waitfirst
   (syntax-rules ()
 	[(_ intvl b ...)
@@ -4579,8 +4587,8 @@
 (define (render-spell-background textures id elapsed)
   (define max-alpha
 	(case id
-	  [(group doremi hazuki) #xe0]
-	  [(aiko) #xc0]))
+	  [(group doremi) #xe0]
+	  [(aiko hazuki) #xc0]))
   (define alpha
 	(if (fx> elapsed 60)
 		max-alpha

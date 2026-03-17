@@ -638,58 +638,52 @@
 
 (define (hazuki-sp2-wisp-on-death killed-by-hazuki-box hazuki enm)
   (define killed-by-hazuki (unbox killed-by-hazuki-box))
+  (define winding (if (roll-bool game-rng) (torad 2.2) (torad -2.2)))
   ;; don't run when being cleared by the attack ending
   (when (fxpositive? (enm-health hazuki))
+	(raylib:play-sound (sebundle-bell sounds))
 	(-> (cb)
 		(cbabsolute-aim)
-		(cbang (fl* 360.0 (roll game-rng)) 50.0)
+		(cbang (fl* 360.0 (roll game-rng)))
 		(cbcount 24 (if killed-by-hazuki 3 2))
-		(cbspeed 2.0 2.5)
+		(cbspeed 1.8 3.5)
 		(cbshoot (enm-x enm) (enm-y enm)
 		  (λ (layer in-layer speed facing)
 			(-> (spawn-bullet
-				 (vnth-mod '#(butterfly-orange butterfly-magenta butterfly-red) in-layer)
+				 (vnth-mod '#(butterfly-orange butterfly-magenta butterfly-red) layer)
 				 (enm-x enm) (enm-y enm) 5
 				 (λ (task blt)
 				   (let loop ([facing facing]
 							  [i 0])
 					 (bullet-facing-set! blt facing)
-					 (if (< i 100)
+					 (if (< i 60)
 						 (begin
-						   (linear-step facing speed blt)
+						   (linear-step facing 1.5 blt)
 						   (yield)
-						   (loop (fl+ facing (torad 1.5))
+						   (loop (fl+ facing winding)
 								 (add1 i)))
-						 (linear-step-forever facing speed task blt)))))
+						 (linear-step-accelerate-forever
+						  facing 1.5
+						  0.04 speed task blt)))))
 				(bullet-facing-set! facing)))))
-	(-> (cb)
-		(cbcount 20)
-		(cbspeed 3.5)
-		(cbshootenm enm 'small-ball-white 5
-					(sebundle-bell sounds)))
 	(unless killed-by-hazuki
 	  (damage-enemy hazuki 800 #t #t))))
 
 (define (hazuki-sp2-wave all-waves-clean-box toptask hazuki)
+  (define points (vector-shuffle '#((135.0 . 145.0) (-135.0 . 145.0)
+									(77.0 . 225.0) (-77.0 . 225.0))
+								 game-rng))
   (define start-time frames)
-  (define (get-point i)
-	(define ang (fl+ (fl* hpi (fx2fl i))
-					 (torad -20.0)
-					 (torad (centered-roll game-rng 10.0))))
-	(define dist
-	  (case i
-;		[(1 2) (fl+ 80.0 (fl* 120.0 (roll game-rng)))]
-		[else (fl+ 80.0 (fl* 100.0 (roll game-rng)))]))
-	(dist-away hazuki ang dist))
   (define enms-and-boxes
 	(let loop ([acc '()]
 			   [i 0])
 	  (if (= i 4)
 		  (reverse! acc)
-		  (let-values ([(x y) (get-point i)]
-					   [(dont-damage-hazuki-box) (box #f)])
+		  (let ([dont-damage-hazuki-box (box #f)]
+				[x (car (vnth points i))]
+				[y (cdr (vnth points i))])
 			(wait 20)
-			(raylib:play-sound (sebundle-opshow sounds))
+			(raylib:play-sound (sebundle-brasscharge sounds))
 			(loop 
 			 (cons
 			  (cons (-> (spawn-enemy
@@ -699,7 +693,9 @@
 						   (loop-forever))
 						 default-drop (curry hazuki-sp2-wisp-on-death
 											 dont-damage-hazuki-box hazuki))
-						(enm-addflags (enmflags aura-red)))
+						(enm-addflags (enmflags aura-red))
+						;; kinda silly but whatever
+						((λ (e) (enm-superarmor-set! e 40) e)))
 					dont-damage-hazuki-box)
 			  acc)
 			 (add1 i))))))
@@ -709,20 +705,26 @@
   (define killer-task
 	(spawn-subtask "kill"
 	  (λ (task)
-		(wait-until (thunk (fx>= (fx- frames start-time) 300)))
+		(wait 25)
+		(interval-loop-until 25 (fx>= (fx- frames start-time) 275)
+		  (-> (fb)
+			  (fbcount 4)
+			  (fbspeed 2.0)
+			  (fbang 0.0 20.0)
+			  (fbshootenm hazuki 'rest-blue 5 #f)))
 		(for-each
 		 (λ (pair)
 		   (define e (car pair))
 		   (wait 20)
 		   (when (fxpositive? (enm-health e))
-			 (raylib:play-sound (sebundle-shortcharge sounds))
+			 (raylib:play-sound (sebundle-longcharge sounds))
 			 (spawn-particle (particletype circle-hint-opaque)
 							 (enm-x e) (enm-y e) 30
 							 '((color . #x8b008ba0)
 							   (r1 . 100.0)
 							   (r2 . 20.0)))))
 		 enms-and-boxes)
-		(raylib:play-sound (sebundle-longcharge sounds))
+		(raylib:play-sound (sebundle-oldvwoopfast sounds))
 		(for-each
 		 (λ (pair)
 		   (define e (car pair))
@@ -759,17 +761,28 @@
 								x y w h))
 						  (spawn-subtask "pellets"
 							(λ (task)
-							  (dotimes 40
+							  (define init-facing (fl* 360.0 (roll game-rng)))
+							  (do [(i 0 (add1 i))]
+								  [(= i 40)]
 								(spawn-bullet
 								 'pellet-blue
 								 (fl+ x (fl/ w 2.0)) (fl+ y (fl/ h 2.0)) 5
 								 (λ (task blt)
-								   (define facing (fl* tau (roll game-rng)))
+								   (define facing
+									 (torad (fl+ init-facing (fx2fl (* 2 i 13)))))
 								   (define speed (roll-flrange
-												  game-rng 1.8 3.0))
-								   (linear-step-decelerate-to
-									facing speed -0.05 0.9 blt)
-								   (linear-step-forever facing 0.9 task blt)))
+												  game-rng 2.0 2.5))
+								   (linear-step-forever facing 2.0 task blt)))
+								(spawn-bullet
+								 'pellet-blue
+								 (fl+ x (fl/ w 2.0)) (fl+ y (fl/ h 2.0)) 5
+								 (λ (task blt)
+								   (define facing
+									 (torad (fl+ init-facing (fx2fl (* (add1 (* 2 i))
+																	   13)))))
+								   (define speed (roll-flrange
+												  game-rng 2.0 2.5))
+								   (linear-step-forever facing 2.0 task blt)))
 								(yield)))
 							(constantly #t)
 							toptask)
@@ -780,8 +793,7 @@
 		 enms-and-boxes))
 	  (thunk (not (all-dead)))
 	  toptask))
-  (wait-until (thunk (task-dead killer-task)))
-  )
+  (wait-until (thunk (task-dead killer-task))))
 
 (define (hazuki-sp2 task hazuki)
   (define bossinfo (enm-extras hazuki))
