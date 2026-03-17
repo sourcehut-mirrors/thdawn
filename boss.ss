@@ -37,10 +37,9 @@
 
 (define (group-non1 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
-  (define keep-running
-	(thunk
-	 (and (positive? (bossinfo-remaining-timer bossinfo))
-		  (positive? (enm-health doremi)))))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health doremi))))
   (set! current-chapter 14)
   (play-music (musbundle-naisho-yo-ojamajo music))
   (bossinfo-healthbars-set!
@@ -189,10 +188,9 @@
 				 '()
 				 (constantly #f)))
   (define bossinfo (blank-aiko-bossinfo))
-  (define keep-running?
-	(thunk
-	 (and (positive? (bossinfo-remaining-timer bossinfo))
-		  (positive? (enm-health aiko)))))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health aiko))))
   (set! current-chapter 20)
   (spawn-subtask "hazuki leave"
 	(λ (_)
@@ -245,8 +243,8 @@
 					   (curry linear-step-forever facing speed))))
 				  #;(cbshootenm aiko 'music-cyan 5 (sebundle-bell sounds)))))
 		(boss-standard-wander-once aiko 40 50 30)))
-	keep-running? task)
-  (wait-while keep-running?)
+	keep-running task)
+  (wait-while keep-running)
   (common-nonspell-postlude bossinfo)
   (aiko-sp1 task aiko))
 
@@ -340,10 +338,9 @@
 
 (define (aiko-sp1 task aiko)
   (define bossinfo (enm-extras aiko))
-  (define keep-running
-	(thunk
-	 (and (positive? (bossinfo-remaining-timer bossinfo))
-		  (positive? (enm-health aiko)))))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health aiko))))
   (set! current-chapter 21)
   (declare-spell aiko 5)
   (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 45 aiko)
@@ -877,7 +874,7 @@
 				 '()
 				 (constantly #f)))
   (define bossinfo (blank-aiko-bossinfo))
-  (define (keep-running?)
+  (define (keep-running)
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health aiko))))
   (set! current-chapter 28)
@@ -915,7 +912,7 @@
 				(cbspeed 4.0)
 				(cbang (if (roll-bool game-rng) 0.0 2.0))
 				(cbshootenm aiko 'kunai-red 2 (sebundle-shoot0 sounds))))))
-	  keep-running? task)
+	  keep-running task)
 	(spawn-subtask "rings"
 	  (λ (task)
 		(interval-loop-while 60 (fx<= (bossinfo-elapsed-frames bossinfo) 410)
@@ -933,16 +930,16 @@
 				  (fbabsolute-aim)
 				  (fbang -90.0 12.0)
 				  (fbshootenm aiko 'big-star-orange 2 (sebundle-bell sounds)))))
-		  keep-running? task)
+		  keep-running task)
 		(interval-loop 46
 		  (-> (fb)
 			  (fbcount 7)
 			  (fbspeed 3.0)
 			  (fbang 0.0 8.0)
 			  (fbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds)))))
-	  keep-running? task))
+	  keep-running task))
   (ease-to values +middle-boss-x+ 225.0 300 aiko)
-  (wait-while keep-running?)
+  (wait-while keep-running)
   (common-nonspell-postlude bossinfo)
   (aiko-sp2 task aiko))
 
@@ -1132,7 +1129,7 @@
 
 (define (aiko-sp2 task aiko)
   (define bossinfo (enm-extras aiko))
-  (define (keep-running?)
+  (define (keep-running)
 	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
 		 (fxpositive? (enm-health aiko))))
   (set! current-chapter 29)
@@ -1211,7 +1208,7 @@
 			  (cbcount 36)
 			  (cbspeed 2.0)
 			  (cbshootenm aiko 'kunai-magenta 5 #f)))))
-	keep-running? task)
+	keep-running task)
   (spawn-subtask "main"
 	(λ (task)
 	  (define (spawn-ball)
@@ -1278,8 +1275,8 @@
 			  (set! cur-ball (spawn-ball))
 			  (wait 60)
 			  (wave frames)))))
-	keep-running? task)
-  (wait-while keep-running?)
+	keep-running task)
+  (wait-while keep-running)
   (common-spell-postlude bossinfo aiko)
   (group-sp3 task aiko))
 
