@@ -636,18 +636,19 @@
   (common-nonspell-postlude bossinfo)
   (hazuki-sp2 task hazuki))
 
-(define (hazuki-sp2-wisp-on-death dont-damage-hazuki-box hazuki enm)
+(define (hazuki-sp2-wisp-on-death killed-by-hazuki-box hazuki enm)
+  (define killed-by-hazuki (unbox killed-by-hazuki-box))
   ;; don't run when being cleared by the attack ending
   (when (fxpositive? (enm-health hazuki))
 	(-> (cb)
 		(cbabsolute-aim)
 		(cbang (fl* 360.0 (roll game-rng)) 50.0)
-		(cbcount 20 3)
+		(cbcount 24 (if killed-by-hazuki 3 2))
 		(cbspeed 2.0 2.5)
 		(cbshoot (enm-x enm) (enm-y enm)
 		  (λ (layer in-layer speed facing)
 			(-> (spawn-bullet
-				 'butterfly-orange
+				 (vnth-mod '#(butterfly-orange butterfly-magenta butterfly-red) in-layer)
 				 (enm-x enm) (enm-y enm) 5
 				 (λ (task blt)
 				   (let loop ([facing facing]
@@ -666,12 +667,10 @@
 		(cbspeed 3.5)
 		(cbshootenm enm 'small-ball-white 5
 					(sebundle-bell sounds)))
-	
-	;; TODO: this is awful lol
-	(unless (unbox dont-damage-hazuki-box)
+	(unless killed-by-hazuki
 	  (damage-enemy hazuki 800 #t #t))))
 
-(define (hazuki-sp2-wave toptask hazuki)
+(define (hazuki-sp2-wave all-waves-clean-box toptask hazuki)
   (define start-time frames)
   (define (get-point i)
 	(define ang (fl+ (fl* hpi (fx2fl i))
@@ -774,6 +773,7 @@
 								(yield)))
 							(constantly #t)
 							toptask)
+						  (set-box! all-waves-clean-box #f)
 						  (set-box! dont-damage-hazuki-box #t)
 						  (kill-enemy e)
 						  (cancel-bullet blt))))))))
@@ -788,6 +788,7 @@
   (define (keep-running)
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health hazuki))))
+  (define all-waves-clean (box #t))
   (set! current-chapter 27)
   (declare-spell hazuki 8)
   (enm-superarmor-set! hazuki (bossinfo-remaining-timer bossinfo))
@@ -796,9 +797,16 @@
   (spawn-subtask "main"
 	(λ (task)
 	  (interval-loop 120
-		(hazuki-sp2-wave task hazuki)))
+		(hazuki-sp2-wave all-waves-clean task hazuki)))
 	keep-running task)
   (wait-while keep-running)
+  ;; Extra bonus if all waves were cleared without a wisp being killed by hazuki
+  (when (unbox all-waves-clean)
+	(spawn-particle
+	 (particletype spellbonus)
+	 0.0 100.0 180
+	 (format "EX Bonus!! ~:d" 5000000))
+	(set! current-score (+ current-score 5000000)))
   (common-spell-postlude bossinfo hazuki)
   (aiko-non2 task hazuki))
 
