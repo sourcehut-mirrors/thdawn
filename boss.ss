@@ -552,12 +552,7 @@
 					default-drop
 					(curry non2-familiar-on-death mimi-dead-signalbox))
 				   (enm-addflags (enmflags aura-blue)))])
-	(wait-while keep-running)
-	(for-each
-	 (λ (e)
-	   (enemy-death-effects e)
-	   (delete-enemy e))
-	 (list dodo rere mimi)))
+	(wait-while keep-running))
   (common-nonspell-postlude bossinfo)
   (group-sp2 task doremi hazuki aiko))
 

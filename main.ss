@@ -2515,15 +2515,22 @@
    30 '((start-radius . 2)
 		(end-radius . 85))))
 
-(define (kill-enemy enm)
-  (when (fxpositive? (enm-health enm))
-	(enm-health-set! enm 0))
-  (let ([do-standard-logic (or (not (enm-on-death enm))
-							   ((enm-on-death enm) enm))])
-	(when do-standard-logic
-	  (spawn-enm-drops enm)
-	  (enemy-death-effects enm)
-	  (delete-enemy enm))))
+(define kill-enemy
+  (case-lambda
+	[(enm)
+	 (kill-enemy enm #f)]
+	;; force-standard-logic is useful for ending spells and such,
+    ;; where you don't want to be spawning revenge bullets
+	[(enm force-standard-logic)
+	 (when (fxpositive? (enm-health enm))
+	   (enm-health-set! enm 0))
+	 (let ([do-standard-logic (or force-standard-logic
+								  (not (enm-on-death enm))
+								  ((enm-on-death enm) enm))])
+	   (when do-standard-logic
+		 (spawn-enm-drops enm)
+		 (enemy-death-effects enm)
+		 (delete-enemy enm)))]))
 
 (define damage-enemy
   (case-lambda
@@ -3593,7 +3600,7 @@
   (vector-for-each
    (λ (e)
 	 (when (and e (not (is-boss? e)))
-	   (kill-enemy e)))
+	   (kill-enemy e #t)))
    live-enm)
   (bossinfo-remaining-timer-set! bossinfo 0)
   (bossinfo-active-spell-bonus-set! bossinfo #f)
@@ -3602,6 +3609,11 @@
 
 (define (common-nonspell-postlude bossinfo)
   (cancel-all #t)
+  (vector-for-each
+   (λ (e)
+	 (when (and e (not (is-boss? e)))
+	   (kill-enemy e #t)))
+   live-enm)
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars bossinfo))))
