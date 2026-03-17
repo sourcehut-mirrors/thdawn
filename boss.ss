@@ -646,9 +646,9 @@
   (when (fxpositive? (enm-health hazuki))
 	(-> (cb)
 		(cbabsolute-aim)
-		(cbang (torad (fl* 360.0 (roll game-rng))))
-		(cbcount 20)
-		(cbspeed 1.5)
+		(cbang (fl* 360.0 (roll game-rng)) 50.0)
+		(cbcount 20 3)
+		(cbspeed 2.0 2.5)
 		(cbshoot (enm-x enm) (enm-y enm)
 		  (λ (layer in-layer speed facing)
 			(-> (spawn-bullet
@@ -658,11 +658,11 @@
 				   (let loop ([facing facing]
 							  [i 0])
 					 (bullet-facing-set! blt facing)
-					 (if (< i 120)
+					 (if (< i 100)
 						 (begin
 						   (linear-step facing speed blt)
 						   (yield)
-						   (loop (fl+ facing (torad 1.8))
+						   (loop (fl+ facing (torad 1.5))
 								 (add1 i)))
 						 (linear-step-forever facing speed task blt)))))
 				(bullet-facing-set! facing)))))
@@ -676,7 +676,7 @@
 	(unless (unbox dont-damage-hazuki-box)
 	  (damage-enemy hazuki 800 #t #t))))
 
-(define (hazuki-sp2-wave task hazuki)
+(define (hazuki-sp2-wave toptask hazuki)
   (define start-time frames)
   (define (get-point i)
 	(define ang (fl+ (fl* hpi (fx2fl i))
@@ -687,7 +687,6 @@
 ;		[(1 2) (fl+ 80.0 (fl* 120.0 (roll game-rng)))]
 		[else (fl+ 80.0 (fl* 100.0 (roll game-rng)))]))
 	(dist-away hazuki ang dist))
-  (define dont-damage-hazuki-box)
   (define enms-and-boxes
 	(let loop ([acc '()]
 			   [i 0])
@@ -738,11 +737,24 @@
 								  (fl- (enm-x e) (enm-x hazuki))))
 		   (when (fxpositive? (enm-health e))
 			 (wait 20)
-			 (-> (spawn-bullet
+			 (spawn-bullet
 				  'glow-orb-red (enm-x hazuki) (enm-y hazuki) 5
 				  (λ (task blt)
 					(define start-time frames)
-					(interval-loop 1
+					(spawn-subtask "trail"
+					  (λ (task)
+						(loop-forever
+						 (spawn-bullet
+						  'small-ball-magenta (bullet-x blt) (bullet-y blt) 8
+						  (λ (task blt)
+							(define facing
+							  (torad (fx2fl
+									  (fx* 24 (fx- frames start-time)))))
+							(linear-step-accelerate-forever
+							 facing
+							 0.25 0.02 4.0 task blt)))))
+					  (constantly #t) task)
+					(loop-forever
 					  (linear-step facing 6.0 blt)
 					  (let-values ([(x y w h) (enm-hurtbox e)])
 						(when (and
@@ -751,56 +763,28 @@
 								(bullet-x blt) (bullet-y blt)
 								(bullet-hit-radius (bullet-type blt))
 								x y w h))
-						  (dotimes 40
-							(spawn-bullet
-							 'pellet-blue
-							 (enm-x e) (enm-y e) 10
-							 (λ (task blt)
-							   (define facing (fl* tau (roll game-rng)))
-							   (define speed (roll-flrange
-											  game-rng 1.8 3.0))
-							   (linear-step-decelerate-to
-								facing speed -0.05 0.9 blt)
-							   (linear-step-forever facing 0.9 task blt))))
-						  (-> (fb)
-							  (fbcount 5 3)
-							  (fbspeed 4.0 5.0)
-							  (fbang 0.0 10.0)
-							  (fbshootenm e 'small-ball-red 5 #f))
-						  #;(-> (cb)
-							  (cbcount 17)
-							  (cbspeed 5.0)
-							  (cbshoot (enm-x e) (enm-y e)
-								(λ (layer in-layer speed facing)
-								  (define-values (x y) (dist-away e facing 40.0))
-								  (spawn-bullet
-								   'small-ball-red x y 5
-								   (λ (task blt)
-									 (linear-step-accelerate (fl+ facing pi) 0.0
-															 0.05 speed blt)
-									 (linear-step-forever (fl+ facing pi) speed task blt))))))
+						  (spawn-subtask "pellets"
+							(λ (task)
+							  (dotimes 40
+								(spawn-bullet
+								 'pellet-blue
+								 (fl+ x (fl/ w 2.0)) (fl+ y (fl/ h 2.0)) 5
+								 (λ (task blt)
+								   (define facing (fl* tau (roll game-rng)))
+								   (define speed (roll-flrange
+												  game-rng 1.8 3.0))
+								   (linear-step-decelerate-to
+									facing speed -0.05 0.9 blt)
+								   (linear-step-forever facing 0.9 task blt)))
+								(yield)))
+							(constantly #t)
+							toptask)
 						  (set-box! dont-damage-hazuki-box #t)
 						  (kill-enemy e)
-						  (cancel-bullet blt)))
-					  (when (fxzero? (fxmod (fx- frames start-time) 1))
-						(spawn-bullet 'small-ball-magenta
-									  (bullet-x blt) (bullet-y blt) 8
-									  (λ (task blt)
-										(define facing
-										  (torad (fx2fl
-												  (fx* 24 (fx- frames start-time)))))
-										(linear-step-accelerate-forever
-										 facing
-										 0.25 0.02 4.0 task blt)
-										;; (dotimes 90
-										;;   (linear-step facing 0.1 blt)
-										;;   (yield))
-										;; (cancel-bullet blt)
-										))))))
-				 (bullet-facing-set! facing))))
+						  (cancel-bullet blt))))))))
 		 enms-and-boxes))
 	  (thunk (not (all-dead)))
-	  task))
+	  toptask))
   (wait-until (thunk (task-dead killer-task)))
   )
 
