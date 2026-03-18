@@ -615,6 +615,9 @@
 				 '()
 				 (constantly #f)))
   (define bossinfo (blank-hazuki-bossinfo))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health hazuki))))
   (set! current-chapter 26)
   (spawn-subtask "doremi leave"
 	(λ (_)
@@ -626,19 +629,63 @@
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! hazuki bossinfo)
   (declare-nonspell hazuki 1800 1000)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health hazuki)))))
+  (spawn-subtask "main"
+	(λ (_)
+	  (interval-loop 60
+		(-> (fb)
+			(fbcount 45)
+			(fbang 0.0 4.0)
+			(fbspeed 2.0)
+			(fbshootenm hazuki 'small-ball-magenta 5 #f))))
+	keep-running
+	task)
+  (wait-while keep-running)
   (common-nonspell-postlude bossinfo)
   (hazuki-sp2 task hazuki))
 
-(define (hazuki-sp2-wisp-on-death killed-by-hazuki-box hazuki enm)
+(define (hazuki-sp2-wisp-on-death toptask killed-by-hazuki-box hazuki enm)
   (define killed-by-hazuki (unbox killed-by-hazuki-box))
-  (define winding (if (roll-bool game-rng) (torad 2.2) (torad -2.2)))
-  ;; don't run when being cleared by the attack ending
-  (when (fxpositive? (enm-health hazuki))
-	(raylib:play-sound (sebundle-bell sounds))
+  (define (five-flower)
+	(spawn-subtask "five-flower"
+	  (λ (task)
+		(define iters (if killed-by-hazuki 50 30))
+		(define init-ang (fl* 360.0 (roll game-rng)))
+		(define (fuzzed-player-x)
+		  (fl+ player-x (centered-roll game-rng 3.0)))
+		(define (fuzzed-player-y)
+		  (fl+ player-y (centered-roll game-rng 3.0)))
+		(define winding (if (roll-bool game-rng) 5 -5))
+		(do [(i 0 (add1 i))]
+			[(= i 30)]
+		  (let ([facing1 (fl+ init-ang (fx2fl (* i winding)))]
+				[facing2 (fl- init-ang (fx2fl (* i winding)))])
+			(spawn-bullet
+			 'butterfly-red
+			 (enm-x enm) (enm-y enm) 5
+			 (λ (task blt)
+			   (linear-step-decelerate facing1 4.0 -0.10 blt)
+			   (wait 5)
+			   (raylib:play-sound (sebundle-bell sounds))
+			   (linear-step-accelerate-forever
+				(flatan (fl- (fuzzed-player-y) (bullet-y blt))
+						(fl- (fuzzed-player-x) (bullet-x blt)))
+				0.0 0.05 (if killed-by-hazuki 4.5 3.0) task blt)))
+			(spawn-bullet
+			 'butterfly-magenta
+			 (enm-x enm) (enm-y enm) 5
+			 (λ (task blt)
+			   (linear-step-decelerate facing2 2.0 -0.05 blt)
+			   (wait 5)
+			   (raylib:play-sound (sebundle-bell sounds))
+			   (linear-step-accelerate-forever
+				(flatan (fl- (fuzzed-player-y) (bullet-y blt))
+						(fl- (fuzzed-player-x) (bullet-x blt)))
+				0.0 0.05 (if killed-by-hazuki 4.0 2.5) task blt)))
+			(yield))))
+	  (constantly #t)
+	  toptask))
+  (define (expanding-ring)
+	(define winding (if (roll-bool game-rng) (torad 2.2) (torad -2.2)))
 	(-> (cb)
 		(cbabsolute-aim)
 		(cbang (fl* 360.0 (roll game-rng)))
@@ -647,7 +694,7 @@
 		(cbshoot (enm-x enm) (enm-y enm)
 		  (λ (layer in-layer speed facing)
 			(-> (spawn-bullet
-				 (vnth-mod '#(butterfly-orange butterfly-magenta butterfly-red) layer)
+				 (vnth '#(butterfly-orange butterfly-magenta butterfly-red) layer)
 				 (enm-x enm) (enm-y enm) 5
 				 (λ (task blt)
 				   (let loop ([facing facing]
@@ -659,10 +706,35 @@
 						   (yield)
 						   (loop (fl+ facing winding)
 								 (add1 i)))
-						 (linear-step-accelerate-forever
-						  facing 1.5
-						  0.04 speed task blt)))))
-				(bullet-facing-set! facing)))))
+						 (begin
+						   (raylib:play-sound (sebundle-bell sounds))
+						   (linear-step-accelerate-forever
+							facing 1.5
+							0.04 speed task blt))))))
+				(bullet-facing-set! facing))))))
+  (define (chevron)
+	(define layers (if killed-by-hazuki 8 5))
+	(define speed (if killed-by-hazuki 4.0 3.0))
+	(define (do-chevron type facing)
+	  (do [(i 0 (add1 i))]
+		  [(= i layers)]
+		(-> (fb)
+			(fbcount (if (zero? i) 1 2))
+			(fbabsolute-aim)
+			(fbang (todeg facing) (if (zero? i) 0.0 (fx2fl (* i 4))))
+			(fbspeed speed)
+			(fbshootenm enm type (* i 4) #f))))
+	(define base-facing (facing-player (enm-x enm) (enm-y enm)))
+	(do-chevron 'butterfly-red base-facing)
+	(do-chevron 'butterfly-blue (fl+ base-facing (torad 40.0)))
+	(do-chevron 'butterfly-orange (fl+ base-facing (torad -40.0)))
+	)
+  ;; don't run when being cleared by the attack ending
+  (when (fxpositive? (enm-health hazuki))
+	(case (roll game-rng 3)
+	  [(0) (five-flower)]
+	  [(1) (expanding-ring)]
+	  [(2) (chevron)])
 	(unless killed-by-hazuki
 	  (damage-enemy hazuki 800 #t #t))))
 
@@ -686,13 +758,13 @@
 			  (cons (-> (spawn-enemy
 						 (enmtype red-wisp) (enm-x hazuki) (enm-y hazuki) 350
 						 (λ (task enm)
+						   (enm-superarmor-set! enm 40)
 						   (ease-to ease-in-out-quad x y 45 enm)
 						   (loop-forever))
 						 default-drop (curry hazuki-sp2-wisp-on-death
+											 toptask
 											 dont-damage-hazuki-box hazuki))
-						(enm-addflags (enmflags aura-red))
-						;; kinda silly but whatever
-						((λ (e) (enm-superarmor-set! e 40) e)))
+						(enm-addflags (enmflags aura-red)))
 					dont-damage-hazuki-box)
 			  acc)
 			 (add1 i))))))
@@ -702,13 +774,12 @@
   (define killer-task
 	(spawn-subtask "kill"
 	  (λ (task)
-		(wait 25)
-		(interval-loop-until 25 (fx>= (fx- frames start-time) 275)
+		(interval-loop-until 25 (fx>= (fx- frames start-time) 200)
 		  (-> (fb)
 			  (fbcount 4)
 			  (fbspeed 2.0)
 			  (fbang 0.0 20.0)
-			  (fbshootenm hazuki 'rest-blue 5 #f)))
+			  (fbshootenm hazuki 'rest-blue 5 (sebundle-shoot0 sounds))))
 		(for-each
 		 (λ (pair)
 		   (define e (car pair))

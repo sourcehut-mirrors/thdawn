@@ -28,7 +28,6 @@ As in, when you work pick something off the list and get at it.
 * doremi non2
 * doremi sp2
 * hazuki non2
-* hazuki sp2 (ghostbuster hazuki)
 * group sp3 (survival)
 * group sp4 (final)
 * go through all bullet types and appropriately set their preimg sizes

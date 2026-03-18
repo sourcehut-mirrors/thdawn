@@ -1,3 +1,14 @@
+* [2026-03-18 Wed]
+Spent the last couple days sprinting for Hazuki sp2 (and group non2 before that).
+
+Very satisfied with group non2. Hazuki sp2 took a lot of tweaking and I think there's
+still more to improve, but it's workable. Next will be Hazuki non2 and then group sp2.
+
+I think it's about time I can try to set some deadlines. I'd like to be done with all the
+boss patterns (at least a first pass) before Touhoufest. There's 12 attacks left to do
+over 3 months, so that means at least 4 attacks per month, which means at least 1 per week
+(on average). It'll be a good challenge.
+
 * [2026-03-07 Sat]
 Did some work a couple days ago to have the spellcircle not be terrible. I'm satisfied
 with it.
