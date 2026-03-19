@@ -764,7 +764,7 @@
 	  (λ (task)
 		(interval-loop-until 25 (fx>= (fx- frames start-time) 200)
 		  (-> (fb)
-			  (fbcount 4)
+			  (fbcount 8)
 			  (fbspeed 2.0)
 			  (fbang 0.0 20.0)
 			  (fbshootenm hazuki 'rest-blue 5 (sebundle-shoot0 sounds))))
@@ -817,6 +817,7 @@
 								x y w h))
 						  (spawn-subtask "pellets"
 							(λ (task)
+							  (define wind-dir (if (flnegative? x) -1 1))
 							  (define init-facing (fl* 360.0 (roll game-rng)))
 							  (do [(i 0 (add1 i))]
 								  [(= i 40)]
@@ -825,7 +826,9 @@
 								 (fl+ x (fl/ w 2.0)) (fl+ y (fl/ h 2.0)) 5
 								 (λ (task blt)
 								   (define facing
-									 (torad (fl+ init-facing (fx2fl (* 2 i 13)))))
+									 (torad (fl+ init-facing (fx2fl (* 2 i
+																	   wind-dir
+																	   13)))))
 								   (define speed (roll-flrange
 												  game-rng 2.0 2.5))
 								   (linear-step-forever facing 2.0 task blt)))
@@ -835,6 +838,7 @@
 								 (λ (task blt)
 								   (define facing
 									 (torad (fl+ init-facing (fx2fl (* (add1 (* 2 i))
+																	   wind-dir
 																	   13)))))
 								   (define speed (roll-flrange
 												  game-rng 2.0 2.5))
