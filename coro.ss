@@ -83,13 +83,15 @@
 	  [(name thunk keep-running?)
 	   (spawn-task name thunk keep-running? (lambda () #f) values)]
 	  [(name thunk keep-running? pre-hook post-hook)
-	   (spawn-subtask name thunk keep-running? #f pre-hook post-hook)]))
+	   (spawn-subtask name thunk #f keep-running? pre-hook post-hook)]))
 
   (define spawn-subtask
 	(case-lambda
-	  [(name thunk keep-running? parent)
-	   (spawn-subtask name thunk keep-running? parent (lambda () #f) values)]
-	  [(name thunk keep-running? parent pre-hook post-hook)
+	  [(name thunk parent)
+	   (spawn-subtask name thunk parent (lambda () #t))]
+	  [(name thunk parent keep-running?)
+	   (spawn-subtask name thunk parent keep-running? (lambda () #f) values)]
+	  [(name thunk parent keep-running? pre-hook post-hook)
 	   (let* ([actual-keep-running?
 			   (if parent
 				   (let ([parent-keep-running (task-keep-running? parent)])

@@ -17,8 +17,8 @@
 		  (fbspeed 4.0 6.0)
 		  (fbshootenm enm bullet 5 (sebundle-shoot0 sounds)))
 	  (wait 50)))
-  (spawn-subtask "movement" movement (constantly #t) task)
-  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (spawn-subtask "movement" movement task)
+  (spawn-subtask "shoot" shoot task)
   (wait-until (constantly #f)))
 
 (define (ch0-big-fairy task enm)
@@ -85,10 +85,10 @@
 					  (wait-until (thunk (>= (- frames start-time) 350)))
 					  (raylib:play-sound (sebundle-bell sounds))
 					  (linear-step-forever (* tau (roll game-rng)) 2.0 task blt))))
-  (spawn-subtask "movement" movement (constantly #t) task)
-  (spawn-subtask "rain" rain (constantly #t) task)
-  (spawn-subtask "ring" ring (thunk (fx< (fx- frames start-time) 250)) task)
-  (spawn-subtask "note" note (constantly #t) task)
+  (spawn-subtask "movement" movement task)
+  (spawn-subtask "rain" rain task)
+  (spawn-subtask "ring" ring task (thunk (fx< (fx- frames start-time) 250)))
+  (spawn-subtask "note" note task)
   (wait-until (constantly #f)))
 
 (define (ch0-w3-fairy type task enm)
@@ -171,7 +171,7 @@
 						 (vec2 -151.0 285.0)
 						 (vec2 134.0 276.0)
 						 (vec2 220.0 214.0)))
-  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (spawn-subtask "shoot" shoot task)
   (move-on-spline (if flip (vector-map (λ (p) (vec2 (fl- (v2x p)) (v2y p)))
 									   points)
 					  points)
@@ -192,7 +192,7 @@
 	;; FIXME: this breaks at shallow angles
 	(interval-loop-while 1 (< (enm-y enm) 470.0)
 	  (linear-step-enm facing 5.0 enm)))
-  (spawn-subtask "shoot" shoot (thunk (fl< (enm-y enm) 350.0)) task)
+  (spawn-subtask "shoot" shoot task (thunk (fl< (enm-y enm) 350.0)))
   (move task)
   (delete-enemy enm))
 
@@ -225,7 +225,7 @@
 		  (cbang 0.0 (if flip 5.0 -5.0))
 		  (cbspeed 3.0 4.0)
 		  (cbshootenm enm 'small-star-green 5 (sebundle-bell sounds)))))
-  (spawn-subtask "shoot" shoot (thunk (fx< (fx- frames start-time) 240)) task)
+  (spawn-subtask "shoot" shoot task (thunk (fx< (fx- frames start-time) 240)))
   (ease-to values (if flip 160.0 -160.0) 150.0 30 enm)
   (wait 240)
   (move-on-spline
@@ -316,9 +316,8 @@
 	(λ (task)
 	  (wait 90)
 	  (enm-clrflags enm (enmflags invincible)))
-	(constantly #t)
 	task)
-  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (spawn-subtask "shoot" shoot task)
   (ch3-fairy-sin-move flip task enm))
 (define (ch3-w1-leader-on-death followers _leader)
   (for-each
@@ -354,11 +353,10 @@
 	(λ (task)
 	  (wait (+ delay 100))
 	  (enm-clrflags enm (enmflags invincible)))
-	(constantly #t)
 	task)
   (enm-addflags enm (enmflags invincible))
   (wait delay)
-  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (spawn-subtask "shoot" shoot task)
   (ch3-fairy-sin-move flip task enm))
 
 (define (ch3-w2-fairy delay init-ang init-dist cx cy task enm)
@@ -398,8 +396,8 @@
 			  (fbang (- ang 90.0) 5.0)
 			  (fbabsolute-aim)
 			  (fbshootenm enm 'music-blue 5 #f)))))
-	(thunk (not (unbox stop-spinning)))
-	task)
+	task
+	(thunk (not (unbox stop-spinning))))
   (let ([final-ang (do-spin)])
 	(set-box! stop-spinning #t)
 	(spawn-subtask "exit shoot"
@@ -410,7 +408,6 @@
 			 (fbspeed 6.0)
 			 (fbang 0.0 12.0)
 			 (fbshootenm enm 'small-star-red 2 #f))))
-	  (constantly #t)
 	  task)
 	(ease-to values
 			 (+ cx (* 300.0 (cos final-ang))) (+ cy (* 300.0 (sin final-ang)))
@@ -585,8 +582,8 @@
 			(cbcount 14)
 			(cbspeed 6.0)
 			(cbshootenm enm 'heart-magenta 5 (sebundle-bell sounds)))))
-	(thunk (positive? (bossinfo-remaining-timer bossinfo)))
-	task)
+	task
+	(thunk (positive? (bossinfo-remaining-timer bossinfo))))
   (let loop ([ang 0.0]
 			 [offset 80.0])
 	(for-each
@@ -655,7 +652,6 @@
 		 (cdr angs))
 		(loop (reverse! angs)
 			  (mod (1+ type-idx) (length types)))))
-	(constantly #t)
 	task)
   (wait 300)
   (ease-to ease-in-quart 0.0 -50.0 180 enm)
@@ -679,7 +675,6 @@
 			  (fbspeed 4.0)
 			  (fbshootenm enm 'small-star-orange 2 #f))
 		  (wait 2))))
-	(constantly #t)
 	task)
   (loop-forever
    (linear-step-enm (torad 90.0) 2.0 enm)
@@ -827,7 +822,6 @@
 							(cancel-bullet blt))))
 		(wait 30)
 		(loop (1+ wave))))
-	(constantly #t)
 	task)
   (move-on-spline
    (if flip (vector-map (λ (p) (vec2 (fl- (v2x p)) (v2y p)))
@@ -865,7 +859,7 @@
 	  (loop
 	   (fl+ ang (fl* 12.0 (flcos (torad (fx2fl frames)))
 					 (flsin (torad (fx2fl frames))))))))
-  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (spawn-subtask "shoot" shoot task)
   (move-on-spline
    (if flip
 	   (vector (vec2 200.0 200.0)
@@ -931,7 +925,6 @@
 			(fbcount 1 3)
 			(fbspeed 4.0 5.0)
 			(fbshootenm enm blttype 2 (sebundle-shoot0 sounds)))))
-	(constantly #t)
 	task)
   (loop-until (flpositive? (enm-x enm))
 	(linear-step-enm 0.0 4.0 enm))
@@ -948,7 +941,6 @@
 			(fbcount 1 3)
 			(fbspeed 4.0 5.0)
 			(fbshootenm enm blttype 2 (sebundle-shoot0 sounds)))))
-	(constantly #t)
 	task)
   (loop-until (flnegative? (enm-x enm))
 	(linear-step-enm pi 4.0 enm))
@@ -1056,7 +1048,7 @@
 				(spawn-bullet color (enm-x enm) (enm-y enm) 5
 							  (curry linear-step-with-bounce facing speed))
 				(wait 2)))))))
-  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (spawn-subtask "shoot" shoot task)
   (ease-to values dest-x dest-y 180 enm)
   (delete-enemy enm))
 
@@ -1086,7 +1078,7 @@
 			(cbabsolute-aim)
 			(cbang (fx2fl (roll game-rng 360)) 0.0)
 			(cbshootenm enm 'small-ball-yellow 2 (sebundle-bell sounds)))))
-	(constantly #t) task)
+    task)
   (ease-to values (if right-side -200.0 200.0)
 		   (enm-y enm)
 		   300 enm)
@@ -1102,7 +1094,6 @@
 			(cbcount 12)
 			(cbspeed 5.0)
 			(cbshootenm enm 'heart-red 2 #f linear-step-forever))))
-	(constantly #t)
 	task)
   (spawn-subtask "shoot"
 	(λ (task)
@@ -1130,7 +1121,6 @@
 				 ;; start where previous wave ended, plus a bit more
 				 (* sign angper iters)
 				 (* sign 5)))))
-	(constantly #t)
 	task)
   (wait 190)
   (ease-to values 0.0 -20.0 70 enm)
@@ -1149,7 +1139,7 @@
 		  (fbspeed 5.0)
 		  (fbcount 1 3)
 		  (fbshootenm enm 'music-blue 2 #f))))
-  (spawn-subtask "shoot" shoot (constantly #t) task)
+  (spawn-subtask "shoot" shoot task)
   (ease-to values 200.0 (enm-y enm) 100 enm)
   (delete-enemy enm))
 
@@ -1265,7 +1255,7 @@
 			(fbcount 5)
 			(fbspeed 4.0)
 			(fbshootenm enm 'medium-ball-red 10 #f))))
-	keep-running task)
+	task keep-running)
   (spawn-subtask "circle"
 	(λ (task)
 	  (define dang (torad 10.0))
@@ -1301,8 +1291,8 @@
 			  (fbshootez x2 y2 'music-orange 5 #f))
 		  (wait 5)
 		  (loop (fl+ ang dang)))))
-	keep-running
-	task)
+	task
+	keep-running)
   (wait-while keep-running)
   (common-spell-postlude bossinfo enm)
   (common-boss-postlude bossinfo enm #t)
@@ -1331,7 +1321,6 @@
 			(cbcount 12)
 			(cbspeed 4.5)
 			(cbshootenm enm 'rice-cyan 2 #f))))
-	(constantly #t)
 	task)
   (move-on-spline
    (if right-side

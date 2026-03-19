@@ -56,19 +56,19 @@
 	  (wait (roll game-rng 60))
 	  (interval-loop 60
 		(boss-standard-wander-once doremi 10 40 50)))
-	keep-running task)
+	task keep-running)
   (spawn-subtask "hazuki wander"
 	(λ (task)
 	  (wait (roll game-rng 60))
 	  (interval-loop 60
 		(boss-standard-wander-once hazuki 10 40 50)))
-	keep-running task)
+	task keep-running)
   (spawn-subtask "aiko wander"
 	(λ (task)
 	  (wait (roll game-rng 60))
 	  (interval-loop 60
 		(boss-standard-wander-once aiko 10 40 50)))
-	keep-running task)
+	task keep-running)
 
   (wait 100)
   (-> (cb)
@@ -110,13 +110,11 @@
 	(λ (_)
 	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
 	  (delete-enemy hazuki))
-	(constantly #t)
 	task)
   (spawn-subtask "aiko leave"
 	(λ (_)
 	  (ease-to ease-out-cubic 100.0 -100.0 60 aiko)
 	  (delete-enemy aiko))
-	(constantly #t)
 	task)
   (declare-nonspell doremi 1800 1000)
   (wait-while
@@ -153,7 +151,6 @@
 	(λ (_)
 	  (ease-to ease-out-cubic -100.0 -100.0 60 doremi)
 	  (delete-enemy doremi))
-	(constantly #t)
 	task)
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
@@ -196,7 +193,6 @@
 	(λ (_)
 	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
 	  (delete-enemy hazuki))
-	(constantly #t)
 	task)
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
@@ -243,7 +239,7 @@
 					   (curry linear-step-forever facing speed))))
 				  #;(cbshootenm aiko 'music-cyan 5 (sebundle-bell sounds)))))
 		(boss-standard-wander-once aiko 40 50 30)))
-	keep-running task)
+	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo)
   (aiko-sp1 task aiko))
@@ -319,7 +315,6 @@
 					  [y (fl+ (enm-y aiko) (centered-roll game-rng 10.0))])
 				  (ease-to ease-in-out-quad x y 30 aiko)
 				  (wait 30))))
-			(constantly #t)
 			task)]
 		 [shoot-task
 		  (spawn-subtask "shoot"
@@ -332,7 +327,6 @@
 					  (fbspeed 4.75)
 					  (fbshootenm aiko 'heart-blue 5 (sebundle-shoot0 sounds)))
 				  (wait 8))))
-			(constantly #t)
 			move-task)])
 	(wait-until (thunk (task-dead move-task)))))
 
@@ -351,8 +345,7 @@
 			  (λ (task)
 				(aiko-sp1-round task aiko)
 				(wait 120))
-			  keep-running
-			  task)])
+			  task keep-running)])
 	 (wait-until (thunk (task-dead t)))))
   (common-spell-postlude bossinfo aiko)
   (group-non2 task aiko))
@@ -383,8 +376,8 @@
 			  (fbspeed 3.5 4.0)
 			  (fbang 0.0 20.0)
 			  (fbshootenm enm 'butterfly-magenta 5 #f))))
-	  (thunk (not (unbox dead-signalbox)))
-	  task))
+	  task
+	  (thunk (not (unbox dead-signalbox)))))
   (enm-superarmor-set! enm 105)
   (wait 25)
   (raylib:play-sound (sebundle-opshow sounds))
@@ -425,8 +418,8 @@
 				 (linear-step-accelerate-forever
 				  (facing-player (bullet-x blt) (bullet-y blt))
 				  0.0 0.08 3.0 task blt))))))
-	  (thunk (not (unbox dead-signalbox)))
-	  task))
+	  task
+	  (thunk (not (unbox dead-signalbox)))))
   (enm-superarmor-set! enm 80)
   (raylib:play-sound (sebundle-opshow sounds))
   (ease-to ease-in-out-quad (enm-x enm) (fl+ 80.0 (enm-y enm)) 60 enm)
@@ -472,8 +465,8 @@
 			  (fbabsolute-aim)
 			  (fbang (fl+ (centered-roll game-rng 2.5) (todeg -hpi)) 9.0)
 			  (fbshootenm enm 'small-star-cyan 5 #f))))
-	  (thunk (not (stop-pred)))
-	  task))
+	  task
+	  (thunk (not (stop-pred)))))
   (enm-superarmor-set! enm 90)
   (wait 10)
   (raylib:play-sound (sebundle-opshow sounds))
@@ -577,13 +570,11 @@
 	(λ (_)
 	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
 	  (delete-enemy hazuki))
-	(constantly #t)
 	task)
   (spawn-subtask "aiko leave"
 	(λ (_)
 	  (ease-to ease-out-cubic 100.0 -100.0 60 aiko)
 	  (delete-enemy aiko))
-	(constantly #t)
 	task)
   (declare-nonspell doremi 1800 1000)
   (wait-while
@@ -623,7 +614,6 @@
 	(λ (_)
 	  (ease-to ease-out-cubic -100.0 -100.0 60 doremi)
 	  (delete-enemy doremi))
-	(constantly #t)
 	task)
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
@@ -637,8 +627,7 @@
 			(fbang 0.0 4.0)
 			(fbspeed 2.0)
 			(fbshootenm hazuki 'small-ball-magenta 5 #f))))
-	keep-running
-	task)
+	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo)
   (hazuki-sp2 task hazuki))
@@ -682,7 +671,6 @@
 						(fl- (fuzzed-player-x) (bullet-x blt)))
 				0.0 0.05 (if killed-by-hazuki 4.0 2.5) task blt)))
 			(yield))))
-	  (constantly #t)
 	  toptask))
   (define (expanding-ring)
 	(define winding (if (roll-bool game-rng) (torad 2.2) (torad -2.2)))
@@ -817,7 +805,7 @@
 							(linear-step-accelerate-forever
 							 facing
 							 0.25 0.02 4.0 task blt)))))
-					  (constantly #t) task)
+					  task)
 					(loop-forever
 					  (linear-step facing 6.0 blt)
 					  (let-values ([(x y w h) (enm-hurtbox e)])
@@ -852,15 +840,14 @@
 												  game-rng 2.0 2.5))
 								   (linear-step-forever facing 2.0 task blt)))
 								(yield)))
-							(constantly #t)
 							toptask)
 						  (set-box! all-waves-clean-box #f)
 						  (set-box! dont-damage-hazuki-box #t)
 						  (kill-enemy e)
 						  (cancel-bullet blt))))))))
 		 enms-and-boxes))
-	  (thunk (not (all-dead)))
-	  toptask))
+	  toptask
+	  (thunk (not (all-dead)))))
   (wait-until (thunk (task-dead killer-task))))
 
 (define (hazuki-sp2 task hazuki)
@@ -878,7 +865,7 @@
 	(λ (task)
 	  (interval-loop 120
 		(hazuki-sp2-wave all-waves-clean task hazuki)))
-	keep-running task)
+	task keep-running)
   (wait-while keep-running)
   ;; Extra bonus if all waves were cleared without a wisp being killed by hazuki
   (when (unbox all-waves-clean)
@@ -953,7 +940,6 @@
 	(λ (_)
 	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
 	  (delete-enemy hazuki))
-	(constantly #t)
 	task)
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
@@ -983,7 +969,7 @@
 				(cbspeed 4.0)
 				(cbang (if (roll-bool game-rng) 0.0 2.0))
 				(cbshootenm aiko 'kunai-red 2 (sebundle-shoot0 sounds))))))
-	  keep-running task)
+	  task keep-running)
 	(spawn-subtask "rings"
 	  (λ (task)
 		(interval-loop-while 60 (fx<= (bossinfo-elapsed-frames bossinfo) 410)
@@ -1001,14 +987,14 @@
 				  (fbabsolute-aim)
 				  (fbang -90.0 12.0)
 				  (fbshootenm aiko 'big-star-orange 2 (sebundle-bell sounds)))))
-		  keep-running task)
+		  task keep-running)
 		(interval-loop 46
 		  (-> (fb)
 			  (fbcount 7)
 			  (fbspeed 3.0)
 			  (fbang 0.0 8.0)
 			  (fbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds)))))
-	  keep-running task))
+	  task keep-running))
   (ease-to values +middle-boss-x+ 225.0 300 aiko)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo)
@@ -1279,7 +1265,7 @@
 			  (cbcount 36)
 			  (cbspeed 2.0)
 			  (cbshootenm aiko 'kunai-magenta 5 #f)))))
-	keep-running task)
+	task keep-running)
   (spawn-subtask "main"
 	(λ (task)
 	  (define (spawn-ball)
@@ -1346,7 +1332,7 @@
 			  (set! cur-ball (spawn-ball))
 			  (wait 60)
 			  (wave frames)))))
-	keep-running task)
+	task keep-running)
   (wait-while keep-running)
   (common-spell-postlude bossinfo aiko)
   (group-sp3 task aiko))
@@ -1417,14 +1403,10 @@
 		 (positive? (enm-health doremi)))))
   (common-spell-postlude bossinfo doremi)
   (spawn-subtask "hazuki postlude"
-	(λ (_)
-	  (common-boss-postlude bossinfo hazuki #f))
-	(constantly #t)
+	(λ (_) (common-boss-postlude bossinfo hazuki #f))
 	task)
   (spawn-subtask "aiko postlude"
-	(λ (_)
-	  (common-boss-postlude bossinfo aiko #f))
-	(constantly #t)
+	(λ (_) (common-boss-postlude bossinfo aiko #f))
 	task)
   (common-boss-postlude bossinfo doremi #f)
   (wait 120)
