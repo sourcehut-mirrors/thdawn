@@ -711,7 +711,7 @@
 	  (interval-loop 90
 		(hazuki-non2-spawn-one
 		 hazuki
-		 (vnth '#(-70.0 0.0 70.0) (roll game-rng 3)))))
+		 (vrand '#(-70.0 0.0 70.0) game-rng))))
 	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo)

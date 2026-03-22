@@ -3619,24 +3619,24 @@
    (+ (enm-y enm) (centered-roll visual-rng 20.0))
    30 '((start-radius . 2)
 		(end-radius . 85)))
-  (cancel-all #t)
   (vector-for-each
    (λ (e)
 	 (when (and e (not (is-boss? e)))
 	   (kill-enemy e #t)))
    live-enm)
+  (cancel-all #t)
   (bossinfo-remaining-timer-set! bossinfo 0)
   (bossinfo-active-spell-bonus-set! bossinfo #f)
   (bossinfo-active-spell-id-set!
    bossinfo #f))
 
 (define (common-nonspell-postlude bossinfo)
-  (cancel-all #t)
   (vector-for-each
    (λ (e)
 	 (when (and e (not (is-boss? e)))
 	   (kill-enemy e #t)))
    live-enm)
+  (cancel-all #t)
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars bossinfo))))
