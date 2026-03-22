@@ -11,6 +11,7 @@
 		  lerp eval-bezier-quad eval-bezier-cubic
 		  pi -pi tau hpi -hpi
 		  torad todeg eround epsilon-equal clamp
+		  distsq
 		  ease-in-quad ease-out-quad ease-in-out-quad
 		  ease-out-cubic
 		  ease-in-quart ease-out-quart ease-in-out-quart
@@ -68,6 +69,10 @@
 	(- 1 (sqrt (- 1 (* x x)))))
   (define (ease-out-circ x)
 	(sqrt (- 1 (* (- x 1) (- x 1)))))
+  (define (distsq x1 y1 x2 y2)
+	(define dx (fl- x2 x1))
+	(define dy (fl- y2 y1))
+	(fl+ (fl* dx dx) (fl* dy dy)))
 
   (define-record-type (rectangle $make-rectangle rectangle?)
 	(fields
@@ -135,10 +140,8 @@
   ;; Refs https://mathworld.wolfram.com/OrthogonalCircles.html
   ;; https://thwiki.cc/%E6%B8%B8%E6%88%8F%E6%94%BB%E7%95%A5/STG%E5%88%A4%E5%AE%9A%E6%95%B0%E6%8D%AE
   (define (check-collision-circles x1 y1 radius1 x2 y2 radius2)
-	(define dx (fl- x2 x1))
-	(define dy (fl- y2 y1))
-	(define dist-sq (fl+ (fl* dx dx) (fl* dy dy)))
-	(fl<= dist-sq (fl+ (fl* radius1 radius1) (fl* radius2 radius2))))
+	(fl<= (distsq x1 y1 x2 y2)
+		  (fl+ (fl* radius1 radius1) (fl* radius2 radius2))))
 
   (define (check-collision-recs x1 y1 w1 h1 x2 y2 w2 h2)
 	(and (< x1 (+ x2 w2))

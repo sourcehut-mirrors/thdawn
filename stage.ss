@@ -474,6 +474,23 @@
 	  (loop (fl+ ang dang)
 			(cdr bullets)))))
 
+(define (position-bullets-around-motion-facing cx cy dist start-angle bullets)
+  (define dang (fl/ tau (fx2fl (length bullets))))
+  (let loop ([ang start-angle]
+			 [bullets bullets])
+	(unless (null? bullets)
+	  (let* ([bullet (car bullets)]
+			 [ox (bullet-x bullet)]
+			 [oy (bullet-y bullet)])
+		(bullet-x-set! bullet (fl+ cx (fl* dist (flcos ang))))
+		(bullet-y-set! bullet (fl+ cy (fl* dist (flsin ang))))
+		(bullet-facing-set!
+		 bullet
+		 (flatan (fl- (bullet-y bullet) oy)
+				 (fl- (bullet-x bullet) ox))))
+	  (loop (fl+ ang dang)
+			(cdr bullets)))))
+
 (define (midboss-control task enm)
   (define bossinfo (enm-extras enm))
   (define (ring)

@@ -595,6 +595,64 @@
   (common-spell-postlude bossinfo doremi)
   (hazuki-non2 task doremi))
 
+(define (hazuki-non2-wisp-control ring1 ring2 task enm)
+  (define start-frames frames)
+  (spawn-subtask "control ring 1"
+	(λ (task)
+	  (loop-forever
+	   (position-bullets-around-motion-facing
+		(enm-x enm) (enm-y enm)
+		(fl* 100.0 (flsin (fl* 1.0 (torad (fx2fl (- frames start-frames))))))
+		(torad (fl/ (fx2fl (- frames start-frames)) 2.0))
+		ring1)))
+	task)
+  (spawn-subtask "control ring 2"
+	(λ (task)
+	  (loop-forever
+	   (position-bullets-around-motion-facing
+		(enm-x enm) (enm-y enm)
+		(fl* 60.0 (flsin (fl* 1.0 (torad (fx2fl (- frames start-frames))))))
+		(torad (fl/ (fx2fl (- start-frames frames)) 2.0))
+		ring2)))
+	task)
+  (ease-to values (enm-x enm) (fx2fl (+ +playfield-max-y+ 150)) 480 enm)
+  (for-each delete-bullet ring1)
+  (for-each delete-bullet ring2)
+  (delete-enemy enm)
+  (loop-forever))
+
+(define (hazuki-non2-spawn-one hazuki x y enemy-type inner-type outer-type)
+  (define wisp-dead-box (box #f))
+  (define (blt-ctrl task blt)
+	(wait-until (thunk (unbox wisp-dead-box)))
+	(let ([ex (car (unbox wisp-dead-box))]
+		  [ey (cdr (unbox wisp-dead-box))])
+	  (if (fl< (distsq (bullet-x blt) (bullet-y blt) ex ey)
+			   (fl* 30.0 30.0))
+		  (cancel-bullet-with-drop blt (miscenttype big-piv) #t)
+		  (cancel-bullet blt #t))))
+  (define ring1
+	(map
+	 (λ (_)
+	   (-> (spawn-bullet outer-type x y 5 blt-ctrl)
+		   (bullet-addflags (bltflags uncancelable))))
+	 (iota 8)))
+  (define ring2
+	(map
+	 (λ (_)
+	   (-> (spawn-bullet inner-type x y 5 blt-ctrl)
+		   (bullet-addflags (bltflags uncancelable))))
+	 (iota 8)))
+  (-> (spawn-enemy
+	   enemy-type x y 500
+	   (curry hazuki-non2-wisp-control ring1 ring2)
+	   default-drop
+	   (λ (enm)
+		 (set-box! wisp-dead-box (cons (enm-x enm) (enm-y enm)))
+		 (damage-enemy hazuki 400)
+		 #t))
+	  (enm-addflags (enmflags aura-red nocollide autocollect))))
+
 (define (hazuki-non2 task doremi)
   (define bars (bossinfo-healthbars (enm-extras doremi)))
   (define _ (wait 90))
@@ -618,15 +676,20 @@
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! hazuki bossinfo)
-  (declare-nonspell hazuki 1800 1000)
+  (declare-nonspell hazuki 1800 6500)
+  (wait 30)
   (spawn-subtask "main"
 	(λ (_)
-	  (interval-loop 60
-		(-> (fb)
-			(fbcount 45)
-			(fbang 0.0 4.0)
-			(fbspeed 2.0)
-			(fbshootenm hazuki 'small-ball-magenta 5 #f))))
+	  (raylib:play-sound (sebundle-oldvwoopslow sounds))
+	  (wait 60)
+	  (let ([start-frames frames])
+		(interval-loop 90
+		  (hazuki-non2-spawn-one
+		   hazuki
+		   (vnth '#(-80.0 0.0 80.0) (roll game-rng 3))
+		   20.0
+;;		   (fl+ player-x (centered-roll game-rng 50.0)) 20.0
+		   (enmtype red-wisp) 'glow-ball-red 'glow-ball-blue))))
 	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo)
@@ -715,8 +778,7 @@
 	(define base-facing (facing-player (enm-x enm) (enm-y enm)))
 	(do-chevron 'butterfly-red base-facing)
 	(do-chevron 'butterfly-blue (fl+ base-facing (torad 40.0)))
-	(do-chevron 'butterfly-orange (fl+ base-facing (torad -40.0)))
-	)
+	(do-chevron 'butterfly-orange (fl+ base-facing (torad -40.0))))
   ;; don't run when being cleared by the attack ending
   (when (fxpositive? (enm-health hazuki))
 	(case (roll game-rng 3)
@@ -873,11 +935,12 @@
   (wait-while keep-running)
   ;; Extra bonus if all waves were cleared without a wisp being killed by hazuki
   (when (unbox all-waves-clean)
-	(spawn-particle
-	 (particletype spellbonus)
-	 0.0 100.0 180
-	 (format "EX Bonus!! ~:d" 5000000))
-	(set! current-score (+ current-score 5000000)))
+	(let ([bonus (* 100 item-value)])
+	  (spawn-particle
+	   (particletype spellbonus)
+	   0.0 100.0 180
+	   (format "EX Bonus!! ~:d" bonus))
+	  (set! current-score (+ current-score bonus))))
   (common-spell-postlude bossinfo hazuki)
   (aiko-non2 task hazuki))
 
@@ -1143,11 +1206,12 @@
 				 ;; Extra bonus if the ball was the killing blow
 				 (when (and (fxpositive? old-health)
 							(fxnonpositive? (enm-health aiko)))
-				   (spawn-particle
-					(particletype spellbonus)
-					0.0 100.0 180
-					(format "EX Bonus!! ~:d" 5000000))
-				   (set! current-score (+ current-score 5000000))))
+				   (let ([bonus (* 100 item-value)])
+					 (spawn-particle
+					  (particletype spellbonus)
+					  0.0 100.0 180
+					  (format "EX Bonus!! ~:d" bonus))
+					 (set! current-score (+ current-score bonus)))))
 			   (loop state
 					 (flatan (fl- (bullet-y blt) (enm-y aiko))
 							 (fl- (bullet-x blt) (enm-x aiko)))

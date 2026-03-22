@@ -243,6 +243,9 @@
    'amulet basic-colors
    txbundle-bullet1 152 0 16 16 shift8)
   (make-vertical-group
+   'glow-ball basic-colors
+   txbundle-bullet4 64 0 32 32 shift16)
+  (make-vertical-group
    'small-ball basic-colors
    txbundle-bullet1 176 0 32 32 shift16)
   (make-vertical-group
@@ -1725,6 +1728,7 @@
 	(make-family 'ellipse basic-colors-str 4.0)
 	(make-family 'arrowhead basic-colors-str 3.0)
 	(make-family 'amulet basic-colors-str 3.1)
+	(make-family 'glow-ball basic-colors-str 3.0)
 	(make-family 'small-ball basic-colors-str 3.0)
 	(make-family 'medium-ball basic-colors-str 9.0)
 	(make-family 'ice-shard basic-colors-str 2.5)
@@ -1787,10 +1791,12 @@
   (enum-set-member? flag (bullet-flags blt)))
 
 (define (bullet-addflags blt flags)
-  (bullet-flags-set! blt (enum-set-union (bullet-flags blt) flags)))
+  (bullet-flags-set! blt (enum-set-union (bullet-flags blt) flags))
+  blt)
 
 (define (bullet-clrflags blt flags)
-  (bullet-flags-set! blt (enum-set-difference (bullet-flags blt) flags)))
+  (bullet-flags-set! blt (enum-set-difference (bullet-flags blt) flags))
+  blt)
 
 (define (spawn-bullet type x y delay control-function)
   (let ([idx (vector-index #f live-bullets)])
@@ -1952,7 +1958,7 @@
 			(let ()
 			  (case (bullet-family type)
 				;; basic
-				([pellet small-ball medium-ball glow-orb]
+				([pellet small-ball glow-ball medium-ball glow-orb]
 				 (draw-sprite textures type render-x render-y #xffffffff))
 				;; aimed in direction of movement
 				([butterfly ellipse arrowhead amulet ice-shard rice

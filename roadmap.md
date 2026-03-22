@@ -14,7 +14,8 @@ As in, when you work pick something off the list and get at it.
 * doremi sprite
 * hazuki sprite
 * aiko sprite
-* player portrait
+* reimu portrait
+* title reimu portrait
 * doremi portrait
 * hazuki portrait
 * aiko portrait
@@ -32,7 +33,6 @@ As in, when you work pick something off the list and get at it.
 * group sp4 (final)
 * go through all bullet types and appropriately set their preimg sizes
 * freely noodle around with flower patterns for doremi/hazuki nons and spells
-* actually fix the spell circle following to not be Bad tm
 * shot collide with enemy effect
 
 ## Medium-term TODOs
@@ -41,8 +41,6 @@ As in, when you work pick something off the list and get at it.
 * borderless fullscreen support
 * improve midsp1 wandering
 * menu system prettification
-  * find/make a stock image for menu background
-    * just stick with one, or maybe two (one for play data/replay menus, other for rest)
   * rearrange settings visually
   * add little effects like idle wiggling, pulsing when selection changes, etc.
 * make ch1 treble clef spread out prettier/more structured
@@ -185,6 +183,8 @@ Sp9 Trio
 Magical Stage
 make sure to loop music so that "thank you!!" only plays after the bosses are defeated
 might require some clever trickery (or hardcoding...)
+mechanically simple. maybe based off the (post-kururu poron) version of the anime op? https://youtu.be/p2s8Cfjmh_I?si=LcofWfcwxbwqgLdf&t=65
+rings + spinner (bosses themselves spinning?) + random stardust
 
 Scenario
 Doremi and gang somehow get spirited off to gensokyo (took a wrong door on the way to the
