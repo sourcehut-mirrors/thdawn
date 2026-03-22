@@ -615,13 +615,13 @@
 		(torad (fl/ (fx2fl (- start-frames frames)) 2.0))
 		ring2)))
 	task)
-  (ease-to values (enm-x enm) (fx2fl (+ +playfield-max-y+ 150)) 480 enm)
+  (ease-to values (enm-x enm) (fx2fl (+ +playfield-max-y+ 150)) 500 enm)
   (for-each delete-bullet ring1)
   (for-each delete-bullet ring2)
-  (delete-enemy enm)
-  (loop-forever))
+  (delete-enemy enm))
 
-(define (hazuki-non2-spawn-one hazuki x y enemy-type inner-type outer-type)
+(define (hazuki-non2-spawn-one hazuki x)
+  (define y 0.0)
   (define wisp-dead-box (box #f))
   (define (blt-ctrl task blt)
 	(wait-until (thunk (unbox wisp-dead-box)))
@@ -634,22 +634,22 @@
   (define ring1
 	(map
 	 (λ (_)
-	   (-> (spawn-bullet outer-type x y 5 blt-ctrl)
+	   (-> (spawn-bullet 'glow-ball-blue x y 5 blt-ctrl)
 		   (bullet-addflags (bltflags uncancelable))))
 	 (iota 8)))
   (define ring2
 	(map
 	 (λ (_)
-	   (-> (spawn-bullet inner-type x y 5 blt-ctrl)
+	   (-> (spawn-bullet 'glow-ball-red x y 5 blt-ctrl)
 		   (bullet-addflags (bltflags uncancelable))))
 	 (iota 8)))
   (-> (spawn-enemy
-	   enemy-type x y 500
+	   (enmtype red-wisp) x y 350
 	   (curry hazuki-non2-wisp-control ring1 ring2)
 	   default-drop
 	   (λ (enm)
 		 (set-box! wisp-dead-box (cons (enm-x enm) (enm-y enm)))
-		 (damage-enemy hazuki 400)
+		 (damage-enemy hazuki 200)
 		 #t))
 	  (enm-addflags (enmflags aura-red nocollide autocollect))))
 
@@ -676,20 +676,42 @@
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! hazuki bossinfo)
-  (declare-nonspell hazuki 1800 6500)
+  (declare-nonspell hazuki 2400 6500)
   (wait 30)
   (spawn-subtask "main"
-	(λ (_)
+	(λ (task)
 	  (raylib:play-sound (sebundle-oldvwoopslow sounds))
 	  (wait 60)
-	  (let ([start-frames frames])
-		(interval-loop 90
-		  (hazuki-non2-spawn-one
-		   hazuki
-		   (vnth '#(-80.0 0.0 80.0) (roll game-rng 3))
-		   20.0
-;;		   (fl+ player-x (centered-roll game-rng 50.0)) 20.0
-		   (enmtype red-wisp) 'glow-ball-red 'glow-ball-blue))))
+	  (spawn-subtask "ring"
+		(λ (task)
+		  (wait 180)
+		  (interval-loop 40
+			(-> (cb)
+				(cbcount 56)
+				(cbabsolute-aim)
+				(cbspeed 3.0)
+				(cbshootenm hazuki 'rice-white 5 (sebundle-shoot0 sounds)))))
+		task)
+	  (spawn-subtask "decor"
+		(λ (task)
+		  (wait 180)
+		  (interval-loop 20
+			(-> (cb)
+				(cbcount 56 2)
+				(cbang 90.0)
+				(cbabsolute-aim)
+				(cbspeed 3.0 4.0)
+				(cbshoot (enm-x hazuki) (enm-y hazuki)
+				  (λ (layer in-layer speed facing)
+					(unless (or (fx<= 0 in-layer 5)
+								(fx<= 50 in-layer 55))
+					  (spawn-bullet 'rice-yellow (enm-x hazuki) (enm-y hazuki) 5
+									(curry linear-step-forever facing speed))))))))
+		task)
+	  (interval-loop 90
+		(hazuki-non2-spawn-one
+		 hazuki
+		 (vnth '#(-70.0 0.0 70.0) (roll game-rng 3)))))
 	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo)
@@ -798,7 +820,7 @@
 			   [i 0])
 	  (if (= i 4)
 		  (reverse! acc)
-		  (let ([dont-damage-hazuki-box (box #f)]
+		  (let ([killed-by-hazuki-box (box #f)]
 				[x (car (vnth points i))]
 				[y (cdr (vnth points i))])
 			(wait 20)
@@ -813,9 +835,9 @@
 						   (loop-forever))
 						 default-drop (curry hazuki-sp2-wisp-on-death
 											 toptask
-											 dont-damage-hazuki-box hazuki))
+											 killed-by-hazuki-box hazuki))
 						(enm-addflags (enmflags aura-red)))
-					dont-damage-hazuki-box)
+					killed-by-hazuki-box)
 			  acc)
 			 (add1 i))))))
   (define (all-dead)
@@ -846,7 +868,7 @@
 		(for-each
 		 (λ (pair)
 		   (define e (car pair))
-		   (define dont-damage-hazuki-box (cdr pair))
+		   (define killed-by-hazuki-box (cdr pair))
 		   (define facing (flatan (fl- (enm-y e) (enm-y hazuki))
 								  (fl- (enm-x e) (enm-x hazuki))))
 		   (when (fxpositive? (enm-health e))
@@ -908,7 +930,7 @@
 								(yield)))
 							toptask)
 						  (set-box! all-waves-clean-box #f)
-						  (set-box! dont-damage-hazuki-box #t)
+						  (set-box! killed-by-hazuki-box #t)
 						  (kill-enemy e)
 						  (cancel-bullet blt))))))))
 		 enms-and-boxes))
