@@ -649,7 +649,7 @@
 	   default-drop
 	   (λ (enm)
 		 (set-box! wisp-dead-box (cons (enm-x enm) (enm-y enm)))
-		 (damage-enemy hazuki 200)
+		 (damage-enemy hazuki 400 #t #t)
 		 #t))
 	  (enm-addflags (enmflags aura-red nocollide autocollect))))
 
@@ -677,6 +677,7 @@
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! hazuki bossinfo)
   (declare-nonspell hazuki 2400 6500)
+  (enm-superarmor-set! hazuki 2400)
   (wait 30)
   (spawn-subtask "main"
 	(λ (task)
