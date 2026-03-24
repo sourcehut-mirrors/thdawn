@@ -1351,7 +1351,7 @@
   (spawn-subtask "protection"
 	(λ (task)
 	  (interval-loop 20
-		(when (fl< player-y 300.0)
+		(when (fl< player-y 330.0)
 		  (-> (cb)
 			  (cbcount 36)
 			  (cbspeed 2.0)
