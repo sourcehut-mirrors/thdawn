@@ -82,6 +82,7 @@
    ;; no effect on non-fixed laser types
    noshine
    noclip ;; do not hurt the player through the standard collision logic
+   nocanceldrop ;; cancelable, but won't drop piv items
    )
   bltflags)
 ;; global overrides. when in effect, all spawned bullets automatically gain the
@@ -1639,9 +1640,9 @@
 (define (facing-player x y)
   (flatan (fl- player-y y) (fl- player-x x)))
 
-(define (dist-away enm facing dist)
-  (values (fl+ (enm-x enm) (fl* dist (flcos facing)))
-		  (fl+ (enm-y enm) (fl* dist (flsin facing)))))
+(define (dist-away cx cy facing dist)
+  (values (fl+ cx (fl* dist (flcos facing)))
+		  (fl+ cy (fl* dist (flsin facing)))))
 
 (define (player-invincible?)
   (or (fxpositive? iframes)
@@ -1874,7 +1875,8 @@
   (case-lambda
 	([bullet drop] (cancel-bullet-with-drop bullet drop #f))
 	([bullet drop force]
-	 (when (cancel-bullet bullet force)
+	 (when (and (cancel-bullet bullet force)
+				(not (bullet-hasflag? bullet (bltflag nocanceldrop))))
 	   (spawn-drops-with-autocollect
 		(list (cons drop 1))
 		(bullet-x bullet) (bullet-y bullet))))))
@@ -2246,9 +2248,9 @@
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
 							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
-							6000 500 3000000 'group std std-fail)
+							6000 9000 3000000 'group std std-fail)
 	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""
-							6000 500 3000000 'doremi std std-fail)
+							6000 900 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Ghostbuster Hazuki\""
 							3000 9000 3000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Athlete Sign \"Aiko's Pinball Penalty Shootout\""
@@ -3468,7 +3470,7 @@
 				(set! current-score (+ 100 current-score)))
 			   ([big-piv]
 				(raylib:play-sound (sebundle-item sounds))
-				(set! item-value (+ 200 item-value))
+				(set! item-value (+ 1000 item-value))
 				(set! current-score (+ 1000 current-score))))
 			 (delete-misc-ent ent))
 		   (when (> (miscent-y ent) (+ +playfield-max-y+ 20))

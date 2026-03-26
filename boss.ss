@@ -546,18 +546,52 @@
   (common-nonspell-postlude bossinfo)
   (group-sp2 task doremi hazuki aiko))
 
+(define (group-sp2-boss-ctrl init-ang enm task)
+  (define center-x 0.0)
+  (define center-y 220.0)
+  (define init-dist 170.0)
+  (define outer-spin-rate (torad 0.5))
+  (define-values (ix iy)
+	(dist-away center-x center-y init-ang init-dist))
+  (ease-to ease-in-out-quad ix iy 60 enm)
+  (wait 120)
+  (let loop ([i 0]
+			 [ang init-ang]
+			 [dist init-dist])
+	(let-values ([(x y)
+				  (dist-away center-x center-y ang dist)])
+	  (enm-x-set! enm x)
+	  (enm-y-set! enm y))
+	(when (zero? (fxmod i 10))
+	  (spawn-bullet 'rice-white (enm-x enm) (enm-y enm) 0
+					(curry linear-step-forever (fl+ ang pi) 2.0)))
+	(yield)
+	(loop (fx1+ i) (fl+ ang outer-spin-rate) dist))
+  )
+
 (define (group-sp2 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health doremi))))
   (set! current-chapter 23)
   (bossinfo-redirect-damage-set!
    (enm-extras hazuki) doremi)
   (bossinfo-redirect-damage-set!
    (enm-extras aiko) doremi)
   (declare-spell doremi 6)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi)))))
+  (wait 60)
+  (raylib:play-sound (sebundle-shortcharge sounds))
+  (spawn-subtask "aiko ctrl"
+	(curry group-sp2-boss-ctrl (torad 30.0) aiko)
+	task keep-running)
+  (spawn-subtask "hazuki ctrl"
+	(curry group-sp2-boss-ctrl (torad 150.0) hazuki)
+	task keep-running)
+  (spawn-subtask "doremi ctrl"
+	(curry group-sp2-boss-ctrl (torad -90.0) doremi)
+	task keep-running)
+  (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
   (doremi-non2 task doremi hazuki aiko))
 
@@ -646,12 +680,12 @@
   (-> (spawn-enemy
 	   (enmtype red-wisp) x y 350
 	   (curry hazuki-non2-wisp-control ring1 ring2)
-	   default-drop
+	   '()
 	   (λ (enm)
 		 (set-box! wisp-dead-box (cons (enm-x enm) (enm-y enm)))
 		 (damage-enemy hazuki 400 #t #t)
 		 #t))
-	  (enm-addflags (enmflags aura-red nocollide autocollect))))
+	  (enm-addflags (enmflags aura-red nocollide))))
 
 (define (hazuki-non2 task doremi)
   (define bars (bossinfo-healthbars (enm-extras doremi)))
@@ -687,11 +721,16 @@
 		(λ (task)
 		  (wait 180)
 		  (interval-loop 40
+			(raylib:play-sound (sebundle-shoot0 sounds))
 			(-> (cb)
 				(cbcount 56)
 				(cbabsolute-aim)
 				(cbspeed 3.0)
-				(cbshootenm hazuki 'rice-white 5 (sebundle-shoot0 sounds)))))
+				(cbshoot (enm-x hazuki) (enm-y hazuki)
+				  (λ (layer in-layer speed facing)
+					(-> (spawn-bullet 'rice-white (enm-x hazuki) (enm-y hazuki) 5
+									  (curry linear-step-forever facing speed))
+						(bullet-addflags (bltflags nocanceldrop))))))))
 		task)
 	  (spawn-subtask "decor"
 		(λ (task)
@@ -706,8 +745,9 @@
 				  (λ (layer in-layer speed facing)
 					(unless (or (fx<= 0 in-layer 5)
 								(fx<= 50 in-layer 55))
-					  (spawn-bullet 'rice-yellow (enm-x hazuki) (enm-y hazuki) 5
-									(curry linear-step-forever facing speed))))))))
+					  (-> (spawn-bullet 'rice-yellow (enm-x hazuki) (enm-y hazuki) 5
+										(curry linear-step-forever facing speed))
+						  (bullet-addflags (bltflags nocanceldrop)))))))))
 		task)
 	  (interval-loop 90
 		(hazuki-non2-spawn-one
