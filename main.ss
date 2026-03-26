@@ -659,6 +659,7 @@
    ;; if playing a replay, the index into replay-records of the next
    ;; record pending processing, otherwise -1
    (mutable replay-idx)
+   (mutable next-bullet-id)
    live-bullets
    live-enm
    live-misc-ents
@@ -722,6 +723,7 @@
    '()
    (and (vector? replay) replay)
    (if (vector? replay) 0 -1)
+   1
    (make-vector 4096 #f)
    (make-vector 256 #f)
    (make-vector 4096 #f)
@@ -1651,10 +1653,9 @@
 (define (paused?)
   (memp pause-gui? gui-stack))
 
-(define next-bullet-id 1)
 (define (get-next-bullet-id)
-  (define res next-bullet-id)
-  (set! next-bullet-id (fx1+ next-bullet-id))
+  (define res (stage-ctx-next-bullet-id current-stage-ctx))
+  (stage-ctx-next-bullet-id-set! current-stage-ctx (fx1+ res))
   res)
 
 (define-record-type bullet
@@ -4519,7 +4520,7 @@
 					  440 325 18 -1)
 	(raylib:draw-text (format "BLT: ~d / LFT: ~d"
 							  (vector-popcnt live-bullets)
-							  (fx1- next-bullet-id))
+							  (fx1- (stage-ctx-next-bullet-id current-stage-ctx)))
 					  440 350 18 -1)
 	(raylib:draw-text (format "TASK: ~d" (task-count))
 					  440 375 18 -1)
