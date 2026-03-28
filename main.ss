@@ -89,6 +89,7 @@
 ;; corresponding flags. makes callsite code cleaner at the cost of some global state
 (define ovr-uncancelable (make-parameter #f))
 (define ovr-noclip (make-parameter #f))
+(define ovr-nocanceldrop (make-parameter #f))
 
 (define empty-bltflags (bltflags))
 (define-enumeration enmflag
@@ -489,8 +490,10 @@
 	(make-rectangle 0.0 0.0 length (fl* radius 2.0))
 	v2zero 0.0 -1))
   (when shine-sprite
-	(draw-sprite-with-rotation textures shine-sprite
-							   (mod (* frames 11.0) 360.0) x y -1)))
+	(draw-sprite-with-rotation
+	 textures shine-sprite
+	 (fx2fl (fxmod (fx* frames 11) 360))
+	 x y -1)))
 
 (define (draw-sprite textures sprite-id x y color)
   (define data (symbol-hashtable-ref sprite-data sprite-id #f))
@@ -525,7 +528,7 @@
   (define center-shift (sprite-descriptor-center-shift data))
   (raylib:with-matrix
    (raylib:translatef x y 0.0)
-   (raylib:rotatef (inexact rotation) 0.0 0.0 1.0)
+   (raylib:rotatef rotation 0.0 0.0 1.0)
    (raylib:translatef (v2x center-shift) (v2y center-shift) 0.0)
    (raylib:draw-texture-rec
 	((sprite-descriptor-tx-accessor data) textures)
@@ -1812,6 +1815,8 @@
 		(bullet-addflags blt (bltflags uncancelable)))
 	  (when (ovr-noclip)
 		(bullet-addflags blt (bltflags noclip)))
+	  (when (ovr-nocanceldrop)
+		(bullet-addflags blt (bltflags nocanceldrop)))
 	  (spawn-task "bullet"
 				  (λ (task)
 					(do [(i 0 (fx1+ i))]
@@ -1971,10 +1976,12 @@
 											render-x render-y -1))
 				;; spinny
 				([small-star big-star]
-				 (draw-sprite-with-rotation textures type (fxmod (fx* frames 5) 360)
+				 (draw-sprite-with-rotation textures type
+											(fx2fl (fxmod (fx* frames 5) 360))
 											render-x render-y -1))
 				([bubble yinyang]
-				 (draw-sprite-with-rotation textures type (fxmod (fx* frames 8) 360)
+				 (draw-sprite-with-rotation textures type
+											(fx2fl (fxmod (fx* frames 8) 360))
 											render-x render-y -1))
 				([music]
 				 (let ([sprite
@@ -2411,9 +2418,9 @@
 
 (define (enm-invincible? enm)
   (or (enm-hasflag? enm (enmflag invincible))
-	  (and (is-boss? enm)
-		   (fxpositive? bombing)
-		   (or (bossinfo-active-spell-id (enm-extras enm))
+	  (and (fxpositive? bombing)
+		   (or (and (is-boss? enm)
+					(bossinfo-active-spell-id (enm-extras enm)))
 			   (let ([delegate (enm-redirect-damage enm)])
 				 (and delegate
 					  (is-boss? delegate)
@@ -2498,9 +2505,9 @@
 			(record-start-move)
 			(cond
 			 [(flnegative? dx) (enm-dx-render-set!
-								enm (flmin 0.0 (fl+ dx (abs (fl- y oy)))))]
+								enm (flmin 0.0 (fl+ dx (flabs (fl- y oy)))))]
 			 [(flpositive? dx) (enm-dx-render-set!
-								enm (flmax 0.0 (fl- dx (abs (fl- y oy)))))])]
+								enm (flmax 0.0 (fl- dx (flabs (fl- y oy)))))])]
 		   ;; Moving on x: Go in the direction we're moving (up to a cap)
 		   [else
 			(record-start-move)
@@ -2537,8 +2544,8 @@
   (raylib:play-sound (sebundle-enmdie sounds))
   (spawn-particle
    (particletype enmdeath)
-   (+ (enm-x enm) (centered-roll visual-rng 20.0))
-   (+ (enm-y enm) (centered-roll visual-rng 20.0))
+   (fl+ (enm-x enm) (centered-roll visual-rng 20.0))
+   (fl+ (enm-y enm) (centered-roll visual-rng 20.0))
    30 '((start-radius . 2)
 		(end-radius . 85))))
 
@@ -2912,12 +2919,12 @@
 			 (draw-sprite-with-scale-rotation
 			  textures
 			  outer-sprite
-			  (flmod (* frames -4.0) 360.0)
+			  (fx2fl (fxmod (fx* frames -4) 360))
 			  1.4 render-x render-y tint)
 			 (draw-sprite-with-rotation
 			  textures
 			  outer-sprite
-			  (flmod (* frames 8.0) 360.0)
+			  (fx2fl (fxmod (fx* frames 8) 360))
 			  render-x render-y tint)))
 		  ([red-wisp blue-wisp green-wisp yellow-wisp]
 		   (let* ([sprites
@@ -3045,15 +3052,15 @@
   (loop-forever (linear-step facing speed blt)))
 
 (define (linear-step facing speed blt)
-  (bullet-x-set! blt (+ (bullet-x blt) (* speed (cos facing))))
-  (bullet-y-set! blt (+ (bullet-y blt) (* speed (sin facing)))))
+  (bullet-x-set! blt (fl+ (bullet-x blt) (fl* speed (flcos facing))))
+  (bullet-y-set! blt (fl+ (bullet-y blt) (fl* speed (flsin facing)))))
 
 (define (linear-step-enm-forever facing speed enm)
   (loop-forever (linear-step-enm facing speed enm)))
 
 (define (linear-step-enm facing speed enm)
-  (enm-x-set! enm (+ (enm-x enm) (* speed (cos facing))))
-  (enm-y-set! enm (+ (enm-y enm) (* speed (sin facing)))))
+  (enm-x-set! enm (fl+ (enm-x enm) (fl* speed (flcos facing))))
+  (enm-y-set! enm (fl+ (enm-y enm) (fl* speed (flsin facing)))))
 
 (define (linear-step-separate vx vy blt)
   (define ox (bullet-x blt))
@@ -3488,7 +3495,7 @@
 		(case type
 		  ([mainshot]
 		   (draw-sprite-with-rotation
-			textures 'mainshot -90
+			textures 'mainshot -90.0
 			render-x render-y #xffffffdd)
 		   (when show-hitboxes
 			 (raylib:draw-rectangle-rec
@@ -3498,7 +3505,7 @@
 		  ([needle]
 		   ;; todo: different rendering when it hits something?
 		   (draw-sprite-with-rotation
-			textures 'needle -90
+			textures 'needle -90.0
 			render-x render-y #xffffffdd)
 		   (when show-hitboxes
 			 (raylib:draw-rectangle-rec
@@ -4197,7 +4204,7 @@
 	 (define render-x (+ x +playfield-render-offset-x+))
 	 (define render-y (+ y +playfield-render-offset-y+))
 	 (draw-sprite-with-rotation
-	  textures 'option (mod (* frames 4) 360)
+	  textures 'option (fx2fl (fxmod (fx* frames 4) 360))
 	  render-x render-y -1))
    option-xs option-ys)
 

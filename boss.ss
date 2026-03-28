@@ -540,57 +540,102 @@
   (common-nonspell-postlude bossinfo)
   (group-sp2 task doremi hazuki aiko))
 
-(define (group-sp2-boss-ctrl init-ang enm task)
-  (define center-x 0.0)
-  (define center-y 220.0)
-  (define init-dist 170.0)
+(define group-sp2-center-x 0.0)
+(define group-sp2-center-y 220.0)
+
+(define (group-sp2-fairy-ctrl init-ang task fairy)
+  (define inner-spin-rate (torad -0.6))
+  (define init-dist 160.0)
+  (define type
+	(case (enm-type fairy)
+	  [(dodo) 'music-red]
+	  [(rere) 'music-orange]
+	  [(mimi) 'music-blue]))
+  (define-values (ix iy)
+	(dist-away group-sp2-center-x group-sp2-center-y init-ang init-dist))
+  (define _ (ease-to values ix iy 60 fairy))
+  (define laser
+	(spawn-laser 'fixed-laser-yellow ix iy
+				 (fl+ init-ang (torad 210.0)) 275.0
+				 5.0 40 120 (λ (task blt) (loop-forever))))
+  (wait 120)
+  (spawn-subtask "real"
+	(λ (task)
+	  (let loop ([i 0])
+		(-> (fb)
+			(fbcount 3)
+			(fbang 0.0 5.0)
+			(fbspeed 1.8)
+			(fbshootenm fairy 'small-star-blue 5 (sebundle-shoot0 sounds)))
+		(wait 45)
+		(loop (fx1+ i))))
+	task)
+  (let loop ([i 0]
+			 [ang init-ang]
+			 [dist init-dist])
+	(let-values ([(x y)
+				  (dist-away group-sp2-center-x group-sp2-center-y ang dist)])
+	  (enm-x-set! fairy x)
+	  (enm-y-set! fairy y)
+	  (bullet-x-set! laser x)
+	  (bullet-y-set! laser y)
+	  (bullet-facing-set! laser (fl+ ang (torad 210.0))))
+	(let-values ([(q m) (div-and-mod i 8)])
+	  (when (fxzero? m)
+		(parameterize ([ovr-nocanceldrop #t])
+		  (-> (fb)
+			  (fbcount 8)
+			  (fbabsolute-aim)
+			  (fbang (todeg ang) 15.0)
+			  (fbspeed 2.5)
+			  (fbshootenm fairy type 2 #f)))))
+	(yield)
+	(loop (fx1+ i) (fl+ ang inner-spin-rate) dist)))
+
+(define (group-sp2-boss-ctrl init-ang doremi enm task)
+  (define init-dist 200.0)
   (define outer-spin-rate (torad 0.5))
   (define-values (ix iy)
-	(dist-away center-x center-y init-ang init-dist))
+	(dist-away group-sp2-center-x group-sp2-center-y init-ang init-dist))
   (enm-addflags enm (enmflags nocollide))
   (ease-to ease-in-out-quad ix iy 60 enm)
-  (raylib:play-sound (sebundle-opshow sounds))
+  (raylib:play-sound (sebundle-brasscharge sounds))
   (-> (spawn-enemy
 	   (case (enm-type enm)
 		 [(boss-doremi) (enmtype dodo)]
 		 [(boss-hazuki) (enmtype rere)]
 		 [(boss-aiko) (enmtype mimi)])
-	   (enm-x enm) (enm-y enm) 1000
-	   (λ (task fairy)
-		 (define inner-spin-rate (torad -0.6))
-		 (define init-dist 130.0)
-		 (define-values (ix iy)
-		   (dist-away center-x center-y init-ang init-dist))
-		 (ease-to values ix iy 60 fairy)
-		 (wait 60)
-		 (let loop ([i 0]
-					[ang init-ang]
-					[dist init-dist])
-		   (let-values ([(x y)
-						 (dist-away center-x center-y ang dist)])
-			 (enm-x-set! fairy x)
-			 (enm-y-set! fairy y))
-		   (yield)
-		   (loop (fx1+ i) (fl+ ang inner-spin-rate) dist))))
+	   (enm-x enm) (enm-y enm) 1000 (curry group-sp2-fairy-ctrl init-ang))
 	  (enm-addflags
 	   (case (enm-type enm)
-		 [(boss-doremi) (enmflags aura-red)]
-		 [(boss-hazuki) (enmflags aura-magenta)]
-		 [(boss-aiko) (enmflags aura-blue)]))
-	  (enm-addflags (enmflags nocollide)))
+		 [(boss-doremi) (enmflags nocollide aura-red)]
+		 [(boss-hazuki) (enmflags nocollide aura-magenta)]
+		 [(boss-aiko)   (enmflags nocollide aura-blue)]))
+	  (enm-redirect-damage-set! doremi))
   (wait 60)
-  (raylib:play-sound (sebundle-brasscharge sounds))
+  (raylib:play-sound (sebundle-laser sounds))
+  (wait 60)
+  (raylib:play-sound (sebundle-longcharge sounds))
   (wait 60)
   (let loop ([i 0]
 			 [ang init-ang]
 			 [dist init-dist])
-	(let-values ([(x y)
-				  (dist-away center-x center-y ang dist)])
+	(let-values ([(x y) (dist-away group-sp2-center-x group-sp2-center-y ang dist)])
 	  (enm-x-set! enm x)
 	  (enm-y-set! enm y))
-	(when (zero? (fxmod i 10))
-	  (spawn-bullet 'rice-white (enm-x enm) (enm-y enm) 0
-					(curry linear-step-forever (fl+ ang pi) 2.0)))
+	(let-values ([(q m) (div-and-mod i 5)])
+	  (when (fxzero? m)
+		(parameterize ([ovr-nocanceldrop #t])
+		  (-> (fb)
+			  (fbcount 12)
+			  (fbabsolute-aim)
+			  (fbang (todeg ang) 15.0)
+			  (fbspeed 3.0)
+			  (fbshootenm
+			   enm
+			   (vnth-mod '#(rice-red rice-orange rice-yellow
+									 rice-green rice-blue rice-magenta) q)
+			   2 #f)))))
 	(yield)
 	(loop (fx1+ i) (fl+ ang outer-spin-rate) dist))
   )
@@ -607,16 +652,17 @@
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (spawn-subtask "aiko ctrl"
-	(curry group-sp2-boss-ctrl (torad 30.0) aiko)
+	(curry group-sp2-boss-ctrl (torad 30.0) doremi aiko)
 	task keep-running)
   (spawn-subtask "hazuki ctrl"
-	(curry group-sp2-boss-ctrl (torad 150.0) hazuki)
+	(curry group-sp2-boss-ctrl (torad 150.0) doremi hazuki)
 	task keep-running)
   (spawn-subtask "doremi ctrl"
-	(curry group-sp2-boss-ctrl (torad -90.0) doremi)
+	(curry group-sp2-boss-ctrl (torad -90.0) doremi doremi)
 	task keep-running)
   (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
+  (enm-clrflags doremi (enmflags nocollide))
   (doremi-non2 task doremi hazuki aiko))
 
 (define (doremi-non2 task doremi hazuki aiko)
@@ -634,6 +680,7 @@
 	  (ease-to ease-out-cubic 100.0 -100.0 60 aiko)
 	  (delete-enemy aiko))
 	task)
+  (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 doremi)
   (declare-nonspell doremi 1800 1000)
   (wait-while
    (thunk
