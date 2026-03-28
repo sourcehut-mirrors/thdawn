@@ -553,8 +553,40 @@
   (define outer-spin-rate (torad 0.5))
   (define-values (ix iy)
 	(dist-away center-x center-y init-ang init-dist))
+  (enm-addflags enm (enmflags nocollide))
   (ease-to ease-in-out-quad ix iy 60 enm)
-  (wait 120)
+  (raylib:play-sound (sebundle-opshow sounds))
+  (-> (spawn-enemy
+	   (case (enm-type enm)
+		 [(boss-doremi) (enmtype dodo)]
+		 [(boss-hazuki) (enmtype rere)]
+		 [(boss-aiko) (enmtype mimi)])
+	   (enm-x enm) (enm-y enm) 1000
+	   (λ (task fairy)
+		 (define inner-spin-rate (torad -0.6))
+		 (define init-dist 130.0)
+		 (define-values (ix iy)
+		   (dist-away center-x center-y init-ang init-dist))
+		 (ease-to values ix iy 60 fairy)
+		 (wait 60)
+		 (let loop ([i 0]
+					[ang init-ang]
+					[dist init-dist])
+		   (let-values ([(x y)
+						 (dist-away center-x center-y ang dist)])
+			 (enm-x-set! fairy x)
+			 (enm-y-set! fairy y))
+		   (yield)
+		   (loop (fx1+ i) (fl+ ang inner-spin-rate) dist))))
+	  (enm-addflags
+	   (case (enm-type enm)
+		 [(boss-doremi) (enmflags aura-red)]
+		 [(boss-hazuki) (enmflags aura-magenta)]
+		 [(boss-aiko) (enmflags aura-blue)]))
+	  (enm-addflags (enmflags nocollide)))
+  (wait 60)
+  (raylib:play-sound (sebundle-brasscharge sounds))
+  (wait 60)
   (let loop ([i 0]
 			 [ang init-ang]
 			 [dist init-dist])
