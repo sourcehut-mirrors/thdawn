@@ -45,10 +45,8 @@
   (bossinfo-healthbars-set!
    bossinfo
    (vector-add (base-healthbars) (make-non-healthbar)))
-  (bossinfo-redirect-damage-set!
-   (enm-extras hazuki) doremi)
-  (bossinfo-redirect-damage-set!
-   (enm-extras aiko) doremi)
+  (enm-redirect-damage-set! hazuki doremi)
+  (enm-redirect-damage-set! aiko doremi)
   (declare-nonspell doremi 1800 5000)
 
   (spawn-subtask "doremi wander"
@@ -89,10 +87,8 @@
 (define (group-sp1 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 15)
-  (bossinfo-redirect-damage-set!
-   (enm-extras hazuki) doremi)
-  (bossinfo-redirect-damage-set!
-   (enm-extras aiko) doremi)
+  (enm-redirect-damage-set! hazuki doremi)
+  (enm-redirect-damage-set! aiko doremi)
   (declare-spell doremi 2)
   (wait-while
    (thunk
@@ -512,10 +508,8 @@
    bossinfo
    (adjust-bars-non (bossinfo-healthbars (enm-extras aiko))))
   (bossinfo-healthbars-set! (enm-extras aiko) '#())
-  (bossinfo-redirect-damage-set!
-   (enm-extras hazuki) doremi)
-  (bossinfo-redirect-damage-set!
-   (enm-extras aiko) doremi)
+  (enm-redirect-damage-set! hazuki doremi)
+  (enm-redirect-damage-set! aiko doremi)
   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
   (declare-nonspell doremi 1800 6000)
   (let* ([dodo-dead-signalbox (box #f)]
@@ -607,10 +601,8 @@
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health doremi))))
   (set! current-chapter 23)
-  (bossinfo-redirect-damage-set!
-   (enm-extras hazuki) doremi)
-  (bossinfo-redirect-damage-set!
-   (enm-extras aiko) doremi)
+  (enm-redirect-damage-set! hazuki doremi)
+  (enm-redirect-damage-set! aiko doremi)
   (declare-spell doremi 6)
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
@@ -1520,10 +1512,8 @@
   (set! current-chapter 30)
   (enm-extras-set! doremi bossinfo)
   (enm-extras-set! hazuki (blank-hazuki-bossinfo))
-  (bossinfo-redirect-damage-set!
-   (enm-extras hazuki) doremi)
-  (bossinfo-redirect-damage-set!
-   (enm-extras aiko) doremi)
+  (enm-redirect-damage-set! hazuki doremi)
+  (enm-redirect-damage-set! aiko doremi)
   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
   (bossinfo-healthbars-set!
    bossinfo
@@ -1555,10 +1545,8 @@
   (healthbar-width-set! (vnth (bossinfo-healthbars bossinfo)
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
-  (bossinfo-redirect-damage-set!
-   (enm-extras hazuki) doremi)
-  (bossinfo-redirect-damage-set!
-   (enm-extras aiko) doremi)
+  (enm-redirect-damage-set! hazuki doremi)
+  (enm-redirect-damage-set! aiko doremi)
   (declare-spell doremi 11)
   (wait-while
    (thunk

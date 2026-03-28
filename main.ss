@@ -2307,8 +2307,6 @@
    (mutable total-timer)
    ;; of the current attack, 0 if none, -1 if survival
    (mutable max-health)
-   ;; if non-#f, redirect all damage to this boss to this other enemy
-   (mutable redirect-damage)
    ;; immutable vector of healthbars representing all current/future attacks
    ;; used only for rendering and rendered left to right
    (mutable healthbars))
@@ -2350,6 +2348,8 @@
    (mutable initial-health)
    ;; frame counter when this enemy was spawned
    time-spawned
+   ;; if non-#f, redirect all damage to this enemy to this other enemy
+   (mutable redirect-damage)
    ;; set to positive when damaged, decreases automatically every frame.
    ;; only use for visuals, because it's inaccurate when bosses have damage delegation
    (mutable damaged-recently)
@@ -2414,8 +2414,9 @@
 	  (and (is-boss? enm)
 		   (fxpositive? bombing)
 		   (or (bossinfo-active-spell-id (enm-extras enm))
-			   (let ([delegate (bossinfo-redirect-damage (enm-extras enm))])
+			   (let ([delegate (enm-redirect-damage enm)])
 				 (and delegate
+					  (is-boss? delegate)
 					  (bossinfo-active-spell-id (enm-extras delegate))))))))
 
 (define (calculate-spell-bonus bossinfo)
@@ -2517,7 +2518,7 @@
 	 (let ((idx (vector-index #f live-enm)))
 	   (unless idx
 		 (error 'spawn-enemy "No more open enemy slots!"))
-	   (let ([enemy (make-enm type x y x y health health frames
+	   (let ([enemy (make-enm type x y x y health health frames #f
 							  0 empty-enmflags
 							  drops on-death 0 0.0 #f)])
 		 (vector-set! live-enm idx enemy)
@@ -2572,16 +2573,13 @@
 		 (let* ([superarmor (and
 							 (not ignore-armor)
 							 (or (positive? (enm-superarmor enm))
-								 (and (is-boss? enm)
-									  (let ([o (bossinfo-redirect-damage
-												(enm-extras enm))])
-										(and o (positive? (enm-superarmor o)))))))]
+								 (let ([o (enm-redirect-damage enm)])
+								   (and o (positive? (enm-superarmor o))))))]
 				[amount (cond
 						 [superarmor
 						  (max 1 (eround (* 0.1 amount)))]
 						 [else amount])]
-				[target (or (and (is-boss? enm)
-								 (bossinfo-redirect-damage (enm-extras enm)))
+				[target (or (enm-redirect-damage enm)
 							enm)])
 		   (when (and playsound (> amount 0))
 			 (raylib:play-sound
@@ -2796,9 +2794,8 @@
 	#xffffff80]
    [(and (fxpositive? (enm-damaged-recently enm))
 		 (< (fxmod frames 4) 2))
-	(let ([target (or (and (is-boss? enm)
-								 (bossinfo-redirect-damage (enm-extras enm)))
-							enm)])
+	(let ([target (or (enm-redirect-damage enm)
+					  enm)])
 	  (if (enm-lowhealth target) crit-damage-flash damage-flash))]
    [else -1]))
 
@@ -3889,7 +3886,7 @@
 (define (blank-bossinfo name name-color)
   (make-bossinfo name name-color
 				 #f frames 0.0 0.0
-				 #f #f #f 0 0 0 #f (immutable-vector)))
+				 #f #f #f 0 0 0 (immutable-vector)))
 (define (blank-doremi-bossinfo)
   (blank-bossinfo "Harukaze Doremi" #xff7fbcff))
 (define (blank-hazuki-bossinfo)
