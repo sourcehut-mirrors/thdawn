@@ -541,7 +541,7 @@
   (group-sp2 task doremi hazuki aiko))
 
 (define group-sp2-center-x 0.0)
-(define group-sp2-center-y 220.0)
+(define group-sp2-center-y 224.0)
 
 (define (group-sp2-fairy-ctrl init-ang task fairy)
   (define inner-spin-rate (torad -0.6))
@@ -555,9 +555,10 @@
 	(dist-away group-sp2-center-x group-sp2-center-y init-ang init-dist))
   (define _ (ease-to values ix iy 60 fairy))
   (define laser
-	(spawn-laser 'fixed-laser-yellow ix iy
-				 (fl+ init-ang (torad 210.0)) 275.0
-				 5.0 40 120 (λ (task blt) (loop-forever))))
+	(-> (spawn-laser 'fixed-laser-yellow ix iy
+					 (fl+ init-ang (torad 210.0)) 275.0
+					 5.0 40 120 (λ (task blt) (loop-forever)))
+		(bullet-addflags (bltflags uncancelable))))
   (wait 120)
   (spawn-subtask "real"
 	(λ (task)
@@ -625,20 +626,27 @@
 	  (enm-y-set! enm y))
 	(let-values ([(q m) (div-and-mod i 5)])
 	  (when (fxzero? m)
-		(parameterize ([ovr-nocanceldrop #t])
-		  (-> (fb)
-			  (fbcount 12)
-			  (fbabsolute-aim)
-			  (fbang (todeg ang) 15.0)
-			  (fbspeed 3.0)
-			  (fbshootenm
-			   enm
-			   (vnth-mod '#(rice-red rice-orange rice-yellow
-									 rice-green rice-blue rice-magenta) q)
-			   2 #f)))))
+		(-> (spawn-bullet
+			 'rice-white (enm-x enm) (enm-y enm) 5
+			 (λ (task blt)
+			   (linear-step-decelerate-to (fl+ ang pi) 3.0 -0.06 0.0 blt)
+			   (wait 75)
+			   (delete-bullet blt)
+			   (parameterize ([ovr-nocanceldrop #t])
+				 (-> (fb)
+					 (fbcount 1 4)
+					 (fbspeed 1.0 2.75)
+					 (fbabsolute-aim)
+					 (fbang (fl+ (todeg ang) -20.0))
+					 (fbshootez (bullet-x blt) (bullet-y blt)
+								(vnth-mod
+								 '#(rice-magenta rice-red rice-orange rice-yellow
+												 rice-green rice-blue) q)
+								0 #f)))))
+			(bullet-addflags (bltflags nocanceldrop))
+			(bullet-facing-set! (fl+ ang pi)))))
 	(yield)
-	(loop (fx1+ i) (fl+ ang outer-spin-rate) dist))
-  )
+	(loop (fx1+ i) (fl+ ang outer-spin-rate) dist)))
 
 (define (group-sp2 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))

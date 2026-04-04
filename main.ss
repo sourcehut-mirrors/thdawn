@@ -2522,7 +2522,7 @@
 	[(type x y health control-function drops)
 	 (spawn-enemy type x y health control-function drops #f)]
 	[(type x y health control-function drops on-death)
-	 (let ((idx (vector-index #f live-enm)))
+	 (let ([idx (vector-index #f live-enm)])
 	   (unless idx
 		 (error 'spawn-enemy "No more open enemy slots!"))
 	   (let ([enemy (make-enm type x y x y health health frames #f
@@ -2641,6 +2641,9 @@
 (define (kill-player)
   (set! iframes 180)
   (fail-current-attack)
+  (when (and force-invincible
+			 (< bomb-stock 3))
+	(set! bomb-stock 3))
   (unless force-invincible
 	(raylib:play-sound (sebundle-shoot0 sounds))
 
@@ -3313,7 +3316,7 @@
    live-misc-ents))
 
 (define (spawn-misc-ent type x y vy ay)
-  (let ((idx (vector-index #f live-misc-ents)))
+  (let ([idx (vector-index #f live-misc-ents)])
 	(unless idx
 	  (error 'spawn-misc-ent "No more open misc entity slots!"))
 	(let ([ent (make-miscent type x y vy ay 0 #f)])
@@ -3326,7 +3329,7 @@
 	  ent)))
 
 (define (delete-misc-ent ent)
-  (let ((idx (vector-index ent live-misc-ents)))
+  (let ([idx (vector-index ent live-misc-ents)])
 	(when idx
 	  ;; tolerate killing already-removed/dead
 	  (vector-set! live-misc-ents idx #f))))
@@ -3529,8 +3532,8 @@
 (define (ease-to easer x y duration enm)
   (define x0 (enm-x enm))
   (define y0 (enm-y enm))
-  (do ([i 0 (fx1+ i)])
-	  ((fx> i duration))
+  (do [(i 0 (fx1+ i))]
+	  [(fx> i duration)]
 	(let* ([progress (/ i duration)]
 		   [eased (easer (clamp progress 0.0 1.0))]
 		   [x (+ x0 (* eased (- x x0)))]
