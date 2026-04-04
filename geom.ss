@@ -8,7 +8,7 @@
 		  v2x v2y vec2 v2+ v2- v2* v2zero v2unit v2sqrlen v2dot
 		  check-collision-circles check-collision-recs check-collision-circle-rec
 		  do-bounce-off
-		  lerp eval-bezier-quad eval-bezier-cubic
+		  lerp eval-bezier-quad eval-bezier-cubic bezier-cubic-easing
 		  pi -pi tau hpi -hpi
 		  torad todeg eround epsilon-equal clamp
 		  distsq
@@ -194,6 +194,79 @@
 	 (v2* p1 (* 3 invt invt t))
 	 (v2* p2 (* 3 invt t t))
 	 (v2* p3 (* t t t))))
+
+  ;; CSS-style cubic-bezier()
+  ;; A cubic bezier curve takes 4 control points plus t and returns another point
+  ;; A cubic bezier *easing function* fixes the first and last control points
+  ;; at [0,0] and [1,1], treats x as the input between 0.0 and 1.0,
+  ;; and treats y as the output.
+  ;; Therefore, we need to turn the "t" input of the easing function (which is really
+  ;; the bezier curve's x) into the bezier curve's t, then compute y from that t.
+  ;; This requires some numerical methods detailed on the following page:
+  ;; https://probablymarcus.com/blocks/2015/02/26/using-bezier-curves-as-easing-functions.html
+  ;; Implemented with reference to the Blink codebase, license: BSD
+  ;; https://chromium.googlesource.com/chromium/blink/+/master/Source/platform/animation/UnitBezier.h
+  ;; Haven't spent the time to fully study and understand the code
+  ;; as it has some optimizations and simplifications in the formulas
+  ;; so some of it is blind translating (for now)
+  (define (bezier-cubic-easing x1 y1 x2 y2)
+	(define epsilon 1e-7)
+	;; mostly confused how these terms are defined vs the standard bezier formulas?
+	(define cx (fl* 3.0 x1))
+	(define bx (fl- (fl* 3.0 (fl- x2 x1)) cx))
+	(define ax (fl- 1.0 cx bx))
+	(define cy (fl* 3.0 y1))
+	(define by (fl- (fl* 3.0 (fl- y2 y1)) cy))
+	(define ay (fl- 1.0 cy by))
+	(define (curve-x t)
+	  (define inner (fl+ (fl* ax t) bx))
+	  (define next (fl+ (fl* inner t) cx))
+	  (fl* next t))
+	(define (curve-y t)
+	  (define inner (fl+ (fl* ay t) by))
+	  (define next (fl+ (fl* inner t) cy))
+	  (fl* next t))
+	(define (curve-xprime t)
+	  (define inner (fl+ (fl* 3.0 ax t)
+						 (fl* 2.0 bx)))
+	  (fl+ (fl* inner t) cx))
+	(define (x->t x)
+	  ;; Returns newton's method approximation or #f if unable
+	  (define (try-newton)
+		(let loop ([i 0]
+				   [guess x])
+		  (let ([err (fl- (curve-x guess) x)])
+			(if (fl< (flabs err) epsilon)
+				guess
+				(let ([deriv (curve-xprime guess)])
+				  (if (or (fx= i 7) (fl< (flabs deriv) 1e-6))
+					  #f
+					  (loop (fx1+ i)
+							(fl- guess (fl/ err deriv)))))))))
+	  (define (binsearch)
+		(let loop ([lower 0.0]
+				   [upper 1.0]
+				   [guess x])
+		  (if (fl< lower upper)
+			  (let ([guess-x (curve-x guess)])
+				(if (fl< (flabs (fl- guess-x x)) epsilon)
+					guess
+					(let* ([too-low (fl> x guess-x)]
+						   [next-lower (if too-low guess lower)]
+						   [next-upper (if (not too-low) guess upper)])
+					  (loop next-lower next-upper
+							(fl+ (fl* 0.5 (fl- next-upper next-lower))
+								 next-lower)))))
+			  ;; bsearch failed, just return whatever the final guess was.
+			  ;; this is only here as an ultra fallback, it's exceedingly rare we'd
+			  ;; take so many iters to exhaust all the floating point precision
+			  ;; such that next-lower starts being greater than next-upper
+			  guess)))
+	  (or (try-newton) (binsearch)))
+	(lambda (x) ;; "t" of the easing function, bezier curve's x
+	  (unless (fl<= 0.0 x 1.0)
+		(assert-unreachable))
+	  (curve-y (x->t x))))
 
   ;; Next two functions derived from
   ;; https://github.com/raylib-extras/examples-c/blob/main/rect_circle_collisions/rect_circle_collisions.c
