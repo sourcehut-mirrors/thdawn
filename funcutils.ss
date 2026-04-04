@@ -7,8 +7,13 @@
 		  vector-add vector-pop vector-truncate when-let if-let assqdr)
   (import (chezscheme))
 
-  (define (assqdr key alist)
-	(cdr (assq key alist)))
+  (define assqdr
+	(case-lambda
+	  ([key alist]
+	   (cdr (assq key alist)))
+	  ([key alist default]
+	   (define cell (assq key alist))
+	   (if cell (cdr cell) default))))
 
   (define curry
 	(case-lambda

@@ -3274,10 +3274,11 @@
 				render-y
 				16.0 0.0 (fxlogior color alpha)))))
 		  ([circle-hint circle-hint-opaque]
-		   (let ([color (assqdr 'color extra-data)]
-				 [r (lerp (assqdr 'r1 extra-data)
-						  (assqdr 'r2 extra-data)
-						  (/ age max-age))])
+		   (let* ([color (assqdr 'color extra-data)]
+				  [easer (assqdr 'easer extra-data values)]
+				  [r (lerp (assqdr 'r1 extra-data)
+						   (assqdr 'r2 extra-data)
+						   (easer (/ age max-age)))])
 			 ((if (eq? type 'circle-hint-opaque)
 				  raylib:draw-circle-v
 				  raylib:draw-circle-lines-v)
