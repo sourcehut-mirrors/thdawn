@@ -1068,15 +1068,10 @@
 		(hazuki-sp2-wave all-waves-clean task hazuki)))
 	task keep-running)
   (wait-while keep-running)
-  ;; Extra bonus if all waves were cleared without a wisp being killed by hazuki
-  (when (unbox all-waves-clean)
-	(let ([bonus (* 100 item-value)])
-	  (spawn-particle
-	   (particletype spellbonus)
-	   0.0 100.0 180
-	   (format "EX Bonus!! ~:d" bonus))
-	  (set! current-score (+ current-score bonus))))
-  (common-spell-postlude bossinfo hazuki)
+  (common-spell-postlude
+   bossinfo hazuki
+   ;; Extra bonus if all waves were cleared without a wisp being killed by hazuki
+   (thunk (and (unbox all-waves-clean) (* 100 item-value))))
   (aiko-non2 task hazuki))
 
 (define (aiko-non2-laser-ctrl is-right aiko task blt)
@@ -1266,7 +1261,7 @@
 (define aiko-sp2-rects (append aiko-sp2-vertical-rects aiko-sp2-horiz-rects))
 
 
-(define (aiko-sp2-ball-ctrl msg-box aiko task blt)
+(define (aiko-sp2-ball-ctrl msg-box ball-killing-blow-box aiko task blt)
   (let loop ([state 'stop]
 			 [facing 0.0]
 			 [speed 0.0]
@@ -1338,15 +1333,9 @@
 						 (fl* maxdist maxdist))
 			   (let ([old-health (enm-health aiko)])
 				 (damage-enemy aiko 2800)
-				 ;; Extra bonus if the ball was the killing blow
 				 (when (and (fxpositive? old-health)
 							(fxnonpositive? (enm-health aiko)))
-				   (let ([bonus (* 100 item-value)])
-					 (spawn-particle
-					  (particletype spellbonus)
-					  0.0 100.0 180
-					  (format "EX Bonus!! ~:d" bonus))
-					 (set! current-score (+ current-score bonus)))))
+				   (set-box! ball-killing-blow-box #t)))
 			   (loop state
 					 (flatan (fl- (bullet-y blt) (enm-y aiko))
 							 (fl- (bullet-x blt) (enm-x aiko)))
@@ -1392,6 +1381,7 @@
   (define (keep-running)
 	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
 		 (fxpositive? (enm-health aiko))))
+  (define ball-killing-blow-box (box #f))
   (set! current-chapter 29)
   (declare-spell aiko 9)
   ;; this is just for debug jumps, the previous nonspell should already leave
@@ -1475,7 +1465,8 @@
 		(parameterize ([ovr-uncancelable #t]
 					   [ovr-noclip #t])
 		  (spawn-bullet 'yinyang-green 0.0 200.0 5
-						(curry aiko-sp2-ball-ctrl msg-box aiko))))
+						(curry aiko-sp2-ball-ctrl
+							   msg-box ball-killing-blow-box aiko))))
 	  (define msg-box (box #f))
 	  (define cur-ball (spawn-ball))
 	  (ease-to values 0.0 190.0 60 aiko)
@@ -1537,7 +1528,9 @@
 			  (wave frames)))))
 	task keep-running)
   (wait-while keep-running)
-  (common-spell-postlude bossinfo aiko)
+  (common-spell-postlude
+   bossinfo aiko
+   (thunk (and (unbox ball-killing-blow-box) (* 100 item-value))))
   (group-sp3 task aiko))
 
 (define (group-sp3 task aiko)

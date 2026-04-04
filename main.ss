@@ -3594,54 +3594,67 @@
   (enm-health-set! boss health)
   (enm-initial-health-set! boss health))
 
-(define (common-spell-postlude bossinfo enm)
-  (define timeout-fail
-	(and (not (= -1 (bossinfo-max-health bossinfo)))
-		 (positive? (enm-health enm))))
-  (define failed (or timeout-fail
-					 (bossinfo-active-attack-failed bossinfo)))
-  (define bonus (and (not failed) (calculate-spell-bonus bossinfo)))
+(define common-spell-postlude
+  (case-lambda
+	[(bossinfo enm)
+	 (common-spell-postlude bossinfo enm (constantly #f))]
+	;; exbonus-provider: nullary function of #f or an extra bonus
+	;; to be granted for this spell. only granted if the original spell bonus
+	;; would have been granted, i.e. the spell was captured.
+	[(bossinfo enm exbonus-provider)
+	 (define timeout-fail
+	   (and (not (= -1 (bossinfo-max-health bossinfo)))
+			(positive? (enm-health enm))))
+	 (define failed (or timeout-fail
+						(bossinfo-active-attack-failed bossinfo)))
+	 (define bonus (and (not failed) (calculate-spell-bonus bossinfo)))
 
-  (enm-drops-set!
-   enm
-   ((if failed spell-descriptor-failed-drops spell-descriptor-drops)
-	(vnth spells (bossinfo-active-spell-id bossinfo))))
-  (spawn-enm-drops enm)
-  (raylib:play-sound (sebundle-shoot0 sounds))
-  (when timeout-fail
-	(raylib:play-sound (sebundle-laugh sounds)))
-  (unless failed
-	(raylib:play-sound (sebundle-spellcapture sounds))
-	(set! current-score (+ current-score bonus))
-	(when (is-liveplay)
-	  (let ([history (vnth (assqdr 'spell-history play-data)
-						   (bossinfo-active-spell-id bossinfo))])
-		(set-car! history (add1 (car history))))
-	  (save-play-data play-data)))
-  (spawn-particle
-   (particletype spellbonus)
-   ;; Position dynamically calculated at render to avoid
-   ;; the enemy tasks needing to access the fonts.
-   0.0 75.0 180
-   (if failed
-	   "Bonus Failed..."
-	   (format "GET Spell Bonus!! ~:d" bonus)))
-  (spawn-particle
-   (particletype enmdeath)
-   (+ (enm-x enm) (centered-roll visual-rng 20.0))
-   (+ (enm-y enm) (centered-roll visual-rng 20.0))
-   30 '((start-radius . 2)
-		(end-radius . 85)))
-  (vector-for-each
-   (λ (e)
-	 (when (and e (not (is-boss? e)))
-	   (kill-enemy e #t)))
-   live-enm)
-  (cancel-all #t)
-  (bossinfo-remaining-timer-set! bossinfo 0)
-  (bossinfo-active-spell-bonus-set! bossinfo #f)
-  (bossinfo-active-spell-id-set!
-   bossinfo #f))
+	 (enm-drops-set!
+	  enm
+	  ((if failed spell-descriptor-failed-drops spell-descriptor-drops)
+	   (vnth spells (bossinfo-active-spell-id bossinfo))))
+	 (spawn-enm-drops enm)
+	 (raylib:play-sound (sebundle-shoot0 sounds))
+	 (when timeout-fail
+	   (raylib:play-sound (sebundle-laugh sounds)))
+	 (unless failed
+	   (raylib:play-sound (sebundle-spellcapture sounds))
+	   (set! current-score (+ current-score bonus))
+	   (when (is-liveplay)
+		 (let ([history (vnth (assqdr 'spell-history play-data)
+							  (bossinfo-active-spell-id bossinfo))])
+		   (set-car! history (add1 (car history))))
+		 (save-play-data play-data))
+	   (when-let ([exbonus (exbonus-provider)])
+		 (spawn-particle
+		  (particletype spellbonus)
+		  0.0 100.0 180
+		  (format "EX Bonus!! ~:d" exbonus))
+		 (set! current-score (+ current-score exbonus))))
+	 (spawn-particle
+	  (particletype spellbonus)
+	  ;; Position dynamically calculated at render to avoid
+	  ;; the enemy tasks needing to access the fonts.
+	  0.0 75.0 180
+	  (if failed
+		  "Bonus Failed..."
+		  (format "GET Spell Bonus!! ~:d" bonus)))
+	 (spawn-particle
+	  (particletype enmdeath)
+	  (+ (enm-x enm) (centered-roll visual-rng 20.0))
+	  (+ (enm-y enm) (centered-roll visual-rng 20.0))
+	  30 '((start-radius . 2)
+		   (end-radius . 85)))
+	 (vector-for-each
+	  (λ (e)
+		(when (and e (not (is-boss? e)))
+		  (kill-enemy e #t)))
+	  live-enm)
+	 (cancel-all #t)
+	 (bossinfo-remaining-timer-set! bossinfo 0)
+	 (bossinfo-active-spell-bonus-set! bossinfo #f)
+	 (bossinfo-active-spell-id-set!
+	  bossinfo #f)]))
 
 (define (common-nonspell-postlude bossinfo)
   (vector-for-each
