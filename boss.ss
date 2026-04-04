@@ -670,7 +670,6 @@
 	task keep-running)
   (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
-  (enm-clrflags doremi (enmflags nocollide))
   (doremi-non2 task doremi hazuki aiko))
 
 (define (doremi-non2 task doremi hazuki aiko)
@@ -689,6 +688,7 @@
 	  (delete-enemy aiko))
 	task)
   (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 doremi)
+  (enm-clrflags doremi (enmflags nocollide))
   (declare-nonspell doremi 1800 1000)
   (wait-while
    (thunk
