@@ -542,10 +542,12 @@
 
 (define group-sp2-center-x 0.0)
 (define group-sp2-center-y 224.0)
+(define group-sp2-fairy-rotate-easing
+  (bezier-cubic-easing 0.4 -0.3 0.6 1.3))
 
 (define (group-sp2-fairy-ctrl init-ang task fairy)
-  (define inner-spin-rate (torad -0.6))
   (define init-dist 160.0)
+  (define spin-time 180)
   (define type
 	(case (enm-type fairy)
 	  [(dodo) 'music-red]
@@ -560,38 +562,26 @@
 					 5.0 40 120 (λ (task blt) (loop-forever)))
 		(bullet-addflags (bltflags uncancelable))))
   (wait 120)
-  (spawn-subtask "real"
-	(λ (task)
-	  (let loop ([i 0])
-		(-> (fb)
-			(fbcount 3)
-			(fbang 0.0 5.0)
-			(fbspeed 1.8)
-			(fbshootenm fairy 'small-star-blue 5 (sebundle-shoot0 sounds)))
-		(wait 45)
-		(loop (fx1+ i))))
-	task)
-  (let loop ([i 0]
-			 [ang init-ang]
-			 [dist init-dist])
-	(let-values ([(x y)
-				  (dist-away group-sp2-center-x group-sp2-center-y ang dist)])
-	  (enm-x-set! fairy x)
-	  (enm-y-set! fairy y)
-	  (bullet-x-set! laser x)
-	  (bullet-y-set! laser y)
-	  (bullet-facing-set! laser (fl+ ang (torad 210.0))))
-	;; (let-values ([(q m) (div-and-mod i 8)])
-	;;   (when (fxzero? m)
-	;; 	(parameterize ([ovr-nocanceldrop #t])
-	;; 	  (-> (fb)
-	;; 		  (fbcount 8)
-	;; 		  (fbabsolute-aim)
-	;; 		  (fbang (todeg ang) 15.0)
-	;; 		  (fbspeed 2.5)
-	;; 		  (fbshootenm fairy type 2 #f)))))
-	(yield)
-	(loop (fx1+ i) (fl+ ang inner-spin-rate) dist)))
+  ;; wave: setup laser grid, move to new position, shoot a bit, call next wave
+  (let wave ([ang init-ang])
+	;; TODO laser grid
+	(do [(i 0 (add1 i))]
+		[(fx= i spin-time)]
+	  (let*-values
+		  ([(this-ang) (lerp ang (fl- ang (torad 120.0))
+							 (group-sp2-fairy-rotate-easing
+							  (inexact (/ i (sub1 spin-time)))))]
+		   [(x y)
+			(dist-away group-sp2-center-x group-sp2-center-y this-ang init-dist)])
+		(enm-x-set! fairy x)
+		(enm-y-set! fairy y)
+		(bullet-x-set! laser x)
+		(bullet-y-set! laser y)
+		(bullet-facing-set! laser (fl- this-ang (torad 210.0))))
+	  (yield))
+	;; TODO: shoot (changes based on which fairy is up top)
+	(wait 180)
+	(wave (fl- ang (torad 120.0)))))
 
 (define (group-sp2-boss-ctrl init-ang doremi enm task)
   (define dist 200.0)
@@ -638,7 +628,7 @@
 			   (parameterize ([ovr-nocanceldrop #t])
 				 (-> (fb)
 					 (fbcount 1 4)
-					 (fbspeed 1.0 2.75)
+					 (fbspeed 1.2 2.75)
 					 (fbabsolute-aim)
 					 (fbang (fl+ (todeg ang) -20.0))
 					 (fbshootez (bullet-x blt) (bullet-y blt)
