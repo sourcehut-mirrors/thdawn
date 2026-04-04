@@ -568,9 +568,10 @@
 	(do [(i 0 (add1 i))]
 		[(fx= i spin-time)]
 	  (let*-values
-		  ([(this-ang) (lerp ang (fl- ang (torad 120.0))
-							 (group-sp2-fairy-rotate-easing
-							  (inexact (/ i (sub1 spin-time)))))]
+		  ([(dang) (fl- (lerp 0.0 (torad 120.0)
+							  (group-sp2-fairy-rotate-easing
+							   (inexact (/ i (sub1 spin-time))))))]
+		   [(this-ang) (fl+ ang dang)]
 		   [(x y)
 			(dist-away group-sp2-center-x group-sp2-center-y this-ang init-dist)])
 		(enm-x-set! fairy x)
@@ -579,7 +580,8 @@
 		(bullet-y-set! laser y)
 		(bullet-facing-set! laser (fl- this-ang (torad 210.0))))
 	  (yield))
-	;; TODO: shoot (changes based on which fairy is up top)
+	;; TODO: shoot (changes based on which fairy is up top). attack based on preceding nons but harder?
+	;; fairy not at top just fires some movement restriction aimed-away fans/decor
 	(wait 180)
 	(wave (fl- ang (torad 120.0)))))
 
@@ -630,11 +632,11 @@
 					 (fbcount 1 4)
 					 (fbspeed 1.2 2.75)
 					 (fbabsolute-aim)
-					 (fbang (fl+ (todeg ang) -20.0))
+					 (fbang (fl- (todeg ang) 20.0) -5.0)
 					 (fbshootez (bullet-x blt) (bullet-y blt)
 								(vnth-mod
-								 '#(rice-magenta rice-red rice-orange rice-yellow
-												 rice-green rice-blue) q)
+								 '#(rice-red rice-orange rice-yellow
+											 rice-green rice-blue rice-magenta) q)
 								0 #f)))))
 			(bullet-addflags (bltflags nocanceldrop))
 			(bullet-facing-set! (fl+ ang pi)))))
@@ -672,12 +674,16 @@
   (adjust-bars-non (bossinfo-healthbars bossinfo))
   (spawn-subtask "hazuki leave"
 	(λ (_)
-	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
+	  (ease-to ease-out-cubic
+			   (if (flnegative? (enm-x hazuki)) -300.0 300.0)
+			   (fl- (enm-y hazuki) 50.0) 60 hazuki)
 	  (delete-enemy hazuki))
 	task)
   (spawn-subtask "aiko leave"
 	(λ (_)
-	  (ease-to ease-out-cubic 100.0 -100.0 60 aiko)
+	  (ease-to ease-out-cubic
+			   (if (flnegative? (enm-x aiko)) -300.0 300.0)
+			   (fl- (enm-y aiko) 50.0) 60 aiko)
 	  (delete-enemy aiko))
 	task)
   (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 doremi)
