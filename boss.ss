@@ -545,25 +545,16 @@
 (define group-sp2-fairy-rotate-easing
   (bezier-cubic-easing 0.4 -0.3 0.6 1.3))
 
-(define (group-sp2-fairy-ctrl init-ang task fairy)
+(define (group-sp2-fairy-ctrl init-ang task enm)
   (define init-dist 160.0)
   (define spin-time 180)
-  (define type
-	(case (enm-type fairy)
-	  [(dodo) 'music-red]
-	  [(rere) 'music-orange]
-	  [(mimi) 'music-blue]))
   (define-values (ix iy)
 	(dist-away group-sp2-center-x group-sp2-center-y init-ang init-dist))
-  (define _ (ease-to values ix iy 60 fairy))
-  (define laser
-	(-> (spawn-laser 'fixed-laser-yellow ix iy
-					 (fl+ init-ang (torad 210.0)) 275.0
-					 5.0 40 120 (λ (task blt) (loop-forever)))
-		(bullet-addflags (bltflags uncancelable))))
-  (wait 120)
+  (define _ (ease-to values ix iy 60 enm))
+  (wait 60)
   ;; wave: setup laser grid, move to new position, shoot a bit, call next wave
-  (let wave ([ang init-ang])
+  (let wave ([wavei 0]
+			 [ang init-ang])
 	;; TODO laser grid
 	(do [(i 0 (add1 i))]
 		[(fx= i spin-time)]
@@ -574,16 +565,95 @@
 		   [(this-ang) (fl+ ang dang)]
 		   [(x y)
 			(dist-away group-sp2-center-x group-sp2-center-y this-ang init-dist)])
-		(enm-x-set! fairy x)
-		(enm-y-set! fairy y)
-		(bullet-x-set! laser x)
-		(bullet-y-set! laser y)
-		(bullet-facing-set! laser (fl- this-ang (torad 210.0))))
+		(enm-x-set! enm x)
+		(enm-y-set! enm y))
 	  (yield))
-	;; TODO: shoot (changes based on which fairy is up top). attack based on preceding nons but harder?
-	;; fairy not at top just fires some movement restriction aimed-away fans/decor
-	(wait 180)
-	(wave (fl- ang (torad 120.0)))))
+	;; Note: All of these attack patterns need to take the same amount of time
+	;; (currently 180 frames)
+	(if (fl< (enm-y enm) 200.0)
+		;; main position
+		(case (enm-type enm)
+		  [(dodo)
+		   (wait 180)]
+		  [(rere mimi)
+		   (dotimes 3
+			 (dotimes 3
+			   (raylib:play-sound (sebundle-shoot0 sounds))
+			   (-> (fb)
+				   (fbcount 2)
+				   (fbang 0.0 (roll-flrange game-rng 30.0 50.0))
+				   (fbspeed (roll-flrange game-rng 2.0 4.0))
+				   (fbshoot (enm-x enm) (enm-y enm)
+					 (λ (row col speed facing)
+					   (-> (spawn-bullet
+							'medium-ball-orange (enm-x enm) (enm-y enm) 2
+							(λ (task blt)
+							  (dotimes 25
+								(linear-step facing speed blt)
+								(yield))
+							  (cancel-bullet blt)
+							  (-> (cb)
+								  (cbcount 8)
+								  (cbspeed 2.0)
+								  (cbshootez
+								   (bullet-x blt) (bullet-y blt)
+								   'heart-orange 5 #f
+								   (λ (facing speed task blt)
+									 (linear-step-decelerate facing speed -0.05 blt)
+									 (wait 30)
+									 (raylib:play-sound (sebundle-bell sounds))
+									 (linear-step-accelerate-forever
+									  facing 0.0 0.08 3.0 task blt))))
+							  (-> (cb)
+								  (cbcount 16)
+								  (cbspeed 2.0)
+								  (cbshootez
+								   (bullet-x blt) (bullet-y blt)
+								   'small-ball-yellow 5 #f
+								   (λ (facing speed task blt)
+									 (linear-step-decelerate facing speed -0.05 blt)
+									 (wait 30)
+									 (linear-step-accelerate-forever
+									  (facing-player (bullet-x blt) (bullet-y blt))
+									  0.0 0.08 3.0 task blt))))))
+						   (bullet-facing-set! facing)))))
+			   (wait 15))
+			 (wait 15))]
+		  [(mimi)
+		   (dotimes 4
+			 (dotimes 3
+			   (raylib:play-sound (sebundle-shoot0 sounds))
+			   (-> (fb)
+				   (fbcount 2)
+				   (fbang 0.0 (roll-flrange game-rng 30.0 50.0))
+				   (fbspeed 3.5)
+				   (fbshoot (enm-x enm) (enm-y enm)
+					 (λ (row col speed facing)
+					   (-> (spawn-bullet
+							'medium-ball-blue (enm-x enm) (enm-y enm) 2
+							(λ (task blt)
+							  (dotimes 45
+								(linear-step facing speed blt)
+								(yield))
+							  (cancel-bullet blt)
+							  (raylib:play-sound (sebundle-laser sounds))
+							  (spawn-laser
+							   (vrand '#(fixed-laser-blue fixed-laser-cyan) game-rng)
+							   (bullet-x blt) (bullet-y blt)
+							   (facing-player (bullet-x blt) (bullet-y blt))
+							   500.0 3.5 20 50 (λ (_task _blt) (wait 35)))))
+						   (bullet-facing-set! facing)))))
+			   (wait 10))
+			 (wait 15))])
+		;; support positions
+		(dotimes 9
+		  (-> (fb)
+			  (fbcount 2 2)
+			  (fbang 0.0 40.0)
+			  (fbspeed 2.0 2.5)
+			  (fbshootenm enm 'small-star-white 5 (sebundle-shoot0 sounds)))
+		  (wait 20)))
+	(wave (add1 wavei) (fl- ang (torad 120.0)))))
 
 (define (group-sp2-boss-ctrl init-ang doremi enm task)
   (define dist 200.0)
@@ -609,8 +679,6 @@
    (particletype circle-hint)
    group-sp2-center-x group-sp2-center-y
    120 `((easer . ,ease-out-quad) (color . -1) (r1 . 300.0) (r2 . 100.0)))
-  (wait 60)
-  (raylib:play-sound (sebundle-laser sounds))
   (wait 60)
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 60)

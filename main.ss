@@ -592,6 +592,10 @@
 (define +poc-y+ 160)
 (define +oob-bullet-despawn-fuzz+ 80)
 
+(define (in-bounds x y)
+  (and (fl<= (fx2fl +playfield-min-x+) x (fx2fl +playfield-max-x+))
+	   (fl<= (fx2fl +playfield-min-y+) y (fx2fl +playfield-max-y+))))
+
 (define (hit-x-impl x y ty facing)
   (define res
 	(fl+ x (fl*
