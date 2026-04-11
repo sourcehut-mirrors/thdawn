@@ -4355,10 +4355,10 @@
 					[(spy) (+ +playfield-render-offset-y+
 							  (cond
 							   [(fx<= elapsed-frames 45)
-								(- +playfield-max-y+ height 20.0)]
+								(- +playfield-max-y+ height 80.0)]
 							   [(fx<= 45 elapsed-frames 90)
 								(lerp
-								 (- +playfield-max-y+ height 20.0)
+								 (- +playfield-max-y+ height 80.0)
 								 (+ +playfield-min-y+ 15.0)
 								 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
 							   [else (+ +playfield-min-y+ 15.0)]))]
