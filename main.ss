@@ -2204,7 +2204,7 @@
 
 ;; helper for the common case of shooting a circlebuilder from the enemy position
 ;; with a fixed type and linear bullet motion
-;; if provided, bullet control function should take facing, speed, bullet
+;; if provided, bullet control function should take facing, speed, task, bullet
 (define cbshootenm
   (case-lambda
 	[(cb enm type delay sound)
@@ -3250,14 +3250,16 @@
 							 t))
 			  (override-alpha -1 (eround (lerp 255 0 t))))))
 		  ([cancel]
-		   (let* ([age (quotient age 3)]
+		   (let* ([t (/ age max-age)]
+				  [alpha (eround (lerp 255 128 (ease-in-quad t)))]
+				  [age (quotient age 3)]
 				  [v (if (fx< age 4) 0.0 64.0)]
 				  [u (fx2fl (* 64 (fxmod age 4)))])
 			 (raylib:draw-texture-pro
 			  (txbundle-bulletcancel textures)
 			  (make-rectangle u v 64.0 64.0)
 			  (make-rectangle (- render-x 24.0) (- render-y 24.0) 48.0 48.0)
-			  v2zero 0.0 -1)))
+			  v2zero 0.0 (override-alpha -1 alpha))))
 		  ([itemvalue]
 		   (let ([alpha (round (lerp 255 0 (ease-in-quad (/ age max-age))))]
 				 [color (car extra-data)]

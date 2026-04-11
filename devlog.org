@@ -1,3 +1,142 @@
+* [2026-04-10 Fri]
+Came up with a first wave for the fairies in group sp2 that seems pretty nice.
+
+Now to come up with at least two more.
+
+* [2026-04-08 Wed]
+Been thinking and hacking on group sp2 for a while, but not satisfied with what's been happening so far (besides the decoration ring which is fine)
+
+Also pasting in some chat logs on BHE about curved lasers for later reference:
+
+williewillus (ping on response) [MOON], 
+ — 
+1:46 PM
+considering finally implementing curved lasers (or any sort of mobile laser) into my engine...
+does this sound about right?
+
+    the "bullet" is the head of the laser and controls its motion as any other usual bullet would
+    At some regular interval, the head leaves behind a node along its motion path. Nodes are kept as side data and are not bullets themselves
+    Nodes despawn after some time based on the laser's configured length
+    (optional) cancelling the middle of a laser splits it in two (removes the nodes from the original laser and creates a new head in charge of the new nodes)
+    collision checks/grazing are just rectangle checks between each node
+
+
+main questions are: how does rendering work? just drawing quads between each node? What frequency should I be creating nodes at? 
+FuzzbearplushRole icon, Danmakufu
+ — 
+2:44 PM
+I asked p much same thing recently in ZUNcode server, I haven't done it yet though
+The frequency of new nodes should be every frame
+I was thinking of having an allocated array of a specified length to place the nodes in, and every frame you shift the node data, and insert new node at the beginning
+ [MOON], 
+FuzzbearplushRole icon, Danmakufu
+ — 
+2:47 PM
+Replying for ping
+williewillus (ping on response) [MOON], 
+ — 
+2:47 PM
+nice thanks
+is the rendering as i described?
+FuzzbearplushRole icon, Danmakufu
+ — 
+2:47 PM
+Uhhh
+I didn't really get the grasp of that yet
+williewillus (ping on response) [MOON], 
+ — 
+2:48 PM
+bc what i described seems sus but i cant think of anything better
+FuzzbearplushRole icon, Danmakufu
+ — 
+2:48 PM
+It should be quads between each nodes, but not squares/rectangles
+Rough idea I came up with, ignore some randomly placed dots
+Image
+You could probably make it easier by making each of the "handles" originate from the node itself instead of in middle of nodes, but I feel like that would make hitbox stick out a little from the ends
+williewillus (ping on response) [MOON], 
+ — 
+2:53 PM
+cool thanks
+williewillus (ping on response) [MOON], 
+ — 
+2:53 PM
+re this iirc maingames use a linked list which makes sense to avoid shifting every frame
+or even some sort of ring buffer if you impose a bound on how long a laser can be
+FuzzbearplushRole icon, Danmakufu
+ — 
+2:58 PM
+Maybe
+You would probably have to iterate the nodes anyway so you can probably just throw shifting into that loop aswell
+yuureikiRole icon, LuaSTG
+ — 
+5:04 PM
+cheesers [2HU], Role icon, LuaSTG
+ — 
+5:54 PM
+clean
+ [MOON], 
+Pickled Cow [MEW], Role icon, Godot
+ — 
+9:25 PM
+
+    Yeah that's the fundamental of curvy lasers.
+
+
+    Yes that is how I do it though I would consider the node to be core data tbh.
+
+
+    The nodes should just be an array in the laser, every frame inheriting the one in front of it; this makes it so you only have to calculate values for one node each frame and you can just shuffle over the data.
+
+
+    Cutting curvy lasers can be a bit tricky.  The correct way is to have data in the lasers about which node the collision and rendering should start and end at, this value starting at 0 and laser length at the start.
+
+When the player its the middle of a laser, you create a complete duplicate of the laser and then update the two laser's start and end points to the node the collision occured at.
+The reason we do this is so the trailing clone laser still follows the same path as the original laser; if we were to just create a new laser without this process its path would deviate. 
+A small optimisation is the lead laser no longer needs its trail nodes that I haven't implemented myself yet.
+
+    Rectangle works, just use whatever you have for regular lasers but between each node, infact my curvy lasers essentially are just holding lasers. I also though disable some of the head and tail nodes so you don't get randomly clipped; with lasers holding a float from [0, 1] on how much of the head/tail to disable (this is separate from the laser start and end I mentioned in 4). For logistical reasons these disabled nodes still have a bullet assigned to it in my implementation but you can definitely have that not be the case, I'm just fucking lazy.
+
+
+Rendering: the rendering I do as a tri-strip with the sides being normal to the current node. The UVs of the mesh can just follow with x axis being node_id/max_node and y axis being 0 or 1 (or flip axis whatever doesn't matter). 
+ [MOON], 
+Pickled Cow [MEW], Role icon, Godot
+ — 
+9:25 PM
+linked lists are kinda a trap here imo
+if you leave it in the form of an array then you have opportunities to directly feed it into whatever rendering API directly instead of having to assemble it every single frame
+not to mention the absolute cache miss nightmare linked lists are
+Forwarded
+Image
+#lobby  •  9/19/21
+here you can see what I mean by it deviating
+with ZUN's implementaiton he just removes the head entirely instead of cutting it
+but you can see how the new laser visually seems to curve too early
+because the head position was moved to a middle node
+williewillus (ping on response) [MOON], 
+ — 
+9:32 PM
+super useful, thanks!
+yeah im just gonna not deal with cutting for now
+Pickled Cow [MEW], Role icon, Godot
+ — 
+9:33 PM
+there were some crashing issues with mine so I did comment it out in mine too lol
+I tried to be fancy and have the player cut out a radius
+but there were some edgecases with 0 size lasers being created I couldn't be assed to deal with
+another catch with cutting lasers is that you can't then have some script updating that laser anymore
+the laser essentially needs to be self-managed
+in a way that you can just simply copy the behaviour over
+something akin to the AddPattern stuff in dnh
+I adopted that pattern in mine because I really do like the set-and-forget model
+ [MEW], 
+Pickled Cow [MEW], Role icon, Godot
+ — 
+9:40 PM
+also, by separating nodes from the actual bullets, you can cut some corners for performancy by only having a bullet every n nodes instead of every node
+for high-radius curvature that can be a pretty free and unnoticeable way to make some optimisations
+maybe not the optimisation goose to be chasing but it would be just leaving free cycles on the table
+
 * [2026-03-18 Wed]
 Spent the last couple days sprinting for Hazuki sp2 (and group non2 before that).
 

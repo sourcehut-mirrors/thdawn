@@ -545,6 +545,76 @@
 (define group-sp2-fairy-rotate-easing
   (bezier-cubic-easing 0.4 -0.3 0.6 1.3))
 
+(define (group-sp2-fairy-wave-var1 ang enm)
+  (define is-dodo (eq? (enm-type enm) (enmtype dodo)))
+  (let ([this-ang (fl- ang (torad 120.0))]
+		[orb #f])
+	(do [(j 0 (add1 j))]
+		[(= j 8)]
+	  (raylib:play-sound (sebundle-shoot0 sounds))
+	  (-> (fb)
+		  (fbcount 3)
+		  (fbabsolute-aim)
+		  (fbang (fl+ (todeg this-ang) 180.0) 60.0)
+		  (fbspeed 3.25)
+		  (fbshoot (enm-x enm) (enm-y enm)
+			(λ (row col speed facing)
+			  (-> (spawn-bullet
+				   (vnth '#(arrowhead-white
+							arrowhead-red arrowhead-orange arrowhead-yellow
+							arrowhead-green arrowhead-cyan
+							arrowhead-blue arrowhead-magenta) j)
+				   (enm-x enm) (enm-y enm) 5
+				   (λ (task blt)
+					 (linear-step-decelerate facing speed -0.04 blt)
+					 (when (and is-dodo
+								(not orb) (= col 1)) ;; first center blt to reach
+					   (set! orb
+							 (spawn-bullet
+							  'bubble-red
+							  group-sp2-center-x group-sp2-center-y 5
+							  values)))
+					 (wait 10)
+					 (let ([nf (flatan (fl- group-sp2-center-y
+											(bullet-y blt))
+									   (fl- group-sp2-center-x
+											(bullet-x blt)))])
+					   (bullet-facing-set! blt nf)
+					   (loop-until (fl< (distsq (bullet-x blt)
+												(bullet-y blt)
+												group-sp2-center-x
+												group-sp2-center-y)
+										225.0)
+						 (linear-step nf speed blt)))
+					 (cancel-bullet blt)))
+				  (bullet-facing-set! facing)))))
+	  (wait 10))
+	(raylib:play-sound (sebundle-longcharge sounds))
+	(wait 145)
+	(when is-dodo
+	  (cancel-bullet orb))
+	(wait 15)
+	(raylib:play-sound (sebundle-oldvwoopfast sounds))
+	(let loop ([j 0] [ang (centered-roll game-rng pi)])
+	  (let ([type (vnth-mod
+				   '#(arrowhead-red arrowhead-orange arrowhead-yellow
+									arrowhead-green arrowhead-cyan
+									arrowhead-blue arrowhead-magenta)
+				   (quotient j 10))])
+		(when is-dodo
+		  (for-each
+		   (λ (ang)
+			 (define-values (x y)
+			   (dist-away group-sp2-center-x group-sp2-center-y ang 20.0))
+			 (spawn-bullet
+			  type x y 5
+			  (curry linear-step-forever ang 2.0)))
+		   (list ang (fl+ ang hpi) (fl+ ang pi) (fl+ ang pi hpi))))
+	    (yield))
+	  (when (< j 110)
+		(loop (add1 j)
+			  (fl+ ang (torad (fl+ 17.0 (fx2fl j)))))))))
+
 (define (group-sp2-fairy-ctrl init-ang task enm)
   (define init-dist 160.0)
   (define spin-time 180)
@@ -568,91 +638,7 @@
 		(enm-x-set! enm x)
 		(enm-y-set! enm y))
 	  (yield))
-	;; Note: All of these attack patterns need to take the same amount of time
-	;; (currently 180 frames)
-	(if (fl< (enm-y enm) 200.0)
-		;; main position
-		(case (enm-type enm)
-		  [(dodo)
-		   (wait 180)]
-		  [(rere mimi)
-		   (dotimes 3
-			 (dotimes 3
-			   (raylib:play-sound (sebundle-shoot0 sounds))
-			   (-> (fb)
-				   (fbcount 2)
-				   (fbang 0.0 (roll-flrange game-rng 30.0 50.0))
-				   (fbspeed (roll-flrange game-rng 2.0 4.0))
-				   (fbshoot (enm-x enm) (enm-y enm)
-					 (λ (row col speed facing)
-					   (-> (spawn-bullet
-							'medium-ball-orange (enm-x enm) (enm-y enm) 2
-							(λ (task blt)
-							  (dotimes 25
-								(linear-step facing speed blt)
-								(yield))
-							  (cancel-bullet blt)
-							  (-> (cb)
-								  (cbcount 8)
-								  (cbspeed 2.0)
-								  (cbshootez
-								   (bullet-x blt) (bullet-y blt)
-								   'heart-orange 5 #f
-								   (λ (facing speed task blt)
-									 (linear-step-decelerate facing speed -0.05 blt)
-									 (wait 30)
-									 (raylib:play-sound (sebundle-bell sounds))
-									 (linear-step-accelerate-forever
-									  facing 0.0 0.08 3.0 task blt))))
-							  (-> (cb)
-								  (cbcount 16)
-								  (cbspeed 2.0)
-								  (cbshootez
-								   (bullet-x blt) (bullet-y blt)
-								   'small-ball-yellow 5 #f
-								   (λ (facing speed task blt)
-									 (linear-step-decelerate facing speed -0.05 blt)
-									 (wait 30)
-									 (linear-step-accelerate-forever
-									  (facing-player (bullet-x blt) (bullet-y blt))
-									  0.0 0.08 3.0 task blt))))))
-						   (bullet-facing-set! facing)))))
-			   (wait 15))
-			 (wait 15))]
-		  [(mimi)
-		   (dotimes 4
-			 (dotimes 3
-			   (raylib:play-sound (sebundle-shoot0 sounds))
-			   (-> (fb)
-				   (fbcount 2)
-				   (fbang 0.0 (roll-flrange game-rng 30.0 50.0))
-				   (fbspeed 3.5)
-				   (fbshoot (enm-x enm) (enm-y enm)
-					 (λ (row col speed facing)
-					   (-> (spawn-bullet
-							'medium-ball-blue (enm-x enm) (enm-y enm) 2
-							(λ (task blt)
-							  (dotimes 45
-								(linear-step facing speed blt)
-								(yield))
-							  (cancel-bullet blt)
-							  (raylib:play-sound (sebundle-laser sounds))
-							  (spawn-laser
-							   (vrand '#(fixed-laser-blue fixed-laser-cyan) game-rng)
-							   (bullet-x blt) (bullet-y blt)
-							   (facing-player (bullet-x blt) (bullet-y blt))
-							   500.0 3.5 20 50 (λ (_task _blt) (wait 35)))))
-						   (bullet-facing-set! facing)))))
-			   (wait 10))
-			 (wait 15))])
-		;; support positions
-		(dotimes 9
-		  (-> (fb)
-			  (fbcount 2 2)
-			  (fbang 0.0 40.0)
-			  (fbspeed 2.0 2.5)
-			  (fbshootenm enm 'small-star-white 5 (sebundle-shoot0 sounds)))
-		  (wait 20)))
+	(group-sp2-fairy-wave-var1 ang enm)
 	(wave (add1 wavei) (fl- ang (torad 120.0)))))
 
 (define (group-sp2-boss-ctrl init-ang doremi enm task)
@@ -692,7 +678,7 @@
 		(-> (spawn-bullet
 			 'rice-white (enm-x enm) (enm-y enm) 5
 			 (λ (task blt)
-			   (linear-step-decelerate-to (fl+ ang pi) 3.0 -0.06 0.0 blt)
+			   (linear-step-decelerate-to (fl+ ang pi) 2.0 -0.06 0.0 blt)
 			   (wait 75)
 			   (delete-bullet blt)
 			   (parameterize ([ovr-nocanceldrop #t])
