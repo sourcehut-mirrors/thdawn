@@ -486,8 +486,7 @@
 		(bullet-y-set! bullet (fl+ cy (fl* dist (flsin ang))))
 		(bullet-facing-set!
 		 bullet
-		 (flatan (fl- (bullet-y bullet) oy)
-				 (fl- (bullet-x bullet) ox))))
+		 (facing-point ox oy (bullet-x bullet) (bullet-y bullet))))
 	  (loop (fl+ ang dang)
 			(cdr bullets)))))
 
@@ -1282,10 +1281,10 @@
 	  (let loop ([ang 0.0])
 		(let* ([x (fl+ cx (fl* dist (flcos ang)))]
 			   [y (fl+ cy (fl* dist (flsin ang)))]
-			   [ang1 (flatan (- cy y) (- cx x))]
+			   [ang1 (facing-point x y cx cy)]
 			   [x2 (fl+ cx (fl* dist (flcos (fl+ ang pi))))]
 			   [y2 (fl+ cy (fl* dist (flsin (fl+ ang pi))))]
-			   [ang2 (flatan (- cy y2) (- cx x2))])
+			   [ang2 (facing-point x2 y2 cx cy)])
 		  (raylib:play-sound (sebundle-bell sounds))
 		  (spawn-bullet 'butterfly-magenta x y 5
 						(curry linear-step-accelerate-forever
@@ -1382,8 +1381,9 @@
 								  (fbabsolute-aim)
 								  (fbang
 								   (todeg
-									(flatan (fl- (or force-aim-y player-y) y)
-											(fl- (or force-aim-x player-x) x)))
+									(facing-point x y
+									 (or force-aim-x player-x)
+									 (or force-aim-y player-y)))
 								   final-wideness)
 								  (fbspeed 5.0 7.0)
 								  (fbshootez x y 'pellet-white 5

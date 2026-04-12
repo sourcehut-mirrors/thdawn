@@ -574,15 +574,12 @@
 							  group-sp2-center-x group-sp2-center-y 5
 							  values)))
 					 (wait 10)
-					 (let ([nf (flatan (fl- group-sp2-center-y
-											(bullet-y blt))
-									   (fl- group-sp2-center-x
-											(bullet-x blt)))])
+					 (let ([nf (facing-point
+								(bullet-x blt) (bullet-y blt)
+								group-sp2-center-x group-sp2-center-y)])
 					   (bullet-facing-set! blt nf)
-					   (loop-until (fl< (distsq (bullet-x blt)
-												(bullet-y blt)
-												group-sp2-center-x
-												group-sp2-center-y)
+					   (loop-until (fl< (distsq (bullet-x blt) (bullet-y blt)
+												group-sp2-center-x group-sp2-center-y)
 										225.0)
 						 (linear-step nf speed blt)))
 					 (cancel-bullet blt)))
@@ -976,8 +973,8 @@
 			   (wait 5)
 			   (raylib:play-sound (sebundle-bell sounds))
 			   (linear-step-accelerate-forever
-				(flatan (fl- (fuzzed-player-y) (bullet-y blt))
-						(fl- (fuzzed-player-x) (bullet-x blt)))
+				(facing-point (bullet-x blt) (bullet-y blt)
+							  (fuzzed-player-x) (fuzzed-player-y))
 				0.0 0.05 (if killed-by-hazuki 4.5 3.0) task blt)))
 			(spawn-bullet
 			 'butterfly-magenta
@@ -987,8 +984,8 @@
 			   (wait 5)
 			   (raylib:play-sound (sebundle-bell sounds))
 			   (linear-step-accelerate-forever
-				(flatan (fl- (fuzzed-player-y) (bullet-y blt))
-						(fl- (fuzzed-player-x) (bullet-x blt)))
+				(facing-point (bullet-x blt) (bullet-y blt)
+							  (fuzzed-player-x) (fuzzed-player-y))
 				0.0 0.05 (if killed-by-hazuki 4.0 2.5) task blt)))
 			(yield))))
 	  toptask))
@@ -1104,8 +1101,9 @@
 		 (λ (pair)
 		   (define e (car pair))
 		   (define killed-by-hazuki-box (cdr pair))
-		   (define facing (flatan (fl- (enm-y e) (enm-y hazuki))
-								  (fl- (enm-x e) (enm-x hazuki))))
+		   (define facing
+			 (facing-point (enm-x hazuki) (enm-y hazuki)
+						   (enm-x e) (enm-y e)))
 		   (when (fxpositive? (enm-health e))
 			 (wait 20)
 			 (spawn-bullet
@@ -1437,10 +1435,10 @@
 			 (loop state
 				   (if (and (flzero? (v2x last-player-movement-dir))
 							(flzero? (v2y last-player-movement-dir)))
-					   (flatan (fl- (bullet-y blt) player-y)
-							   (fl- (bullet-x blt) player-x))
+					   (facing-point player-x player-y
+									 (bullet-x blt) (bullet-y blt))
 					   (flatan (v2y last-player-movement-dir)
-									 (v2x last-player-movement-dir)))
+							   (v2x last-player-movement-dir)))
 				   (fl* speed 1.01)
 				   (fx1+ frames-moving))))
 
@@ -1458,8 +1456,8 @@
 							(fxnonpositive? (enm-health aiko)))
 				   (set-box! ball-killing-blow-box #t)))
 			   (loop state
-					 (flatan (fl- (bullet-y blt) (enm-y aiko))
-							 (fl- (bullet-x blt) (enm-x aiko)))
+					 (facing-point (enm-x aiko) (enm-y aiko)
+								   (bullet-x blt) (bullet-y blt))
 					 (fl* speed 1.01)
 					 (fx1+ frames-moving)))))
 
@@ -1625,8 +1623,8 @@
 					 [else (if (roll-bool game-rng) -38.0 38.0)]))]
 			   [target-y (if try-bounce-shot 330.0 (fx2fl +playfield-max-y+))]
 			   [ball-facing
-				(flatan (fl- target-y (bullet-y cur-ball))
-						(fl- target-x (bullet-x cur-ball)))])
+				(facing-point (bullet-x cur-ball) (bullet-y cur-ball)
+							  target-x target-y)])
 		  (set-box! msg-box (list 'move ball-facing 9.0)))
 		(wait-until (thunk (or (fx> (fx- frames start-frames) 480)
 							   (not (vector-index cur-ball live-bullets)))))

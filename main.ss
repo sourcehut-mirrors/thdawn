@@ -1646,8 +1646,11 @@
 		;; need to truncate it to the nearest complete segment
 		(vector-truncate v (add1 (* 3 quot))))))
 
+(define (facing-point sx sy tx ty)
+  (flatan (fl- ty sy) (fl- tx sx)))
+
 (define (facing-player x y)
-  (flatan (fl- player-y y) (fl- player-x x)))
+  (facing-point x y player-x player-y))
 
 (define (dist-away cx cy facing dist)
   (values (fl+ cx (fl* dist (flcos facing)))
@@ -2265,7 +2268,7 @@
 							6000 900 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Ghostbuster Hazuki\""
 							3000 9000 3000000 'hazuki std std-fail)
-	 (make-spell-descriptor "Athlete Sign \"Aiko's Pinball Penalty Shootout\""
+	 (make-spell-descriptor "Athletic Sign \"Aiko's Pinball Penalty Shootout\""
 							2400 25000 3000000 'aiko
 							'((bomb . 1) (point . 50))
 							'((bomb . 1) (point . 10)))
@@ -3076,7 +3079,7 @@
   (define ny (fl+ oy vy))
   (bullet-x-set! blt nx)
   (bullet-y-set! blt ny)
-  (bullet-facing-set! blt (flatan (fl- ny oy) (fl- nx ox))))
+  (bullet-facing-set! blt (facing-point ox oy nx ny)))
 (define linear-step-gravity-forever
   (case-lambda
 	([facing speed ay task blt]
