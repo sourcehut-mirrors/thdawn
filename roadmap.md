@@ -25,10 +25,8 @@ As in, when you work pick something off the list and get at it.
 * doremi sp1
 * hazuki non1
 * hazuki sp1
-* group sp2 (fairy kaleidoscope)
 * doremi non2
 * doremi sp2
-* hazuki non2
 * group sp3 (survival)
 * group sp4 (final)
 * go through all bullet types and appropriately set their preimg sizes

@@ -545,7 +545,7 @@
 (define group-sp2-fairy-rotate-easing
   (bezier-cubic-easing 0.4 -0.3 0.6 1.3))
 
-(define (group-sp2-fairy-wave-var0 this-ang enm)
+(define (group-sp2-fairy-wave-var1 this-ang task enm)
   (define is-dodo (eq? (enm-type enm) (enmtype dodo)))
   (let ([orb #f])
 	(do [(j 0 (add1 j))]
@@ -580,9 +580,9 @@
 					   (bullet-facing-set! blt nf)
 					   (loop-until (fl< (distsq (bullet-x blt) (bullet-y blt)
 												group-sp2-center-x group-sp2-center-y)
-										225.0)
+										100.0)
 						 (linear-step nf speed blt)))
-					 (cancel-bullet blt)))
+					 (delete-bullet blt)))
 				  (bullet-facing-set! facing)))))
 	  (wait 10))
 	(raylib:play-sound (sebundle-longcharge sounds))
@@ -609,9 +609,9 @@
 	    (yield))
 	  (when (< j 110)
 		(loop (add1 j)
-			  (fl+ ang (torad (fl+ 17.0 (fx2fl j)))))))))
+			  (fl+ ang (torad (fl+ 21.0 (fx2fl j)))))))))
 
-(define (group-sp2-fairy-wave-var1 ang enm)
+(define (group-sp2-fairy-wave-var2 ang task enm)
   (define is-dodo (eq? (enm-type enm) (enmtype dodo)))
   (define blts 64)
   (define gap-radius-blts 3)
@@ -630,7 +630,7 @@
 		  [(= j blts)]
 		(let*-values ([(ang) (fl+ init-ang (fl* angper (fx2fl j)))]
 					  [(x y) (dist-away group-sp2-center-x group-sp2-center-y
-										ang 160.0)])
+										ang 155.0)])
 		  (unless (or (<= (- gap gap-radius-blts) j (+ gap gap-radius-blts))
 					  ;; also check against gap + blts for to account for
 					  ;; boundary condition
@@ -671,6 +671,71 @@
 	(when (< i 15)
 	  (loop (add1 i) (mod (+ gap gap-winding) blts) (box #f)))))
 
+(define (group-sp2-fairy-wave-var0 ang task enm)
+  (define zone-radius 30.0)
+  (define timeup-box (box #f))
+  (when (eq? (enm-type enm) (enmtype dodo))
+	(let ([p (spawn-particle (particletype circle-hint-opaque)
+							 player-x player-y 300
+							 `((r1 . ,zone-radius)
+							   (r2 . ,zone-radius)
+							   (color . #x7cfc0080)))])
+	  (spawn-subtask "sync particle"
+		(λ (task)
+		  (loop-forever
+		   (particle-x-set! p player-x)
+		   (particle-y-set! p player-y)
+		   ;; make sure we clean up immediately
+		   (when (not (find-spellcaster))
+			 (delete-particle p))))
+		task)))
+  (do [(i 0 (add1 i))]
+	  [(= i 8)]
+	(-> (fb)
+		(fbcount 12)
+		(fbspeed 2.0)
+		(fbabsolute-aim)
+		(fbang (todeg (facing-point (enm-x enm) (enm-y enm)
+									group-sp2-center-x group-sp2-center-y))
+			   3.0)
+		(fbshootenm
+		 enm
+		 (vnth
+		  '#(arrowhead-white
+			 arrowhead-red arrowhead-orange arrowhead-yellow
+			 arrowhead-green arrowhead-cyan
+			 arrowhead-blue arrowhead-magenta) i)
+		 8 (sebundle-shoot0 sounds)
+		 (λ (facing speed task blt)
+		   (define hit-zone #f)
+		   (let loop ()
+			 (linear-step facing speed blt)
+			 (when (fl< (distsq (bullet-x blt) (bullet-y blt)
+								player-x player-y)
+						(fl* zone-radius zone-radius))
+			   (raylib:play-sound (sebundle-bell sounds))
+			   (set! hit-zone #t))
+			 (unless (or (unbox timeup-box) hit-zone)
+			   (yield)
+			   (loop)))
+		   (if hit-zone
+			   (linear-step-forever
+				(fl+ pi (facing-player (bullet-x blt) (bullet-y blt)))
+				speed task blt)
+			   (begin
+				 (bullet-facing-set!
+				  blt (facing-player (bullet-x blt) (bullet-y blt)))
+				 (wait 30)
+				 (linear-step-accelerate-forever
+				  (bullet-facing blt)
+				  0.0 0.08 3.0
+				  task blt))))))
+	(wait 30))
+  (wait 60)
+  (raylib:play-sound (sebundle-longcharge sounds))
+  (set-box! timeup-box #t)
+  (wait 60))
+
 (define (group-sp2-fairy-ctrl init-ang task enm)
   (define init-dist 160.0)
   (define spin-time 180)
@@ -683,9 +748,9 @@
 	(do [(i 0 (add1 i))]
 		[(fx= i spin-time)]
 	  (let*-values
-		  ([(dang) (fl- (lerp 0.0 (torad 120.0)
-							  (group-sp2-fairy-rotate-easing
-							   (inexact (/ i (sub1 spin-time))))))]
+		  ([(dang) (lerp 0.0 (torad -120.0)
+						 (group-sp2-fairy-rotate-easing
+						  (inexact (/ i (sub1 spin-time)))))]
 		   [(this-ang) (fl+ ang dang)]
 		   [(x y)
 			(dist-away group-sp2-center-x group-sp2-center-y this-ang init-dist)])
@@ -693,11 +758,10 @@
 		(enm-y-set! enm y))
 	  (yield))
 	(let ([this-ang (fl- ang (torad 120.0))])
-	  ;; consider randomizing (though that'll be more work since the three fairies
-	  ;; need to independently roll the same result)
-	  (case (mod wavei 2)
-		[(0) (group-sp2-fairy-wave-var0 this-ang enm)]
-		[(1) (group-sp2-fairy-wave-var1 this-ang enm)])
+	  (case (mod wavei 3)
+		[(0) (group-sp2-fairy-wave-var0 this-ang task enm)]
+		[(1) (group-sp2-fairy-wave-var1 this-ang task enm)]
+		[(2) (group-sp2-fairy-wave-var2 this-ang task enm)])
 	  (wave (add1 wavei) this-ang))))
 
 (define (group-sp2-boss-ctrl init-ang doremi enm task)

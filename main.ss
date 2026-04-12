@@ -2263,7 +2263,7 @@
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
 							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
-							6000 9000 3000000 'group std std-fail)
+							4200 30000 3000000 'group std std-fail)
 	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""
 							6000 900 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Ghostbuster Hazuki\""
@@ -3166,8 +3166,9 @@
   (let ([idx (vector-index #f live-particles)])
 	(unless idx
 	  (error 'spawn-particle "No more open particle slots!"))
-	(vector-set! live-particles idx
-				 (make-particle type x y max-age 0 extra))))
+	(let ([p (make-particle type x y max-age 0 extra)])
+	  (vector-set! live-particles idx p)
+	  p)))
 
 (define (delete-particle p)
   (let ([idx (vector-index p live-particles)])
