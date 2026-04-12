@@ -545,10 +545,9 @@
 (define group-sp2-fairy-rotate-easing
   (bezier-cubic-easing 0.4 -0.3 0.6 1.3))
 
-(define (group-sp2-fairy-wave-var1 ang enm)
+(define (group-sp2-fairy-wave-var0 this-ang enm)
   (define is-dodo (eq? (enm-type enm) (enmtype dodo)))
-  (let ([this-ang (fl- ang (torad 120.0))]
-		[orb #f])
+  (let ([orb #f])
 	(do [(j 0 (add1 j))]
 		[(= j 8)]
 	  (raylib:play-sound (sebundle-shoot0 sounds))
@@ -605,7 +604,7 @@
 		  (for-each
 		   (λ (ang)
 			 (define-values (x y)
-			   (dist-away group-sp2-center-x group-sp2-center-y ang 20.0))
+			   (dist-away group-sp2-center-x group-sp2-center-y ang 12.0))
 			 (spawn-bullet
 			  type x y 5
 			  (curry linear-step-forever ang 2.0)))
@@ -615,6 +614,66 @@
 		(loop (add1 j)
 			  (fl+ ang (torad (fl+ 17.0 (fx2fl j)))))))))
 
+(define (group-sp2-fairy-wave-var1 ang enm)
+  (define is-dodo (eq? (enm-type enm) (enmtype dodo)))
+  (define blts 64)
+  (define gap-radius-blts 3)
+  (define angper (torad (fl/ 360.0 (fx2fl blts))))
+  (define init-ang (centered-roll game-rng pi))
+  (define gap-winding (if (roll-bool game-rng) 4 -4))
+  (let loop ([i 0] [gap 0]
+			 ;; gross state. I had the j=0th bullet be responsible for the
+			 ;; star at first, but if the first bullet gets gapped away
+			 ;; then the star wouldn't be fired. instead just use a bit of
+			 ;; state to only fire it once per ring
+			 [ring-star-fired (box #f)])
+	(when is-dodo
+	  (raylib:play-sound (sebundle-shoot0 sounds))
+	  (do [(j 0 (add1 j))]
+		  [(= j blts)]
+		(let*-values ([(ang) (fl+ init-ang (fl* angper (fx2fl j)))]
+					  [(x y) (dist-away group-sp2-center-x group-sp2-center-y
+										ang 160.0)])
+		  (unless (or (<= (- gap gap-radius-blts) j (+ gap gap-radius-blts))
+					  ;; also check against gap + blts for to account for
+					  ;; boundary condition
+					  (<= (- (+ gap blts) gap-radius-blts)
+						  j (+ gap blts gap-radius-blts)))
+			(-> (spawn-bullet (vnth-mod
+							   '#(amulet-white
+								  amulet-red amulet-orange amulet-yellow
+								  amulet-green amulet-cyan
+								  amulet-blue amulet-magenta) i)
+							  x y 8
+							  (λ (task blt)
+								(loop-forever
+								 (linear-step (fl+ ang pi) 2.25 blt)
+								 (when (fl< (distsq (bullet-x blt) (bullet-y blt)
+													group-sp2-center-x
+													group-sp2-center-y)
+											25.0)
+								   (delete-bullet blt)
+								   (unless (unbox ring-star-fired)
+									 (set-box! ring-star-fired #t)
+									 (-> (fb)
+										 (fbcount 1 3)
+										 (fbspeed 2.5 3.5)
+										 (fbang (if (positive? gap-winding)
+													25.0 -25.0))
+										 (fbshootez
+										  group-sp2-center-x group-sp2-center-y
+										  (vnth-mod
+										   '#(big-star-white
+											  big-star-red big-star-orange big-star-yellow
+											  big-star-green big-star-cyan
+											  big-star-blue big-star-magenta) i)
+										  5
+										  (sebundle-bell sounds))))))))
+				(bullet-facing-set! (fl+ ang pi)))))))
+	(wait 15)
+	(when (< i 15)
+	  (loop (add1 i) (mod (+ gap gap-winding) blts) (box #f)))))
+
 (define (group-sp2-fairy-ctrl init-ang task enm)
   (define init-dist 160.0)
   (define spin-time 180)
@@ -622,10 +681,8 @@
 	(dist-away group-sp2-center-x group-sp2-center-y init-ang init-dist))
   (define _ (ease-to values ix iy 60 enm))
   (wait 60)
-  ;; wave: setup laser grid, move to new position, shoot a bit, call next wave
   (let wave ([wavei 0]
 			 [ang init-ang])
-	;; TODO laser grid
 	(do [(i 0 (add1 i))]
 		[(fx= i spin-time)]
 	  (let*-values
@@ -638,8 +695,13 @@
 		(enm-x-set! enm x)
 		(enm-y-set! enm y))
 	  (yield))
-	(group-sp2-fairy-wave-var1 ang enm)
-	(wave (add1 wavei) (fl- ang (torad 120.0)))))
+	(let ([this-ang (fl- ang (torad 120.0))])
+	  ;; consider randomizing (though that'll be more work since the three fairies
+	  ;; need to independently roll the same result)
+	  (case (mod wavei 2)
+		[(0) (group-sp2-fairy-wave-var0 this-ang enm)]
+		[(1) (group-sp2-fairy-wave-var1 this-ang enm)])
+	  (wave (add1 wavei) this-ang))))
 
 (define (group-sp2-boss-ctrl init-ang doremi enm task)
   (define dist 200.0)
