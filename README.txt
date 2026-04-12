@@ -53,18 +53,40 @@ https://lists.sr.ht/~williewillus/games-discuss
 
 You can contribute to the discussion by emailing the public mailing list at
 "~williewillus/games-discuss@lists.sr.ht", no quotes. Make sure the tilde at the front is
-there. Alternatively, simply click the "New Post" button on the webpage above to pop open
-your email client with the address pre-filled.
+there. You can also click the "New Post" button on the webpage above to pop open your
+email client with the address pre-filled.
 
-Why email? Because Discord and other corporate, social media platforms have proven to not
-care for their users. This email list is hosted by an organization I trust, and even if
-they were to lose that trust, I can easily download the email archive and reupload it
-somewhere else.
+As an alternative, you can comment on the Maidens of the Kaleidoscope (Shrinemaiden) forum
+thread here: <TODO>.
 
-Please don't be shy; I'd love to hear from you!
+Why these choices? Several reasons:
+
+1. These platforms are open and indexable on the web. Any discussion in a Discord or other
+chatroom is locked-down, and will become lost when that platform inevitably shuts down in
+the future.
+
+2. Corporate social media platforms have proven to not care for users in the quest for
+profits. We should not reward them for doing that.
+
+3. Independent forums, free from the ranking algorithms, ads, and corporate moneyed
+interests of modern social media platforms, are something we need to safeguard as part of
+the old, open internet.
+
+I hope that helps you understand why these platforms were chosen. Please don't be shy; I'd
+love to hear from you!
+
++--------------------+
+| 5. Known Issues    |
++--------------------+
+
+* Game resolution is too low, leading to blurry text and aliasing artifacts
+  This started as a random side project, and I hardcoded 640x480 literally everywhere in
+  the rendering code orz.
+  In the future, an update may increase the resolution of the game.
 
 +-----------------+
-| 5. Changelog    |
+| 6. Changelog    |
 +-----------------+
 
-* 2026/??/??: Initial v1.00
+* 2026/??/??: Private demo v0.xx
+* 2026/??/??: Initial release v1.00

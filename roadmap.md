@@ -11,6 +11,7 @@ Boss: Doremi/Hazuki/Aiko/Onpu. BGM: Naisho yo ojamajo (no syncing)
 ## Immediate TODOs
 As in, when you work pick something off the list and get at it.
 
+* logo (and pick a name)
 * doremi sprite
 * hazuki sprite
 * aiko sprite
