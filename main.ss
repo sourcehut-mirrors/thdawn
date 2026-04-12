@@ -29,11 +29,11 @@
 (define vkeys-proc (enum-set-constructor empty-vkeys))
 
 (include "keyconsts.ss")
-;; turns out glfwGetKeyName just doesn't work for non-printable keys which
-;; makes it pretty useless?
 (define (key-name k)
+  ;; names which we want to override (Numpad ones, for disambiguation)
+  ;; or for which get-key-name returns no name
   ;; copypasta from raylib.h KeyboardKey
-  (define nonprintables
+  (define overrides
 	'((32 . "Space") (256 . "Escape") (257 . "Enter")
 	  (258 . "Tab") (259 . "Backspace") (260 . "Insert")
 	  (261 . "Delete") (262 . "Right") (263 . "Left")
@@ -53,9 +53,9 @@
 	  (329 . "NumPad9") (330 . "NumPadDot") (331 . "NumPad/")
 	  (332 . "NumPad*") (333 . "NumPad-") (334 . "NumPad+")
 	  (335 . "NumPadEnter") (336 . "NumPadEqual")))
-  (or (raylib:get-key-name k)
-	  (let ([p (assq k nonprintables)])
+  (or (let ([p (assq k overrides)])
 		(and p (cdr p)))
+	  (raylib:get-key-name k)
 	  (string-append "Unknown Key " (number->string k))))
 
 (alias vnth vector-ref)
