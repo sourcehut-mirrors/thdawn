@@ -4955,18 +4955,11 @@
 				 (fl+ (fl* +frame-time-factor+
 						   ft)
 					  (fl* (fl- 1.0 +frame-time-factor+)
-						   frame-time-ema))))
-		 #;(when (fxzero? (fxmod true-frames 180))
-		 (display (format "B ~,2f || "
-		 (/ (cost-center-allocation-count bullet-cc)
-		 (* 1024.0 1024.0))))
-		 (display (format "M ~,2f || "
-		 (/ (cost-center-allocation-count miscent-cc)
-		 (* 1024.0 1024.0))))
-		 (reset-cost-center! bullet-cc)
-		 (reset-cost-center! miscent-cc)
-		 (newline))
-		 ))
+						   frame-time-ema)))))
+	   ;; if stage ctx is still alive here, player did alt+f4
+	   ;; make sure to save the play time
+	   (when (and current-stage-ctx (is-liveplay))
+		 (update-play-time)))
 	  (thunk
 	   (unload-fonts fonts)
 	   (unload-textures textures)
