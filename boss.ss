@@ -680,15 +680,15 @@
 							 `((r1 . ,zone-radius)
 							   (r2 . ,zone-radius)
 							   (color . #x7cfc0080)))])
-	  (spawn-subtask "sync particle"
+	  (spawn-task "sync particle"
 		(λ (task)
-		  (loop-forever
+		  (loop-while (and (vector-index p live-particles)
+						   (vector-index enm live-enm))
 		   (particle-x-set! p player-x)
-		   (particle-y-set! p player-y)
-		   ;; make sure we clean up immediately
-		   (when (not (find-spellcaster))
-			 (delete-particle p))))
-		task)))
+		   (particle-y-set! p player-y))
+		  ;; clean up when the spell ends (i.e. fairy no longer in live-enm)
+		  (delete-particle p))
+		(constantly #t))))
   (do [(i 0 (add1 i))]
 	  [(= i 8)]
 	(-> (fb)
