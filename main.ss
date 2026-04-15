@@ -810,13 +810,13 @@
    ;; function to run once close animation is done
    (mutable close-fn)))
 
-(define (render-ingame-menu fonts items selected x start-y step-y size alpha)
+(define (render-ingame-menu font items selected x start-y step-y size alpha)
   (do [(i 0 (add1 i))]
 	  [(>= i (vlen items))]
 	(let ([item (vnth items i)]
 		  [isel (= i selected)])
 	  (raylib:draw-text-ex
-	   (fontbundle-bubblegum fonts)
+	   font
 	   ((menu-item-label item))
 	   (if isel (fl+ x 15.0) x)
 	   (fx2fl (+ start-y (* step-y i))) size 0.0
@@ -877,15 +877,15 @@
 (define (title-render self textures fonts)
   (draw-title-bg textures -1)
   (render-ingame-menu
-   fonts
+   (fontbundle-bubblegum40 fonts)
    (title-gui-menu-options self) (title-gui-selected-option self)
    40.0 200 50 30.0 255)
   (let-values ([(width height) (raylib:measure-text-ex
-								 (fontbundle-cabin fonts)
+								 (fontbundle-cabin20 fonts)
 								 (game-version)
 								 20.0 0.0)])
 	(raylib:draw-text-ex
-	 (fontbundle-cabin fonts)
+	 (fontbundle-cabin20 fonts)
 	 (game-version)
 	 (fl- 640.0 width 5.0) (fl- 480.0 height 5.0)
 	 20.0 0.0 -1)))
@@ -972,19 +972,19 @@
   (define selected (nameinput-gui-selected-option self))
   (define-values (width _)
 	(raylib:measure-text-ex
-	 (fontbundle-sharetechmono fonts)
+	 (fontbundle-sharetechmono40 fonts)
 	 (make-string +name-max+ #\*)
 	 40.0 0.0))
   (draw-title-bg textures #x808080ff)
   (raylib:draw-text-ex
-   (fontbundle-sharetechmono fonts) name
+   (fontbundle-sharetechmono40 fonts) name
    (fl- 320.0 (fl/ width 2.0)) 100.0 40.0 0.0 -1)
   (vector-for-each-indexed
    (λ (i opt)
 	 (define-values (row col) (div-and-mod i +nameinput-per-row+))
 	 (define label ((menu-item-label opt)))
 	 (raylib:draw-text-ex
-	  (fontbundle-sharetechmono fonts)
+	  (fontbundle-sharetechmono30 fonts)
 	  (if (string=? " " label) "SP" label)
 	  (fx2fl (+ 162 (* col 25)))
 	  (fx2fl (+ 200 (* row 25)))
@@ -1140,7 +1140,7 @@
 					"Select Slot" "Watch Elegant Replays"))
   (define-values (twidth _theight)
 	(raylib:measure-text-ex
-	 (fontbundle-bubblegum fonts)
+	 (fontbundle-bubblegum40 fonts)
 	 title
 	 40.0 0.0))
   (define page (replist-gui-selected-page self))
@@ -1152,15 +1152,15 @@
 			(if (< page (sub1 +replay-pages+)) "-->" "   ")))
   (define-values (pgwidth _pgheight)
 	(raylib:measure-text-ex
-	 (fontbundle-sharetechmono fonts)
+	 (fontbundle-sharetechmono20 fonts)
 	 page-str 20.0 0.0))
   (draw-title-bg textures #x808080ff)
   (raylib:draw-rectangle-lines 20 70 (- 640 40) (- 480 200) -1)
   (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts) title
+   (fontbundle-bubblegum40 fonts) title
    (fl- 320.0 (fl/ twidth 2.0)) 15.0 40.0 0.0 -1)
   (raylib:draw-text-ex
-   (fontbundle-sharetechmono fonts) page-str
+   (fontbundle-sharetechmono20 fonts) page-str
    (fl- 320.0 (fl/ pgwidth 2.0)) 370.0 20.0 0.0 -1)
   (draw-scores fonts (replist-gui-cached-data self)
 			   (replist-gui-selected-row self)))
@@ -1192,8 +1192,8 @@
 	 self
 	 (not (playdata-gui-spellhist self)))]))
 (define (playdata-draw-spellhist self textures fonts)
-  (define bubblegum (fontbundle-bubblegum fonts))
-  (define cabin (fontbundle-cabin fonts))
+  (define bubblegum (fontbundle-bubblegum20 fonts))
+  (define cabin (fontbundle-cabin20 fonts))
   (let loop ([i 0]
 			 [y 90.0])
 	(let*-values ([(history)
@@ -1217,8 +1217,8 @@
 	  (when (< i (sub1 (vlen spells)))
 		(loop (add1 i) (+ y height))))))
 (define (draw-scores fonts score-entries selected)
-  (define bubblegum (fontbundle-bubblegum fonts))
-  (define cabin (fontbundle-cabin fonts))
+  (define bubblegum (fontbundle-bubblegum24 fonts))
+  (define cabin (fontbundle-cabin24 fonts))
   (let loop ([cur score-entries]
 			 [i 0]
 			 [y 90.0])
@@ -1241,23 +1241,23 @@
 								 (if (score-entry-cleared entry) " (C)" ""))
 						 "0")]
 					[(_ nheight)
-					 (raylib:measure-text-ex bubblegum name 25.0 0.0)]
+					 (raylib:measure-text-ex bubblegum name 24.0 0.0)]
 					[(swidth _)
-					 (raylib:measure-text-ex cabin score 25.0 0.0)])
+					 (raylib:measure-text-ex cabin score 24.0 0.0)])
 		(raylib:draw-text-ex bubblegum name
-							 40.0 y 25.0 0.0 color)
+							 40.0 y 24.0 0.0 color)
 		(unless (zero? (string-length time))
 		  (raylib:draw-text-ex cabin time
 							   200.0
-							   y 25.0 0.0 color))
+							   y 24.0 0.0 color))
 		(raylib:draw-text-ex cabin score
 							 ;; screenwidth - to box - within box - text width
 							 (fl- 640.0 20.0 20.0 swidth)
-							 y 25.0 0.0 color)
+							 y 24.0 0.0 color)
 		(loop (cdr cur) (add1 i) (+ y nheight))))))
 (define (playdata-render self textures fonts)
-  (define bubblegum (fontbundle-bubblegum fonts))
-  (define cabin (fontbundle-cabin fonts))
+  (define bubblegum (fontbundle-bubblegum40 fonts))
+  (define cabin (fontbundle-cabin24 fonts))
   (define-values (title-width title-height)
 	(raylib:measure-text-ex bubblegum "Play Data" 40.0 0.0))
   (define play-secs0 (eround (/ (assqdr 'play-frames play-data) 60)))
@@ -1274,26 +1274,26 @@
 										play-hrs play-mins play-secs)]
 				[(pwidth pheight)
 				 (raylib:measure-text-ex cabin playtime-str
-										 25.0 0.0)]
+										 24.0 0.0)]
 				[(started-str) (format "Games Started: ~d"
 									   (assqdr 'games-started play-data))]
 				[(swidth sheight)
 				 (raylib:measure-text-ex cabin started-str
-										 25.0 0.0)]
+										 24.0 0.0)]
 				[(clr-str) (format "Games Cleared: ~d"
 								   (assqdr 'games-cleared play-data))]
 				[(cwidth _)
 				 (raylib:measure-text-ex cabin clr-str
-										 25.0 0.0)])
+										 24.0 0.0)])
 	(raylib:draw-text-ex cabin playtime-str
 						 (fl- (/ 640.0 2.0) (fl/ pwidth 2.0))
-						 370.0 25.0 0.0 -1)
+						 370.0 24.0 0.0 -1)
 	(raylib:draw-text-ex cabin started-str
 						 (fl- (/ 640.0 2.0) (fl/ swidth 2.0))
-						 (fl+ 370.0 pheight) 25.0 0.0 -1)
+						 (fl+ 370.0 pheight) 24.0 0.0 -1)
 	(raylib:draw-text-ex cabin clr-str
 						 (fl- (/ 640.0 2.0) (fl/ cwidth 2.0))
-						 (fl+ 370.0 pheight sheight) 25.0 0.0 -1))
+						 (fl+ 370.0 pheight sheight) 24.0 0.0 -1))
   (if (playdata-gui-spellhist self)
 	  (playdata-draw-spellhist self textures fonts)
 	  (draw-scores fonts (assqdr 'hiscore play-data) #f)))
@@ -1364,23 +1364,22 @@
   (define selected (setting-gui-selected-option self))
   (define start-y 100)
   (define step-y 20)
-  (define size 25.0)
   (draw-title-bg textures #x808080ff)
   (let*-values ([(title) "Fiddle Some Knobs"]
 				[(twidth _theight)
 				 (raylib:measure-text-ex
-				  (fontbundle-bubblegum fonts)
+				  (fontbundle-bubblegum40 fonts)
 				  title
 				  40.0 0.0)])
 	(raylib:draw-text-ex
-	 (fontbundle-bubblegum fonts) title
+	 (fontbundle-bubblegum40 fonts) title
 	 (fl- 320.0 (fl/ twidth 2.0)) 15.0 40.0 0.0 -1))
   (do [(i 0 (add1 i))]
 	  [(>= i (vlen items))]
 	(raylib:draw-text-ex
-	 (fontbundle-bubblegum fonts)
+	 (fontbundle-bubblegum24 fonts)
 	 ((menu-item-label (vnth items i)))
-	 40.0 (fx2fl (+ start-y (* step-y i))) size 0.0
+	 40.0 (fx2fl (+ start-y (* step-y i))) 24.0 0.0
 	 (if (and (= i selected)
 			  (or (not (setting-gui-waiting-for-rebind self))
 				  (fx< (fxmod true-frames 14) 7)))
@@ -1574,17 +1573,18 @@
 		[(replaydone) "Playback Complete"]))
 	(define-values (twidth _)
 	  (raylib:measure-text-ex
-	   (fontbundle-bubblegum fonts)
+	   (fontbundle-bubblegum32 fonts)
 	   title 32.0 0.0))
 	(raylib:draw-rectangle-rec
 	 0.0 0.0 640.0 480.0 (override-alpha #x60606000 (eround (lerp 0 160 progress))))
 	(raylib:draw-text-ex
-	 (fontbundle-bubblegum fonts)
+	 (fontbundle-bubblegum32 fonts)
 	 title
 	 (+ (fl/ twidth -2.0) +playfield-render-offset-x+)
 	 (lerp 120.0 150.0 progress)
 	 32.0 0.0 (override-alpha selected-color alpha))
-	(render-ingame-menu fonts opts selected
+	(render-ingame-menu (fontbundle-bubblegum20 fonts)
+						opts selected
 						(lerp 80.0 100.0 progress)
 						200 20 20.0 alpha))
   (define restart-opt
@@ -3194,7 +3194,7 @@
 
 (define (draw-centered-field-text fonts age max-age text render-y size color bg)
   (define-values (width height)
-	(raylib:measure-text-ex (fontbundle-cabin fonts) text size 0.0))
+	(raylib:measure-text-ex (fontbundle-cabin24 fonts) text size 0.0))
   (define render-x (+ +playfield-render-offset-x+ (/ width -2.0)))
   (define start-fadeout-age (- max-age 30))
   (define alpha
@@ -3213,7 +3213,7 @@
 	 (fl+ height 10.0)
 	 (override-alpha #x888888aa (fxmin alpha #xaa))))
   (raylib:draw-text-ex
-   (fontbundle-cabin fonts)
+   (fontbundle-cabin24 fonts)
    text
    render-x render-y
    size 0.0
@@ -3270,10 +3270,10 @@
 				 [value (cdr extra-data)]
 				 [render-x (fl+ render-x 10.0)])
 			 (let-values ([(width _) (raylib:measure-text-ex
-									  (fontbundle-cabin fonts)
+									  (fontbundle-cabin16 fonts)
 									  value 16.0 0.0)])
 			   (raylib:draw-text-ex
-				(fontbundle-cabin fonts)
+				(fontbundle-cabin16 fonts)
 				value
 				;; display to the left if we wouldn't have room on the right
 				;; this is done here instead of when the particle is spawned so that
@@ -4275,7 +4275,7 @@
   (define spname (and spid
 					  (spell-descriptor-name (vnth spells spid))))
   (define healthbars (bossinfo-healthbars bossinfo))
-  (raylib:draw-text-ex (fontbundle-bubblegum fonts)
+  (raylib:draw-text-ex (fontbundle-bubblegum16 fonts)
 					   (bossinfo-name bossinfo)
 					   (fx2fl (+ +playfield-min-render-x+ 5))
 					   (fx2fl (+ +playfield-min-render-y+ 5 (* position 15)))
@@ -4315,7 +4315,7 @@
 		(loop (+ x (healthbar-width hb) (healthbar-post-padding hb))
 			  (add1 i)))))
   (unless (fxzero? remaining-timer)
-	(raylib:draw-text-ex (fontbundle-sharetechmono fonts)
+	(raylib:draw-text-ex (fontbundle-sharetechmono20 fonts)
 						 (format "~2,'0d"
 								 (exact (ceiling
 								  (/ remaining-timer 60.0))))
@@ -4336,7 +4336,7 @@
 					[(bonus-txt) (format "Bonus: ~11:d | History: ~2,'0d/~2,'0d"
 										 bonus (car history) (cdr history))]
 					[(bonus-width _) (raylib:measure-text-ex
-									  (fontbundle-sharetechmono fonts)
+									  (fontbundle-sharetechmono15 fonts)
 									  bonus-txt 15.0 0.0)]
 					[(bonus-x)
 					 (+ +playfield-render-offset-x+
@@ -4347,7 +4347,7 @@
 									 (ease-out-cubic (/ elapsed-frames 30))))
 							(+ +playfield-max-x+ (fl- bonus-width))))]
 					[(width height) (raylib:measure-text-ex
-									 (fontbundle-cabin fonts)
+									 (fontbundle-cabin18 fonts)
 									 spname 18.0 0.5)]
 					[(spx) (+ +playfield-render-offset-x+
 							  -5.0
@@ -4375,11 +4375,11 @@
 		 (make-rectangle (- +playfield-max-render-x+ 256.0) (- spy 5.0) 256.0 36.0)
 		 v2zero 0.0 color)
 		(raylib:draw-text-ex
-		 (fontbundle-cabin fonts) spname
+		 (fontbundle-cabin18 fonts) spname
 		 spx spy
 		 18.0 0.5 color)
 		(raylib:draw-text-ex
-		 (fontbundle-sharetechmono fonts) bonus-txt
+		 (fontbundle-sharetechmono15 fonts) bonus-txt
 		 bonus-x (+ spy height 5.0)
 		 15.0 0.0 color))))
   (draw-sprite textures 'enemy-indicator
@@ -4416,7 +4416,7 @@
    dialog-dest-bounds
    v2zero 0.0 -1)
   (raylib:draw-text-ex
-   (fontbundle-cabin fonts)
+   (fontbundle-cabin18 fonts)
    (assqdr 'text current)
    (fx2fl (+ +playfield-min-render-x+ 10))
    (fx2fl (- +playfield-max-render-y+ 50))
@@ -4432,32 +4432,32 @@
 (define (draw-hud textures fonts)
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
   (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
+   (fontbundle-bubblegum24 fonts)
    (format "Score: ~:d" current-score)
    440.0 15.0 24.0 0.0 -1)
   (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
+   (fontbundle-bubblegum24 fonts)
    "Life"
    440.0 45.0
    24.0 0.0 #xFF69FCFF)
   (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
+   (fontbundle-bubblegum24 fonts)
    "Bomb"
    440.0 75.0
    24.0 0.0 #x72E57AFF)
   (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
+   (fontbundle-bubblegum24 fonts)
    (format "Graze: ~d" graze)
    440.0 105.0
    24.0 0.0 -1)
   (raylib:draw-text-ex
-   (fontbundle-bubblegum fonts)
+   (fontbundle-bubblegum24 fonts)
    (format "Value: ~:d" item-value)
    440.0 135.0
    24.0 0.0 #x49D0FFFF)
   (when (is-replay)
 	(raylib:draw-text-ex
-	 (fontbundle-bubblegum fonts)
+	 (fontbundle-bubblegum24 fonts)
 	 "REPLAY"
 	 440.0 165.0
 	 24.0 0.0 red)

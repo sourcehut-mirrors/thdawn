@@ -18,7 +18,7 @@
 		  load-sound play-sound unload-sound set-sound-pitch set-sound-volume
 		  load-texture unload-texture texture-width texture-height
 		  draw-texture-rec draw-texture draw-texture-pro
-		  load-font unload-font
+		  load-font load-font-ex unload-font
 		  is-key-down get-key-pressed set-exit-key is-key-pressed is-key-released
 		  get-key-name
 		  set-trace-log-level
@@ -414,6 +414,12 @@
   (define (load-font file)
 	(define result (make-ftype-pointer Font (foreign-alloc (ftype-sizeof Font))))
 	(load-font0 result file)
+    result)
+  (define load-font-ex0
+	(foreign-procedure __atomic "LoadFontEx" (string int u8* int) (& Font)))
+  (define (load-font-ex file font-size) ;; codepoints not exposed right now
+	(define result (make-ftype-pointer Font (foreign-alloc (ftype-sizeof Font))))
+	(load-font-ex0 result file font-size #f 0)
     result)
   (define unload-font0
 	(foreign-procedure __atomic "UnloadFont" ((& Font)) void))

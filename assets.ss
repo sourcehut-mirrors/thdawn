@@ -156,15 +156,35 @@
 
 (define-record-type fontbundle
   (fields
-   bubblegum
-   cabin
-   sharetechmono)
+   bubblegum16
+   bubblegum20
+   bubblegum24
+   bubblegum32
+   bubblegum40
+   cabin16
+   cabin18
+   cabin20
+   cabin24
+   sharetechmono15
+   sharetechmono20
+   sharetechmono30
+   sharetechmono40)
   (sealed #t))
 (define (load-fonts)
   (make-fontbundle
-   (raylib:load-font "assets/font/BubblegumSans-Regular.ttf")
-   (raylib:load-font "assets/font/Cabin-Regular.ttf")
-   (raylib:load-font "assets/font/ShareTechMono-Regular.ttf")))
+   (raylib:load-font-ex "assets/font/BubblegumSans-Regular.ttf" 16)
+   (raylib:load-font-ex "assets/font/BubblegumSans-Regular.ttf" 20)
+   (raylib:load-font-ex "assets/font/BubblegumSans-Regular.ttf" 24)
+   (raylib:load-font-ex "assets/font/BubblegumSans-Regular.ttf" 32)
+   (raylib:load-font-ex "assets/font/BubblegumSans-Regular.ttf" 40)
+   (raylib:load-font-ex "assets/font/Cabin-Regular.ttf" 16)
+   (raylib:load-font-ex "assets/font/Cabin-Regular.ttf" 18)
+   (raylib:load-font-ex "assets/font/Cabin-Regular.ttf" 20)
+   (raylib:load-font-ex "assets/font/Cabin-Regular.ttf" 24)
+   (raylib:load-font-ex "assets/font/ShareTechMono-Regular.ttf" 15)
+   (raylib:load-font-ex "assets/font/ShareTechMono-Regular.ttf" 20)
+   (raylib:load-font-ex "assets/font/ShareTechMono-Regular.ttf" 30)
+   (raylib:load-font-ex "assets/font/ShareTechMono-Regular.ttf" 40)))
 (define (unload-fonts fonts)
   (define rtd (record-type-descriptor fontbundle))
   (define num-fonts (vlen (record-type-field-names rtd)))
