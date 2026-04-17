@@ -36,7 +36,290 @@ Ability: Capable of
 Species: Human (Witch Apprentice)
 Ability: Capable of
 
-+-----------------------+
-| 3. Technical Details  |
-+-----------------------+
++---------------------------------------+
+| 3. Boss Pattern Commentary and Hints  |
++---------------------------------------+
 
+This section is inspired by similar sections in the omakes of Touhou 6 ~ the Embodiment of
+Scarlet Devil and fan game Touhou Elegant Impermanence of Sakura. It just contains some of
+my musings and comments about the development of some of the spells and some hints if
+you can't capture them.
+
+○ Beginner Sign "My First Spellcard!" (Midboss Spell 1)
+
+Despite the name, this spell card was the *second* one to be completed, though it was the
+first to be added to the stage itself while I was developing and testing the
+infrastructure for how bosses should manage their spell cards and attacks. During that
+time, the placeholder attack was just random spam, aka Eternal Meek.
+
+As for the pattern itself, given that it's Doremi's first spell card, it's pretty
+simple. From the very beginning ideations of this project, I always knew that I wanted the
+first midboss spell to be a survival as it would have to sync with the entirety of the
+music's chorus. Eventually, I thought of using the rotating triplet of music notes, which
+is a reference to the music notes that spin on top of the Kururu Poron (the second magical
+staff the girls use in Season 1). To make the units feel more like a group and less
+"bare", I wrapped them up in pellets, which are a bit evocative of Aya's nonspells.
+
+Originally, there was no second phase, but I thought the first phase dragged on too long
+to meet the required time, so I went back later and added a second phase, where the notes
+lose the pellets, but are shot more quickly, and some aimed hearts are added in. For
+beginners, it might seem too hard, but focus your effort on dodging the aimed hearts,
+while learning to subconsciously read the gaps in the music note triplets, as they're
+predictable. You can probably just go left-right-left-right through it.
+
+○ Natural Sign "Butterfly Smelling the Flowers" (Midboss Spell 2)
+
+This was the first spell card to be completed. As with the first midboss spell, I knew
+from the start that I wanted the second midboss spell to happen here in the stage and
+music progression, which meant it also had to be a survival. This one was shorter, though,
+so I could get away with only one pattern for all of it.
+
+As for the pattern itself, I think it's something that new danmaku designers get an
+appreciation for, which is how you can make nice patterns that look curvy and spinny
+without actually doing that much work at all: you just make two (or more) points rotate
+around some center, and shoot bullets towards that center. The boss adds some slow aimed
+fans to keep the player on their toes while they're spinning as an easy second element
+layered on top. I was particularly had Touhou 20 Nareko's Riddle Sign "Ancient Trap" in
+mind which has a similar two-layer design.
+
+Once you get enough practice, the spinning should become second nature, and you can
+concentrate exclusively on avoiding the aimed fan.
+
+○ Boss Non-spell 1 (Group)
+
+○ Group Sp1 (Group)
+
+○ Boss Non-spell 2 (Doremi)
+
+○ Doremi Sp1 (Doremi)
+
+○ Boss Non-spell 3 (Hazuki)
+
+○ Hazuki Sp1 (Hazuki)
+
+○ Boss Non-spell 4 (Aiko)
+
+This was the second boss attack to be completed, though I worked on it concurrently with
+Aiko's second spell.
+
+Because that spell involves a bouncing yin-yang orb bullet, I decided to introduce that
+mechanic as a sort of "heads up!" in this nonspell. Originally, this nonspell was to be
+Aiko's second nonspell, but I moved it up here to make room for another necessary gameplay
+requirement in that nonspell (see below for details).
+
+The pattern is a pretty basic loop of a spread of yin-yang orbs that bounce off the walls
+once, then a ring of notes to dodge through. The difficulty of this ended up a bit too
+high though.
+
+TODO: Revise when rebalancing.
+
+○ Love Sign "Star Spiral" (Aiko)
+
+This was the first attack of the boss fight to be completed. Aiko's straightforward and
+unabashed nature reminded me a lot of Marisa, so the usage of star bullets also carried
+forward into her attack design.
+
+Coming up with ideas was a bit tough for the first boss fight pattern. The two midboss
+spells came pretty naturally as they were timeouts and thus a bit more "showy" than
+actually strictly needing to be valuable in a gameplay manner.
+
+Eventually, I landed on having Aiko set up these spirals, then have them disintegrate
+while Aiko fires aimed fans (another example of the simple two-layered approach).
+
+The spiral positions used to be nearly completely random horizontally which made for some
+impossible situations if the arms overlapped weirdly. Eventually, I made the first two
+spirals fixed, and only the third one was allowed to vary. To dodge it, I recommend moving
+away horizontally from the third spiral and keeping your vision wide to make sure no stray
+bullets from the other spirals blindside you.
+
+TODO: Revise when rebalancing.
+
+○ Boss Non-spell 5 (Group)
+
+When I first was deciding how many attacks I wanted to have, I settled on having two group
+and individual spell cards for each girl, plus the survival and the final spell as a
+trio. The first four spells would be more orthodox patterns focused on the dodging, while
+the next four spells would be wackier, more gimmicky attacks befitting an Extra-like
+stage, then the survival and final spells would round it back out a bit as the closers.
+
+This was the fifth boss attack to be completed. I knew I wanted the trio gimmick spell to
+focus on the girls' fairy familiars, so I thought I'd introduce them in the prior
+nonspell.
+
+Coming up with and coding this attack was a surprisingly smooth process. I just
+implementing the first thing that came to mind for all three fairies and it ended up
+fitting together super well.
+
+The attack patterns are very tangentially based on each girl's shot type in Ojamajo Doremi
+SHOOT, a Ojamajo Doremi fan shmup from the 2000's and the first STG I ever played. In it,
+Hazuki has a homing shot, Doremi has a 5 way shot, and Aiko has a direct, forward-focus
+shot. Each of the fairies' patterns vaguely reflects their owner's shot in that game.
+
+Hint: Mimi (rightmost) has the most threatening attack, so concentrate on attacking her
+over the other fairies (sorry Mimi).
+
+○ Witch Sign "Fairy Kaleidoscope" (Group)
+
+This was the eight boss attack to be completed. From the start, I decided to have this
+attack be cast primarily by the fairy familiars, so the bosses themselves were set to
+wander in a ring around the outside, firing decoration bullets.
+
+I mulled over the movement pattern of the inner fairies for a while. For a while, they
+simply circled continuosly in the opposite direction of the bosses, with lasers creating
+an enclosing triangle. That felt a bit boring and lacking in dynamism.
+
+Eventually, I settled on the little rotation movement in the final version (which involved
+a side diversion to learn how CSS's cubic-bezier function works and how to implement my
+own function, which required numerical methods like Newton's Method. Educational!). Each
+fairy's wave has their own fixed pattern that I just kind of came up with on the fly.
+
+Not too gimmicky of an attack compared to all the following gimmick attacks, but it's fun
+to dodge each phase as it comes, especially Dodo's spinning phase.
+
+Hints:
+
+1. Mimi's phase (bullets bouncing off of your aura) has two ways to dodge it. One is
+easier for survival, while the other maximizes graze. Try figuring out both!
+2. Rere's phase (bubble bullet charging up at center) is a bit hard. I wonder if there's
+room somewhere to slip in and hide...
+
+○ Boss Non-spell 6 (Doremi)
+
+○ Gourmet Sign "I Want to Eat Steak!"
+
+
+
+○ Boss Non-spell 7 (Hazuki)
+
+This was the seventh boss attack to be completed. In keeping with the design philosophy of
+introducing or hinting at a spell's gimmick in the preceding nonspell, I decided to
+introduce some wisps in this nonspell.
+
+Keen-eyed players will notice this attack quickly ended up as a clone of Koakuma's Stage 5
+midboss spell in Touhou Fantastic Danmaku Festival 1.
+
+However, I added a little twist inspired by Touhou Elegant Impermanence of Sakura: If you
+kill the wisps at the right time, they'll drop large green items when they cancel the
+rings around them. They provide quite a bit of Point Item Value (up to 16k per wisp if you
+time it just right), so it can be a fun challenge to dart around and kill them all with
+the right timing. You can get tons of item value from this one nonspell.
+
+Hazuki also has a damage shield, so you have to kill the wisps to bring her health
+down. Of course, if you just want to survive, just hold down the Shot button to cancel the
+bullets. But playing for score is fun, try it out!
+
+I was quite satisfied with how I managed to make an attack inspired by two other
+influential fangames, but put together with a nice twist.
+
+○ Paranormal Sign "Hazuki's Ghostbusting Challenge" (Hazuki)
+
+This was the sixth boss attack to be completed. Originally, I wanted Hazuki's gimmick
+spell to be based on the repeated gag in the series of her being scared by ghosts and
+ghost stories. I was envisioning something based on Touhou Categorical Imperative Valid?'s
+friendly fire system, specifically the stage 2 boss's final spell. In that spell, enemies
+appear and continually attack the boss, and the player is encouraged to "save" the boss by
+killing all the enemies that appear, instead of shooting down the boss themselves.
+
+After some thought, however, I thought it would be unfair to Hazuki to portray her in that
+sort of timid light, so I reworked as a "trial of guts" of sorts, in which she'd summon
+the ghosts and you'd have to defeat them to capture the spell.
+
+As implied, you should focus on killing all the wisps. The wisps have a pool of three
+possible revenge attacks spawned when they die. If you take too long to shoot the wisps
+down, Hazuki will do the ghostbusting herself. As a minor punishment in that case, the
+revenge patterns will become harder (plus, the ghostbusting attack from Hazuki also spawns
+extra bullets on screen that get in the way).
+
+You'll get an extra bonus if you capture the spell by killing every single wisp yourself,
+without Hazuki killing one for you.
+
+○ Boss Non-spell 8 (Aiko)
+
+This was the third boss attack to be completed, but it was also worked on concurrently
+with the next spell card. Originally, non-spell 4 was in this position, but I moved it out
+to make room for another design. Basically, the next spell card requires the player to
+start at a specific position on screen, so I decided to use some smart gameplay design
+(tm) to move the player into that spot so they're already there by the time the spell
+starts.
+
+In keeping with the Extra tradition of final non-spells being super easy, the attack
+itself is quite simple, Aiko just narrows some lasers Moonlight Ray-style while she moves
+down the screen, forcing you into the aforementioned position. While this happens, the
+lasers spawn aimed stars where they hit the sides of the screen. It's just easy streaming,
+but it's probably a blind-killer if you're seeing it for the first time, since there's not
+much room to maneuver if you aren't streaming properly. Implementing the "where do the
+lasers hit the sides of the screen" logic took me back to my Algebra days in high school
+(finally, a use for point-slope form linear equations).
+
+Once Aiko reaches the bottom of the screen, she switches to some rapidly aimed heart fans
+to continue applying pressure to the player to stay at the bottom of the screen. If you
+keep insisting on going too far up, she starts shooting self-defense kunais to warn you to
+not do that. I also made her do shoot the kunais when you try to time the nonspell out,
+just for fun. The kunais are randomly either aimed at you or aimed away from you just
+annoyingly enough to be a bit of a challenge for those wanting to time out every pattern.
+
+○ Athletic Sign "Aiko's Pinball Penalty Shootout" (Aiko)
+
+This was the fourth boss attack to be completed. From the start, I knew I wanted Aiko's
+"gimmick spell" to be related to her status as the tomboyish athletic girl of the
+series. I briefly considered having two goals on opposite sides of the field (you know,
+like a proper soccer/hockey field...) and making it a sort of "air hockey" round of sorts,
+but tabled it because I was lazy and didn't want to have to write a pong/air hockey AI.
+
+I settled on it being a football penalty shootout, where you have to defend the goal
+against Aiko's penalty kicks, with the punishment for a goal being death (how dark), but I
+wasn't sure what would happen to the ball if you successfully blocked the kick. It seemed
+a bit too boring for Aiko to just catch the ball and kick again.
+
+I decided to make it a bit chaotic by giving the ball a pretty large velocity, having it
+bounce off the player and walls, and maintain most of its velocity when bouncing. It
+became a lot more reminiscent of pinball, hence the spell name.
+
+Implementing the bouncing physics took quite a bit of finagling and tweaking and the
+resulting code would probably make my Physical Simulation professor quite sad (sorry
+Dr. Vouga), but it was the cleanest I could get without spending a ton of time either
+binding to a physics library or writing a lot more code to make it more accurate. There's
+some rare edge cases where the ball will get stuck in the wall and produce a ton of stars,
+but I haven't managed to figure out why that happens, so if it does, just accept it with a
+smile and press the Bomb key ^^;
+
+This spell is quite chaotic at first and will be pretty challenging for less experienced
+players. Some hints:
+
+1. Aiko has three places she will attempt to kick the ball, depending on your position
+within the penalty box. You can learn when each happens and use that to your benefit:
+  a. Directly down the center towards the goal
+  b. Towards the left or right sides of the goal
+  c. Doing an air hockey bounce move off one of the side walls
+
+2. The stars produced when the ball hits the walls are predictable. When high on the
+screen, the stars are randomly aimed. When low on the screen, the stars are completely
+aimed around you. Try to ignore the stars when the ball is bouncing around low on screen,
+they're mostly there to distract you.
+
+3. In a bit of a Sonic Spinball moment, Aiko is damaged when the ball hits her (don't
+think too hard about why she would design a spell like that...). You *can* still capture
+the spell by shooting her the whole time, but it'll go a lot faster if you can manipulate
+the ball into hitting her. You also get an additional bonus if the spell is captured using
+the ball as the finishing blow.
+
+4. The direction the ball is reflected when bouncing of the player is simplified to the 8
+cardinal and ordinal directions when you're moving while you collide with the ball. You
+can actually use this, in combination with hints 1 and 3, to direct the ball somewhere
+convenient each kick. If the ball hits you when you're not moving, it just bounces
+directly to the normal vector of you and the ball (which isn't physically accurate, but
+don't dwell on that too much).
+
+5. Don't worry about running into Aiko when she comes to collect the ball. During that
+time, she has no boss collision.
+
+6. When in doubt, bomb. The ball keeps bouncing around the field for quite a while, so you
+can get in some damage after your bomb ends while it's still bouncing around on the
+screen, before the next kick comes.
+
+7. If you're looking for extra challenge, try grazing the lasers of the field as much as
+you can while you're dealing with dodging stars and kicking the ball. It's pretty tough!
+
+○ "One Flower, One World" (Group)
+
+○ "Magical Stage" (Group)

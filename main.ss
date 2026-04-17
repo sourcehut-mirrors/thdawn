@@ -63,7 +63,7 @@
 (alias fx2fl fixnum->flonum)
 (alias roll pseudo-random-generator-next!) ;; convenience alias
 (define (vrand v rng)
-  (vnth v (roll rng (vector-length v))))
+  (vnth v (roll rng (vlen v))))
 (define (vnth-mod v n)
   (vnth v (fxmod n (vlen v))))
 (define-enumeration miscenttype
@@ -2264,9 +2264,9 @@
 							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
 							4200 30000 3000000 'group std std-fail)
-	 (make-spell-descriptor "Flame Sign \"A Perfectly Seared Steak\""
-							6000 900 3000000 'doremi std std-fail)
-	 (make-spell-descriptor "Paranormal Sign \"Ghostbuster Hazuki\""
+	 (make-spell-descriptor "Gourmet Sign \"I Want to Eat Steak!\""
+							6000 9000 3000000 'doremi std std-fail)
+	 (make-spell-descriptor "Paranormal Sign \"Hazuki's Ghostbusting Challenge\""
 							3000 9000 3000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Athletic Sign \"Aiko's Pinball Penalty Shootout\""
 							2400 25000 3000000 'aiko

@@ -875,12 +875,21 @@
 
 (define (doremi-sp2 task doremi)
   (define bossinfo (enm-extras doremi))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health doremi))))
   (set! current-chapter 25)
   (declare-spell doremi 7)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi)))))
+  (wait 60)
+  (raylib:play-sound (sebundle-shortcharge sounds))
+  (wait 30)
+  (interval-loop-while 1 (keep-running)
+	(let ([x (centered-roll game-rng (fx2fl +playfield-max-x+))]
+		  [facing (fl+ hpi (centered-roll game-rng (torad 20.0)))])
+	  (spawn-bullet
+	   (vrand '#(fireball-magenta fireball-red) game-rng)
+	   x 10.0 5
+	   (curry linear-step-forever facing 3.3))))
   (common-spell-postlude bossinfo doremi)
   (hazuki-non2 task doremi))
 
