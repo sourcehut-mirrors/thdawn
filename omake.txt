@@ -196,7 +196,9 @@ introducing or hinting at a spell's gimmick in the preceding nonspell, I decided
 introduce some wisps in this nonspell.
 
 Keen-eyed players will notice this attack quickly ended up as a clone of Koakuma's Stage 5
-midboss spell in Touhou Fantastic Danmaku Festival 1.
+midboss spell in Touhou Fantastic Danmaku Festival 1. I briefly experimented with
+replacing the orbit bullets with other bullet types like butterflies, but nothing seemed
+to fit, so I used small glow orbs, like FDF1 does.
 
 However, I added a little twist inspired by Touhou Elegant Impermanence of Sakura: If you
 kill the wisps at the right time, they'll drop large green items when they cancel the

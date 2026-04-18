@@ -67,7 +67,8 @@
 (define (vnth-mod v n)
   (vnth v (fxmod n (vlen v))))
 (define-enumeration miscenttype
-  (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb)
+  (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb
+			steak)
   make-miscent-type-set)
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
@@ -3317,7 +3318,7 @@
   (sealed #t))
 
 (define (miscent-supports-autocollect? ent)
-  (not (eq? (miscent-type ent) 'mainshot)))
+  (not (memq (miscent-type ent) '(mainshot steak))))
 
 (define (autocollect-all-items)
   (vector-for-each
@@ -3537,7 +3538,17 @@
 		   (when show-hitboxes
 			 (raylib:draw-rectangle-rec
 			  (fl- render-x 8.0) (fl- render-y 8.0) 16.0 16.0
-			  red)))))))
+			  red)))
+		  ([steak]
+		   (let* ([livetime (miscent-livetime ent)]
+				  [rot (fl* 15.0 (flsin (inexact (/ livetime 15))))]
+				  [ring-rad (-> (fl+ 0.5 (fl* 0.5 (flsin (inexact (/ livetime 8)))))
+								(fl* 4.0)
+								(fl+ 11.0))])
+			 (raylib:draw-ring render-x render-y ring-rad (fl+ ring-rad 2.2)
+							   0.0 360.0 30 #xffd700ff)
+			 (draw-sprite-with-rotation
+			  textures type rot render-x render-y -1)))))))
   (vector-for-each each live-misc-ents))
 
 (define (ease-to easer x y duration enm)

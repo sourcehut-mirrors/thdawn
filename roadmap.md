@@ -155,6 +155,10 @@ Something steak related
 Probably drawn by bullets instead of custom bullet type
 Fireballs? Bc searing steak lmao
 Some sort of "collect all the steak(some item)" or else something bad happens.
+various food items, each with different effects? score based on steaks collected?
+overcooked-style food prep?
+full blown maze and you have to go find the steak? (too lazy to code a maze generator...)
+desire score eater clone? (lmfao)
 
 Sp6 Hazuki
 Something related to wisps/ghosts/fear of ghosts
@@ -177,6 +181,10 @@ air hockey AI lol
 Sp8 Trio/survival (let's just do 60 seconds...)
 osu catch the fruit???? Lol
 Position lock, dynamic sync for the music
+
+eosd-style, just loop 5-ish patterns but it gets faster
+flower-based/polar graphs
+want a frilly magical-girly frame of small orbs (with little heart loop de loops at the center bottom, e.g.)
 
 Sp9 Trio
 Magical Stage

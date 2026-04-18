@@ -883,13 +883,15 @@
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
-  (interval-loop-while 1 (keep-running)
+  (spawn-misc-ent (miscenttype steak) 0.0 100.0 0.0 0.0)
+  #;(interval-loop-while 1 (keep-running)
 	(let ([x (centered-roll game-rng (fx2fl +playfield-max-x+))]
 		  [facing (fl+ hpi (centered-roll game-rng (torad 20.0)))])
 	  (spawn-bullet
 	   (vrand '#(fireball-magenta fireball-red) game-rng)
 	   x 10.0 5
-	   (curry linear-step-forever facing 3.3))))
+  (curry linear-step-forever facing 3.3))))
+  (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
   (hazuki-non2 task doremi))
 
