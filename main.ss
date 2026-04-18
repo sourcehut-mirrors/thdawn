@@ -412,7 +412,7 @@
   (make 'big-piv txbundle-item 0 64 32 32 shift16)
   (make 'life txbundle-item 0 96 32 32 shift16)
   (make 'bomb-frag txbundle-item 0 128 32 32 shift16)
-
+  (make 'steak txbundle-item 128 0 32 32 shift16)
   (make 'point txbundle-item 32 0 32 32 shift16)
   (make 'small-piv txbundle-item 32 96 32 32 shift16)
   (make 'bomb txbundle-item 32 128 32 32 shift16)

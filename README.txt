@@ -85,7 +85,27 @@ love to hear from you!
   In the future, an update may increase the resolution of the game.
 
 +-----------------+
-| 6. Changelog    |
+| 6. Licenses     |
++-----------------+
+
+This game depends on a variety of other works, each with varying licenses.
+
+For assets, see the individual LICENSE files in each subfolder of assets/.
+
+Raylib is Copyright Raysan. Its API's are referenced and its library binaries are
+distributed under the Zlib license as listed in licenses/Zlib.txt. There are also snippets
+of ported code from raylib-extras, Copyright Jeffery Myers, and also distributed under the
+Zlib license.
+
+The Chez Scheme runtime is distributed under the Apache License 2.0 as listed in
+licenses/Apache-2.0.txt.
+
+All other code and compiled binaries in this project are Copyright Vincent Lee
+(williewillus), and licensed to you under the GPLv3, or any later version, as listed in
+licenses/GPL-3.0.txt.
+
++-----------------+
+| 7. Changelog    |
 +-----------------+
 
 * 2026/??/??: Private demo v0.xx

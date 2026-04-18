@@ -1,8 +1,0 @@
-Raylib is Copyright Raysan. Its API's are referenced and the binaries distributed under
-the Zlib license as listed in licenses/Zlib.txt
-
-For assets, see the individual LICENSE files in each subfolder of assets/.
-
-All other code and compiled binaries in this project are Copyright Vincent Lee
-(williewillus) and contributors, and licensed to you under the GPLv3, or any later
-version, as listed in licenses/GPL-3.0.txt.

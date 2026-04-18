@@ -63,9 +63,9 @@ staff the girls use in Season 1). To make the units feel more like a group and l
 Originally, there was no second phase, but I thought the first phase dragged on too long
 to meet the required time, so I went back later and added a second phase, where the notes
 lose the pellets, but are shot more quickly, and some aimed hearts are added in. For
-beginners, it might seem too hard, but focus your effort on dodging the aimed hearts,
-while learning to subconsciously read the gaps in the music note triplets, as they're
-predictable. You can probably just go left-right-left-right through it.
+beginners, it might seem too hard, but keep moving and the aimed hearts won't hit you. The
+notes are fired in a regular pattern, so some sort of left-right-left-right movement will
+work.
 
 ○ Natural Sign "Butterfly Smelling the Flowers" (Midboss Spell 2)
 

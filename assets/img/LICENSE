@@ -1,6 +1,6 @@
 - background_{1-4}.png are made by Enjl: https://enjl.itch.io/background-starry-space and
-  used under the CC-BY-SA 4.0 International license (see dialogue LICENSE file for full
-  text of this license).
+  used under the CC-BY-SA 4.0 International license as listed in
+  licenses/CC-BY-NC-SA-4.0.txt.
 - {01_003, 01_006, 01_020, 01_035}.png are derived from images on the companion CD to
   the book "Pattern Sourcebook: Chinese Style by Shigeki Nakamura, ISBN
   978-1-59253-497-5. The book permits unrestricted usage of the images.
@@ -8,6 +8,9 @@
   (https://opengameart.org/content/moon-and-sea-pixel-art-background upstream
   https://craftpix.net/freebies/ocean-and-clouds-free-pixel-art-backgrounds) and used
   under the OGA-BY 3.0 license (a more permissive version of CC-BY 3.0) as follows.
+- the steak sprite in item.png is from GhostPixxells
+  (https://ghostpixxells.itch.io/pixelfood) and is used under the CC0 license as listed in
+  licenses/CC0-1.0.txt.
 - All other contents are from ryannlib. See ryannlibcredits.txt in the parent directory
   for details.
 
