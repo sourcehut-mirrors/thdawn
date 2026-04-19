@@ -3677,13 +3677,16 @@
 	 (bossinfo-active-spell-id-set!
 	  bossinfo #f)]))
 
-(define (common-nonspell-postlude bossinfo)
+(define (common-nonspell-postlude bossinfo enm)
   (vector-for-each
    (λ (e)
 	 (when (and e (not (is-boss? e)))
 	   (kill-enemy e #t)))
    live-enm)
   (cancel-all #t)
+  (raylib:play-sound (sebundle-shoot0 sounds))
+  (spawn-drops '((bomb-frag . 1)) (enm-x enm) (enm-y enm))
+  (wait 60)
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars bossinfo))))

@@ -80,7 +80,7 @@
 	  (cbshootenm doremi 'fireball-green 5 (sebundle-shoot0 sounds)))
   
   (wait-while keep-running)
-  (common-nonspell-postlude bossinfo)
+  (common-nonspell-postlude bossinfo doremi)
   (group-sp1 task doremi hazuki aiko))
 
 
@@ -99,6 +99,9 @@
 
 (define (doremi-non1 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health doremi))))
   (set! current-chapter 16)
   (wait 90)
   (adjust-bars-non (bossinfo-healthbars bossinfo))
@@ -112,12 +115,10 @@
 	  (ease-to ease-out-cubic 100.0 -100.0 60 aiko)
 	  (delete-enemy aiko))
 	task)
+  (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 60 doremi)
   (declare-nonspell doremi 1800 1000)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi)))))
-  (common-nonspell-postlude bossinfo)
+  (wait-while keep-running)
+  (common-nonspell-postlude bossinfo doremi)
   (doremi-sp1 task doremi))
 
 (define (doremi-sp1 task doremi)
@@ -156,7 +157,7 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health hazuki)))))
-  (common-nonspell-postlude bossinfo)
+  (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp1 task hazuki))
 
 (define (hazuki-sp1 task hazuki)
@@ -237,7 +238,7 @@
 		(boss-standard-wander-once aiko 40 50 30)))
 	task keep-running)
   (wait-while keep-running)
-  (common-nonspell-postlude bossinfo)
+  (common-nonspell-postlude bossinfo aiko)
   (aiko-sp1 task aiko))
 
 (define (aiko-sp1-round task aiko)
@@ -537,7 +538,7 @@
 					(curry non2-familiar-on-death mimi-dead-signalbox))
 				   (enm-addflags (enmflags aura-blue)))])
 	(wait-while keep-running))
-  (common-nonspell-postlude bossinfo)
+  (common-nonspell-postlude bossinfo doremi)
   (group-sp2 task doremi hazuki aiko))
 
 (define group-sp2-center-x 0.0)
@@ -870,7 +871,7 @@
    (thunk
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health doremi)))))
-  (common-nonspell-postlude bossinfo)
+  (common-nonspell-postlude bossinfo doremi)
   (doremi-sp2 task doremi))
 
 (define (doremi-sp2 task doremi)
@@ -1022,7 +1023,7 @@
 		 (vrand '#(-70.0 0.0 70.0) game-rng))))
 	task keep-running)
   (wait-while keep-running)
-  (common-nonspell-postlude bossinfo)
+  (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp2 task hazuki))
 
 (define (hazuki-sp2-wisp-on-death toptask killed-by-hazuki-box hazuki enm)
@@ -1389,7 +1390,7 @@
 	task keep-running)
   (ease-to values +middle-boss-x+ 225.0 300 aiko)
   (wait-while keep-running)
-  (common-nonspell-postlude bossinfo)
+  (common-nonspell-postlude bossinfo aiko)
   (aiko-sp2 task aiko))
 
 (define aiko-sp2-x-margin 24)
