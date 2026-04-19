@@ -884,6 +884,7 @@
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
   (spawn-misc-ent (miscenttype steak) 0.0 100.0 0.0 0.0)
+
   #;(interval-loop-while 1 (keep-running)
 	(let ([x (centered-roll game-rng (fx2fl +playfield-max-x+))]
 		  [facing (fl+ hpi (centered-roll game-rng (torad 20.0)))])

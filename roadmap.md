@@ -117,6 +117,11 @@ Something related to the "getting dressed on time" quirk in season 1. Failure me
 Funny would be to have different art once reimu "transforms"
 Kind of a pre fight midsp 3 but it would happen after most of the dialogue.
 
+something where the side bosses go off screen and warp to the other side, somewhat like IN
+Reimu?
+Or maybe IN marisa inspired because that's supposedly who taught them spell cards?
+simplified 3-boss version of Asteroid Belt?
+
 music: naisho yo ojamajo
 
 Sp1 Doremi 

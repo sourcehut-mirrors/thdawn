@@ -9,30 +9,23 @@ See roadmap.md for design and todos.
 ![Banner with a white heart outline imposed on a rainbow background that reads "created by
 a human with a heart"](./created-by-a-human-with-a-heart-3x.png)
 
-This project was created without any AI-generated assets, code, or assistance. Icon from
-[this page](https://cadence.moe/blog/2024-10-05-created-by-a-human-badges).
+Icon from [this page](https://cadence.moe/blog/2024-10-05-created-by-a-human-badges).
+
+None of the code nor assets in this project were generated with Generative
+AI. Unfortunately, I cannot guarantee whether that is the case for any of the project's
+libraries.
+
+Some generative AI tools (such as Google's search summaries) may have been briefly
+consulted for targeted math and technical questions, but each line of code is my
+own. Generative AI was also not consulted in any creative process such as bullet pattern
+or enemy formation design.
 
 ## License
-Copyright (C) 2025 Vincent Lee
+See Section 6 of README.txt for license information
 
-This program is free software: you can redistribute it and/or modify it under the terms of
-the GNU General Public License as published by the Free Software Foundation, either
-version 3 of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with this
-program. If not, see <https://www.gnu.org/licenses/>.
-
-## Dev/Build Dependencies
+## Dependencies
 * Chez Scheme 10.3.0+
 * Raylib dynamic library
-
-## Runtime Dependencies
-* Linux/macOS: Raylib dynamic library (from your package manager)
-* Windows: None (all deps to be packaged in distribution archive)
 
 ## Setup
 All these steps are one time

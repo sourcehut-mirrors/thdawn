@@ -3544,7 +3544,7 @@
 				  [rot (fl* 15.0 (flsin (inexact (/ livetime 15))))]
 				  [ring-rad (-> (fl+ 0.5 (fl* 0.5 (flsin (inexact (/ livetime 8)))))
 								(fl* 4.0)
-								(fl+ 11.0))])
+								(fl+ 12.0))])
 			 (raylib:draw-ring render-x render-y ring-rad (fl+ ring-rad 2.2)
 							   0.0 360.0 30 #xffd700ff)
 			 (draw-sprite-with-rotation

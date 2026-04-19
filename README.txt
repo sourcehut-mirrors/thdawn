@@ -104,6 +104,9 @@ All other code and compiled binaries in this project are Copyright Vincent Lee
 (williewillus), and licensed to you under the GPLv3, or any later version, as listed in
 licenses/GPL-3.0.txt.
 
+This project is Free Software. You can read and modify the source code, subject to the
+aforementioned licenses, by cloning it from https://git.sr.ht/~williewillus/thdawn
+
 +-----------------+
 | 7. Changelog    |
 +-----------------+
