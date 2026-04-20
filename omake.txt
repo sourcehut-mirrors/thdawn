@@ -91,6 +91,17 @@ concentrate exclusively on avoiding the aimed fan.
 
 ○ Boss Non-spell 2 (Doremi)
 
+This was the ninth boss attack to be completed. I knew I wanted to do something with
+screen-edge warping because that reminded me of "wind" and Harukaze = "spring wind". Kind
+of a stretch, lol.
+
+Ended up with a pretty basic dodging skill check nonspell. It shouldn't be too
+difficult. If it's too hard, try dodging unfocused more often, and don't be afraid to
+bomb.
+
+Towards the end of the healthbar, things get more intense, but usually the attack ends
+before anything can happen to you. If you want to time it down, though...
+
 ○ Doremi Sp1 (Doremi)
 
 ○ Boss Non-spell 3 (Hazuki)

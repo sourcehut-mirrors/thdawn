@@ -80,7 +80,7 @@
 	  (cbshootenm doremi 'fireball-green 5 (sebundle-shoot0 sounds)))
   
   (wait-while keep-running)
-  (common-nonspell-postlude bossinfo doremi)
+  (common-nonspell-postlude bossinfo doremi #t)
   (group-sp1 task doremi hazuki aiko))
 
 
@@ -116,7 +116,80 @@
 	  (delete-enemy aiko))
 	task)
   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 60 doremi)
-  (declare-nonspell doremi 1800 1000)
+  (declare-nonspell doremi 1800 10000)
+  (spawn-subtask "main"
+	(λ (task)
+	  (define start-time frames)
+	  (define (rage)
+		(or (fx< (bossinfo-remaining-timer bossinfo) 600)
+			(fx< (enm-health doremi) 2000)))
+	  (spawn-subtask "ring"
+		(λ (task)
+		  (wait 400)
+		  (interval-loop (if (rage) 30 60)
+		    (-> (cb)
+				(cbcount 12)
+				(cbspeed (if (rage) 3.25 2.25))
+				(cbshoot (enm-x doremi) (enm-y doremi)
+				  (λ (layer in-layer speed facing)
+					(define-values (x y) (dist-away (enm-x doremi) (enm-y doremi)
+													facing 40.0))
+					(raylib:play-sound (sebundle-bell sounds))
+					(letrec* ([ring
+							   (map
+								(λ (_)
+								  (spawn-bullet
+								   'pellet-blue x y 8
+								   (λ (task blt)
+									 (wait-until
+									  (thunk
+									   (not (vector-index orb live-bullets))))
+									 (delete-bullet blt))))
+								(iota 10))]
+							  [orb (spawn-bullet
+									'medium-ball-magenta x y 8
+									(λ (task blt)
+									  (define realfacing (fl+ facing (torad 165.0)))
+									  (loop-forever
+									   (linear-step realfacing speed blt)
+									   (position-bullets-around
+										(bullet-x blt) (bullet-y blt)
+										20.0 0.0 ring))))])
+					  (position-bullets-around x y 20.0 0.0 ring)))))))
+		task)
+	  (let loop ([i 0] [ang 90.0])
+		(-> (fb)
+			(fbcount 5)
+			(fbspeed (if (rage) 3.0 2.5))
+			(fbabsolute-aim)
+			(fbang ang 12.0)
+			(fboffset 20.0)
+			(fbshootenm doremi 'rice-red 5
+						(sebundle-shoot0 sounds)
+						(λ (facing speed task blt)
+						  (define left-bound (- +playfield-min-x+ 10))
+						  (define right-bound (+ +playfield-max-x+ 10))
+						  (loop-until
+							  (or (< (bullet-x blt) left-bound)
+								  (> (bullet-x blt) right-bound))
+							(linear-step facing speed blt))
+						  (if (< (bullet-x blt) left-bound)
+							  (bullet-x-set! blt (fx2fl right-bound))
+							  (bullet-x-set! blt (fx2fl left-bound)))
+						  (linear-step-forever facing speed task blt))))
+		(wait (cond
+			   [(rage) 3]
+			   [(>= i 40) 5]
+			   [else (vnth '#(25 25 25 25 25
+								 25 25 25 25 25
+								 15 15 15 15 15
+								 15 15 15 15 15
+								 10 10 10 10 10
+								 10 10 10 10 10
+								 8 8 8 8 8
+								 8 8 8 8 8) i)]))
+		(loop (add1 i) (fl+ ang 14.0))))
+	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo doremi)
   (doremi-sp1 task doremi))
@@ -902,7 +975,7 @@
   (spawn-subtask "control ring 1"
 	(λ (task)
 	  (loop-forever
-	   (position-bullets-around-motion-facing
+	   (position-bullets-around
 		(enm-x enm) (enm-y enm)
 		(fl* 100.0 (flsin (fl* 1.0 (torad (fx2fl (- frames start-frames))))))
 		(torad (fl/ (fx2fl (- frames start-frames)) 2.0))
@@ -911,7 +984,7 @@
   (spawn-subtask "control ring 2"
 	(λ (task)
 	  (loop-forever
-	   (position-bullets-around-motion-facing
+	   (position-bullets-around
 		(enm-x enm) (enm-y enm)
 		(fl* 60.0 (flsin (fl* 1.0 (torad (fx2fl (- frames start-frames))))))
 		(torad (fl/ (fx2fl (- start-frames frames)) 2.0))

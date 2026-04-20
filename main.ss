@@ -2048,12 +2048,17 @@
    (mutable max-speed)
    (mutable global-angle)
    (mutable local-angle)
-   (mutable aimed-at-player))
+   (mutable aimed-at-player)
+   (mutable offset))
   (sealed #t))
 (define (fb)
-  (make-fan-builder 0 0 0.0 0.0 0.0 0.0 #t))
+  (make-fan-builder 0 0 0.0 0.0 0.0 0.0 #t 0.0))
 (define (fbabsolute-aim fb)
   (fan-builder-aimed-at-player-set! fb #f)
+  fb)
+;; NB: Only works when used with fbshootenm/ez
+(define (fboffset fb offset)
+  (fan-builder-offset-set! fb offset)
   fb)
 (define fbcount
   (case-lambda
@@ -2127,11 +2132,16 @@
 	[(fb x y type delay sound)
 	 (fbshootez fb x y type delay sound linear-step-forever)]
 	[(fb x y type delay sound control-function)
+	 (define offset (fan-builder-offset fb))
 	 (fbshoot fb x y
 	   (λ (row col speed facing)
 		 (when sound
 		   (raylib:play-sound sound))
-		 (-> (spawn-bullet type x y delay (curry control-function facing speed))
+		 (-> (spawn-bullet
+			  type
+			  (fl+ x (fl* offset (flcos facing)))
+			  (fl+ y (fl* offset (flsin facing)))
+			  delay (curry control-function facing speed))
 			 (bullet-facing-set! facing))))]))
 
 (define-record-type circle-builder
@@ -2596,7 +2606,7 @@
 						 [else amount])]
 				[target (or (enm-redirect-damage enm)
 							enm)])
-		   (when (and playsound (> amount 0))
+		   (when (and playsound (positive? amount) (positive? (enm-health target)))
 			 (raylib:play-sound
 			  (cond
 			   [superarmor (sebundle-damageresist sounds)]
@@ -3677,19 +3687,24 @@
 	 (bossinfo-active-spell-id-set!
 	  bossinfo #f)]))
 
-(define (common-nonspell-postlude bossinfo enm)
-  (vector-for-each
-   (λ (e)
-	 (when (and e (not (is-boss? e)))
-	   (kill-enemy e #t)))
-   live-enm)
-  (cancel-all #t)
-  (raylib:play-sound (sebundle-shoot0 sounds))
-  (spawn-drops '((bomb-frag . 1)) (enm-x enm) (enm-y enm))
-  (wait 60)
-  (bossinfo-healthbars-set!
-   bossinfo
-   (vector-pop (bossinfo-healthbars bossinfo))))
+(define common-nonspell-postlude
+  (case-lambda
+	[(bossinfo enm)
+	 (common-nonspell-postlude bossinfo enm #f)]
+	[(bossinfo enm nodelay)
+	 (vector-for-each
+	  (λ (e)
+		(when (and e (not (is-boss? e)))
+		  (kill-enemy e #t)))
+	  live-enm)
+	 (cancel-all #t)
+	 (raylib:play-sound (sebundle-shoot0 sounds))
+	 (spawn-drops '((bomb-frag . 1)) (enm-x enm) (enm-y enm))
+	 (unless nodelay
+	   (wait 60))
+	 (bossinfo-healthbars-set!
+	  bossinfo
+	  (vector-pop (bossinfo-healthbars bossinfo)))]))
 
 ;; If short, only explodes once and doesn't drift, and also doesn't delete the boss
 (define (common-boss-postlude bossinfo enm short)
