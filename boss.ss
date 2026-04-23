@@ -257,6 +257,7 @@
 							(curry linear-step-forever facing 2.25)))))
 		task)
 	  (let loop ([state 'center-left] [wave 0])
+		(raylib:play-sound (sebundle-shoot0 sounds))
 		(do [(i 0 (add1 i))]
 			[(= i 12)]
 		  (-> (cb)
