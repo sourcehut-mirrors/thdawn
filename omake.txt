@@ -102,7 +102,23 @@ bomb.
 Towards the end of the healthbar, things get more intense, but usually the attack ends
 before anything can happen to you. If you want to time it down, though...
 
-○ Doremi Sp1 (Doremi)
+○ Spring Sign "Harukaze-style Breezy Cherry Blossoms" (Doremi)
+
+This was the tenth boss attack to be completed. Harukaze = "spring wind" = it's gotta be a
+clone of Okina's spring final!
+
+Hidden Breezy Cherry Blossoms has turned out to be one of Touhou 16's most iconic attacks;
+even games like FDF2 Phantasm have referenced it. Now it's my turn to try to reproduce it!
+
+Because Marisa taught it to Doremi in a hurry, and she's a beginner at danmaku, it's of
+course not as hard as the original. But you shouldn't underestimate it either.
+
+Programming this and referencing the original made me realize how much of a genius move it
+was by ZUN to make the winding of the petals alternate each wave, but Okina's movement in
+phase of three (left-middle-right-middle-left). This 3-on-2 hemiola means every few waves
+you have to dodge in the opposite direction of Okina's movement, which exerts
+psychological pressure on the player to get back over under her to keep dealing damage,
+because even the homing shots don't have their options at this point.
 
 ○ Boss Non-spell 3 (Hazuki)
 

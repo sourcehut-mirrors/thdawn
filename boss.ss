@@ -122,7 +122,7 @@
 	  (define start-time frames)
 	  (define (rage)
 		(or (fx< (bossinfo-remaining-timer bossinfo) 600)
-			(fx< (enm-health doremi) 2000)))
+			(fx< (enm-health doremi) 3000)))
 	  (spawn-subtask "ring"
 		(λ (task)
 		  (wait 400)
@@ -180,14 +180,10 @@
 		(wait (cond
 			   [(rage) 3]
 			   [(>= i 40) 5]
-			   [else (vnth '#(25 25 25 25 25
-								 25 25 25 25 25
-								 15 15 15 15 15
-								 15 15 15 15 15
-								 10 10 10 10 10
-								 10 10 10 10 10
-								 8 8 8 8 8
-								 8 8 8 8 8) i)]))
+			   [else (vnth '#(25 25 25 25 25 25 25 25 25 25
+								 15 15 15 15 15 15 15 15 15 15
+								 10 10 10 10 10 10 10 10 10 10
+								 8 8 8 8 8 8 8 8 8 8) i)]))
 		(loop (add1 i) (fl+ ang 14.0))))
 	task keep-running)
   (wait-while keep-running)
@@ -196,12 +192,103 @@
 
 (define (doremi-sp1 task doremi)
   (define bossinfo (enm-extras doremi))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health doremi))))
+  (define (p2)
+	(or (< (bossinfo-remaining-timer bossinfo) 2700)
+		(< (enm-health doremi) 10000)))
+  (define (p3)
+	(or (< (bossinfo-remaining-timer bossinfo) 1200)
+		(< (enm-health doremi) 6000)))
   (set! current-chapter 17)
   (declare-spell doremi 3)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi)))))
+  (wait 60)
+  (raylib:play-sound (sebundle-brasscharge sounds))
+  (wait 60)
+  (spawn-subtask "main"
+	(λ (task)
+	  (spawn-subtask "rings"
+		(λ (task)
+		  (wait-until p3)
+		  (raylib:play-sound (sebundle-shoot0 sounds))
+		  (do [(i 0 (add1 i))] [#f]
+			(when (even? i)
+			  (-> (cb)
+				  (cbcount 14)
+				  (cbspeed 2.75)
+				  (cbshootenm doremi 'glow-orb-red 2 #f)))
+			(-> (cb)
+				(cbcount 28)
+				(cbspeed 2.75)
+				(cbshootenm doremi 'small-ball-magenta 2 (sebundle-bell sounds)))
+			(wait 60)))
+		task)
+	  (spawn-subtask "slow mentos"
+		(λ (task)
+		  (wait-until p2)
+		  (raylib:play-sound (sebundle-shoot0 sounds))
+		  (interval-loop 30
+		    (-> (cb)
+				(cbcount 8)
+				(cbspeed 1.9)
+				(cbshootenm doremi 'medium-ball-red 2 #f
+							(λ (facing speed task blt)
+							  (define winding (if (roll-bool game-rng) 1.0 -1.0))
+							  (dotimes 40
+								(linear-step facing speed blt)
+								(yield))
+							  (do [(i 0 (add1 i))]
+								  [(= i 60)]
+								(linear-step (fl+ facing (fl* (fx2fl i)
+															  winding (torad 0.8)))
+											 speed blt)
+								(yield))
+							  (linear-step-forever (fl+ facing (fl* 60.0 winding
+																	(torad 0.8)))
+												   speed task  blt))))))
+		task)
+	  (spawn-subtask "rain"
+		(λ (task)
+		  (interval-loop 10
+			(let ([x (centered-roll game-rng 140.0)]
+				  [facing (roll-flrange game-rng (torad 70.0) (torad 120.0))])
+			  (spawn-bullet 'small-ball-orange x 0.0 5
+							(curry linear-step-forever facing 2.25)))))
+		task)
+	  (let loop ([state 'center-left] [wave 0])
+		(do [(i 0 (add1 i))]
+			[(= i 12)]
+		  (-> (cb)
+			  (cbcount 21)
+			  (cbabsolute-aim)
+			  (cbang (fl+ 0.0 (fx2fl (* i (if (even? wave) 2 -2)))))
+			  (cbspeed 0.4)
+			  (cboffset (fx2fl (* i 12)))
+			  (cbshootenm doremi 'rice-red 2 #f
+						  (λ (facing speed task blt)
+							(dotimes (+ 120 (* i 2))
+							  (linear-step facing speed blt)
+							  (yield))
+							(raylib:play-sound (sebundle-bell sounds))
+							(linear-step-accelerate-forever
+							 facing speed 0.1 4.0 task blt))))
+		  (wait 5))
+		(wait 60)
+		(let ([x (case state
+				   [(center-left) +left-boss-x+]
+				   [(left right) +middle-boss-x+]
+				   [(center-right) +right-boss-x+])]
+			  [y (vrand '#(125.0 90.0 55.0) game-rng)])
+		  (ease-to ease-in-out-quad x y 120 doremi))
+		(loop (case state
+				[(center-left) 'left]
+				[(left) 'center-right]
+				[(right) 'center-left]
+				[(center-right) 'right])
+			  (add1 wave))))
+	task keep-running)
+  (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
   (hazuki-non1 task doremi))
 

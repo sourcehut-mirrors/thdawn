@@ -2267,8 +2267,8 @@
 	 ;; todo appropriate time limits
 	 (make-spell-descriptor "Group Sp1"
 							6000 500 1000000 'group std std-fail)
-	 (make-spell-descriptor "Doremi Sp1"
-							6000 500 1000000 'doremi std std-fail)
+	 (make-spell-descriptor "Spring Sign \"Harukaze-style Breezy Cherry Blossoms\""
+							3600 15000 1000000 'doremi std std-fail)
 	 (make-spell-descriptor "Hazuki Sp1"
 							6000 500 1000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
@@ -4658,8 +4658,8 @@
 (define (render-spell-background textures id elapsed)
   (define max-alpha
 	(case id
-	  [(group doremi) #xe0]
-	  [(aiko hazuki) #xc0]))
+	  [(group) #xe0]
+	  [(doremi aiko hazuki) #xc0]))
   (define alpha
 	(if (fx> elapsed 60)
 		max-alpha
