@@ -1704,11 +1704,11 @@
    ;; NB: lasers have custom preimg rendering, and their hit radius is adjustable
    ;; per-laser, so these three fields are unused for lasers.
    preimg-begin-size preimg-end-size
-   hit-radius)
+   hit-radius
+   render-priority)
   (sealed #t))
 
-;; cached sprites: symbol ht type -> vector of the sprite ids
-;; to avoid repetitive symbol munging/allocation at render time
+(define max-bullet-render-priority 5) ;; inclusive; rendered in ascending order.
 (define bullet-types
   (let* ([ret (make-hashtable symbol-hash eq?)]
 		 [preimg-sprite-mapping
@@ -1716,7 +1716,7 @@
 				 (cons color (string->symbol (string-append "preimg-" color))))
 			   basic-colors-str)]
 		 [make-family
-		  (λ (family colors hit-radius)
+		  (λ (family colors hit-radius render-priority)
 			(for-each (λ (color)
 						(define type
 						  (string->symbol (string-append
@@ -1731,44 +1731,44 @@
 						 type
 						 (make-blttype type family preimg-sprite
 									   20.0 2.0
-									   hit-radius)))
+									   hit-radius render-priority)))
 					  colors))])
-	(make-family 'small-star basic-colors-str 3.7)
-	(make-family 'big-star basic-colors-str 5.5)
-	(make-family 'rice basic-colors-str 2.0)
-	(make-family 'pellet basic-colors-str 2.0)
-	(make-family 'butterfly basic-colors-str 3.7)
-	(make-family 'ellipse basic-colors-str 4.0)
-	(make-family 'arrowhead basic-colors-str 3.0)
-	(make-family 'amulet basic-colors-str 3.1)
-	(make-family 'glow-ball basic-colors-str 3.0)
-	(make-family 'small-ball basic-colors-str 3.0)
-	(make-family 'medium-ball basic-colors-str 9.0)
-	(make-family 'ice-shard basic-colors-str 2.5)
-	(make-family 'fixed-laser basic-colors-str 0.0)
-	(make-family 'rest basic-colors-str 3.0)
-	(make-family 'music basic-colors-str 3.0)
-	(make-family 'knife basic-colors-str 4.0)
-	(make-family 'bacteria basic-colors-str 2.0)
-	(make-family 'kunai basic-colors-str 2.5)
-	(make-family 'droplet basic-colors-str 2.0)
-	(make-family 'heart basic-colors-str 6.0)
-	(make-family 'arrow basic-colors-str 3.0)
-	(make-family 'glow-orb basic-colors-str 9.0)
-	(make-family 'fireball basic-colors-str 5.5)
-	(make-family 'yinyang '("red" "green" "blue" "magenta") 8.0)
+	(make-family 'small-star basic-colors-str 3.7 5)
+	(make-family 'big-star basic-colors-str 5.5 1)
+	(make-family 'rice basic-colors-str 2.0 5)
+	(make-family 'pellet basic-colors-str 2.0 5)
+	(make-family 'butterfly basic-colors-str 3.7 4)
+	(make-family 'ellipse basic-colors-str 4.0 2)
+	(make-family 'arrowhead basic-colors-str 3.0 4)
+	(make-family 'amulet basic-colors-str 3.1 5)
+	(make-family 'glow-ball basic-colors-str 3.0 3)
+	(make-family 'small-ball basic-colors-str 3.0 3)
+	(make-family 'medium-ball basic-colors-str 9.0 1)
+	(make-family 'ice-shard basic-colors-str 2.5 5)
+	(make-family 'fixed-laser basic-colors-str 0.0 -1) ;; has its own render pass
+	(make-family 'rest basic-colors-str 3.0 2)
+	(make-family 'music basic-colors-str 3.0 3)
+	(make-family 'knife basic-colors-str 4.0 2)
+	(make-family 'bacteria basic-colors-str 2.0 4)
+	(make-family 'kunai basic-colors-str 2.5 5)
+	(make-family 'droplet basic-colors-str 2.0 5)
+	(make-family 'heart basic-colors-str 6.0 1)
+	(make-family 'arrow basic-colors-str 3.0 4)
+	(make-family 'glow-orb basic-colors-str 9.0 1)
+	(make-family 'fireball basic-colors-str 5.5 3)
+	(make-family 'yinyang '("red" "green" "blue" "magenta") 8.0 1)
 	(for-each (λ (color)
 				(define type
 				  (string->symbol (string-append "bubble-" color)))
 				(symbol-hashtable-set!
 				 ret
 				 type
-				 (make-blttype type 'bubble type 2.0 32.0 16.0)))
+				 (make-blttype type 'bubble type 2.0 32.0 16.0 0)))
 			  basic-colors-str)
-	(symbol-hashtable-set! ret 'placeholder
-						   (make-blttype 'placeholder 'placeholder 'preimg-white
-										 0.0 0.0 0.0))
 	ret))
+
+;; symbol ht type -> vector of the sprite ids
+;; to avoid repetitive symbol munging/allocation at render time
 (define-values (cached-music-sprites cached-fireball-sprites)
   (let ([music (make-hashtable symbol-hash eq?)]
 		[fireball (make-hashtable symbol-hash eq?)])
@@ -1921,7 +1921,7 @@
   (define bt (symbol-hashtable-ref bullet-types type #f))
   (blttype-hit-radius bt))
 
-(define (draw-lasers textures sorted-bullets)
+(define (draw-lasers textures bullets)
   (define (each bullet)
 	(when bullet
 	  (let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
@@ -1948,67 +1948,75 @@
 								length radius (bullet-facing bullet)
 								(and (not (bullet-hasflag? bullet (bltflag noshine)))
 									 (blttype-preimg-sprite bt)))))))))
-  (vector-for-each each sorted-bullets))
+  (vector-for-each each bullets))
 
 
-(define (draw-bullets textures sorted-bullets)
-  (define (each bullet)
-	(when bullet
-	  (let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
-			 [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
-			 [type (bullet-type bullet)]
-			 [bt (symbol-hashtable-ref bullet-types type #f)]
-			 [livetime (bullet-livetime bullet)])
-		(if (and (not (eq? 'fixed-laser (bullet-family type)))
-				 (fxnegative? livetime))
-			(let* ([preimg-begin (blttype-preimg-begin-size bt)]
-				   [preimg-end (blttype-preimg-end-size bt)]
-				   ;; reversed because the factor is negative
-				   [radius (lerp preimg-end preimg-begin
-								 (/ livetime (bullet-initial-livetime bullet)))])
-			  (draw-sprite-pro
-			   textures (blttype-preimg-sprite bt)
-			   (make-rectangle (- render-x radius) (- render-y radius)
-							   (* 2.0 radius) (* 2.0 radius))
-			   -1))
-			(let ()
-			  (case (bullet-family type)
-				;; basic
-				([pellet small-ball glow-ball medium-ball glow-orb]
-				 (draw-sprite textures type render-x render-y #xffffffff))
-				;; aimed in direction of movement
-				([butterfly ellipse arrowhead amulet ice-shard rice
-							rest knife bacteria kunai droplet heart arrow]
-				 (draw-sprite-with-rotation textures type
-											(todeg (bullet-facing bullet))
-											render-x render-y -1))
-				;; spinny
-				([small-star big-star]
-				 (draw-sprite-with-rotation textures type
-											(fx2fl (fxmod (fx* frames 5) 360))
-											render-x render-y -1))
-				([bubble yinyang]
-				 (draw-sprite-with-rotation textures type
-											(fx2fl (fxmod (fx* frames 8) 360))
-											render-x render-y -1))
-				([music]
-				 (let ([sprite
-						(vnth-mod (symbol-hashtable-ref cached-music-sprites type #f)
-								  (fx/ frames 10))])
-				   (draw-sprite-with-rotation textures sprite 90.0
-											  render-x render-y -1)))
-				([fireball]
-				 (let ([sprite
-						(vnth-mod (symbol-hashtable-ref cached-fireball-sprites type #f)
-								  (fx/ frames 7))])
-				   (draw-sprite-with-rotation
-					textures sprite
-					(todeg (bullet-facing bullet))
-					render-x render-y -1))))
-			  (when show-hitboxes
-				(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
-									  red)))))))
-  (vector-for-each each sorted-bullets))
+(define (draw-bullets textures bullets)
+  (define (each bt bullet)
+	(let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
+		   [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
+		   [type (bullet-type bullet)]
+		   [livetime (bullet-livetime bullet)])
+	  (if (and (not (eq? 'fixed-laser (bullet-family type)))
+			   (fxnegative? livetime))
+		  (let* ([preimg-begin (blttype-preimg-begin-size bt)]
+				 [preimg-end (blttype-preimg-end-size bt)]
+				 ;; reversed because the factor is negative
+				 [radius (lerp preimg-end preimg-begin
+							   (/ livetime (bullet-initial-livetime bullet)))])
+			(draw-sprite-pro
+			 textures (blttype-preimg-sprite bt)
+			 (make-rectangle (- render-x radius) (- render-y radius)
+							 (* 2.0 radius) (* 2.0 radius))
+			 -1))
+		  (let ()
+			(case (bullet-family type)
+			  ;; basic
+			  ([pellet small-ball glow-ball medium-ball glow-orb]
+			   (draw-sprite textures type render-x render-y #xffffffff))
+			  ;; aimed in direction of movement
+			  ([butterfly ellipse arrowhead amulet ice-shard rice
+						  rest knife bacteria kunai droplet heart arrow]
+			   (draw-sprite-with-rotation textures type
+										  (todeg (bullet-facing bullet))
+										  render-x render-y -1))
+			  ;; spinny
+			  ([small-star big-star]
+			   (draw-sprite-with-rotation textures type
+										  (fx2fl (fxmod (fx* frames 5) 360))
+										  render-x render-y -1))
+			  ([bubble yinyang]
+			   (draw-sprite-with-rotation textures type
+										  (fx2fl (fxmod (fx* frames 8) 360))
+										  render-x render-y -1))
+			  ([music]
+			   (let ([sprite
+					  (vnth-mod (symbol-hashtable-ref cached-music-sprites type #f)
+								(fx/ frames 10))])
+				 (draw-sprite-with-rotation textures sprite 90.0
+											render-x render-y -1)))
+			  ([fireball]
+			   (let ([sprite
+					  (vnth-mod (symbol-hashtable-ref cached-fireball-sprites type #f)
+								(fx/ frames 7))])
+				 (draw-sprite-with-rotation
+				  textures sprite
+				  (todeg (bullet-facing bullet))
+				  render-x render-y -1))))
+			(when show-hitboxes
+			  (raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
+									red))))))
+  (define (pass priority)
+	(vector-for-each
+	 (λ (blt)
+	   (when blt
+		 (let ([bt (symbol-hashtable-ref bullet-types (bullet-type blt) #f)])
+		   (when (fx= priority (blttype-render-priority bt))
+			 (each bt blt)))))
+	 bullets))
+  (do [(i 0 (add1 i))]
+	  [(> i max-bullet-render-priority)]
+	(pass i)))
 
 (define (draw-bomb textures)
   (raylib:draw-rectangle-gradient-h
@@ -4741,21 +4749,14 @@
 					  (+ +playfield-render-offset-y+ +poc-y+)
 					  -1))
 
-  (let ([sorted-bullets (vector-sort
-						 (λ (a b)
-						   (cond
-							[(not a) #t]
-							[(not b) #f]
-							[else (fx< (bullet-id a) (bullet-id b))]))
-						 live-bullets)])
-	;; lasers go under enemies, all other bullets on top
-	(draw-lasers textures sorted-bullets)
-	(draw-enemies textures)
-	(draw-player textures)
-	(with-cost-center miscent-cc
-					  (thunk (draw-misc-ents textures)))
-	(with-cost-center bullet-cc
-					  (thunk (draw-bullets textures sorted-bullets))))
+  ;; lasers go under enemies, all other bullets on top
+  (draw-lasers textures live-bullets)
+  (draw-enemies textures)
+  (draw-player textures)
+  (with-cost-center miscent-cc
+					(thunk (draw-misc-ents textures)))
+  (with-cost-center bullet-cc
+					(thunk (draw-bullets textures live-bullets)))
   (draw-particles textures fonts)
 
   ;; focus sigil. Done here after the bullets because we want the player hitbox
