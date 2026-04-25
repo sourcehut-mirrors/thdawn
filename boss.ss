@@ -731,10 +731,11 @@
 					 (when (and is-dodo
 								(not orb) (= col 1)) ;; first center blt to reach
 					   (set! orb
-							 (spawn-bullet
-							  'bubble-red
-							  group-sp2-center-x group-sp2-center-y 5
-							  values)))
+							 (-> (spawn-bullet
+								  'bubble-red
+								  group-sp2-center-x group-sp2-center-y 5
+								  values)
+								 (bullet-addflags (bltflags uncancelable)))))
 					 (wait 10)
 					 (let ([nf (facing-point
 								(bullet-x blt) (bullet-y blt)
@@ -750,7 +751,7 @@
 	(raylib:play-sound (sebundle-longcharge sounds))
 	(wait 145)
 	(when is-dodo
-	  (cancel-bullet orb))
+	  (cancel-bullet orb #t))
 	(wait 15)
 	(raylib:play-sound (sebundle-oldvwoopfast sounds))
 	(let loop ([j 0] [ang (centered-roll game-rng pi)])
