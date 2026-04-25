@@ -681,7 +681,7 @@
 					(curry non2-dodo-control dodo-dead-signalbox)
 					default-drop
 					(curry non2-familiar-on-death dodo-dead-signalbox))
-				   (enm-addflags (enmflags aura-red)))]
+				   (enm-addflags (enmflags aura-red autocollect)))]
 		 [rere-dead-signalbox (box #f)]
 		 [rere (-> (spawn-enemy
 					'rere
@@ -689,7 +689,7 @@
 					(curry non2-rere-control rere-dead-signalbox)
 					default-drop
 					(curry non2-familiar-on-death rere-dead-signalbox))
-				   (enm-addflags (enmflags aura-magenta)))]
+				   (enm-addflags (enmflags aura-magenta autocollect)))]
 		 [mimi-dead-signalbox (box #f)]
 		 [mimi (-> (spawn-enemy
 					'mimi
@@ -697,7 +697,7 @@
 					(curry non2-mimi-control mimi-dead-signalbox)
 					default-drop
 					(curry non2-familiar-on-death mimi-dead-signalbox))
-				   (enm-addflags (enmflags aura-blue)))])
+				   (enm-addflags (enmflags aura-blue autocollect)))])
 	(wait-while keep-running))
   (common-nonspell-postlude bossinfo doremi)
   (group-sp2 task doremi hazuki aiko))
@@ -1303,9 +1303,8 @@
 						   (enm-superarmor-set! enm 40)
 						   (ease-to ease-in-out-quad x y 45 enm)
 						   (loop-forever))
-						 default-drop (curry hazuki-sp2-wisp-on-death
-											 toptask
-											 killed-by-hazuki-box hazuki))
+						 '() (curry hazuki-sp2-wisp-on-death
+									toptask killed-by-hazuki-box hazuki))
 						(enm-addflags (enmflags aura-red)))
 					killed-by-hazuki-box)
 			  acc)

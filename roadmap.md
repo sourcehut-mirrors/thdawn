@@ -22,8 +22,6 @@ As in, when you work pick something off the list and get at it.
 * aiko portrait
 * group non1
 * group sp1
-* doremi non1
-* doremi sp1
 * hazuki non1
 * hazuki sp1
 * doremi non2
