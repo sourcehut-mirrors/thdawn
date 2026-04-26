@@ -2275,7 +2275,7 @@
 	 ;; todo appropriate time limits
 	 (make-spell-descriptor "Group Sp1"
 							6000 500 1000000 'group std std-fail)
-	 (make-spell-descriptor "Spring Sign \"Harukaze-style Breezy Cherry Blossoms\""
+	 (make-spell-descriptor "Spring Sign \"Harukaze Cherry Blossoms\""
 							3600 15000 1000000 'doremi std std-fail)
 	 (make-spell-descriptor "Hazuki Sp1"
 							6000 500 1000000 'hazuki std std-fail)

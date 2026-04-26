@@ -10,6 +10,8 @@
 | 1. Afterword    |
 +-----------------+
 
+2026/XX/XX
+
 
 
 +-----------------+
@@ -20,6 +22,9 @@
 
 Species: Human
 Ability: Capable of Floating in the Air
+
+On a certain night after too much caffeine (not alcohol, for once), Reimu decided to go
+out for a night flight.
 
 * Doremi Harukaze
 
@@ -67,6 +72,17 @@ beginners, it might seem too hard, but keep moving and the aimed hearts won't hi
 notes are fired in a regular pattern, so some sort of left-right-left-right movement will
 work.
 
+In my development environment, my spell history includes all the times I've jumped to a
+given spell, as well as all the times I've reached it in full runs. For fun, I'll put the
+number of times I've started each spell, which is a rough approximation of the number of
+iterations I took to develop it (as well as a good number of test runs through). Capture
+counts are excluded as they aren't accurate. This is because early in the game's
+lifecycle, the spells had no danmaku and essentially no health, so shooting them down for
+a capture was a given. Of course, this also influences the cast count, but to a lesser
+extent.
+
+As of the time of writing, this spell was cast XXX times in-development.
+
 ○ Natural Sign "Butterfly Smelling the Flowers" (Midboss Spell 2)
 
 This was the first spell card to be completed. As with the first midboss spell, I knew
@@ -85,9 +101,27 @@ mind which has a similar two-layer design.
 Once you get enough practice, the spinning should become second nature, and you can
 concentrate exclusively on avoiding the aimed fan.
 
+As of the time of writing, this spell was cast XXX times in-development.
+
 ○ Boss Non-spell 1 (Group)
 
+This was the eleventh boss attack to be completed. Yeah, kinda weird that I left the
+opening attacks for so late in development, but I was more inspired for the later patterns
+first.
+
+I wasn't planning on having the boss fight sync too closely with the music, due to the
+difficulty of building dynamic syncing. It requires significant specialized support within
+the game code, and I believe support in the audio engine as well. However, getting a sync
+for the first spell as the music transitions from the intro into the first verse felt easy
+and obvious for me to do.
+
+The nonspell is pretty barebones, but it might look harder than it actually is. You can
+dodge it all with three small taps per wave, and the health is low enough it'll go down
+pretty quickly, too.
+
 ○ Group Sp1 (Group)
+
+As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Boss Non-spell 2 (Doremi)
 
@@ -102,7 +136,7 @@ bomb.
 Towards the end of the healthbar, things get more intense, but usually the attack ends
 before anything can happen to you. If you want to time it down, though...
 
-○ Spring Sign "Harukaze-style Breezy Cherry Blossoms" (Doremi)
+○ Spring Sign "Harukaze Cherry Blossoms" (Doremi)
 
 This was the tenth boss attack to be completed. Harukaze = "spring wind" = it's gotta be a
 clone of Okina's spring final!
@@ -119,6 +153,8 @@ phase of three (left-middle-right-middle-left). This 3-on-2 hemiola means every 
 you have to dodge in the opposite direction of Okina's movement, which exerts
 psychological pressure on the player to get back over under her to keep dealing damage,
 because even the homing shots don't have their options at this point.
+
+As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Boss Non-spell 3 (Hazuki)
 
@@ -158,6 +194,8 @@ impossible situations if the arms overlapped weirdly. Eventually, I made the fir
 spirals fixed, and only the third one was allowed to vary. To dodge it, I recommend moving
 away horizontally from the third spiral and keeping your vision wide to make sure no stray
 bullets from the other spirals blindside you.
+
+As of the time of writing, this spell was cast XXX times in-development.
 
 TODO: Revise when rebalancing.
 
@@ -210,11 +248,13 @@ easier for survival, while the other maximizes graze. Try figuring out both!
 2. Rere's phase (bubble bullet charging up at center) is a bit hard. I wonder if there's
 room somewhere to slip in and hide...
 
+As of the time of writing, this spell was cast XXX times in-development.
+
 ○ Boss Non-spell 6 (Doremi)
 
 ○ Gourmet Sign "I Want to Eat Steak!"
 
-
+As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Boss Non-spell 7 (Hazuki)
 
@@ -261,6 +301,8 @@ extra bullets on screen that get in the way).
 
 You'll get an extra bonus if you capture the spell by killing every single wisp yourself,
 without Hazuki killing one for you.
+
+As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Boss Non-spell 8 (Aiko)
 
@@ -332,12 +374,13 @@ the spell by shooting her the whole time, but it'll go a lot faster if you can m
 the ball into hitting her. You also get an additional bonus if the spell is captured using
 the ball as the finishing blow.
 
-4. The direction the ball is reflected when bouncing of the player is simplified to the 8
-cardinal and ordinal directions when you're moving while you collide with the ball. You
-can actually use this, in combination with hints 1 and 3, to direct the ball somewhere
-convenient each kick. If the ball hits you when you're not moving, it just bounces
-directly to the normal vector of you and the ball (which isn't physically accurate, but
-don't dwell on that too much).
+4. The ball is reflected in the direction you're moving when you collide with the ball
+(the 8 cardinal and ordinal directions). You can actually use this, in combination with
+hints 1 and 3, to direct the ball somewhere convenient each kick. If the ball hits you
+when you're not moving, it just bounces directly to the normal vector formed by your
+hitbox and the point where the ball entered your reflection radius. Neither of these are
+physically accurate, but it works ok enough without having to bang my head coding up more
+complex physics.
 
 5. Don't worry about running into Aiko when she comes to collect the ball. During that
 time, she has no boss collision.
@@ -347,8 +390,15 @@ can get in some damage after your bomb ends while it's still bouncing around on 
 screen, before the next kick comes.
 
 7. If you're looking for extra challenge, try grazing the lasers of the field as much as
-you can while you're dealing with dodging stars and kicking the ball. It's pretty tough!
+you can for extra PIV, while you're dealing with the stars and kicking the ball. It's
+pretty tough!
+
+As of the time of writing, this spell was cast XXX times in-development.
 
 ○ "One Flower, One World" (Group)
 
+As of the time of writing, this spell was cast XXX times in-development.
+
 ○ "Magical Stage" (Group)
+
+As of the time of writing, this spell was cast XXX times in-development.
