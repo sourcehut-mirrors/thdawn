@@ -67,9 +67,12 @@
 (define (vnth-mod v n)
   (vnth v (fxmod n (vlen v))))
 (define-enumeration miscenttype
-  (mainshot needle point life-frag big-piv life bomb-frag small-piv bomb
-			steak)
+  ;; NB: ordered by their draw order, from first to last
+  (mainshot needle small-piv point big-piv
+			bomb-frag life-frag bomb life steak)
   make-miscent-type-set)
+(define miscent-render-order (enum-set->list
+							  (enum-set-universe (make-miscent-type-set))))
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
 		  circle-hint-opaque
@@ -3555,10 +3558,10 @@
   (memq (miscent-type ent) '(point life life-frag bomb bomb-frag)))
 
 (define (draw-misc-ents textures)
-  (define (each ent)
-	(when ent
-	  (let ([type (miscent-type ent)]
-			[render-x (+ +playfield-render-offset-x+ (miscent-x ent))]
+  (define (draw draw-type ent)
+	(define type (and ent (miscent-type ent)))
+	(when (eq? type draw-type)
+	  (let ([render-x (+ +playfield-render-offset-x+ (miscent-x ent))]
 			[render-y (+ +playfield-render-offset-y+ (miscent-y ent))])
 		(case type
 		  ([mainshot]
@@ -3602,7 +3605,12 @@
 							   0.0 360.0 30 #xffd700ff)
 			 (draw-sprite-with-rotation
 			  textures type rot render-x render-y -1)))))))
-  (vector-for-each each live-misc-ents))
+  (for-each
+   (λ (type)
+	 (vector-for-each
+	  (λ (e) (draw type e))
+	  live-misc-ents))
+   miscent-render-order))
 
 (define (ease-to easer x y duration enm)
   (define x0 (enm-x enm))
