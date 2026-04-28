@@ -102,6 +102,17 @@
   enmflags)
 (define empty-enmflags (enmflags))
 
+(define-enumeration miscentflag
+  (;; special flag for doremi non2 behaviors
+   ;; - autocollect is ignored
+   ;; - no default motion
+   ;; - bombs destroy the miscent
+   ;; - golden ring drawn around the item
+   doremi-non2
+   autocollect)
+  miscentflags)
+(define empty-miscentflags (miscentflags))
+
 (define (round-score to-add) ;; to-add can be a flonum
   (define rounded (eround to-add))
   (define rem (remainder rounded 10))
@@ -1882,7 +1893,7 @@
   (spawn-task "delayed autocollect"
 	(λ (task)
 	  (wait 45)
-	  (for-each (λ (e) (miscent-autocollect-set! e #t)) ents))
+	  (for-each (λ (e) (miscent-addflags e (miscentflags autocollect))) ents))
 	(constantly #t)))
 
 (define cancel-bullet-with-drop
@@ -2646,7 +2657,9 @@
 						 -3.0 0.08)])
 			   (when (fxpositive? bombing)
 				 (spawn-task "delayed autocollect"
-				   (λ (task) (wait 45) (miscent-autocollect-set! ent #t))
+				   (λ (task)
+					 (wait 45)
+					 (miscent-addflags ent (miscentflags autocollect)))
 				   (constantly #t)))
 			   (loop (fx1+ i) (cons ent acc)))))))
    '()
@@ -3332,8 +3345,19 @@
    (mutable vy)
    (mutable ay)
    (mutable livetime)
-   (mutable autocollect))
+   (mutable flags))
   (sealed #t))
+
+(define (miscent-hasflag? ent flag)
+  (enum-set-member? flag (miscent-flags ent)))
+
+(define (miscent-addflags ent flags)
+  (miscent-flags-set! ent (enum-set-union (miscent-flags ent) flags))
+  ent)
+
+(define (miscent-clrflags ent flags)
+  (miscent-flags-set! ent (enum-set-difference (miscent-flags ent) flags))
+  ent)
 
 (define (miscent-supports-autocollect? ent)
   (not (memq (miscent-type ent) '(mainshot steak))))
@@ -3342,14 +3366,14 @@
   (vector-for-each
    (λ (ent)
 	 (when (and ent (miscent-supports-autocollect? ent))
-	   (miscent-autocollect-set! ent #t)))
+	   (miscent-addflags ent (miscentflags autocollect))))
    live-misc-ents))
 
 (define (spawn-misc-ent type x y vy ay)
   (let ([idx (vector-index #f live-misc-ents)])
 	(unless idx
 	  (error 'spawn-misc-ent "No more open misc entity slots!"))
-	(let ([ent (make-miscent type x y vy ay 0 #f)])
+	(let ([ent (make-miscent type x y vy ay 0 empty-miscentflags)])
 	  (vector-set! live-misc-ents idx ent)
 	  (case type
 		[(bomb bomb-frag)
@@ -3455,9 +3479,9 @@
 				(delete-misc-ent ent)))))
 		  ([point life-frag big-piv life bomb-frag small-piv bomb]
 		   (when (stage-ctx-dialogue current-stage-ctx)
-			 (miscent-autocollect-set! ent #t))
+			 (miscent-addflags ent (miscentflags autocollect)))
 		   (cond
-			[(miscent-autocollect ent)
+			[(miscent-hasflag? ent (miscentflag autocollect))
 			 ;; todo dedupe with below
 			 ;; todo acceleration?
 			 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
@@ -3484,7 +3508,8 @@
 			   ([point]
 				(raylib:play-sound (sebundle-item sounds))
 				(let* ([value-multiplier
-						(if (or (miscent-autocollect ent) (< player-y +poc-y+))
+						(if (or (miscent-hasflag? ent (miscentflag autocollect))
+								(< player-y +poc-y+))
 							1.0
 							(max 0.25
 								 (- 1.0 (/ (- player-y +poc-y+)

@@ -1031,6 +1031,9 @@
 
 (define (doremi-non2 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
+  (define (keep-running)
+	(and (positive? (bossinfo-remaining-timer bossinfo))
+		 (positive? (enm-health doremi))))
   (set! current-chapter 24)
   (wait 90)
   (adjust-bars-non (bossinfo-healthbars bossinfo))
@@ -1051,10 +1054,7 @@
   (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 doremi)
   (enm-clrflags doremi (enmflags nocollide))
   (declare-nonspell doremi 1800 1000)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi)))))
+  (wait-while keep-running)
   (common-nonspell-postlude bossinfo doremi)
   (doremi-sp2 task doremi))
 
