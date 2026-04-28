@@ -107,7 +107,8 @@
    ;; - autocollect is ignored
    ;; - no default motion
    ;; - bombs destroy the miscent
-   ;; - golden ring drawn around the item
+   ;; - golden ring drawn around the item that ticks down as its livetime approaches
+   ;;   a certain maximum
    doremi-non2
    autocollect)
   miscentflags)
@@ -3480,64 +3481,73 @@
 		  ([point life-frag big-piv life bomb-frag small-piv bomb]
 		   (when (stage-ctx-dialogue current-stage-ctx)
 			 (miscent-addflags ent (miscentflags autocollect)))
-		   (cond
-			[(miscent-hasflag? ent (miscentflag autocollect))
-			 ;; todo dedupe with below
-			 ;; todo acceleration?
-			 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
-												(- player-y (miscent-y ent))))])
-			   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 8)))
-			   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 8))))]
-			[(check-collision-circle-rec
-			  player-x player-y (if focused-immediate +vacuum-radius-focused+
-									+vacuum-radius-unfocused+)
-			  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
-			  16 16)
-			 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
-												(- player-y (miscent-y ent))))])
-			   (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 6)))
-			   (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 6)))
-			   ;; reset this to something reasonable
-			   (miscent-vy-set! ent 1.0))]
-			[else (do-standard-movement)])
-		   (when (check-collision-circle-rec
-				  player-x player-y +hit-radius+
-				  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
-				  16 16)
-			 (case type
-			   ([point]
-				(raylib:play-sound (sebundle-item sounds))
-				(let* ([value-multiplier
-						(if (or (miscent-hasflag? ent (miscentflag autocollect))
-								(< player-y +poc-y+))
-							1.0
-							(max 0.25
-								 (- 1.0 (/ (- player-y +poc-y+)
-										   (- +playfield-max-y+ +poc-y+)))))]
-					   [value (round-score (* item-value value-multiplier))])
-				  (set! current-score (+ current-score value))
-				  (spawn-particle
-				   (particletype itemvalue)
-				   (miscent-x ent) (- (miscent-y ent) 10.0)
-				   60 (cons (if (= 1 value-multiplier)
-								#xffd70000
-								#xf5f5f500)
-							(number->string value)))))
-			   ([life-frag] (add-lives 1/3))
-			   ([life] (add-lives 1))
-			   ([bomb-frag] (add-bombs 1/3))
-			   ([bomb] (add-bombs 1))
-			   ([small-piv]
-				(raylib:play-sound (sebundle-item sounds))
-				(set! item-value (+ 50 item-value))
-				(set! current-score (+ 100 current-score)))
-			   ([big-piv]
-				(raylib:play-sound (sebundle-item sounds))
-				(set! item-value (+ 1000 item-value))
-				(set! current-score (+ 1000 current-score))))
-			 (delete-misc-ent ent))
-		   (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
-			 (delete-misc-ent ent))))
+		   (if
+			(miscent-hasflag? ent (miscentflag doremi-non2))
+			(when (fxpositive? bombing)
+			  (spawn-particle
+			   (particletype cancel)
+			   (miscent-x ent) (miscent-y ent)
+			   23 #f)
+			  (delete-misc-ent ent))
+			(begin
+			  (cond
+			   [(miscent-hasflag? ent (miscentflag autocollect))
+				;; todo dedupe with below
+				;; todo acceleration?
+				(let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
+												   (- player-y (miscent-y ent))))])
+				  (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 8)))
+				  (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 8))))]
+			   [(check-collision-circle-rec
+				 player-x player-y (if focused-immediate +vacuum-radius-focused+
+									   +vacuum-radius-unfocused+)
+				 (- (miscent-x ent) 8) (- (miscent-y ent) 8)
+				 16 16)
+				(let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
+												   (- player-y (miscent-y ent))))])
+				  (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 6)))
+				  (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 6)))
+				  ;; reset this to something reasonable
+				  (miscent-vy-set! ent 1.0))]
+			   [else (do-standard-movement)])
+			  (when (check-collision-circle-rec
+					 player-x player-y +hit-radius+
+					 (- (miscent-x ent) 8) (- (miscent-y ent) 8)
+					 16 16)
+				(case type
+				  ([point]
+				   (raylib:play-sound (sebundle-item sounds))
+				   (let* ([value-multiplier
+						   (if (or (miscent-hasflag? ent (miscentflag autocollect))
+								   (< player-y +poc-y+))
+							   1.0
+							   (max 0.25
+									(- 1.0 (/ (- player-y +poc-y+)
+											  (- +playfield-max-y+ +poc-y+)))))]
+						  [value (round-score (* item-value value-multiplier))])
+					 (set! current-score (+ current-score value))
+					 (spawn-particle
+					  (particletype itemvalue)
+					  (miscent-x ent) (- (miscent-y ent) 10.0)
+					  60 (cons (if (= 1 value-multiplier)
+								   #xffd70000
+								   #xf5f5f500)
+							   (number->string value)))))
+				  ([life-frag] (add-lives 1/3))
+				  ([life] (add-lives 1))
+				  ([bomb-frag] (add-bombs 1/3))
+				  ([bomb] (add-bombs 1))
+				  ([small-piv]
+				   (raylib:play-sound (sebundle-item sounds))
+				   (set! item-value (+ 50 item-value))
+				   (set! current-score (+ 100 current-score)))
+				  ([big-piv]
+				   (raylib:play-sound (sebundle-item sounds))
+				   (set! item-value (+ 1000 item-value))
+				   (set! current-score (+ 1000 current-score))))
+				(delete-misc-ent ent))
+			  (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
+				(delete-misc-ent ent))))))
 		(miscent-livetime-set! ent (add1 (miscent-livetime ent))))))
   (vector-for-each each live-misc-ents))
 
