@@ -1058,17 +1058,73 @@
   (common-nonspell-postlude bossinfo doremi)
   (doremi-sp2 task doremi))
 
+(define (doremi-sp2-spawn-steak successes-box task)
+  (define steak (spawn-misc-ent (miscenttype steak) -50.0 180.0 0.0 0.0))
+  (define start-time frames)
+  (spawn-subtask "steak despawner"
+	(λ (task)
+	  (let loop ()
+		;; TODO: sfx
+		(when (check-collision-circle-rec
+			   player-x player-y +hit-radius+
+			   (- (miscent-x steak) 10) (- (miscent-y steak) 10)
+			   20 20)
+		  (set! current-score (+ current-score 500))
+		  (set-box! successes-box (add1 (unbox successes-box)))
+		  (delete-misc-ent steak))
+		(when (fx> (fx- frames start-time) miscent-doremi-non2-livetime)
+		  (spawn-particle
+		   (particletype cancel)
+		   (miscent-x steak) (miscent-y steak)
+		   23 #f)
+		  (delete-misc-ent steak))
+		(yield)
+		(loop)))
+	task
+	(thunk (vector-index steak live-misc-ents)))
+  steak)
+
+(define (doremi-sp2-var0 successes-box task doremi)
+  (define steak (doremi-sp2-spawn-steak successes-box task))
+  (parameterize ([ovr-uncancelable #t])
+	(do [(i 0 (add1 i))]
+		[(= i 8)]
+	  (-> (cb)
+		  (cbcount 8)
+		  (cbabsolute-aim)
+		  (cboffset (fx2fl (+ 10 (* 20 i))))
+		  (cbspeed 0.2)
+		  (cbshootez
+		   (miscent-x steak) (miscent-y steak)
+		   (vnth '#(butterfly-red butterfly-orange butterfly-yellow
+								  butterfly-green butterfly-cyan
+								  butterfly-blue butterfly-magenta butterfly-white) i)
+		   2 #f
+		   (λ (facing speed task blt)
+			 (interval-loop-while 1 (vector-index steak live-misc-ents)
+			   (linear-step facing speed blt))
+			 (dotimes 30
+			   (linear-step facing speed blt)
+			   (yield))
+			 (raylib:play-sound (sebundle-bell sounds))
+			 (linear-step-accelerate-forever
+			  (fl+ facing pi) speed
+			  (fl+ 0.01 (fl* (fx2fl i) 0.012)) +inf.0 task blt))))
+	  (wait 8)))
+  )
+
 (define (doremi-sp2 task doremi)
   (define bossinfo (enm-extras doremi))
   (define (keep-running)
 	(and (positive? (bossinfo-remaining-timer bossinfo))
 		 (positive? (enm-health doremi))))
+  (define successes (box 0))
   (set! current-chapter 25)
   (declare-spell doremi 7)
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
-  (spawn-misc-ent (miscenttype steak) 0.0 100.0 0.0 0.0)
+  (doremi-sp2-var0 successes task doremi)
 
   #;(interval-loop-while 1 (keep-running)
 	(let ([x (centered-roll game-rng (fx2fl +playfield-max-x+))]

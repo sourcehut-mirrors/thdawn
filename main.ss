@@ -73,6 +73,7 @@
   make-miscent-type-set)
 (define miscent-render-order (enum-set->list
 							  (enum-set-universe (make-miscent-type-set))))
+(define miscent-doremi-non2-livetime 300)
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
 		  circle-hint-opaque
@@ -2298,7 +2299,7 @@
 							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
 							4200 30000 3000000 'group std std-fail)
-	 (make-spell-descriptor "Gourmet Sign \"I Want to Eat Steak!\""
+	 (make-spell-descriptor "Gourmet Sign \"Doremi's Steak Hunt\""
 							6000 9000 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Hazuki's Ghostbusting Challenge\""
 							3000 9000 3000000 'hazuki std std-fail)
@@ -3599,12 +3600,18 @@
 		   (let* ([livetime (miscent-livetime ent)]
 				  [rot (fl* 15.0 (flsin (inexact (/ livetime 15))))]
 				  [ring-rad (-> (fl+ 0.5 (fl* 0.5 (flsin (inexact (/ livetime 8)))))
-								(fl* 4.0)
-								(fl+ 12.0))])
-			 (raylib:draw-ring render-x render-y ring-rad (fl+ ring-rad 2.2)
-							   0.0 360.0 30 #xffd700ff)
+								(fl+ 12.0))]
+				  [ring-fullness (lerp 360.0 0.0
+									   (inexact (/ livetime
+												   miscent-doremi-non2-livetime)))])
+			 (raylib:draw-ring render-x render-y ring-rad (fl+ ring-rad 3.2)
+							   -90.0 (fl- ring-fullness 90.0) 30 #xffd700ff)
 			 (draw-sprite-with-rotation
-			  textures type rot render-x render-y -1)))))))
+			  textures type rot render-x render-y -1)
+			 (when show-hitboxes
+			   (raylib:draw-rectangle-rec
+				(fl- render-x 10.0) (fl- render-y 10.0) 20.0 20.0
+				red))))))))
   (for-each
    (λ (type)
 	 (vector-for-each
