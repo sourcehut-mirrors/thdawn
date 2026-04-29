@@ -3675,13 +3675,18 @@
   (raylib:play-sound (sebundle-spelldeclare sounds))
   (bossinfo-active-attack-failed-set! bossinfo #f))
 
-(define (declare-nonspell boss duration-frames health)
-  (define bossinfo (enm-extras boss))
-  (bossinfo-remaining-timer-set! bossinfo duration-frames)
-  (bossinfo-total-timer-set! bossinfo duration-frames)
-  (bossinfo-max-health-set! bossinfo health)
-  (enm-health-set! boss health)
-  (enm-initial-health-set! boss health))
+(define declare-nonspell
+  (case-lambda
+	[(boss duration-frames health)
+	 (declare-nonspell boss duration-frames health '((bomb-frag . 1)))]
+	[(boss duration-frames health drops)
+	 (define bossinfo (enm-extras boss))
+	 (bossinfo-remaining-timer-set! bossinfo duration-frames)
+	 (bossinfo-total-timer-set! bossinfo duration-frames)
+	 (bossinfo-max-health-set! bossinfo health)
+	 (enm-health-set! boss health)
+	 (enm-initial-health-set! boss health)
+	 (enm-drops-set! boss drops)]))
 
 (define common-spell-postlude
   (case-lambda
@@ -3757,7 +3762,7 @@
 	  live-enm)
 	 (cancel-all #t)
 	 (raylib:play-sound (sebundle-shoot0 sounds))
-	 (spawn-drops '((bomb-frag . 1)) (enm-x enm) (enm-y enm))
+	 (spawn-enm-drops enm)
 	 (unless nodelay
 	   (wait 60))
 	 (bossinfo-healthbars-set!
