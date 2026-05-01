@@ -1058,8 +1058,8 @@
   (common-nonspell-postlude bossinfo doremi)
   (doremi-sp2 task doremi))
 
-(define (doremi-sp2-spawn-steak successes-box task)
-  (define steak (spawn-misc-ent (miscenttype steak) -50.0 180.0 0.0 0.0))
+(define (doremi-sp2-spawn-steak x y successes-box task)
+  (define steak (spawn-misc-ent (miscenttype steak) x y 0.0 0.0))
   (define start-time frames)
   (spawn-subtask "steak despawner"
 	(λ (task)
@@ -1085,7 +1085,7 @@
   steak)
 
 (define (doremi-sp2-var0 successes-box task doremi)
-  (define steak (doremi-sp2-spawn-steak successes-box task))
+  (define steak (doremi-sp2-spawn-steak -50.0 180.0 successes-box task))
   (parameterize ([ovr-uncancelable #t])
 	(do [(i 0 (add1 i))]
 		[(= i 8)]
@@ -1099,18 +1099,63 @@
 		   (vnth '#(butterfly-red butterfly-orange butterfly-yellow
 								  butterfly-green butterfly-cyan
 								  butterfly-blue butterfly-magenta butterfly-white) i)
-		   2 #f
+		   2 (sebundle-shoot0 sounds)
 		   (λ (facing speed task blt)
+			 (define accel (fl+ 0.03 (fl* (fx2fl i) 0.01)))
 			 (interval-loop-while 1 (vector-index steak live-misc-ents)
 			   (linear-step facing speed blt))
 			 (dotimes 30
 			   (linear-step facing speed blt)
 			   (yield))
 			 (raylib:play-sound (sebundle-bell sounds))
-			 (linear-step-accelerate-forever
-			  (fl+ facing pi) speed
-			  (fl+ 0.01 (fl* (fx2fl i) 0.012)) +inf.0 task blt))))
+			 (let loop ([v speed])
+			   (bullet-x-set! blt (fl+ (bullet-x blt)
+									   (fl* v (flcos (fl+ facing pi)))))
+			   (bullet-y-set! blt (fl+ (bullet-y blt)
+									   (fl* v (flsin (fl+ facing pi)))))
+			   (yield)
+			   (let ([next-v (fl+ v accel)])
+				 (if (fl< (distsq (bullet-x blt) (bullet-y blt)
+								  (miscent-x steak) (miscent-y steak))
+						  900.0)
+					 (linear-step-forever (fl+ facing pi (torad 15.0)) next-v
+										  task blt)
+					 (loop next-v)))))))
 	  (wait 8)))
+  (wait-while (thunk (vector-index steak live-misc-ents)))
+  (wait 80)
+  (-> (fb)
+	  (fbcount 3 5)
+	  (fbang 0.0 10.0)
+	  (fbspeed 2.0 4.5)
+	  (fbshootez (miscent-x steak) (miscent-y steak)
+				 'ellipse-red
+				 10 (sebundle-shoot0 sounds))))
+
+(define (doremi-sp2-var1 successes-box task doremi)
+  (define cx -50.0)
+  (define cy 180.0)
+  (define (heart multiplier)
+	(raylib:play-sound (sebundle-shoot0 sounds))
+	(do [(i 0 (add1 i))]
+		[(= i 36)]
+	  (let* ([theta (torad (fx2fl (* 10 i)))]
+			 [x (fl+ cx (fl* multiplier 16.0 (flexpt (flsin theta) 3.0)))]
+			 [y (fl+ cy (fl* -1.0 multiplier ;; -1 because we're y-down
+							 (fl- (fl* 13.0 (flcos theta))
+								  (fl* 5.0 (flcos (fl* 2.0 theta)))
+								  (fl* 2.0 (flcos (fl* 3.0 theta)))
+								  (flcos (fl* 4.0 theta)))))])
+		(spawn-bullet 'kunai-orange x y 2 values))))
+  (define steak (doremi-sp2-spawn-steak cx cy successes-box task))
+  (heart 4.5)
+  (wait 10)
+  (heart 7.0)
+  (wait 10)
+  (heart 9.0)
+  (wait 10)
+  (heart 12.0)
+  (wait 10)
   )
 
 (define (doremi-sp2 task doremi)
@@ -1124,7 +1169,7 @@
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
-  (doremi-sp2-var0 successes task doremi)
+  (doremi-sp2-var1 successes task doremi)
 
   #;(interval-loop-while 1 (keep-running)
 	(let ([x (centered-roll game-rng (fx2fl +playfield-max-x+))]
