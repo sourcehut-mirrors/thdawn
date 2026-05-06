@@ -4,8 +4,7 @@
 ;; file as a r6rs Program
 (import (chezscheme))
 (import (add-prefix (raylib) raylib:)
-		(coro) (geom) (funcutils) (config)
-		(srfi171meta) (srfi171))
+		(coro) (geom) (funcutils) (config))
 (alias λ lambda)
 
 ;; for dev only, makes a function lazily looked up at runtime so
@@ -793,6 +792,7 @@
 (define chapter-select 0)
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
+(define ruler-anchor #f)
 
 ;; stack of active guis, from top priority to lowest
 ;; only top gui receives input and gets rendered
@@ -2392,7 +2392,7 @@
 			 medium-red-fairy medium-blue-fairy
 			 big-fairy boss-doremi boss-hazuki boss-aiko
 			 red-wisp green-wisp blue-wisp yellow-wisp
-			 dodo rere mimi)
+			 dodo rere mimi dummy)
   make-enmtype-set)
 (define-record-type enm
   (fields
@@ -2818,7 +2818,8 @@
 	([big-fairy]
 	 (values (fl- (enm-x enm) 15.0)
 			 (fl- (enm-y enm) 15.0)
-			 30.0 30.0))))
+			 30.0 30.0))
+	([dummy] (values 0.0 0.0 0.0 0.0))))
 
 (define (enm-hurtbox enm)
   (case (enm-type enm)
@@ -2842,7 +2843,8 @@
 	([big-fairy]
 	 (values (fl- (enm-x enm) 22.0)
 			 (fl- (enm-y enm) 22.0)
-			 44.0 44.0))))
+			 44.0 44.0))
+	([dummy] (values 0.0 0.0 0.0 0.0))))
 
 (define (enm-tint enm)
   (define is-familiar (memq (enm-type enm) '(dodo rere mimi)))
@@ -3089,7 +3091,25 @@
 					[sprite (vnth-mod side-sprites (fx/ frames 7))])
 			   (if (flnegative? dx)
 				   (draw-sprite-mirror-x textures sprite render-x render-y tint)
-				   (draw-sprite textures sprite render-x render-y tint)))])))
+				   (draw-sprite textures sprite render-x render-y tint)))]))
+		  ([dummy]
+		   (let ([aura-sprite
+				   (cond
+					[(enm-hasflag? enm (enmflag aura-red))
+					 'aura-red]
+					[(enm-hasflag? enm (enmflag aura-green))
+					 'aura-green]
+					[(enm-hasflag? enm (enmflag aura-blue))
+					 'aura-blue]
+					[(enm-hasflag? enm (enmflag aura-magenta))
+					 'aura-magenta]
+					[else #f])])
+			 (when aura-sprite
+			   (draw-sprite-with-scale-rotation
+				textures aura-sprite
+				(fxmod (fx* 2 t) 360)
+				(fl+ 1.2 0.2 (fl* 0.2 (flsin (/ t 10.0))))
+				render-x render-y -1)))))
 		(when show-hitboxes
 		  (let-values ([(x y w h) (enm-hurtbox enm)])
 			(raylib:draw-rectangle-rec
@@ -4862,7 +4882,24 @@
 				  (eround (v2x (vnth spline-editor-positions i)))
 				  (eround (v2y (vnth spline-editor-positions i))))
 		  (eround (v2x p)) (eround (v2y p)) 10 -1)))
-	 render-positions)))
+	 render-positions))
+  (when ruler-anchor
+	(let ([rx (fl+ (fx2fl +playfield-render-offset-x+)
+				   (v2x ruler-anchor))]
+		  [ry (fl+ (fx2fl +playfield-render-offset-y+)
+				   (v2y ruler-anchor))])
+	  (raylib:draw-circle-v rx ry 10.0 #x006400ff)
+	  (raylib:draw-text
+	   (format "~d ~d ~,2f"
+			   (eround (v2x ruler-anchor))
+			   (eround (v2y ruler-anchor))
+			   (sqrt (distsq (v2x ruler-anchor) (v2y ruler-anchor)
+							 player-x player-y)))
+	   (eround rx) (eround ry) 10 -1)
+	  (raylib:draw-line (eround rx) (eround ry)
+						(eround (+ player-x +playfield-render-offset-x+))
+						(eround (+ player-y +playfield-render-offset-y+)) -1)))
+  )
 
 (define (do-render-all textures fonts)
   (when current-stage-ctx

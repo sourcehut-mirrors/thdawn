@@ -1088,7 +1088,7 @@
   (define steak (doremi-sp2-spawn-steak -50.0 180.0 successes-box task))
   (parameterize ([ovr-uncancelable #t])
 	(do [(i 0 (add1 i))]
-		[(= i 8)]
+		[(= i 16)]
 	  (-> (cb)
 		  (cbcount 8)
 		  (cbabsolute-aim)
@@ -1096,9 +1096,10 @@
 		  (cbspeed 0.2)
 		  (cbshootez
 		   (miscent-x steak) (miscent-y steak)
-		   (vnth '#(butterfly-red butterfly-orange butterfly-yellow
-								  butterfly-green butterfly-cyan
-								  butterfly-blue butterfly-magenta butterfly-white) i)
+		   (vnth-mod '#(butterfly-red butterfly-orange butterfly-yellow
+									  butterfly-green butterfly-cyan
+									  butterfly-blue butterfly-magenta
+									  butterfly-white) i)
 		   2 (sebundle-shoot0 sounds)
 		   (λ (facing speed task blt)
 			 (define accel (fl+ 0.03 (fl* (fx2fl i) 0.01)))
@@ -1121,7 +1122,7 @@
 					 (linear-step-forever (fl+ facing pi (torad 15.0)) next-v
 										  task blt)
 					 (loop next-v)))))))
-	  (wait 8)))
+	  (wait 4)))
   (wait-while (thunk (vector-index steak live-misc-ents)))
   (wait 80)
   (-> (fb)
@@ -1130,32 +1131,65 @@
 	  (fbspeed 2.0 4.5)
 	  (fbshootez (miscent-x steak) (miscent-y steak)
 				 'ellipse-red
-				 10 (sebundle-shoot0 sounds))))
+				 10 (sebundle-shoot0 sounds)))
+  (wait 240))
 
 (define (doremi-sp2-var1 successes-box task doremi)
   (define cx -50.0)
   (define cy 180.0)
-  (define (heart multiplier)
+  (define (heart order type multiplier count)
 	(raylib:play-sound (sebundle-shoot0 sounds))
-	(do [(i 0 (add1 i))]
-		[(= i 36)]
-	  (let* ([theta (torad (fx2fl (* 10 i)))]
-			 [x (fl+ cx (fl* multiplier 16.0 (flexpt (flsin theta) 3.0)))]
-			 [y (fl+ cy (fl* -1.0 multiplier ;; -1 because we're y-down
-							 (fl- (fl* 13.0 (flcos theta))
-								  (fl* 5.0 (flcos (fl* 2.0 theta)))
-								  (fl* 2.0 (flcos (fl* 3.0 theta)))
-								  (flcos (fl* 4.0 theta)))))])
-		(spawn-bullet 'kunai-orange x y 2 values))))
+	(parameterize ([seal-distance 10.0]
+				   [ovr-uncancelable #t])
+	  (do [(i 0 (add1 i))]
+		  [(= i count)]
+		(let* ([theta (inexact (* tau (/ i count)))]
+			   [x (fl+ cx (fl* multiplier 16.0 (flexpt (flsin theta) 3.0)))]
+			   [y (fl+ cy (fl* -1.0 multiplier ;; -1 because we're y-down
+							   (fl- (fl* 13.0 (flcos theta))
+									(fl* 5.0 (flcos (fl* 2.0 theta)))
+									(fl* 2.0 (flcos (fl* 3.0 theta)))
+									(flcos (fl* 4.0 theta)))))])
+		  (spawn-bullet
+		   type x y 2
+		   (λ (task blt)
+			 (wait-while (thunk (vector-index steak live-misc-ents)))
+			 (wait 55)
+			 (wait (* order 8))
+			 (raylib:play-sound (sebundle-bell sounds))
+			 (let ([facing (if (fl< (distsq player-x player-y cx cy) 10000.0)
+							   (facing-point (bullet-x blt) (bullet-y blt) cx cy)
+							   (facing-player (bullet-x blt) (bullet-y blt)))])
+			   (linear-step-accelerate-forever
+				facing
+				0.0 0.025 4.5 task blt))))))))
   (define steak (doremi-sp2-spawn-steak cx cy successes-box task))
-  (heart 4.5)
+  (heart 0 'small-ball-red 4.5 32)
   (wait 10)
-  (heart 7.0)
+  (heart 1 'small-ball-orange 7.0 42)
   (wait 10)
-  (heart 9.0)
+  (heart 2 'small-ball-blue 9.0 56)
   (wait 10)
-  (heart 12.0)
+  (heart 3 'small-ball-magenta 12.0 64)
   (wait 10)
+  (wait-while (thunk (vector-index steak live-misc-ents)))
+  (when (fl>= (distsq player-x player-y cx cy) 10000.0)
+	(dotimes 8
+	  (-> (fb)
+		  (fbcount (if (roll-bool game-rng) 5 4) 5)
+		  (fbang 0.0 12.0)
+		  (fbspeed 3.0 5.0)
+		  (fbshootez
+		   (fl+ cx (centered-roll game-rng 100.0))
+		   (fl+ cy (centered-roll game-rng 100.0))
+		   'heart-red 15 (sebundle-shoot0 sounds)))
+	  (wait 20)))
+  (wait 80))
+
+(define (doremi-sp2-var2 successes-box task doremi)
+  (define steak (doremi-sp2-spawn-steak cx cy successes-box task))
+  (wait-while (thunk (vector-index steak live-misc-ents)))
+  (wait 240)
   )
 
 (define (doremi-sp2 task doremi)
@@ -1169,6 +1203,8 @@
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
+  (set! ruler-anchor (vec2 -50.0 180.0))
+  (doremi-sp2-var0 successes task doremi)
   (doremi-sp2-var1 successes task doremi)
 
   #;(interval-loop-while 1 (keep-running)
