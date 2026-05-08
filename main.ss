@@ -2293,12 +2293,11 @@
 	  '((bomb . 1) (point . 30))
 	  '((bomb . 1) (point . 10)))
 	 (make-spell-descriptor
-	  "Natural Sign \"Butterfly Smelling the Flowers\"" 720 -1 1000000 #f
+	  "Nature Sign \"Butterfly Smelling the Flowers\"" 720 -1 1000000 #f
 	  '((life . 1) (point . 50))
 	  '((life . 1) (point . 10)))
-	 ;; todo appropriate time limits
-	 (make-spell-descriptor "Group Sp1"
-							6000 500 1000000 'group std std-fail)
+	 (make-spell-descriptor "Danmaku Sign \"Ojamajo Doremi SHOOT!\""
+							2700 12000 1000000 'group std std-fail)
 	 (make-spell-descriptor "Spring Sign \"Harukaze Cherry Blossoms\""
 							3600 15000 1000000 'doremi std std-fail)
 	 (make-spell-descriptor "Hazuki Sp1"

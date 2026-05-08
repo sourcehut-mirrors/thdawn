@@ -107,15 +107,101 @@
 
 
 (define (group-sp1 task doremi hazuki aiko)
+  (define y-radius 20.0)
+  (define top-y (fl- +right-boss-y+ y-radius))
+  (define left-x (fl- +left-boss-x+ 30.0))
+  (define right-x (fl+ +right-boss-x+ 30.0))
+  (define x-radius (fl- right-x left-x))
   (define bossinfo (enm-extras doremi))
+  (define (keep-running)
+	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
+		 (fxpositive? (enm-health doremi))))
   (set! current-chapter 15)
   (enm-redirect-damage-set! hazuki doremi)
   (enm-redirect-damage-set! aiko doremi)
   (declare-spell doremi 2)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi)))))
+
+  (spawn-subtask "hazuki move"
+	(λ (task)
+	  (ease-to ease-out-cubic left-x (enm-y hazuki) 60 hazuki)
+	  (wait 120)
+	  (let ([start-time frames])
+		(interval-loop 1
+		  (let* ([t (/ (- frames start-time) 20)]
+				 [mul (fl+ 0.5 (fl* 0.5 (flsin (inexact t))))])
+			(enm-y-set! hazuki (fl+ top-y (fl* 2.0 y-radius mul))))
+		  (let* ([t (/ (- frames start-time) 40)]
+				 [mul (fl- 1.0 (fl+ 0.5 (fl* 0.5 (flcos (inexact t)))))])
+			(enm-x-set! hazuki (fl+ left-x (fl* mul x-radius)))))))
+	task keep-running)
+  (spawn-subtask "aiko move"
+	(λ (task)
+	  (ease-to ease-out-cubic right-x (enm-y aiko) 60 aiko)
+	  (wait 120)
+	  (let ([start-time frames])
+		(interval-loop 1
+		  (let* ([t (/ (- frames start-time) 20)]
+				 [mul (fl+ 0.5 (fl* 0.5 (flsin (inexact t))))])
+			(enm-y-set! aiko (fl+ top-y (fl* 2.0 y-radius mul))))
+		  (let* ([t (/ (- frames start-time) 40)]
+				 [mul (fl+ 0.5 (fl* 0.5 (flcos (inexact t))))])
+			(enm-x-set! aiko (fl+ left-x (fl* mul x-radius)))))))
+	task keep-running)
+  (spawn-subtask "hazuki shoot"
+	(λ (task)
+	  (wait 180)
+	  (spawn-subtask "rings"
+		(λ (task)
+		  (interval-loop 60
+			(-> (cb)
+				(cbcount 32)
+				(cbspeed 4.0 5.0)
+				(cbabsolute-aim)
+				(cbshootenm hazuki 'music-orange 2 #f))))
+		task)
+	  (interval-loop 15
+		(do [(i 0 (add1 i))]
+			[(= i 8)]
+		  (spawn-bullet 'glow-ball-cyan (enm-x hazuki) (enm-y hazuki) 5
+						(curry linear-step-forever hpi
+							   (fl+ 3.0 (fl* (fx2fl i) 0.09))))
+		  (wait 5))))
+	task keep-running)
+  (spawn-subtask "aiko shoot"
+	(λ (task)
+	  (wait 180)
+	  (spawn-subtask "rings"
+		(λ (task)
+		  (interval-loop 60
+			(-> (cb)
+				(cbcount 32)
+				(cbspeed 4.0 5.0)
+				(cbabsolute-aim)
+				(cbshootenm aiko 'music-blue 2 #f))))
+		task)
+	  (interval-loop 15
+		(do [(i 0 (add1 i))]
+			[(= i 8)]
+		  (spawn-bullet 'glow-ball-blue (enm-x aiko) (enm-y aiko) 5
+						(curry linear-step-forever hpi
+							   (fl+ 3.0 (fl* (fx2fl i) 0.09))))
+		  (wait 5))))
+	task keep-running)
+  (wait 60)
+  (dotimes 2
+	(raylib:play-sound (sebundle-shortcharge sounds))
+	(wait 60))
+  (spawn-subtask "doremi shoot"
+	(λ (task)
+	  (wait 50)
+	  (interval-loop 50
+		(-> (fb)
+			(fbcount 3 7)
+			(fbspeed 4.0 5.5)
+			(fbang 0.0 8.0)
+			(fbshootenm doremi 'butterfly-red 2 #f))))
+	task keep-running)
+  (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
   (doremi-non1 task doremi hazuki aiko))
 
@@ -129,12 +215,12 @@
   (adjust-bars-non (bossinfo-healthbars bossinfo))
   (spawn-subtask "hazuki leave"
 	(λ (_)
-	  (ease-to ease-out-cubic -100.0 -100.0 60 hazuki)
+	  (ease-to ease-out-cubic (flcopysign 100.0 (enm-x hazuki)) -100.0 60 hazuki)
 	  (delete-enemy hazuki))
 	task)
   (spawn-subtask "aiko leave"
 	(λ (_)
-	  (ease-to ease-out-cubic 100.0 -100.0 60 aiko)
+	  (ease-to ease-out-cubic (flcopysign 100.0 (enm-x aiko)) -100.0 60 aiko)
 	  (delete-enemy aiko))
 	task)
   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 60 doremi)
@@ -1040,14 +1126,14 @@
   (spawn-subtask "hazuki leave"
 	(λ (_)
 	  (ease-to ease-out-cubic
-			   (if (flnegative? (enm-x hazuki)) -300.0 300.0)
+			   (flcopysign 300.0 (enm-x hazuki))
 			   (fl- (enm-y hazuki) 50.0) 60 hazuki)
 	  (delete-enemy hazuki))
 	task)
   (spawn-subtask "aiko leave"
 	(λ (_)
 	  (ease-to ease-out-cubic
-			   (if (flnegative? (enm-x aiko)) -300.0 300.0)
+			   (flcopysign 300.0 (enm-x aiko))
 			   (fl- (enm-y aiko) 50.0) 60 aiko)
 	  (delete-enemy aiko))
 	task)

@@ -10,7 +10,7 @@
 		  do-bounce-off
 		  lerp eval-bezier-quad eval-bezier-cubic bezier-cubic-easing
 		  pi -pi tau hpi -hpi
-		  torad todeg eround epsilon-equal clamp
+		  torad todeg eround epsilon-equal clamp flcopysign
 		  distsq
 		  ease-in-quad ease-out-quad ease-in-out-quad
 		  ease-out-cubic
@@ -38,6 +38,11 @@
 
   (define (clamp v lower upper)
 	(max (min v upper) lower))
+  
+  ;; doesn't handle nans or signed zeros, zeros treated as positive
+  (define (flcopysign mag sign)
+	(define a (flabs mag))
+	(if (flnegative? sign) (fl- a) a))
   (define (ease-out-cubic x)
 	(- 1 (expt (- 1 x) 3.0)))
   (define (ease-in-out-quart x)
