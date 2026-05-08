@@ -33,6 +33,7 @@
   ;; as r6rs requires all definitions to precede any expressions
   ;; r6rs does guarantee the library body executes top to bottom though,
   ;; so this is the right place to do it
+  ;; struct ABI audited as compatible as of Raylib 5.5-6.0
   (define _dummy
 	(case (machine-type)
 	  [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt)
@@ -206,7 +207,6 @@
   (define close-audio-device
 	(foreign-procedure __atomic "CloseAudioDevice" () void))
 
-  ;; ABI as of Raylib 5.5
   (define-ftype AudioStream
 	(struct
 	  (_ uptr)
