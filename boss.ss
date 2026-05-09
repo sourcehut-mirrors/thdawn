@@ -426,35 +426,58 @@
   (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp1 task hazuki))
 
-(define (hazuki-sp1-flower)
-  (define x (fx2fl +playfield-min-x+))
+(define (hazuki-sp1-flower right-side break-box)
+  (define x (if right-side (fx2fl +playfield-max-x+) (fx2fl +playfield-min-x+)))
   (define y (fx2fl +playfield-max-y+))
-  (define speed (roll-flrange game-rng 4.0 4.5))
-  (define facing (torad (roll-flrange game-rng -70.0 -85.0)))
+  (define speed (roll-flrange game-rng 3.0 4.0))
+  (define facing (if right-side
+					 (torad (roll-flrange game-rng -95.0 -122.0))
+					 (torad (roll-flrange game-rng -58.0 -85.0))))
   (define accel (roll-flrange game-rng 0.02 0.03))
-  (define ctrl (curry linear-step-gravity-forever facing speed accel))
-  (define petal-type (if (roll-bool game-rng) 'small-ball-red 'small-ball-orange))
+  (define prebreak-delay (roll game-rng 20))
+  (define postbreak-delay (roll game-rng 20))
+  (define (ctrl task blt)
+	(define initial-dx (fl- x (bullet-x blt)))
+	(define initial-dy (fl- y (bullet-y blt)))
+	(linear-step-decelerate facing speed -0.02 blt)
+	(wait-until (thunk (unbox break-box)))
+	(wait prebreak-delay)
+	(if (eq? 'pellet (bullet-family (bullet-type blt)))
+		(cancel-bullet blt)
+		(let* ([cur-cx (fl+ (bullet-x blt) initial-dx)]
+			   [cur-cy (fl+ (bullet-y blt) initial-dy)]
+			   [facing (facing-point cur-cx cur-cy (bullet-x blt) (bullet-y blt))])
+		  (linear-step-decelerate facing 2.0 -0.1 blt)
+		  (wait (+ 60 postbreak-delay))
+		  (linear-step-accelerate-forever
+		   (fl+ hpi (torad (centered-roll game-rng 20.0)))
+		   0.0 0.08 3.5 task blt))))
+  (define petal-type (vrand '#(small-ball-red
+							   small-ball-orange small-ball-blue small-ball-magenta)
+							game-rng))
   (define blts
 	(map (λ (_) (spawn-bullet petal-type x y 5 ctrl))
 		 (iota 5)))
   (position-bullets-around x y 12.0 (fl* tau (roll game-rng)) blts)
-  (spawn-bullet 'pellet-red x y 5 ctrl)
-  )
+  (spawn-bullet 'pellet-white x y 5 ctrl))
 
-(define (hazuki-sp1-flower-right)
-  (define x (fx2fl +playfield-max-x+))
-  (define y (fx2fl +playfield-max-y+))
-  (define speed (roll-flrange game-rng 4.0 4.5))
-  (define facing (torad (roll-flrange game-rng -95.0 -110.0)))
-  (define accel (roll-flrange game-rng 0.02 0.03))
-  (define ctrl (curry linear-step-gravity-forever facing speed accel))
-  (define petal-type (if (roll-bool game-rng) 'small-ball-blue 'small-ball-magenta))
-  (define blts
-	(map (λ (_) (spawn-bullet petal-type x y 5 ctrl))
-		 (iota 5)))
-  (position-bullets-around x y 12.0 (fl* tau (roll game-rng)) blts)
-  (spawn-bullet 'pellet-red x y 5 ctrl)
-  )
+(define (hazuki-sp1-wave task hazuki)
+  (define points (vector (vec2 -134.0 93.0)
+						 (vec2 0.0 222.0)
+						 (vec2 140.0 208.0)
+						 (vec2 151.0 121.0)))
+  (define break-box (box #f))
+  (dotimes 12
+	(hazuki-sp1-flower #f break-box)
+	(hazuki-sp1-flower #t break-box)
+	(wait 8))
+  (wait 240)
+  (raylib:play-sound (sebundle-longcharge sounds))
+  (ease-to ease-in-out-quad (v2x (vnth points 0)) (v2y (vnth points 0)) 60 hazuki)
+  (move-on-spline points (λ (_seg) (values values 180)) hazuki)
+  ;; todo shooting
+  (set-box! break-box #t)
+  (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 hazuki))
 
 (define (hazuki-sp1 task hazuki)
   (define bossinfo (enm-extras hazuki))
@@ -464,17 +487,11 @@
   (set! current-chapter 19)
   (declare-spell hazuki 4)
 
-  (spawn-subtask "1"
+  (spawn-subtask "main"
 	(λ (task)
-	  (interval-loop 8
-		(hazuki-sp1-flower)))
+	  (interval-loop 180
+		(hazuki-sp1-wave task hazuki)))
 	task keep-running)
-  (spawn-subtask "2"
-	(λ (task)
-	  (interval-loop 8
-		(hazuki-sp1-flower-right)))
-	task keep-running)
-  
   
   (wait-while keep-running)
   (common-spell-postlude bossinfo hazuki)
