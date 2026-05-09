@@ -2042,31 +2042,31 @@
 	  [(> i max-bullet-render-priority)]
 	(pass i)))
 
-(define (draw-bomb textures)
+(define (draw-bomb)
   (raylib:draw-rectangle-gradient-h
-   (eround (+ +playfield-render-offset-x+ (- bomb-sweep-x-left 290)))
-   (+ +playfield-render-offset-y+ +playfield-min-y+)
+   (fx+ +playfield-render-offset-x+ (fx- (eround bomb-sweep-x-left) 290))
+   (fx+ +playfield-render-offset-y+ +playfield-min-y+)
    290
    +playfield-height+
    #x8a2be200
    #x8a2be2be)
   (raylib:draw-rectangle-gradient-v
-   (+ +playfield-render-offset-x+ +playfield-min-x+)
-   (eround (+ +playfield-render-offset-y+ (- bomb-sweep-y-up 365)))
+   (fx+ +playfield-render-offset-x+ +playfield-min-x+)
+   (fx+ +playfield-render-offset-y+ (fx- (eround bomb-sweep-y-up) 365))
    +playfield-width+
    365
    #xdc143c00
    #xdc143cbe)
   (raylib:draw-rectangle-gradient-h
-   (eround (+ +playfield-render-offset-x+ bomb-sweep-x-right))
-   (+ +playfield-render-offset-y+ +playfield-min-y+)
+   (fx+ +playfield-render-offset-x+ (eround bomb-sweep-x-right))
+   (fx+ +playfield-render-offset-y+ +playfield-min-y+)
    290
    +playfield-height+
    #x8a2be2be
    #x8a2be200)
   (raylib:draw-rectangle-gradient-v
-   (+ +playfield-render-offset-x+ +playfield-min-x+)
-   (eround (+ +playfield-render-offset-y+ bomb-sweep-y-down))
+   (fx+ +playfield-render-offset-x+ +playfield-min-x+)
+   (fx+ +playfield-render-offset-y+ (eround bomb-sweep-y-down))
    +playfield-width+
    365
    #xdc143cbe
@@ -4858,8 +4858,8 @@
 					0.0 0.0 ;; manually translated to final position above
 					(override-alpha -1 (eround (* 255 focus-sigil-strength)))))))
 
-  (when (positive? bombing)
-	(draw-bomb textures))
+  (when (fxpositive? bombing)
+	(draw-bomb))
 
   (draw-hud textures fonts)
 

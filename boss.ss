@@ -549,7 +549,7 @@
 					  (fl+ right-ang 20.0)
 					  (add1 i)))
 			  (-> (cb)
-				  (cbspeed 4.0 4.75)
+				  (cbspeed 3.8 4.75)
 				  (cbcount 36 4)
 				  (cbang 0.0 (if (roll-bool game-rng) 3.0 -3.0))
 				  (cbshoot (enm-x aiko) (enm-y aiko)
