@@ -426,6 +426,36 @@
   (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp1 task hazuki))
 
+(define (hazuki-sp1-flower)
+  (define x (fx2fl +playfield-min-x+))
+  (define y (fx2fl +playfield-max-y+))
+  (define speed (roll-flrange game-rng 4.0 4.5))
+  (define facing (torad (roll-flrange game-rng -70.0 -85.0)))
+  (define accel (roll-flrange game-rng 0.02 0.03))
+  (define ctrl (curry linear-step-gravity-forever facing speed accel))
+  (define petal-type (if (roll-bool game-rng) 'small-ball-red 'small-ball-orange))
+  (define blts
+	(map (λ (_) (spawn-bullet petal-type x y 5 ctrl))
+		 (iota 5)))
+  (position-bullets-around x y 12.0 (fl* tau (roll game-rng)) blts)
+  (spawn-bullet 'pellet-red x y 5 ctrl)
+  )
+
+(define (hazuki-sp1-flower-right)
+  (define x (fx2fl +playfield-max-x+))
+  (define y (fx2fl +playfield-max-y+))
+  (define speed (roll-flrange game-rng 4.0 4.5))
+  (define facing (torad (roll-flrange game-rng -95.0 -110.0)))
+  (define accel (roll-flrange game-rng 0.02 0.03))
+  (define ctrl (curry linear-step-gravity-forever facing speed accel))
+  (define petal-type (if (roll-bool game-rng) 'small-ball-blue 'small-ball-magenta))
+  (define blts
+	(map (λ (_) (spawn-bullet petal-type x y 5 ctrl))
+		 (iota 5)))
+  (position-bullets-around x y 12.0 (fl* tau (roll game-rng)) blts)
+  (spawn-bullet 'pellet-red x y 5 ctrl)
+  )
+
 (define (hazuki-sp1 task hazuki)
   (define bossinfo (enm-extras hazuki))
   (define (keep-running)
@@ -433,6 +463,19 @@
 		 (fxpositive? (enm-health hazuki))))
   (set! current-chapter 19)
   (declare-spell hazuki 4)
+
+  (spawn-subtask "1"
+	(λ (task)
+	  (interval-loop 8
+		(hazuki-sp1-flower)))
+	task keep-running)
+  (spawn-subtask "2"
+	(λ (task)
+	  (interval-loop 8
+		(hazuki-sp1-flower-right)))
+	task keep-running)
+  
+  
   (wait-while keep-running)
   (common-spell-postlude bossinfo hazuki)
   (aiko-non1 task hazuki))
