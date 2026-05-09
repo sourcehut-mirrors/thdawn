@@ -428,12 +428,12 @@
 
 (define (hazuki-sp1 task hazuki)
   (define bossinfo (enm-extras hazuki))
+  (define (keep-running)
+	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
+		 (fxpositive? (enm-health hazuki))))
   (set! current-chapter 19)
   (declare-spell hazuki 4)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health hazuki)))))
+  (wait-while keep-running)
   (common-spell-postlude bossinfo hazuki)
   (aiko-non1 task hazuki))
 
@@ -1268,12 +1268,6 @@
 		   'heart-red 15 (sebundle-shoot0 sounds)))
 	  (wait 20)))
   (wait 80))
-
-(define (doremi-sp2-var2 successes-box task doremi)
-  (define steak (doremi-sp2-spawn-steak cx cy successes-box task))
-  (wait-while (thunk (vector-index steak live-misc-ents)))
-  (wait 240)
-  )
 
 (define (doremi-sp2 task doremi)
   (define bossinfo (enm-extras doremi))

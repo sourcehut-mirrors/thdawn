@@ -3092,7 +3092,8 @@
 				   (draw-sprite-mirror-x textures sprite render-x render-y tint)
 				   (draw-sprite textures sprite render-x render-y tint)))]))
 		  ([dummy]
-		   (let ([aura-sprite
+		   (let ([t (fx+ frames (enm-time-spawned enm))]
+				 [aura-sprite
 				   (cond
 					[(enm-hasflag? enm (enmflag aura-red))
 					 'aura-red]
