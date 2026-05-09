@@ -152,40 +152,38 @@
 	  (wait 180)
 	  (spawn-subtask "rings"
 		(λ (task)
-		  (interval-loop 60
+		  (interval-loop 90
 			(-> (cb)
 				(cbcount 32)
-				(cbspeed 4.0 5.0)
-				(cbabsolute-aim)
+				(cbspeed 4.5)
 				(cbshootenm hazuki 'music-orange 2 #f))))
 		task)
-	  (interval-loop 15
+	  (interval-loop 20
 		(do [(i 0 (add1 i))]
-			[(= i 8)]
+			[(= i 7)]
 		  (spawn-bullet 'glow-ball-cyan (enm-x hazuki) (enm-y hazuki) 5
 						(curry linear-step-forever hpi
-							   (fl+ 3.0 (fl* (fx2fl i) 0.09))))
-		  (wait 5))))
+							   (fl+ 2.5 (fl* (fx2fl i) 0.11))))
+		  (wait 6))))
 	task keep-running)
   (spawn-subtask "aiko shoot"
 	(λ (task)
 	  (wait 180)
 	  (spawn-subtask "rings"
 		(λ (task)
-		  (interval-loop 60
+		  (interval-loop 90
 			(-> (cb)
 				(cbcount 32)
-				(cbspeed 4.0 5.0)
-				(cbabsolute-aim)
-				(cbshootenm aiko 'music-blue 2 #f))))
+				(cbspeed 4.5)
+				(cbshootenm aiko 'music-blue 2 (sebundle-bell sounds)))))
 		task)
-	  (interval-loop 15
+	  (interval-loop 20
 		(do [(i 0 (add1 i))]
-			[(= i 8)]
+			[(= i 7)]
 		  (spawn-bullet 'glow-ball-blue (enm-x aiko) (enm-y aiko) 5
 						(curry linear-step-forever hpi
-							   (fl+ 3.0 (fl* (fx2fl i) 0.09))))
-		  (wait 5))))
+							   (fl+ 2.5 (fl* (fx2fl i) 0.11))))
+		  (wait 6))))
 	task keep-running)
   (wait 60)
   (dotimes 2
@@ -193,13 +191,12 @@
 	(wait 60))
   (spawn-subtask "doremi shoot"
 	(λ (task)
-	  (wait 50)
-	  (interval-loop 50
+	  (interval-loop 70
 		(-> (fb)
-			(fbcount 3 7)
+			(fbcount 3 5)
 			(fbspeed 4.0 5.5)
 			(fbang 0.0 8.0)
-			(fbshootenm doremi 'butterfly-red 2 #f))))
+			(fbshootenm doremi 'butterfly-red 2 (sebundle-shoot0 sounds)))))
 	task keep-running)
   (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)

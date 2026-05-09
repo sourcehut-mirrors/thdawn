@@ -1,3 +1,19 @@
+* [2026-05-08 Fri]
+Haven't updated the dev log in a while.
+
+I ended up doing doremi non1 and sp1 instead of non2/sp2. The non is just some random
+stuff I thought of on the fly, and the spell is a spring final clone.
+
+Tried to spend some time on doremi sp2 (steak gathering) but was having lots of trouble
+making the patterns look good.
+
+Took a break to fill in group sp1 which I got a pretty good idea going.
+
+I also have an idea I want to do for another group spell but there's no more group spell
+slots. Might revive group-sp3 before the survival. That'd also bring us back 11 spells
+which is one more than is tradition for touhou extra bosses. Either that or I get rid of
+the survival or try to incorporate the idea into it.
+
 * [2026-04-12 Sun]
 Done with group sp2 after lots of danmaku writers' block. As always, it might need some
 balancing tweaks later, but I like the core of what I ended up with.

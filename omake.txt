@@ -72,16 +72,6 @@ beginners, it might seem too hard, but keep moving and the aimed hearts won't hi
 notes are fired in a regular pattern, so some sort of left-right-left-right movement will
 work.
 
-In my development environment, my spell history includes all the times I've jumped to a
-given spell, as well as all the times I've reached it in full runs. For fun, I'll put the
-number of times I've started each spell, which is a rough approximation of the number of
-iterations I took to develop it (as well as a good number of test runs through). Capture
-counts are excluded as they aren't accurate. This is because early in the game's
-lifecycle, the spells had no danmaku and essentially no health, so shooting them down for
-a capture was a given. Of course, this also influences the cast count, but to a lesser
-extent.
-
-As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Natural Sign "Butterfly Smelling the Flowers" (Midboss Spell 2)
 
@@ -101,7 +91,6 @@ mind which has a similar two-layer design.
 Once you get enough practice, the spinning should become second nature, and you can
 concentrate exclusively on avoiding the aimed fan.
 
-As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Boss Non-spell 1 (Group)
 
@@ -115,18 +104,45 @@ the game code, and I believe support in the audio engine as well. However, getti
 for the first spell as the music transitions from the intro into the first verse felt easy
 and obvious for me to do.
 
-The nonspell is pretty barebones, but it might look harder than it actually is. You can
-dodge it all with three small taps per wave, and the health is low enough it'll go down
-pretty quickly, too.
+The nonspell is probably a blind killer (or at least will force a bomb), but it's easier
+than it seems. You can dodge it all with three small taps per wave, and the health is low
+enough it'll go down pretty quickly, too.
 
-○ Group Sp1 (Group)
+○ Barrage Sign "Ojamajo Doremi SHOOT!" (Group)
 
-As of the time of writing, this spell was cast XXX times in-development.
+This was the twelfth boss attack to be completed. I was struggling with making Doremi's
+second spell, so I took some time off of that and decided to work on this spell instead.
+
+The original inspiration was that many arcade shmups have boss attacks where a flattened
+ring of bullets is fired downward from the top of the screen, but there's gaps in the ring
+to dodge through, and the later bullets are fired with a speed differential so they end up
+catching up to the earlier bullets. I wish I could name an exact example because the
+pattern is so clear in my mind, but I can't think of it off the top of my head, sorry orz.
+
+Anyways, how that manifested here was I had Aiko and Hazuki moving in a figure eight
+pattern you see, firing bullets downward. It ended up not really looking like rings,
+though. To round out the pattern, Aiko and Hazuki fire circles of aimed music notes, while
+Doremi takes aim with a fan of butterflies.
+
+The speed of the bullets can make this attack a bit of a challenge, but essentially all
+elements of this attack are static or directly aimed, so with some practice you can
+develop a route that is pretty consistent. The easiest strategy is to move liberally
+between the left, right, and center of the screen, as you can keep dealing good damage to
+the bosses even at the sides, and it gets pretty fun swinging across the screen to dodge. However, you could even develop a strategy that slowly streams across the screen, micrododging everything coming your way. Try that out, too!
+
+I contemplated giving this spell a rage phase, but that felt too mean given the spell's
+already higher-than-usual difficulty, so you're welcome :P.
+
+The spell name isn't really relevant to the pattern, I just wanted to honor the OG Ojamajo
+Doremi shmup fangame from 2002 called "Ojamajo Doremi SHOOT", which is probably the first
+shmups I ever played (even before Touhou). It's an arcade-like horizontally-scrolling
+shmup that you can still find online. It's pretty tough, I can't find any record of
+full-stage 1cc's of the highest difficulty online, only single-stage clears.
 
 ○ Boss Non-spell 2 (Doremi)
 
 This was the ninth boss attack to be completed. I knew I wanted to do something with
-screen-edge warping because that reminded me of "wind" and Harukaze = "spring wind". Kind
+screen-edge wrapping because that reminded me of "wind" and Harukaze = "spring wind". Kind
 of a stretch, lol.
 
 Ended up with a pretty basic dodging skill check nonspell. It shouldn't be too
@@ -154,7 +170,6 @@ you have to dodge in the opposite direction of Okina's movement, which exerts
 psychological pressure on the player to get back over under her to keep dealing damage,
 because even the homing shots don't have their options at this point.
 
-As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Boss Non-spell 3 (Hazuki)
 
@@ -195,7 +210,6 @@ spirals fixed, and only the third one was allowed to vary. To dodge it, I recomm
 away horizontally from the third spiral and keeping your vision wide to make sure no stray
 bullets from the other spirals blindside you.
 
-As of the time of writing, this spell was cast XXX times in-development.
 
 TODO: Revise when rebalancing.
 
@@ -215,10 +229,10 @@ Coming up with and coding this attack was a surprisingly smooth process. I just
 implementing the first thing that came to mind for all three fairies and it ended up
 fitting together super well.
 
-The attack patterns are very tangentially based on each girl's shot type in Ojamajo Doremi
-SHOOT, a Ojamajo Doremi fan shmup from the 2000's and the first STG I ever played. In it,
-Hazuki has a homing shot, Doremi has a 5 way shot, and Aiko has a direct, forward-focus
-shot. Each of the fairies' patterns vaguely reflects their owner's shot in that game.
+The attack patterns are very tangentially based on each girl's shot type from the
+earlier-mentioned Ojamajo Doremi SHOOT. In it, Hazuki has a homing shot, Doremi has a 5
+way shot, and Aiko has a direct, forward-focus shot. Each of the fairies' patterns vaguely
+reflects their owner's shot in that game.
 
 Hint: Mimi (rightmost) has the most threatening attack, so concentrate on attacking her
 over the other fairies (sorry Mimi).
@@ -248,13 +262,11 @@ easier for survival, while the other maximizes graze. Try figuring out both!
 2. Rere's phase (bubble bullet charging up at center) is a bit hard. I wonder if there's
 room somewhere to slip in and hide...
 
-As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Boss Non-spell 6 (Doremi)
 
 ○ Gourmet Sign "I Want to Eat Steak!"
 
-As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Boss Non-spell 7 (Hazuki)
 
@@ -263,7 +275,7 @@ introducing or hinting at a spell's gimmick in the preceding nonspell, I decided
 introduce some wisps in this nonspell.
 
 Keen-eyed players will notice this attack quickly ended up as a clone of Koakuma's Stage 5
-midboss spell in Touhou Fantastic Danmaku Festival 1. I briefly experimented with
+midboss spell from Touhou Fantastic Danmaku Festival 1. I briefly experimented with
 replacing the orbit bullets with other bullet types like butterflies, but nothing seemed
 to fit, so I used small glow orbs, like FDF1 does.
 
@@ -302,7 +314,6 @@ extra bullets on screen that get in the way).
 You'll get an extra bonus if you capture the spell by killing every single wisp yourself,
 without Hazuki killing one for you.
 
-As of the time of writing, this spell was cast XXX times in-development.
 
 ○ Boss Non-spell 8 (Aiko)
 
@@ -393,12 +404,9 @@ screen, before the next kick comes.
 you can for extra PIV, while you're dealing with the stars and kicking the ball. It's
 pretty tough!
 
-As of the time of writing, this spell was cast XXX times in-development.
 
 ○ "One Flower, One World" (Group)
 
-As of the time of writing, this spell was cast XXX times in-development.
 
 ○ "Magical Stage" (Group)
 
-As of the time of writing, this spell was cast XXX times in-development.
