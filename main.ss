@@ -3150,13 +3150,13 @@
 	([facing speed ay task blt]
 	 (linear-step-gravity-forever facing speed ay +inf.0 task blt))
 	([facing speed ay max-vy task blt]
-	 (define vx (* speed (cos facing)))
-	 (define vy (* speed (sin facing)))
+	 (define vx (fl* speed (flcos facing)))
+	 (define vy (fl* speed (flsin facing)))
 	 (bullet-facing-set! blt facing)
 	 (let loop ([vy vy])
 	   (linear-step-separate vx vy blt)
 	   (yield)
-	   (loop (min (+ vy ay) max-vy))))))
+	   (loop (flmin (fl+ vy ay) max-vy))))))
 
 ;; Returns once the bullet reaches stationary speed
 ;; acceleration should be negative
