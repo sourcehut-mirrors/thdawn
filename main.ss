@@ -3641,18 +3641,27 @@
 	  live-misc-ents))
    miscent-render-order))
 
-(define (ease-to easer x y duration enm)
-  (define x0 (enm-x enm))
-  (define y0 (enm-y enm))
+(define (ease-to-impl getx gety setx sety
+					  easer x y duration obj)
+  (define x0 (getx obj))
+  (define y0 (gety obj))
   (do [(i 0 (fx1+ i))]
 	  [(fx> i duration)]
 	(let* ([progress (/ i duration)]
 		   [eased (easer (clamp progress 0.0 1.0))]
-		   [x (+ x0 (* eased (- x x0)))]
-		   [y (+ y0 (* eased (- y y0)))])
-	  (enm-x-set! enm x)
-	  (enm-y-set! enm y))
+		   [x (fl+ x0 (fl* eased (fl- x x0)))]
+		   [y (fl+ y0 (fl* eased (fl- y y0)))])
+	  (setx obj x)
+	  (sety obj y))
 	(yield)))
+
+(define (ease-to easer x y duration enm)
+  (ease-to-impl enm-x enm-y enm-x-set! enm-y-set!
+				easer x y duration enm))
+
+(define (ease-bullet-to easer x y duration blt)
+  (ease-to-impl bullet-x bullet-y bullet-x-set! bullet-y-set!
+				easer x y duration blt))
 
 ;; points must be a whole spline (see truncate-to-whole-spline)
 (define (move-on-spline points segment->config enm)
