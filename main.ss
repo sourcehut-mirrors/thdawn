@@ -689,6 +689,7 @@
    (mutable replay-idx)
    (mutable next-bullet-id)
    live-bullets
+   sorted-bullets ;; for render, completely overwritten from live-bullets each frame
    live-enm
    live-misc-ents
    ;; Number of frames the current stage has been running.
@@ -752,6 +753,7 @@
    (and (vector? replay) replay)
    (if (vector? replay) 0 -1)
    1
+   (make-vector 4096 #f)
    (make-vector 4096 #f)
    (make-vector 256 #f)
    (make-vector 4096 #f)
@@ -4824,13 +4826,15 @@
 					  (+ +playfield-render-offset-y+ +poc-y+)
 					  -1))
 
-  (let ([sorted-bullets (vector-sort
-						 (λ (a b)
-						   (cond
-							[(not a) #t]
-							[(not b) #f]
-							[else (fx< (bullet-id a) (bullet-id b))]))
-						 live-bullets)])
+  (let ([sorted-bullets (stage-ctx-sorted-bullets current-stage-ctx)])
+	(vector-copy! live-bullets 0 sorted-bullets 0 (vlen live-bullets))
+    (vector-sort!
+	 (λ (a b)
+	   (cond
+		[(not a) #t]
+		[(not b) #f]
+		[else (fx< (bullet-id a) (bullet-id b))]))
+	 sorted-bullets)
 	;; lasers go under enemies, all other bullets on top
 	(draw-lasers textures sorted-bullets)
 	(draw-enemies textures)
