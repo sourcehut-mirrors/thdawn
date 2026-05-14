@@ -49,6 +49,8 @@
    ;; - boss: contains a bossinfo instance
    (mutable extras))
   (sealed #t))
+(alias ex enm-x)
+(alias ey enm-y)
 
 (define (enm-hasflag? enm flag)
   (enum-set-member? flag (enm-flags enm)))
@@ -97,50 +99,50 @@
 (define (enm-collision-box enm)
   (case (enm-type enm)
 	([red-fairy green-fairy blue-fairy yellow-fairy dodo rere mimi]
-	 (values (fl- (enm-x enm) 8.0)
-			 (fl- (enm-y enm) 8.0)
+	 (values (fl- (ex enm) 8.0)
+			 (fl- (ey enm) 8.0)
 			 16.0 16.0))
 	([boss-doremi boss-hazuki boss-aiko]
-	 (values (fl- (enm-x enm) 24.0)
-			 (fl- (enm-y enm) 24.0)
+	 (values (fl- (ex enm) 24.0)
+			 (fl- (ey enm) 24.0)
 			 48.0 48.0))
 	([medium-blue-fairy medium-red-fairy
 						red-yinyang green-yinyang blue-yinyang magenta-yinyang]
-	 (values (fl- (enm-x enm) 11.0)
-			 (fl- (enm-y enm) 11.0)
+	 (values (fl- (ex enm) 11.0)
+			 (fl- (ey enm) 11.0)
 			 22.0 22.0))
 	([blue-wisp green-wisp red-wisp yellow-wisp]
-	 (values (fl- (enm-x enm) 9.0)
-			 (fl- (enm-y enm) 9.0)
+	 (values (fl- (ex enm) 9.0)
+			 (fl- (ey enm) 9.0)
 			 18.0 18.0))
 	([big-fairy]
-	 (values (fl- (enm-x enm) 15.0)
-			 (fl- (enm-y enm) 15.0)
+	 (values (fl- (ex enm) 15.0)
+			 (fl- (ey enm) 15.0)
 			 30.0 30.0))
 	([dummy] (values 0.0 0.0 0.0 0.0))))
 
 (define (enm-hurtbox enm)
   (case (enm-type enm)
 	([red-fairy green-fairy blue-fairy yellow-fairy dodo rere mimi]
-	 (values (fl- (enm-x enm) 16.0)
-			 (fl- (enm-y enm) 16.0)
+	 (values (fl- (ex enm) 16.0)
+			 (fl- (ey enm) 16.0)
 			 32.0 32.0))
 	([boss-doremi boss-hazuki boss-aiko]
-	 (values (fl- (enm-x enm) 24.0)
-			 (fl- (enm-y enm) 24.0)
+	 (values (fl- (ex enm) 24.0)
+			 (fl- (ey enm) 24.0)
 			 48.0 48.0))
 	([medium-blue-fairy medium-red-fairy
 						red-yinyang green-yinyang blue-yinyang magenta-yinyang]
-	 (values (fl- (enm-x enm) 16.0)
-			 (fl- (enm-y enm) 16.0)
+	 (values (fl- (ex enm) 16.0)
+			 (fl- (ey enm) 16.0)
 			 32.0 32.0))
 	([blue-wisp green-wisp red-wisp yellow-wisp]
-	 (values (fl- (enm-x enm) 14.0)
-			 (fl- (enm-y enm) 14.0)
+	 (values (fl- (ex enm) 14.0)
+			 (fl- (ey enm) 14.0)
 			 28.0 28.0))
 	([big-fairy]
-	 (values (fl- (enm-x enm) 22.0)
-			 (fl- (enm-y enm) 22.0)
+	 (values (fl- (ex enm) 22.0)
+			 (fl- (ey enm) 22.0)
 			 44.0 44.0))
 	([dummy] (values 0.0 0.0 0.0 0.0))))
 
@@ -170,12 +172,12 @@
   (define lazy-render-x (+ +playfield-render-offset-x+
 						   (lerp
 							(bossinfo-start-move-x bossinfo)
-							(enm-x enm)
+							(ex enm)
 							lazy-t)))
   (define lazy-render-y (+ +playfield-render-offset-y+
 						   (lerp
 							(bossinfo-start-move-y bossinfo)
-							(enm-y enm)
+							(ey enm)
 							lazy-t)))
   ;; add the spawn timestamp to seed the rotation so multiple bosses don't
   ;; render their aura the exact same way
@@ -255,8 +257,8 @@
 (define (draw-enemies textures)
   (define (each enm)
 	(when enm
-	  (let ([render-x (+ (enm-x enm) +playfield-render-offset-x+)]
-			[render-y (+ (enm-y enm) +playfield-render-offset-y+)]
+	  (let ([render-x (+ (ex enm) +playfield-render-offset-x+)]
+			[render-y (+ (ey enm) +playfield-render-offset-y+)]
 			[dx (enm-dx-render enm)]
 			[type (enm-type enm)]
 			[tint (enm-tint enm)])

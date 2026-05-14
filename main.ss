@@ -1803,7 +1803,7 @@
 	[(fb enm type delay sound)
 	 (fbshootenm fb enm type delay sound linear-step-forever)]
 	[(fb enm type delay sound control-function)
-	 (fbshootez fb type (enm-x enm) (enm-y enm) delay sound control-function)]))
+	 (fbshootez fb type (ex enm) (ey enm) delay sound control-function)]))
 
 (define fbshootez
   (case-lambda
@@ -1902,7 +1902,7 @@
 	[(cb enm type delay sound)
 	 (cbshootenm cb enm type delay sound linear-step-forever)]
 	[(cb enm type delay sound control-function)
-	 (cbshootez cb type (enm-x enm) (enm-y enm) delay sound control-function)]))
+	 (cbshootez cb type (ex enm) (ey enm) delay sound control-function)]))
 
 (define cbshootez
   (case-lambda
@@ -2063,8 +2063,8 @@
 	  (let ([damaged-recently (enm-damaged-recently enm)])
 		(when (fxpositive? damaged-recently)
 		  (enm-damaged-recently-set! enm (fx1- damaged-recently))))
-	  (enm-ox-set! enm (enm-x enm))
-	  (enm-oy-set! enm (enm-y enm))))
+	  (enm-ox-set! enm (ex enm))
+	  (enm-oy-set! enm (ey enm))))
   (vector-for-each each live-enm))
 
 (define (posttick-enemies)
@@ -2083,7 +2083,7 @@
 		(when (positive? (enm-superarmor enm))
 		  (enm-superarmor-set! enm (sub1 (enm-superarmor enm))))
 		(let* ([ox (enm-ox enm)] [oy (enm-oy enm)]
-			   [x (enm-x enm)] [y (enm-y enm)]
+			   [x (ex enm)] [y (ey enm)]
 			   [stationary-x (epsilon-equal ox x)]
 			   [stationary-y (epsilon-equal oy y)]
 			   [dx (enm-dx-render enm)]
@@ -2154,8 +2154,8 @@
   (raylib:play-sound (sebundle-enmdie sounds))
   (spawn-particle
    (particletype enmdeath)
-   (fl+ (enm-x enm) (centered-roll visual-rng 20.0))
-   (fl+ (enm-y enm) (centered-roll visual-rng 20.0))
+   (fl+ (ex enm) (centered-roll visual-rng 20.0))
+   (fl+ (ey enm) (centered-roll visual-rng 20.0))
    30 '((start-radius . 2)
 		(end-radius . 85))))
 
@@ -2240,8 +2240,8 @@
 
 (define (spawn-enm-drops enm)
   (if (enm-hasflag? enm (enmflag autocollect))
-	  (spawn-drops-with-autocollect (enm-drops enm) (enm-x enm) (enm-y enm))
-	  (spawn-drops (enm-drops enm) (enm-x enm) (enm-y enm))))
+	  (spawn-drops-with-autocollect (enm-drops enm) (ex enm) (ey enm))
+	  (spawn-drops (enm-drops enm) (ex enm) (ey enm))))
 
 (define (damage-player)
   ;; if player is already dying, don't reset this
@@ -2368,8 +2368,8 @@
   (loop-forever (linear-step-enm facing speed enm)))
 
 (define (linear-step-enm facing speed enm)
-  (enm-x-set! enm (fl+ (enm-x enm) (fl* speed (flcos facing))))
-  (enm-y-set! enm (fl+ (enm-y enm) (fl* speed (flsin facing)))))
+  (enm-x-set! enm (fl+ (ex enm) (fl* speed (flcos facing))))
+  (enm-y-set! enm (fl+ (ey enm) (fl* speed (flsin facing)))))
 
 (define (linear-step-separate vx vy blt)
   (define ox (bx blt))
@@ -2896,7 +2896,7 @@
 	(yield)))
 
 (define (ease-to easer x y duration enm)
-  (ease-to-impl enm-x enm-y enm-x-set! enm-y-set!
+  (ease-to-impl ex ey enm-x-set! enm-y-set!
 				easer x y duration enm))
 
 (define (ease-bullet-to easer x y duration blt)
@@ -3006,8 +3006,8 @@
 		  (format "GET Spell Bonus!! ~:d" bonus)))
 	 (spawn-particle
 	  (particletype enmdeath)
-	  (+ (enm-x enm) (centered-roll visual-rng 20.0))
-	  (+ (enm-y enm) (centered-roll visual-rng 20.0))
+	  (+ (ex enm) (centered-roll visual-rng 20.0))
+	  (+ (ey enm) (centered-roll visual-rng 20.0))
 	  30 '((start-radius . 2)
 		   (end-radius . 85)))
 	 (vector-for-each
@@ -3049,8 +3049,8 @@
 		(dotimes 90
 		  (spawn-particle
 		   (particletype maple)
-		   (fl+ (enm-x enm) (centered-roll visual-rng 5.0))
-		   (fl+ (enm-y enm) (centered-roll visual-rng 5.0))
+		   (fl+ (ex enm) (centered-roll visual-rng 5.0))
+		   (fl+ (ey enm) (centered-roll visual-rng 5.0))
 		   60 `((speed . ,(fl+ (centered-roll visual-rng 0.75) 1.5))
 				(dir . ,(centered-roll visual-rng pi))
 				(rot . ,(fl* (roll visual-rng) 360.0))
@@ -3058,16 +3058,16 @@
 		  (yield)))
 	  (constantly #t))
 	(ease-to values
-			 (fl+ (enm-x enm) (centered-roll game-rng 40.0))
-			 (fl+ (enm-y enm) (centered-roll game-rng 30.0))
+			 (fl+ (ex enm) (centered-roll game-rng 40.0))
+			 (fl+ (ey enm) (centered-roll game-rng 30.0))
 			 90 enm))
   (raylib:play-sound (sebundle-bossdie sounds))
   (cancel-all #t)
   (dotimes 90
 	(spawn-particle
 	 (particletype maple)
-	 (fl+ (enm-x enm) (centered-roll visual-rng 2.0))
-	 (fl+ (enm-y enm) (centered-roll visual-rng 2.0))
+	 (fl+ (ex enm) (centered-roll visual-rng 2.0))
+	 (fl+ (ey enm) (centered-roll visual-rng 2.0))
 	 60 `((speed . ,(fl+ (centered-roll visual-rng 1.5) 2.5))
 		  (dir . ,(centered-roll visual-rng pi))
 		  (rot . ,(fl* (roll visual-rng) 360.0))
@@ -3077,11 +3077,11 @@
 
 (define (boss-standard-wander-once enm min-dx max-dx duration)
   (define (pick-next-y)
-	(clamp (fl+ (enm-y enm)
+	(clamp (fl+ (ey enm)
 				(centered-roll game-rng 20.0))
 		   80.0 140.0))
   (define (pick-next-x)
-	(define ox (enm-x enm))
+	(define ox (ex enm))
 	(define mag (fx2fl (+ min-dx (roll game-rng (- max-dx min-dx)))))
 	(cond
 	 [(fl< ox -140.0)
@@ -3747,7 +3747,7 @@
 		 15.0 0.0 color))))
   (draw-sprite textures 'enemy-indicator
 			   (+ +playfield-render-offset-x+
-				  (clamp (enm-x enm) +playfield-min-x+ +playfield-max-x+))
+				  (clamp (ex enm) +playfield-min-x+ +playfield-max-x+))
 			   (fx2fl (+ +playfield-max-y+ +playfield-render-offset-y+
 						 2))
 			   #xffffffc0))

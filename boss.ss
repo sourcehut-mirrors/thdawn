@@ -58,7 +58,7 @@
 			(cbspeed 2.0 3.0)
 			(cbshootenm doremi 'heart-magenta 5 (sebundle-shoot0 sounds)))
 		(parameterize ([ovr-uncancelable #t])
-		  (spawn-bullet 'glow-orb-orange (enm-x hazuki) (enm-y hazuki) 0
+		  (spawn-bullet 'glow-orb-orange (ex hazuki) (ey hazuki) 0
 						(λ (task blt)
 						  (spawn-subtask "subshoot"
 							(λ (task)
@@ -74,7 +74,7 @@
 							  (cancel-bullet blt #t))
 							task)
 						  (linear-step-forever hpi 2.5 task blt)))
-		  (spawn-bullet 'glow-orb-cyan (enm-x aiko) (enm-y aiko) 0
+		  (spawn-bullet 'glow-orb-cyan (ex aiko) (ey aiko) 0
 						(λ (task blt)
 						  (spawn-subtask "subshoot"
 							(λ (task)
@@ -124,7 +124,7 @@
 
   (spawn-subtask "hazuki move"
 	(λ (task)
-	  (ease-to ease-out-cubic left-x (enm-y hazuki) 60 hazuki)
+	  (ease-to ease-out-cubic left-x (ey hazuki) 60 hazuki)
 	  (wait 120)
 	  (let ([start-time frames])
 		(interval-loop 1
@@ -137,7 +137,7 @@
 	task keep-running)
   (spawn-subtask "aiko move"
 	(λ (task)
-	  (ease-to ease-out-cubic right-x (enm-y aiko) 60 aiko)
+	  (ease-to ease-out-cubic right-x (ey aiko) 60 aiko)
 	  (wait 120)
 	  (let ([start-time frames])
 		(interval-loop 1
@@ -162,7 +162,7 @@
 	  (interval-loop 20
 		(do [(i 0 (add1 i))]
 			[(= i 7)]
-		  (spawn-bullet 'glow-ball-cyan (enm-x hazuki) (enm-y hazuki) 5
+		  (spawn-bullet 'glow-ball-cyan (ex hazuki) (ey hazuki) 5
 						(curry linear-step-forever hpi
 							   (fl+ 2.5 (fl* (fx2fl i) 0.11))))
 		  (wait 6))))
@@ -181,7 +181,7 @@
 	  (interval-loop 20
 		(do [(i 0 (add1 i))]
 			[(= i 7)]
-		  (spawn-bullet 'glow-ball-blue (enm-x aiko) (enm-y aiko) 5
+		  (spawn-bullet 'glow-ball-blue (ex aiko) (ey aiko) 5
 						(curry linear-step-forever hpi
 							   (fl+ 2.5 (fl* (fx2fl i) 0.11))))
 		  (wait 6))))
@@ -213,12 +213,12 @@
   (adjust-bars-non (bossinfo-healthbars bossinfo))
   (spawn-subtask "hazuki leave"
 	(λ (_)
-	  (ease-to ease-out-cubic (flcopysign 100.0 (enm-x hazuki)) -100.0 60 hazuki)
+	  (ease-to ease-out-cubic (flcopysign 100.0 (ex hazuki)) -100.0 60 hazuki)
 	  (delete-enemy hazuki))
 	task)
   (spawn-subtask "aiko leave"
 	(λ (_)
-	  (ease-to ease-out-cubic (flcopysign 100.0 (enm-x aiko)) -100.0 60 aiko)
+	  (ease-to ease-out-cubic (flcopysign 100.0 (ex aiko)) -100.0 60 aiko)
 	  (delete-enemy aiko))
 	task)
   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 60 doremi)
@@ -236,9 +236,9 @@
 		    (-> (cb)
 				(cbcount 12)
 				(cbspeed (if (rage) 3.25 2.25))
-				(cbshoot (enm-x doremi) (enm-y doremi)
+				(cbshoot (ex doremi) (ey doremi)
 				  (λ (layer in-layer speed facing)
-					(define-values (x y) (dist-away (enm-x doremi) (enm-y doremi)
+					(define-values (x y) (dist-away (ex doremi) (ey doremi)
 													facing 40.0))
 					(raylib:play-sound (sebundle-bell sounds))
 					(letrec* ([orb (spawn-bullet
@@ -557,7 +557,7 @@
 		 (raylib:play-sound (sebundle-shoot0 sounds))
 		 (-> (spawn-bullet
 			  (vnth '#(glow-orb-orange glow-orb-orange glow-orb-red glow-orb-red) i)
-			  (enm-x hazuki) (enm-y hazuki) 5
+			  (ex hazuki) (ey hazuki) 5
 			  (curry hazuki-sp1-glow-orb-control
 					 (fx2fl (if (even? i) +playfield-min-x+ +playfield-max-x+))
 					 y))
@@ -626,13 +626,13 @@
 				  (cbspeed 3.8 4.75)
 				  (cbcount 36 4)
 				  (cbang 0.0 (if (roll-bool game-rng) 3.0 -3.0))
-				  (cbshoot (enm-x aiko) (enm-y aiko)
+				  (cbshoot (ex aiko) (ey aiko)
 					(λ (layer in-layer speed facing)
 					  (raylib:play-sound (sebundle-bell sounds))
 					  (spawn-bullet
 					   (vnth '#(music-yellow music-cyan music-blue music-magenta)
 							 layer)
-					   (enm-x aiko) (enm-y aiko) 5
+					   (ex aiko) (ey aiko) 5
 					   (curry linear-step-forever facing speed))))
 				  #;(cbshootenm aiko 'music-cyan 5 (sebundle-bell sounds)))))
 		(boss-standard-wander-once aiko 40 50 30)))
@@ -708,8 +708,8 @@
 		  (spawn-subtask "wiggle"
 			(λ (task)
 			  (dotimes 3
-				(let ([x (fl+ (enm-x aiko) (centered-roll game-rng 50.0))]
-					  [y (fl+ (enm-y aiko) (centered-roll game-rng 10.0))])
+				(let ([x (fl+ (ex aiko) (centered-roll game-rng 50.0))]
+					  [y (fl+ (ey aiko) (centered-roll game-rng 10.0))])
 				  (ease-to ease-in-out-quad x y 30 aiko)
 				  (wait 30))))
 			task)]
@@ -778,7 +778,7 @@
   (enm-superarmor-set! enm 105)
   (wait 25)
   (raylib:play-sound (sebundle-opshow sounds))
-  (ease-to ease-in-out-quad (enm-x enm) (fl+ 80.0 (enm-y enm)) 60 enm)
+  (ease-to ease-in-out-quad (ex enm) (fl+ 80.0 (ey enm)) 60 enm)
   (wait 20)
   (let loop ([st (subtask)])
 	(wait-until (thunk (task-dead st)))
@@ -819,7 +819,7 @@
 	  (thunk (not (unbox dead-signalbox)))))
   (enm-superarmor-set! enm 80)
   (raylib:play-sound (sebundle-opshow sounds))
-  (ease-to ease-in-out-quad (enm-x enm) (fl+ 80.0 (enm-y enm)) 60 enm)
+  (ease-to ease-in-out-quad (ex enm) (fl+ 80.0 (ey enm)) 60 enm)
   (wait 20)
   (let loop ([st (subtask)])
 	(wait-until (thunk (task-dead st)))
@@ -837,10 +837,10 @@
 	(define (stop-pred)
 	  (or (unbox dead-signalbox)
 		  (fx>= (fx- frames start-time) 150)))
-	(define start-ang-to (facing-player (enm-x enm) (enm-y enm)))
+	(define start-ang-to (facing-player (ex enm) (ey enm)))
 	(raylib:play-sound (sebundle-laser sounds))
 	(spawn-laser 'fixed-laser-blue
-				 (enm-x enm) (enm-y enm)
+				 (ex enm) (ey enm)
 				 start-ang-to
 				 (fx2fl +playfield-height+)
 				 5.0 20 delay
@@ -867,7 +867,7 @@
   (enm-superarmor-set! enm 90)
   (wait 10)
   (raylib:play-sound (sebundle-opshow sounds))
-  (ease-to ease-in-out-quad (enm-x enm) (fl+ 80.0 (enm-y enm)) 60 enm)
+  (ease-to ease-in-out-quad (ex enm) (fl+ 80.0 (ey enm)) 60 enm)
   (wait 20)
   (let loop ([st (subtask #t)])
 	(wait-until (thunk (task-dead st)))
@@ -916,7 +916,7 @@
   (let* ([dodo-dead-signalbox (box #f)]
 		 [dodo (-> (spawn-enemy
 					'dodo
-					(enm-x doremi) (enm-y doremi) non2-familiar-health
+					(ex doremi) (ey doremi) non2-familiar-health
 					(curry non2-dodo-control dodo-dead-signalbox)
 					default-drop
 					(curry non2-familiar-on-death dodo-dead-signalbox))
@@ -924,7 +924,7 @@
 		 [rere-dead-signalbox (box #f)]
 		 [rere (-> (spawn-enemy
 					'rere
-					(enm-x hazuki) (enm-y hazuki) non2-familiar-health
+					(ex hazuki) (ey hazuki) non2-familiar-health
 					(curry non2-rere-control rere-dead-signalbox)
 					default-drop
 					(curry non2-familiar-on-death rere-dead-signalbox))
@@ -932,7 +932,7 @@
 		 [mimi-dead-signalbox (box #f)]
 		 [mimi (-> (spawn-enemy
 					'mimi
-					(enm-x aiko) (enm-y aiko) non2-familiar-health
+					(ex aiko) (ey aiko) non2-familiar-health
 					(curry non2-mimi-control mimi-dead-signalbox)
 					default-drop
 					(curry non2-familiar-on-death mimi-dead-signalbox))
@@ -957,14 +957,14 @@
 		  (fbabsolute-aim)
 		  (fbang (fl+ (todeg this-ang) 180.0) 60.0)
 		  (fbspeed 3.25)
-		  (fbshoot (enm-x enm) (enm-y enm)
+		  (fbshoot (ex enm) (ey enm)
 			(λ (row col speed facing)
 			  (-> (spawn-bullet
 				   (vnth '#(arrowhead-white
 							arrowhead-red arrowhead-orange arrowhead-yellow
 							arrowhead-green arrowhead-cyan
 							arrowhead-blue arrowhead-magenta) j)
-				   (enm-x enm) (enm-y enm) 5
+				   (ex enm) (ey enm) 5
 				   (λ (task blt)
 					 (linear-step-decelerate facing speed -0.04 blt)
 					 (when (and is-dodo
@@ -1096,7 +1096,7 @@
 		(fbcount 12)
 		(fbspeed 2.0)
 		(fbabsolute-aim)
-		(fbang (todeg (facing-point (enm-x enm) (enm-y enm)
+		(fbang (todeg (facing-point (ex enm) (ey enm)
 									group-sp2-center-x group-sp2-center-y))
 			   3.0)
 		(fbshootenm
@@ -1178,7 +1178,7 @@
 		 [(boss-doremi) (enmtype dodo)]
 		 [(boss-hazuki) (enmtype rere)]
 		 [(boss-aiko) (enmtype mimi)])
-	   (enm-x enm) (enm-y enm) 1000 (curry group-sp2-fairy-ctrl init-ang))
+	   (ex enm) (ey enm) 1000 (curry group-sp2-fairy-ctrl init-ang))
 	  (enm-addflags
 	   (case (enm-type enm)
 		 [(boss-doremi) (enmflags nocollide aura-red)]
@@ -1200,7 +1200,7 @@
 	(let-values ([(q m) (div-and-mod i 5)])
 	  (when (fxzero? m)
 		(-> (spawn-bullet
-			 'rice-white (enm-x enm) (enm-y enm) 5
+			 'rice-white (ex enm) (ey enm) 5
 			 (λ (task blt)
 			   (linear-step-decelerate-to (fl+ ang pi) 2.0 -0.06 0.0 blt)
 			   (wait 75)
@@ -1256,15 +1256,15 @@
   (spawn-subtask "hazuki leave"
 	(λ (_)
 	  (ease-to ease-out-cubic
-			   (flcopysign 300.0 (enm-x hazuki))
-			   (fl- (enm-y hazuki) 50.0) 60 hazuki)
+			   (flcopysign 300.0 (ex hazuki))
+			   (fl- (ey hazuki) 50.0) 60 hazuki)
 	  (delete-enemy hazuki))
 	task)
   (spawn-subtask "aiko leave"
 	(λ (_)
 	  (ease-to ease-out-cubic
-			   (flcopysign 300.0 (enm-x aiko))
-			   (fl- (enm-y aiko) 50.0) 60 aiko)
+			   (flcopysign 300.0 (ex aiko))
+			   (fl- (ey aiko) 50.0) 60 aiko)
 	  (delete-enemy aiko))
 	task)
   (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 doremi)
@@ -1434,7 +1434,7 @@
 	(λ (task)
 	  (loop-forever
 	   (position-bullets-around
-		(enm-x enm) (enm-y enm)
+		(ex enm) (ey enm)
 		(fl* 100.0 (flsin (fl* 1.0 (torad (fx2fl (- frames start-frames))))))
 		(torad (fl/ (fx2fl (- frames start-frames)) 2.0))
 		ring1)))
@@ -1443,12 +1443,12 @@
 	(λ (task)
 	  (loop-forever
 	   (position-bullets-around
-		(enm-x enm) (enm-y enm)
+		(ex enm) (ey enm)
 		(fl* 60.0 (flsin (fl* 1.0 (torad (fx2fl (- frames start-frames))))))
 		(torad (fl/ (fx2fl (- start-frames frames)) 2.0))
 		ring2)))
 	task)
-  (ease-to values (enm-x enm) (fx2fl (+ +playfield-max-y+ 150)) 500 enm)
+  (ease-to values (ex enm) (fx2fl (+ +playfield-max-y+ 150)) 500 enm)
   (for-each delete-bullet ring1)
   (for-each delete-bullet ring2)
   (delete-enemy enm))
@@ -1481,7 +1481,7 @@
 	   (curry hazuki-non2-wisp-control ring1 ring2)
 	   '()
 	   (λ (enm)
-		 (set-box! wisp-dead-box (cons (enm-x enm) (enm-y enm)))
+		 (set-box! wisp-dead-box (cons (ex enm) (ey enm)))
 		 (damage-enemy hazuki 400 #t #t)
 		 #t))
 	  (enm-addflags (enmflags aura-red nocollide))))
@@ -1525,9 +1525,9 @@
 				(cbcount 56)
 				(cbabsolute-aim)
 				(cbspeed 3.0)
-				(cbshoot (enm-x hazuki) (enm-y hazuki)
+				(cbshoot (ex hazuki) (ey hazuki)
 				  (λ (layer in-layer speed facing)
-					(-> (spawn-bullet 'rice-white (enm-x hazuki) (enm-y hazuki) 5
+					(-> (spawn-bullet 'rice-white (ex hazuki) (ey hazuki) 5
 									  (curry linear-step-forever facing speed))
 						(bullet-addflags (bltflags nocanceldrop))))))))
 		task)
@@ -1540,11 +1540,11 @@
 				(cbang 90.0)
 				(cbabsolute-aim)
 				(cbspeed 3.0 4.0)
-				(cbshoot (enm-x hazuki) (enm-y hazuki)
+				(cbshoot (ex hazuki) (ey hazuki)
 				  (λ (layer in-layer speed facing)
 					(unless (or (fx<= 0 in-layer 5)
 								(fx<= 50 in-layer 55))
-					  (-> (spawn-bullet 'rice-yellow (enm-x hazuki) (enm-y hazuki) 5
+					  (-> (spawn-bullet 'rice-yellow (ex hazuki) (ey hazuki) 5
 										(curry linear-step-forever facing speed))
 						  (bullet-addflags (bltflags nocanceldrop)))))))))
 		task)
@@ -1575,7 +1575,7 @@
 				[facing2 (fl- init-ang (fx2fl (* i winding)))])
 			(spawn-bullet
 			 'butterfly-red
-			 (enm-x enm) (enm-y enm) 5
+			 (ex enm) (ey enm) 5
 			 (λ (task blt)
 			   (linear-step-decelerate facing1 4.0 -0.10 blt)
 			   (wait 5)
@@ -1586,7 +1586,7 @@
 				0.0 0.05 (if killed-by-hazuki 4.5 3.0) task blt)))
 			(spawn-bullet
 			 'butterfly-magenta
-			 (enm-x enm) (enm-y enm) 5
+			 (ex enm) (ey enm) 5
 			 (λ (task blt)
 			   (linear-step-decelerate facing2 2.0 -0.05 blt)
 			   (wait 5)
@@ -1604,11 +1604,11 @@
 		(cbang (fl* 360.0 (roll game-rng)))
 		(cbcount 24 (if killed-by-hazuki 3 2))
 		(cbspeed 1.8 3.5)
-		(cbshoot (enm-x enm) (enm-y enm)
+		(cbshoot (ex enm) (ey enm)
 		  (λ (layer in-layer speed facing)
 			(-> (spawn-bullet
 				 (vnth '#(butterfly-orange butterfly-magenta butterfly-red) layer)
-				 (enm-x enm) (enm-y enm) 5
+				 (ex enm) (ey enm) 5
 				 (λ (task blt)
 				   (let loop ([facing facing]
 							  [i 0])
@@ -1637,7 +1637,7 @@
 			(fbang (todeg facing) (if (zero? i) 0.0 (fx2fl (* i 4))))
 			(fbspeed speed)
 			(fbshootenm enm type (* i 4) #f))))
-	(define base-facing (facing-player (enm-x enm) (enm-y enm)))
+	(define base-facing (facing-player (ex enm) (ey enm)))
 	(do-chevron 'butterfly-red base-facing)
 	(do-chevron 'butterfly-blue (fl+ base-facing (torad 40.0)))
 	(do-chevron 'butterfly-orange (fl+ base-facing (torad -40.0))))
@@ -1668,7 +1668,7 @@
 			(loop 
 			 (cons
 			  (cons (-> (spawn-enemy
-						 (enmtype red-wisp) (enm-x hazuki) (enm-y hazuki) 350
+						 (enmtype red-wisp) (ex hazuki) (ey hazuki) 350
 						 (λ (task enm)
 						   (enm-superarmor-set! enm 40)
 						   (ease-to ease-in-out-quad x y 45 enm)
@@ -1698,7 +1698,7 @@
 		   (when (fxpositive? (enm-health e))
 			 (raylib:play-sound (sebundle-longcharge sounds))
 			 (spawn-particle (particletype circle-hint-opaque)
-							 (enm-x e) (enm-y e) 30
+							 (ex e) (ey e) 30
 							 '((color . #x8b008ba0)
 							   (r1 . 100.0)
 							   (r2 . 20.0)))))
@@ -1709,12 +1709,12 @@
 		   (define e (car pair))
 		   (define killed-by-hazuki-box (cdr pair))
 		   (define facing
-			 (facing-point (enm-x hazuki) (enm-y hazuki)
-						   (enm-x e) (enm-y e)))
+			 (facing-point (ex hazuki) (ey hazuki)
+						   (ex e) (ey e)))
 		   (when (fxpositive? (enm-health e))
 			 (wait 20)
 			 (spawn-bullet
-				  'glow-orb-red (enm-x hazuki) (enm-y hazuki) 5
+				  'glow-orb-red (ex hazuki) (ey hazuki) 5
 				  (λ (task blt)
 					(define start-time frames)
 					(spawn-subtask "trail"
@@ -1806,8 +1806,8 @@
   (define dang (torad 160.0))
   (do [(i 0 (fx1+ i))]
 	  [(fx= i 300)]
-	(let-values ([(x) (enm-x aiko)]
-				 [(y) (enm-y aiko)]
+	(let-values ([(x) (ex aiko)]
+				 [(y) (ey aiko)]
 				 [(facing)
 				  (if is-right
 					  (fl+ start-ang (inexact (lerp 0 dang (ease-out-quad (/ i 300)))))
@@ -1875,7 +1875,7 @@
 	(for-each
 	 (λ (is-right)
 	   (spawn-laser 'fixed-laser-blue
-					(enm-x aiko) (enm-y aiko)
+					(ex aiko) (ey aiko)
 					-hpi
 					(fx2fl +playfield-height+)
 					5.0
@@ -1886,7 +1886,7 @@
 	(λ (task)
 	  (interval-loop 23
 		(when (or (fx<= (bossinfo-remaining-timer bossinfo) 900)
-				  (fl<= player-y (fl+ (enm-y aiko) 100.0)))
+				  (fl<= player-y (fl+ (ey aiko) 100.0)))
 		  (-> (cb)
 			  (cbcount 48)
 			  (cbspeed 4.0)
@@ -2010,8 +2010,8 @@
 	   (yield)
 	   (loop state facing speed 0)]
 	  [(attach)
-	   (bullet-x-set! blt (enm-x aiko))
-	   (bullet-y-set! blt (enm-y aiko))
+	   (bullet-x-set! blt (ex aiko))
+	   (bullet-y-set! blt (ey aiko))
 	   (yield)
 	   (loop state facing speed 0)]
 	  [(move)
@@ -2051,8 +2051,8 @@
 
 		 ;; collide with aiko
 		 (when (fx> frames-moving 10) ;; prevent damaging on kick
-		   (let ([dx (fl- (bx blt) (enm-x aiko))]
-				 [dy (fl- (by blt) (enm-y aiko))]
+		   (let ([dx (fl- (bx blt) (ex aiko))]
+				 [dy (fl- (by blt) (ey aiko))]
 				 [maxdist (fl+ (bullet-hit-radius (bullet-type blt))
 							   30.0)])
 			 (when (fl<= (fl+ (fl* dx dx) (fl* dy dy))
@@ -2063,7 +2063,7 @@
 							(fxnonpositive? (enm-health aiko)))
 				   (set-box! ball-killing-blow-box #t)))
 			   (loop state
-					 (facing-point (enm-x aiko) (enm-y aiko)
+					 (facing-point (ex aiko) (ey aiko)
 								   (bx blt) (by blt))
 					 (fl* speed 1.01)
 					 (fx1+ frames-moving)))))
