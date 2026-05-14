@@ -20,6 +20,8 @@
    (mutable livetime)
    initial-livetime
    (mutable flags)))
+(alias bx bullet-x)
+(alias by bullet-y)
 
 (define-record-type laser
   (parent bullet)
@@ -211,7 +213,7 @@
 		  (or force (bullet-active? bullet))
 		  (spawn-particle
 		   (particletype cancel)
-		   (bullet-x bullet) (bullet-y bullet)
+		   (bx bullet) (by bullet)
 		   23 #f)
 		  (delete-bullet bullet)))))
 
@@ -223,7 +225,7 @@
 				(not (bullet-hasflag? bullet (bltflag nocanceldrop))))
 	   (spawn-drops-with-autocollect
 		(list (cons drop 1))
-		(bullet-x bullet) (bullet-y bullet))))))
+		(bx bullet) (by bullet))))))
 
 (define (cancel-all force)
   (vector-for-each
@@ -233,8 +235,8 @@
 
 (define (despawn-out-of-bound-bullet bullet)
   (when bullet
-	(let ([x (bullet-x bullet)]
-		  [y (bullet-y bullet)])
+	(let ([x (bx bullet)]
+		  [y (by bullet)])
 	  (when (and
 			 (not (bullet-hasflag? bullet (bltflag noprune)))
 			 (or (> x (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+))
@@ -254,8 +256,8 @@
 (define (draw-lasers textures sorted-bullets)
   (define (each bullet)
 	(when bullet
-	  (let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
-			 [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
+	  (let* ([render-x (+ (bx bullet) +playfield-render-offset-x+)]
+			 [render-y (+ (by bullet) +playfield-render-offset-y+)]
 			 [type (bullet-type bullet)]
 			 [bt (symbol-hashtable-ref bullet-types type #f)]
 			 [livetime (bullet-livetime bullet)])
@@ -284,8 +286,8 @@
 (define (draw-bullets textures sorted-bullets)
   (define (each bullet)
 	(when bullet
-	  (let* ([render-x (+ (bullet-x bullet) +playfield-render-offset-x+)]
-			 [render-y (+ (bullet-y bullet) +playfield-render-offset-y+)]
+	  (let* ([render-x (+ (bx bullet) +playfield-render-offset-x+)]
+			 [render-y (+ (by bullet) +playfield-render-offset-y+)]
 			 [type (bullet-type bullet)]
 			 [bt (symbol-hashtable-ref bullet-types type #f)]
 			 [livetime (bullet-livetime bullet)])

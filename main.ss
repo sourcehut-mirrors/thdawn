@@ -2297,7 +2297,7 @@
 (define (check-player-collision bullet player-radius)
   (define is-laser (eq? 'fixed-laser (bullet-family (bullet-type bullet))))
   (if is-laser
-	  (check-laser-collision (bullet-x bullet) (bullet-y bullet)
+	  (check-laser-collision (bx bullet) (by bullet)
 							 (bullet-facing bullet)
 							 (laser-radius bullet)
 							 (laser-length bullet)
@@ -2306,7 +2306,7 @@
 		(when (positive? radius)
 		  (check-collision-circles
 		   player-x player-y player-radius
-		   (bullet-x bullet) (bullet-y bullet)
+		   (bx bullet) (by bullet)
 		   radius)))))
 
 (define (process-collisions)
@@ -2331,7 +2331,7 @@
 					   ;; 80% of the time, particle flies towards bullet
 					   ;; 20% of the time, away from it
 					   (torad (fl+ (centered-roll visual-rng 90.0)
-								   (if (fl< (bullet-x bullet) player-x)
+								   (if (fl< (bx bullet) player-x)
 									   180.0 0.0)
 								   (if (fl< (roll visual-rng) 0.2)
 									   180.0 0.0))))
@@ -2361,8 +2361,8 @@
   (loop-forever (linear-step facing speed blt)))
 
 (define (linear-step facing speed blt)
-  (bullet-x-set! blt (fl+ (bullet-x blt) (fl* speed (flcos facing))))
-  (bullet-y-set! blt (fl+ (bullet-y blt) (fl* speed (flsin facing)))))
+  (bullet-x-set! blt (fl+ (bx blt) (fl* speed (flcos facing))))
+  (bullet-y-set! blt (fl+ (by blt) (fl* speed (flsin facing)))))
 
 (define (linear-step-enm-forever facing speed enm)
   (loop-forever (linear-step-enm facing speed enm)))
@@ -2372,8 +2372,8 @@
   (enm-y-set! enm (fl+ (enm-y enm) (fl* speed (flsin facing)))))
 
 (define (linear-step-separate vx vy blt)
-  (define ox (bullet-x blt))
-  (define oy (bullet-y blt))
+  (define ox (bx blt))
+  (define oy (by blt))
   (define nx (fl+ ox vx))
   (define ny (fl+ oy vy))
   (bullet-x-set! blt nx)
@@ -2399,9 +2399,9 @@
 (define (linear-step-decelerate-to facing speed accel min-speed blt)
   (bullet-facing-set! blt facing)
   (let loop ([v speed])
-	(bullet-x-set! blt (fl+ (bullet-x blt)
+	(bullet-x-set! blt (fl+ (bx blt)
 							(fl* v (flcos facing))))
-	(bullet-y-set! blt (fl+ (bullet-y blt)
+	(bullet-y-set! blt (fl+ (by blt)
 							(fl* v (flsin facing))))
 	(yield)
 	(let ([next-v (fl+ v accel)])
@@ -2412,9 +2412,9 @@
 (define (linear-step-accelerate facing speed accel max-speed blt)
   (bullet-facing-set! blt facing)
   (let loop ([v speed])
-	(bullet-x-set! blt (fl+ (bullet-x blt)
+	(bullet-x-set! blt (fl+ (bx blt)
 							(fl* v (flcos facing))))
-	(bullet-y-set! blt (fl+ (bullet-y blt)
+	(bullet-y-set! blt (fl+ (by blt)
 							(fl* v (flsin facing))))
 	(yield)
 	(let ([next-v (fl+ v accel)])
@@ -2427,12 +2427,12 @@
 
 (define (linear-step-with-bounce facing speed task blt)
   (let loop ()
-	(let ([ox (bullet-x blt)]
-		  [oy (bullet-y blt)])
+	(let ([ox (bx blt)]
+		  [oy (by blt)])
 	  (linear-step facing speed blt)
 	  (yield)
-	  (let ([nx (bullet-x blt)]
-			[ny (bullet-y blt)])
+	  (let ([nx (bx blt)]
+			[ny (by blt)])
 		(cond
 		 [(> ny +playfield-max-y+)
 		  (linear-step-forever facing speed task blt)]
@@ -2900,7 +2900,7 @@
 				easer x y duration enm))
 
 (define (ease-bullet-to easer x y duration blt)
-  (ease-to-impl bullet-x bullet-y bullet-x-set! bullet-y-set!
+  (ease-to-impl bx by bullet-x-set! bullet-y-set!
 				easer x y duration blt))
 
 ;; points must be a whole spline (see truncate-to-whole-spline)
@@ -3154,8 +3154,8 @@
 	(vector-for-each
 	 (λ (blt)
 	   (when (and blt (bullet-active? blt))
-		 (let ([x (bullet-x blt)]
-			   [y (bullet-y blt)]
+		 (let ([x (bx blt)]
+			   [y (by blt)]
 			   [hit-radius (bullet-hit-radius (bullet-type blt))])
 		   (when (or (check-collision-circle-rec x y hit-radius
 												 xlx xly xlw xlh)

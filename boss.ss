@@ -69,7 +69,7 @@
 								  (fbang 0.0 18.0)
 								  (fbspeed 3.5 4.5)
 								  (fbshootez 'music-yellow
-											 (bullet-x blt) (bullet-y blt)
+											 (bx blt) (by blt)
 											 2 (sebundle-bell sounds)))
 							  (cancel-bullet blt #t))
 							task)
@@ -86,7 +86,7 @@
 								  (fbcount 5 5)
 								  (fbang 0.0 18.0)
 								  (fbspeed 3.5 4.5)
-								  (fbshootez 'music-cyan (bullet-x blt) (bullet-y blt)
+								  (fbshootez 'music-cyan (bx blt) (by blt)
 											  2 (sebundle-bell sounds)))
 							  (cancel-bullet blt #t))
 							task)
@@ -248,7 +248,7 @@
 									  (loop-forever
 									   (linear-step realfacing speed blt)
 									   (position-bullets-around
-										(bullet-x blt) (bullet-y blt)
+										(bx blt) (by blt)
 										20.0 0.0 ring))))]
 							  [orb-index (vector-index orb live-bullets)]
 							  [ring
@@ -278,10 +278,10 @@
 						  (define left-bound (- +playfield-min-x+ 10))
 						  (define right-bound (+ +playfield-max-x+ 10))
 						  (loop-until
-							  (or (< (bullet-x blt) left-bound)
-								  (> (bullet-x blt) right-bound))
+							  (or (< (bx blt) left-bound)
+								  (> (bx blt) right-bound))
 							(linear-step facing speed blt))
-						  (if (< (bullet-x blt) left-bound)
+						  (if (< (bx blt) left-bound)
 							  (bullet-x-set! blt (fx2fl right-bound))
 							  (bullet-x-set! blt (fx2fl left-bound)))
 						  (linear-step-forever facing speed task blt))))
@@ -440,16 +440,16 @@
   (define prebreak-delay (roll game-rng 20))
   (define postbreak-delay (roll game-rng 20))
   (define (ctrl task blt)
-	(define initial-dx (fl- x (bullet-x blt)))
-	(define initial-dy (fl- y (bullet-y blt)))
+	(define initial-dx (fl- x (bx blt)))
+	(define initial-dy (fl- y (by blt)))
 	(linear-step-decelerate facing speed -0.02 blt)
 	(wait-until (thunk (unbox break-box)))
 	(wait prebreak-delay)
 	(if (eq? 'pellet (bullet-family (bullet-type blt)))
 		(cancel-bullet blt)
-		(let* ([cur-cx (fl+ (bullet-x blt) initial-dx)]
-			   [cur-cy (fl+ (bullet-y blt) initial-dy)]
-			   [facing (facing-point cur-cx cur-cy (bullet-x blt) (bullet-y blt))])
+		(let* ([cur-cx (fl+ (bx blt) initial-dx)]
+			   [cur-cy (fl+ (by blt) initial-dy)]
+			   [facing (facing-point cur-cx cur-cy (bx blt) (by blt))])
 		  (linear-step-decelerate facing 2.0 -0.1 blt)
 		  (wait (+ 60 postbreak-delay))
 		  (linear-step-accelerate-forever
@@ -504,7 +504,7 @@
 					   (spawn-subtask "sync ring"
 						 (λ (_)
 						   (loop-forever
-							(position-bullets-around (bullet-x blt) (bullet-y blt)
+							(position-bullets-around (bx blt) (by blt)
 													 12.0 ring-ang ring)))
 						 task)
 					   (linear-step-decelerate (fl* tau (roll game-rng)) 1.0 -0.02 blt)
@@ -532,9 +532,9 @@
 	  (interval-loop 4
 		(raylib:play-sound (sebundle-shoot0 sounds))
 		(hazuki-sp1-flower2
-		 (fl+ (bullet-x blt) (centered-roll game-rng 30.0))
-		 (fl+ (bullet-y blt) (centered-roll game-rng 15.0)))))
-	task (thunk (in-bounds (bullet-x blt) (bullet-y blt))))
+		 (fl+ (bx blt) (centered-roll game-rng 30.0))
+		 (fl+ (by blt) (centered-roll game-rng 15.0)))))
+	task (thunk (in-bounds (bx blt) (by blt))))
   (if (flnegative? dest-x)
 	  (linear-step-accelerate-forever 0.0 0.0 0.1 6.0 task blt)
 	  (linear-step-accelerate-forever pi 0.0 0.1 6.0 task blt)))
@@ -813,7 +813,7 @@
 				 (linear-step-decelerate facing speed -0.05 blt)
 				 (wait 30)
 				 (linear-step-accelerate-forever
-				  (facing-player (bullet-x blt) (bullet-y blt))
+				  (facing-player (bx blt) (by blt))
 				  0.0 0.08 3.0 task blt))))))
 	  task
 	  (thunk (not (unbox dead-signalbox)))))
@@ -845,7 +845,7 @@
 				 (fx2fl +playfield-height+)
 				 5.0 20 delay
 				 (λ (task blt)
-				   (define ang-to (facing-player (bullet-x blt) (bullet-y blt)))
+				   (define ang-to (facing-player (bx blt) (by blt)))
 				   (let ([turn-dir
 						  (if (fl< ang-to start-ang-to) -1.0 1.0)])
 					 (interval-loop-while 15 (not (stop-pred))
@@ -977,10 +977,10 @@
 								 (bullet-addflags (bltflags uncancelable)))))
 					 (wait 10)
 					 (let ([nf (facing-point
-								(bullet-x blt) (bullet-y blt)
+								(bx blt) (by blt)
 								group-sp2-center-x group-sp2-center-y)])
 					   (bullet-facing-set! blt nf)
-					   (loop-until (fl< (distsq (bullet-x blt) (bullet-y blt)
+					   (loop-until (fl< (distsq (bx blt) (by blt)
 												group-sp2-center-x group-sp2-center-y)
 										100.0)
 						 (linear-step nf speed blt)))
@@ -1047,7 +1047,7 @@
 							  (λ (task blt)
 								(loop-forever
 								 (linear-step (fl+ ang pi) 2.25 blt)
-								 (when (fl< (distsq (bullet-x blt) (bullet-y blt)
+								 (when (fl< (distsq (bx blt) (by blt)
 													group-sp2-center-x
 													group-sp2-center-y)
 											25.0)
@@ -1111,7 +1111,7 @@
 		   (define hit-zone #f)
 		   (let loop ()
 			 (linear-step facing speed blt)
-			 (when (fl< (distsq (bullet-x blt) (bullet-y blt)
+			 (when (fl< (distsq (bx blt) (by blt)
 								player-x player-y)
 						(fl* zone-radius zone-radius))
 			   (raylib:play-sound (sebundle-bell sounds))
@@ -1121,11 +1121,11 @@
 			   (loop)))
 		   (if hit-zone
 			   (linear-step-forever
-				(fl+ pi (facing-player (bullet-x blt) (bullet-y blt)))
+				(fl+ pi (facing-player (bx blt) (by blt)))
 				speed task blt)
 			   (begin
 				 (bullet-facing-set!
-				  blt (facing-player (bullet-x blt) (bullet-y blt)))
+				  blt (facing-player (bx blt) (by blt)))
 				 (wait 30)
 				 (linear-step-accelerate-forever
 				  (bullet-facing blt)
@@ -1214,7 +1214,7 @@
 					 (fbshootez
 					  (vnth-mod '#(rice-red rice-orange rice-yellow
 											rice-green rice-blue rice-magenta) q)
-					  (bullet-x blt) (bullet-y blt)
+					  (bx blt) (by blt)
 					  0 #f)))))
 			(bullet-addflags (bltflags nocanceldrop))
 			(bullet-facing-set! (fl+ ang pi)))))
@@ -1326,13 +1326,13 @@
 			   (yield))
 			 (raylib:play-sound (sebundle-bell sounds))
 			 (let loop ([v speed])
-			   (bullet-x-set! blt (fl+ (bullet-x blt)
+			   (bullet-x-set! blt (fl+ (bx blt)
 									   (fl* v (flcos (fl+ facing pi)))))
-			   (bullet-y-set! blt (fl+ (bullet-y blt)
+			   (bullet-y-set! blt (fl+ (by blt)
 									   (fl* v (flsin (fl+ facing pi)))))
 			   (yield)
 			   (let ([next-v (fl+ v accel)])
-				 (if (fl< (distsq (bullet-x blt) (bullet-y blt)
+				 (if (fl< (distsq (bx blt) (by blt)
 								  (miscent-x steak) (miscent-y steak))
 						  900.0)
 					 (linear-step-forever (fl+ facing pi (torad 15.0)) next-v
@@ -1374,8 +1374,8 @@
 			 (wait (* order 8))
 			 (raylib:play-sound (sebundle-bell sounds))
 			 (let ([facing (if (fl< (distsq player-x player-y cx cy) 10000.0)
-							   (facing-point (bullet-x blt) (bullet-y blt) cx cy)
-							   (facing-player (bullet-x blt) (bullet-y blt)))])
+							   (facing-point (bx blt) (by blt) cx cy)
+							   (facing-player (bx blt) (by blt)))])
 			   (linear-step-accelerate-forever
 				facing
 				0.0 0.025 4.5 task blt))))))))
@@ -1460,7 +1460,7 @@
 	(wait-until (thunk (unbox wisp-dead-box)))
 	(let ([ex (car (unbox wisp-dead-box))]
 		  [ey (cdr (unbox wisp-dead-box))])
-	  (if (fl< (distsq (bullet-x blt) (bullet-y blt) ex ey)
+	  (if (fl< (distsq (bx blt) (by blt) ex ey)
 			   (fl* 30.0 30.0))
 		  (cancel-bullet-with-drop blt (miscenttype big-piv) #t)
 		  (cancel-bullet blt #t))))
@@ -1581,7 +1581,7 @@
 			   (wait 5)
 			   (raylib:play-sound (sebundle-bell sounds))
 			   (linear-step-accelerate-forever
-				(facing-point (bullet-x blt) (bullet-y blt)
+				(facing-point (bx blt) (by blt)
 							  (fuzzed-player-x) (fuzzed-player-y))
 				0.0 0.05 (if killed-by-hazuki 4.5 3.0) task blt)))
 			(spawn-bullet
@@ -1592,7 +1592,7 @@
 			   (wait 5)
 			   (raylib:play-sound (sebundle-bell sounds))
 			   (linear-step-accelerate-forever
-				(facing-point (bullet-x blt) (bullet-y blt)
+				(facing-point (bx blt) (by blt)
 							  (fuzzed-player-x) (fuzzed-player-y))
 				0.0 0.05 (if killed-by-hazuki 4.0 2.5) task blt)))
 			(yield))))
@@ -1721,7 +1721,7 @@
 					  (λ (task)
 						(loop-forever
 						 (spawn-bullet
-						  'small-ball-magenta (bullet-x blt) (bullet-y blt) 8
+						  'small-ball-magenta (bx blt) (by blt) 8
 						  (λ (task blt)
 							(define facing
 							  (torad (fx2fl
@@ -1736,7 +1736,7 @@
 						(when (and
 							   (fxpositive? (enm-health e))
 							   (check-collision-circle-rec
-								(bullet-x blt) (bullet-y blt)
+								(bx blt) (by blt)
 								(bullet-hit-radius (bullet-type blt))
 								x y w h))
 						  (spawn-subtask "pellets"
@@ -2017,12 +2017,12 @@
 	  [(move)
 	   (when (flnegative? speed)
 		 (loop 'stop 0.0 0.0 0))
-	   (let ([ox (bullet-x blt)]
-			 [oy (bullet-y blt)])
+	   (let ([ox (bx blt)]
+			 [oy (by blt)])
 		 (linear-step facing speed blt)
 		 (yield)
 
-		 (when (> (bullet-y blt) (+ +playfield-max-y+ 10))
+		 (when (> (by blt) (+ +playfield-max-y+ 10))
 		   (damage-player)
 		   (cancel-bullet blt #t)
 		   ;; hacky imperative return to stop doing further processing
@@ -2030,8 +2030,8 @@
 		   (yield))
 
 		 ;; collide with player
-		 (let ([dx (fl- (bullet-x blt) player-x)]
-			   [dy (fl- (bullet-y blt) player-y)]
+		 (let ([dx (fl- (bx blt) player-x)]
+			   [dy (fl- (by blt) player-y)]
 			   [maxdist (fl+ (bullet-hit-radius (bullet-type blt))
 							 +graze-radius+)])
 		   ;; NB: standard intersection test, not the orthogonal one we use for
@@ -2043,7 +2043,7 @@
 				   (if (and (flzero? (v2x last-player-movement-dir))
 							(flzero? (v2y last-player-movement-dir)))
 					   (facing-point player-x player-y
-									 (bullet-x blt) (bullet-y blt))
+									 (bx blt) (by blt))
 					   (flatan (v2y last-player-movement-dir)
 							   (v2x last-player-movement-dir)))
 				   (fl* speed 1.01)
@@ -2051,8 +2051,8 @@
 
 		 ;; collide with aiko
 		 (when (fx> frames-moving 10) ;; prevent damaging on kick
-		   (let ([dx (fl- (bullet-x blt) (enm-x aiko))]
-				 [dy (fl- (bullet-y blt) (enm-y aiko))]
+		   (let ([dx (fl- (bx blt) (enm-x aiko))]
+				 [dy (fl- (by blt) (enm-y aiko))]
 				 [maxdist (fl+ (bullet-hit-radius (bullet-type blt))
 							   30.0)])
 			 (when (fl<= (fl+ (fl* dx dx) (fl* dy dy))
@@ -2064,13 +2064,13 @@
 				   (set-box! ball-killing-blow-box #t)))
 			   (loop state
 					 (facing-point (enm-x aiko) (enm-y aiko)
-								   (bullet-x blt) (bullet-y blt))
+								   (bx blt) (by blt))
 					 (fl* speed 1.01)
 					 (fx1+ frames-moving)))))
 
 		 ;; bounce off walls
 		 (let*-values ([(new-pos new-facing)
-						(do-bounce-off (vec2 (bullet-x blt) (bullet-y blt))
+						(do-bounce-off (vec2 (bx blt) (by blt))
 									   (bullet-hit-radius (bullet-type blt))
 									   facing aiko-sp2-rects)]
 					   [(nx) (v2x new-pos)]
@@ -2230,7 +2230,7 @@
 					 [else (if (roll-bool game-rng) -38.0 38.0)]))]
 			   [target-y (if try-bounce-shot 330.0 (fx2fl +playfield-max-y+))]
 			   [ball-facing
-				(facing-point (bullet-x cur-ball) (bullet-y cur-ball)
+				(facing-point (bx cur-ball) (by cur-ball)
 							  target-x target-y)])
 		  (set-box! msg-box (list 'move ball-facing 9.0)))
 		(wait-until (thunk (or (fx> (fx- frames start-frames) 480)
@@ -2240,7 +2240,7 @@
 			  (set-box! msg-box '(stop))
 			  (enm-addflags aiko (enmflags nocollide))
 			  (ease-to ease-in-out-quad
-					   (bullet-x cur-ball) (bullet-y cur-ball) 60 aiko)
+					   (bx cur-ball) (by cur-ball) 60 aiko)
 			  (set-box! msg-box '(attach))
 			  (ease-to ease-in-out-quad 0.0 190.0 60 aiko)
 			  (set-box! msg-box '(stop))

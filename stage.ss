@@ -154,7 +154,7 @@
 		[(fx= i 35)]
 	  (let ([facing (torad (fx2fl (* (/ 360 20) i)))]
 			[cfun (λ (task blt)
-					(linear-step-forever (facing-player (bullet-x blt) (bullet-y blt))
+					(linear-step-forever (facing-player (bx blt) (by blt))
 										 7.0 task blt))])
 		(-> (spawn-bullet 'ellipse-magenta
 						  (fl+ (enm-x enm) (fl* 40.0 (flcos facing)))
@@ -480,13 +480,13 @@
 			 [bullets bullets])
 	(unless (null? bullets)
 	  (let* ([bullet (car bullets)]
-			 [ox (bullet-x bullet)]
-			 [oy (bullet-y bullet)])
+			 [ox (bx bullet)]
+			 [oy (by bullet)])
 		(bullet-x-set! bullet (fl+ cx (fl* dist (flcos ang))))
 		(bullet-y-set! bullet (fl+ cy (fl* dist (flsin ang))))
 		(bullet-facing-set!
 		 bullet
-		 (facing-point ox oy (bullet-x bullet) (bullet-y bullet))))
+		 (facing-point ox oy (bx bullet) (by bullet))))
 	  (loop (fl+ ang dang)
 			(cdr bullets)))))
 
@@ -511,9 +511,9 @@
 				  (loop-forever
 				   (linear-step facing speed blt)
 				   (when with-ring
-					 (position-bullets-around (bullet-x blt) (bullet-y blt)
+					 (position-bullets-around (bx blt) (by blt)
 											  33.0 0.0 ring))
-				   (position-bullets-around (bullet-x blt) (bullet-y blt)
+				   (position-bullets-around (bx blt) (by blt)
 											12.0 (torad (mod (* 2 (+ start-frames
 																	 frames))
 															 360.0))
@@ -544,9 +544,9 @@
 	  ;; set initial position so preimg shows up properly
 	  ;; TODO: DRY this with the control function?
 	  (when with-ring
-		(position-bullets-around (bullet-x center-blt) (bullet-y center-blt)
+		(position-bullets-around (bx center-blt) (by center-blt)
 								 33.0 0.0 ring))
-	  (position-bullets-around (bullet-x center-blt) (bullet-y center-blt)
+	  (position-bullets-around (bx center-blt) (by center-blt)
 							   12.0 (torad (mod (* 2 (+ start-frames
 														frames))
 												360.0))
@@ -985,8 +985,8 @@
 						[(fx= i 241)]
 					  (linear-step facing 5.0 blt)
 					  (let ([r (flmin (fl* (fx2fl i) 1.5) 30.0)])
-						(position-bullets-around (bullet-x center-blt)
-												 (bullet-y center-blt)
+						(position-bullets-around (bx center-blt)
+												 (by center-blt)
 												 r 0.0 ring-blts))
 					  (yield))
 					(delete-bullet blt)))]
