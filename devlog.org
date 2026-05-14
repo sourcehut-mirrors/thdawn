@@ -1,3 +1,14 @@
+* [2026-05-13 Wed]
+Finished group sp1, pretty neat little pattern. Might add a rage phase.
+
+Took some time to move the enm and bullet infra to separate files finally (not separate
+libs though to keep reloadability). And also finally introduced less verbose aliases for
+the x/y accessors on both.
+
+Didn't reformat the code but it'll make things a lot more compact.
+
+Hazuki sp1 is coming along nicely, I'll probably be able to finish it next work session.
+
 * [2026-05-08 Fri]
 Haven't updated the dev log in a while.
 
