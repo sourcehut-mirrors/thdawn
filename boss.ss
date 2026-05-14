@@ -477,10 +477,67 @@
   (wait 240)
   (raylib:play-sound (sebundle-longcharge sounds))
   (ease-to ease-in-out-quad (v2x (vnth points 0)) (v2y (vnth points 0)) 60 hazuki)
-  (move-on-spline points (λ (_seg) (values values 180)) hazuki)
-  ;; todo shooting
+  (spawn-subtask "move"
+	(λ (task)
+	  (move-on-spline points (λ (_seg) (values values 180)) hazuki))
+	task)
+  (do [(i 0 (add1 i))]
+	  [(= i 6)]
+	(-> (fb)
+		(fbcount 1 5)
+		(fbspeed 1.0 5.0)
+		(fbabsolute-aim)
+		(fbang (vnth '#(100.0 90.0 80.0 70.0 60.0 50.0) i))
+		(fbshootenm hazuki 'bubble-orange 5 (sebundle-shoot0 sounds)))
+	(wait 30))
   (set-box! break-box #t)
   (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 hazuki))
+
+(define (hazuki-sp1-flower2 x y)
+  (define petal-type (vrand '#(small-ball-red
+							   small-ball-orange small-ball-blue small-ball-magenta)
+							game-rng))
+  (define ring-ang (fl* tau (roll game-rng)))
+  (letrec* ([center (spawn-bullet
+					 'pellet-white x y 5
+					 (λ (task blt)
+					   (spawn-subtask "sync ring"
+						 (λ (_)
+						   (loop-forever
+							(position-bullets-around (bullet-x blt) (bullet-y blt)
+													 12.0 ring-ang ring)))
+						 task)
+					   (linear-step-decelerate (fl* tau (roll game-rng)) 1.0 -0.02 blt)
+					   ;; (wait 120)
+					   ;; (linear-step-accelerate-forever (fl* tau (roll game-rng))
+					   ;; 								   0.0 0.02 3.0 task blt)
+					   ))]
+			[center-idx (vector-index center live-bullets)]
+			[ring (map
+				   (λ (_)
+					 (spawn-bullet
+					  petal-type x y 5
+					  (λ (task blt)
+						(wait-until
+						 (thunk (not (eq? center (vnth live-bullets center-idx)))))
+						(delete-bullet blt))))
+				   (iota 5))])
+	(position-bullets-around x y 12.0 ring-ang ring)))
+
+(define (hazuki-sp1-glow-orb-control dest-x dest-y task blt)
+  (ease-bullet-to ease-in-out-quad dest-x dest-y 90 blt)
+  (wait 20)
+  (spawn-subtask "spawn flowers"
+	(λ (task)
+	  (interval-loop 4
+		(raylib:play-sound (sebundle-shoot0 sounds))
+		(hazuki-sp1-flower2
+		 (fl+ (bullet-x blt) (centered-roll game-rng 30.0))
+		 (fl+ (bullet-y blt) (centered-roll game-rng 15.0)))))
+	task (thunk (in-bounds (bullet-x blt) (bullet-y blt))))
+  (if (flnegative? dest-x)
+	  (linear-step-accelerate-forever 0.0 0.0 0.1 6.0 task blt)
+	  (linear-step-accelerate-forever pi 0.0 0.1 6.0 task blt)))
 
 (define (hazuki-sp1 task hazuki)
   (define bossinfo (enm-extras hazuki))
@@ -492,8 +549,22 @@
 
   (spawn-subtask "main"
 	(λ (task)
-	  (interval-loop 180
-		(hazuki-sp1-wave task hazuki)))
+	  (wait 60)
+	  (raylib:play-sound (sebundle-shortcharge sounds))
+	  (wait 60)
+	  (for-each-indexed
+	   (λ (i y)
+		 (raylib:play-sound (sebundle-shoot0 sounds))
+		 (-> (spawn-bullet
+			  (vnth '#(glow-orb-orange glow-orb-orange glow-orb-red glow-orb-red) i)
+			  (enm-x hazuki) (enm-y hazuki) 5
+			  (curry hazuki-sp1-glow-orb-control
+					 (fx2fl (if (even? i) +playfield-min-x+ +playfield-max-x+))
+					 y))
+			 (bullet-addflags (bltflags uncancelable)))
+		 (unless (= i 3)
+		   (wait 5)))
+	   '(148.0 218.0 288.0 358.0)))
 	task keep-running)
   
   (wait-while keep-running)
