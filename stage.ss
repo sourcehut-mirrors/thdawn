@@ -802,7 +802,7 @@
 							   (fbcount 7 7)
 							   (fbang 0.0 5.0)
 							   (fbspeed 5.0 7.0)
-							   (fbshootez 0.0 100.0 'pellet-red 5 #f))))
+							   (fbshootez 'pellet-red 0.0 100.0 5 #f))))
 					   (loop (fl+ facing turn-dir))))))
 			  (bullet-addflags (bltflags uncancelable))))))
   (wait-until (thunk (>= frames 6725)))
@@ -1294,7 +1294,7 @@
 			  (fbabsolute-aim)
 			  (fbang (todeg (fl+ ang1 (fl* 3.0 (fl/ pi 4.0)))) 30.0)
 			  (fbspeed 3.0 5.0)
-			  (fbshootez x y 'music-red 5 #f))
+			  (fbshootez 'music-red x y 5 #f))
 		  (spawn-bullet 'butterfly-cyan x2 y2 5
 						(curry linear-step-accelerate-forever
 							   ang2
@@ -1304,7 +1304,7 @@
 			  (fbabsolute-aim)
 			  (fbang (todeg (fl+ ang2 (fl* 3.0 (fl/ pi 4.0)))) 30.0)
 			  (fbspeed 3.0 5.0)
-			  (fbshootez x2 y2 'music-orange 5 #f))
+			  (fbshootez 'music-orange x2 y2 5 #f))
 		  (wait 5)
 		  (loop (fl+ ang dang)))))
 	task
@@ -1386,7 +1386,7 @@
 									 (or force-aim-y player-y)))
 								   final-wideness)
 								  (fbspeed 5.0 7.0)
-								  (fbshootez x y 'pellet-white 5
+								  (fbshootez 'pellet-white x y 5
 											 (sebundle-shoot0 sounds)))))
 						  (loop (fl+ facing turn-dir))))))
 				 (bullet-addflags (bltflags uncancelable)))))))))

@@ -2150,13 +2150,13 @@
 	[(fb enm type delay sound)
 	 (fbshootenm fb enm type delay sound linear-step-forever)]
 	[(fb enm type delay sound control-function)
-	 (fbshootez fb (enm-x enm) (enm-y enm) type delay sound control-function)]))
+	 (fbshootez fb type (enm-x enm) (enm-y enm) delay sound control-function)]))
 
 (define fbshootez
   (case-lambda
-	[(fb x y type delay sound)
-	 (fbshootez fb x y type delay sound linear-step-forever)]
-	[(fb x y type delay sound control-function)
+	[(fb type x y delay sound)
+	 (fbshootez fb type x y delay sound linear-step-forever)]
+	[(fb type x y delay sound control-function)
 	 (define offset (fan-builder-offset fb))
 	 (fbshoot fb x y
 	   (λ (row col speed facing)
@@ -2249,13 +2249,13 @@
 	[(cb enm type delay sound)
 	 (cbshootenm cb enm type delay sound linear-step-forever)]
 	[(cb enm type delay sound control-function)
-	 (cbshootez cb (enm-x enm) (enm-y enm) type delay sound control-function)]))
+	 (cbshootez cb type (enm-x enm) (enm-y enm) delay sound control-function)]))
 
 (define cbshootez
   (case-lambda
-	[(cb x y type delay sound)
-	 (cbshootez cb x y type delay sound linear-step-forever)]
-	[(cb x y type delay sound control-function)
+	[(cb type x y delay sound)
+	 (cbshootez cb type x y delay sound linear-step-forever)]
+	[(cb type x y delay sound control-function)
 	 (define offset (circle-builder-offset cb))
 	 (cbshoot cb x y
 			  (λ (layer in-layer speed facing)

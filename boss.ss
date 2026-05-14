@@ -68,8 +68,9 @@
 								  (fbcount 5 5)
 								  (fbang 0.0 18.0)
 								  (fbspeed 3.5 4.5)
-								  (fbshootez (bullet-x blt) (bullet-y blt)
-											 'music-yellow 2 (sebundle-bell sounds)))
+								  (fbshootez 'music-yellow
+											 (bullet-x blt) (bullet-y blt)
+											 2 (sebundle-bell sounds)))
 							  (cancel-bullet blt #t))
 							task)
 						  (linear-step-forever hpi 2.5 task blt)))
@@ -85,8 +86,8 @@
 								  (fbcount 5 5)
 								  (fbang 0.0 18.0)
 								  (fbspeed 3.5 4.5)
-								  (fbshootez (bullet-x blt) (bullet-y blt)
-											 'music-cyan 2 (sebundle-bell sounds)))
+								  (fbshootez 'music-cyan (bullet-x blt) (bullet-y blt)
+											  2 (sebundle-bell sounds)))
 							  (cancel-bullet blt #t))
 							task)
 						  (linear-step-forever hpi 2.5 task blt))))
@@ -986,14 +987,13 @@
 										 (fbang (if (positive? gap-winding)
 													25.0 -25.0))
 										 (fbshootez
-										  group-sp2-center-x group-sp2-center-y
 										  (vnth-mod
 										   '#(big-star-white
 											  big-star-red big-star-orange big-star-yellow
 											  big-star-green big-star-cyan
 											  big-star-blue big-star-magenta) i)
-										  5
-										  (sebundle-bell sounds))))))))
+										  group-sp2-center-x group-sp2-center-y
+										  5 (sebundle-bell sounds))))))))
 				(bullet-facing-set! (fl+ ang pi)))))))
 	(wait 15)
 	(when (< i 15)
@@ -1138,11 +1138,11 @@
 					 (fbspeed 1.2 2.75)
 					 (fbabsolute-aim)
 					 (fbang (fl- (todeg ang) 20.0) -5.0)
-					 (fbshootez (bullet-x blt) (bullet-y blt)
-								(vnth-mod
-								 '#(rice-red rice-orange rice-yellow
-											 rice-green rice-blue rice-magenta) q)
-								0 #f)))))
+					 (fbshootez
+					  (vnth-mod '#(rice-red rice-orange rice-yellow
+											rice-green rice-blue rice-magenta) q)
+					  (bullet-x blt) (bullet-y blt)
+					  0 #f)))))
 			(bullet-addflags (bltflags nocanceldrop))
 			(bullet-facing-set! (fl+ ang pi)))))
 	(yield)
@@ -1238,11 +1238,11 @@
 		  (cboffset (fx2fl (+ 10 (* 20 i))))
 		  (cbspeed 0.2)
 		  (cbshootez
-		   (miscent-x steak) (miscent-y steak)
 		   (vnth-mod '#(butterfly-red butterfly-orange butterfly-yellow
 									  butterfly-green butterfly-cyan
 									  butterfly-blue butterfly-magenta
 									  butterfly-white) i)
+		   (miscent-x steak) (miscent-y steak)
 		   2 (sebundle-shoot0 sounds)
 		   (λ (facing speed task blt)
 			 (define accel (fl+ 0.03 (fl* (fx2fl i) 0.01)))
@@ -1272,8 +1272,8 @@
 	  (fbcount 3 5)
 	  (fbang 0.0 10.0)
 	  (fbspeed 2.0 4.5)
-	  (fbshootez (miscent-x steak) (miscent-y steak)
-				 'ellipse-red
+	  (fbshootez 'ellipse-red
+				 (miscent-x steak) (miscent-y steak)
 				 10 (sebundle-shoot0 sounds)))
   (wait 240))
 
@@ -1323,9 +1323,10 @@
 		  (fbang 0.0 12.0)
 		  (fbspeed 3.0 5.0)
 		  (fbshootez
+		   'heart-red
 		   (fl+ cx (centered-roll game-rng 100.0))
 		   (fl+ cy (centered-roll game-rng 100.0))
-		   'heart-red 15 (sebundle-shoot0 sounds)))
+		   15 (sebundle-shoot0 sounds)))
 	  (wait 20)))
   (wait 80))
 
