@@ -286,8 +286,8 @@
 (define (draw-bullets textures sorted-bullets)
   (define (each bullet)
 	(when bullet
-	  (let* ([render-x (+ (bx bullet) +playfield-render-offset-x+)]
-			 [render-y (+ (by bullet) +playfield-render-offset-y+)]
+	  (let* ([render-x (fl+ (bx bullet) (fx2fl +playfield-render-offset-x+))]
+			 [render-y (fl+ (by bullet) (fx2fl +playfield-render-offset-y+))]
 			 [type (bullet-type bullet)]
 			 [bt (symbol-hashtable-ref bullet-types type #f)]
 			 [livetime (bullet-livetime bullet)])
@@ -297,11 +297,12 @@
 				   [preimg-end (blttype-preimg-end-size bt)]
 				   ;; reversed because the factor is negative
 				   [radius (lerp preimg-end preimg-begin
-								 (/ livetime (bullet-initial-livetime bullet)))])
+								 (fl/ (fx2fl livetime)
+									  (fx2fl (bullet-initial-livetime bullet))))])
 			  (draw-sprite-pro
 			   textures (blttype-preimg-sprite bt)
-			   (make-rectangle (- render-x radius) (- render-y radius)
-							   (* 2.0 radius) (* 2.0 radius))
+			   (make-rectangle (fl- render-x radius) (fl- render-y radius)
+							   (fl* 2.0 radius) (fl* 2.0 radius))
 			   -1))
 			(let ()
 			  (case (bullet-family type)
