@@ -241,18 +241,7 @@
 					(define-values (x y) (dist-away (enm-x doremi) (enm-y doremi)
 													facing 40.0))
 					(raylib:play-sound (sebundle-bell sounds))
-					(letrec* ([ring
-							   (map
-								(λ (_)
-								  (spawn-bullet
-								   'pellet-blue x y 8
-								   (λ (task blt)
-									 (wait-until
-									  (thunk
-									   (not (vector-index orb live-bullets))))
-									 (delete-bullet blt))))
-								(iota 10))]
-							  [orb (spawn-bullet
+					(letrec* ([orb (spawn-bullet
 									'medium-ball-magenta x y 8
 									(λ (task blt)
 									  (define realfacing (fl+ facing (torad 165.0)))
@@ -260,7 +249,20 @@
 									   (linear-step realfacing speed blt)
 									   (position-bullets-around
 										(bullet-x blt) (bullet-y blt)
-										20.0 0.0 ring))))])
+										20.0 0.0 ring))))]
+							  [orb-index (vector-index orb live-bullets)]
+							  [ring
+							   (map
+								(λ (_)
+								  (spawn-bullet
+								   'pellet-blue x y 8
+								   (λ (task blt)
+									 (wait-until
+									  (thunk
+									   (not (eq? orb (vnth live-bullets orb-index)))))
+									 (delete-bullet blt))))
+								(iota 10))]
+							  )
 					  (position-bullets-around x y 20.0 0.0 ring)))))))
 		task)
 	  (let loop ([i 0] [ang 90.0])

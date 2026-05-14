@@ -518,6 +518,7 @@
 																	 frames))
 															 360.0))
 											notes))))]
+			  [center-blt-idx (vector-index center-blt live-bullets)]
 			  [ring (if with-ring
 						(map
 						 (λ (_)
@@ -525,7 +526,9 @@
 							'pellet-white x y 5
 							(λ (task blt)
 							  (wait-until
-							   (thunk (not (vector-index center-blt live-bullets))))
+							   (thunk
+								(not (eq? center-blt
+										  (vnth live-bullets center-blt-idx)))))
 							  (delete-bullet blt))))
 						 (iota 24))
 						'())]
@@ -987,13 +990,16 @@
 												 r 0.0 ring-blts))
 					  (yield))
 					(delete-bullet blt)))]
+				[center-blt-idx (vector-index center-blt live-bullets)]
 				[ring-blts (map
 							(λ (_)
 							  (spawn-bullet
 							   'small-star-yellow x y 5
 							   (λ (task blt)
 								 (wait-until
-								  (thunk (not (vector-index center-blt live-bullets))))
+								  (thunk
+								   (not (eq? center-blt
+											 (vnth live-bullets center-blt-idx)))))
 								 (delete-bullet blt))))
 							(iota 10))])
 		(void))))
