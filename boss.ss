@@ -1340,7 +1340,6 @@
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
-  (set! ruler-anchor (vec2 -50.0 180.0))
   (doremi-sp2-var0 successes task doremi)
   (doremi-sp2-var1 successes task doremi)
 

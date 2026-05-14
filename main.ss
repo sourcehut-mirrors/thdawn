@@ -794,7 +794,6 @@
 (define chapter-select 0)
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
-(define ruler-anchor #f)
 
 ;; stack of active guis, from top priority to lowest
 ;; only top gui receives input and gets rendered
@@ -4875,9 +4874,10 @@
 
   (draw-hud textures fonts)
 
-  (let ([render-positions (vector-map
+  (let* ([render-positions (vector-map
 						   (λ (p) (v2+ p +playfield-render-offset+))
-						   spline-editor-positions)])
+						   spline-editor-positions)]
+		 [one-render-position (fx= 1 (vlen render-positions))])
 	(when (not (zero? (vlen render-positions)))
 	  (raylib:draw-spline-bezier-cubic
 	   (truncate-to-whole-spline render-positions) 5.0 red))
@@ -4889,29 +4889,28 @@
 								   #x006400ff
 								   green))
 		 (raylib:draw-text
-		  (format "~d: ~d ~d"
+		  (if (and (fxzero? i) one-render-position)
+			  (format "~d ~d ~,2f"
+					  (eround (v2x (vnth spline-editor-positions i)))
+					  (eround (v2y (vnth spline-editor-positions i)))
+					  (sqrt (distsq (v2x (vnth spline-editor-positions i))
+								    (v2y (vnth spline-editor-positions i))
+									player-x player-y)))
+			  (format "~d: ~d ~d"
 				  i
 				  (eround (v2x (vnth spline-editor-positions i)))
-				  (eround (v2y (vnth spline-editor-positions i))))
+				  (eround (v2y (vnth spline-editor-positions i)))))
 		  (eround (v2x p)) (eround (v2y p)) 10 -1)))
-	 render-positions))
-  (when ruler-anchor
-	(let ([rx (fl+ (fx2fl +playfield-render-offset-x+)
-				   (v2x ruler-anchor))]
-		  [ry (fl+ (fx2fl +playfield-render-offset-y+)
-				   (v2y ruler-anchor))])
-	  (raylib:draw-circle-v rx ry 10.0 #x006400ff)
-	  (raylib:draw-text
-	   (format "~d ~d ~,2f"
-			   (eround (v2x ruler-anchor))
-			   (eround (v2y ruler-anchor))
-			   (sqrt (distsq (v2x ruler-anchor) (v2y ruler-anchor)
-							 player-x player-y)))
-	   (eround rx) (eround ry) 10 -1)
-	  (raylib:draw-line (eround rx) (eround ry)
-						(eround (+ player-x +playfield-render-offset-x+))
-						(eround (+ player-y +playfield-render-offset-y+)) -1)))
-  )
+	 render-positions)
+	(when one-render-position
+	  (raylib:draw-line
+	   (+ +playfield-render-offset-x+
+		  (eround (v2x (vnth spline-editor-positions 0))))
+	   (+ +playfield-render-offset-y+
+		  (eround (v2y (vnth spline-editor-positions 0))))
+	   (+ (eround player-x) +playfield-render-offset-x+)
+	   (+ (eround player-y) +playfield-render-offset-y+)
+	   -1))))
 
 (define (do-render-all textures fonts)
   (when current-stage-ctx
