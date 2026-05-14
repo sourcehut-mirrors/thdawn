@@ -747,10 +747,10 @@
    (and (vector? replay) replay)
    (if (vector? replay) 0 -1)
    1
-   (make-vector 4096 #f)
-   (make-vector 4096 #f)
+   (make-vector 2048 #f)
+   (make-vector 2048 #f)
    (make-vector 256 #f)
-   (make-vector 4096 #f)
+   (make-vector 2048 #f)
    0 180 +respawning-max+
    -1 0 0 0 0.0 +initial-player-y+ 10000 0 2 3
    (make-pseudo-random-generator)
@@ -2459,7 +2459,7 @@
 
 ;; todo: consider moving this into stage-ctx if we don't end up adding effects
 ;; to the menus
-(define live-particles (make-vector 4096 #f))
+(define live-particles (make-vector 2048 #f))
 
 (define (spawn-particle type x y max-age extra)
   (let ([idx (vector-index #f live-particles)])
