@@ -162,6 +162,7 @@
 	  (interval-loop 20
 		(do [(i 0 (add1 i))]
 			[(= i 7)]
+		  (raylib:play-sound (sebundle-shootsoft sounds))
 		  (spawn-bullet 'glow-ball-cyan (ex hazuki) (ey hazuki) 5
 						(curry linear-step-forever hpi
 							   (fl+ 2.5 (fl* (fx2fl i) 0.11))))
@@ -181,6 +182,7 @@
 	  (interval-loop 20
 		(do [(i 0 (add1 i))]
 			[(= i 7)]
+		  (raylib:play-sound (sebundle-shootsoft sounds))
 		  (spawn-bullet 'glow-ball-blue (ex aiko) (ey aiko) 5
 						(curry linear-step-forever hpi
 							   (fl+ 2.5 (fl* (fx2fl i) 0.11))))
@@ -530,7 +532,7 @@
   (spawn-subtask "spawn flowers"
 	(λ (task)
 	  (interval-loop 4
-		(raylib:play-sound (sebundle-shoot0 sounds))
+		(raylib:play-sound (sebundle-shootsoft sounds))
 		(hazuki-sp1-flower2
 		 (fl+ (bx blt) (centered-roll game-rng 30.0))
 		 (fl+ (by blt) (centered-roll game-rng 15.0)))))

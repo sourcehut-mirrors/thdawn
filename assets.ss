@@ -5,6 +5,7 @@
    longcharge shortcharge
    enmdie bossdie
    playerdie playershoot
+   shootsoft
    shoot0 shoot1 shoot2
    extend graze bell
    oldvwoopfast oldvwoopslow
@@ -23,8 +24,13 @@
 		[(>= i num-sounds)]
 	  (proc ((record-accessor rtd i) sounds)))))
 (define (update-sound-volumes)
-  (let ([vol-flt (inexact (/ (assqdr 'sfx-vol config) 100.0))])
-	(each-sound (lambda (sound) (raylib:set-sound-volume sound vol-flt)))))
+  (let ([vol-flt (inexact (/ (assqdr 'sfx-vol config) 100.0))]
+		[shootsoft (and sounds (sebundle-shootsoft sounds))])
+	(each-sound
+	 (lambda (sound)
+	   (raylib:set-sound-volume
+		sound
+		(if (eq? sound shootsoft) (fl* vol-flt 0.50) vol-flt))))))
 (define (load-sfx)
   (set! sounds
 		(apply
@@ -34,6 +40,7 @@
 				"se_ch00.wav" "se_ch02.wav"
 				"se_enep00.wav" "se_enep01.wav"
 				"se_pldead00.wav" "se_plst00.wav"
+				"se_tan00.wav" ;; todo: use load sound alias so we don't dupe this
 				"se_tan00.wav" "se_tan01.wav" "se_tan02.wav"
 				"se_extend.wav" "se_graze.wav" "se_kira00.wav"
 				"se_power1.wav" "se_power2.wav"

@@ -156,6 +156,7 @@
 			[cfun (λ (task blt)
 					(linear-step-forever (facing-player (bx blt) (by blt))
 										 7.0 task blt))])
+		(raylib:play-sound (sebundle-shootsoft sounds))
 		(-> (spawn-bullet 'ellipse-magenta
 						  (fl+ (ex enm) (fl* 40.0 (flcos facing)))
 						  (fl+ (ey enm) (fl* 40.0 (flsin facing)))
@@ -186,7 +187,7 @@
 		  (fbcount 4 3)
 		  (fbang 0.0 25.0)
 		  (fbspeed 6.0 7.0)
-		  (fbshootenm enm 'small-ball-red 5 (sebundle-shoot0 sounds)))))
+		  (fbshootenm enm 'small-ball-red 5 (sebundle-shootsoft sounds)))))
   (define facing (facing-player (ex enm) (ey enm)))
   (define (move task)
 	;; FIXME: this breaks at shallow angles
@@ -336,6 +337,7 @@
   (define (shoot task)
 	(interval-loop 30
 	  (dotimes 3
+		(raylib:play-sound (sebundle-shootsoft sounds))
 		(-> (fb)
 			(fbabsolute-aim)
 			(fbcount 3)
@@ -395,7 +397,7 @@
 			  (fbspeed 9.0)
 			  (fbang (- ang 90.0) 5.0)
 			  (fbabsolute-aim)
-			  (fbshootenm enm 'music-blue 5 #f)))))
+			  (fbshootenm enm 'music-blue 5 (sebundle-shootsoft sounds))))))
 	task
 	(thunk (not (unbox stop-spinning))))
   (let ([final-ang (do-spin)])
@@ -407,7 +409,7 @@
 			 (fbcount 2)
 			 (fbspeed 6.0)
 			 (fbang 0.0 12.0)
-			 (fbshootenm enm 'small-star-red 2 #f))))
+			 (fbshootenm enm 'small-star-red 2 (sebundle-shootsoft sounds)))))
 	  task)
 	(ease-to values
 			 (+ cx (* 300.0 (cos final-ang))) (+ cy (* 300.0 (sin final-ang)))
@@ -666,7 +668,7 @@
 				  (+ ang (centered-roll game-rng (torad 2.0))) 5.0)
 		   (shoot (list-ref types type-idx)
 				  (+ ang (centered-roll game-rng (torad 2.0))) 3.0)
-		   (raylib:play-sound (sebundle-shoot0 sounds))
+		   (raylib:play-sound (sebundle-shootsoft sounds))
 		   (wait 2))
 		 (cdr angs))
 		(loop (reverse! angs)
@@ -681,6 +683,7 @@
 	(λ (task)
 	  (interval-loop 40
 		(dotimes 5
+		  (raylib:play-sound (sebundle-shootsoft sounds))
 		  (-> (fb)
 			  (fbcount 3)
 			  (fbabsolute-aim)
@@ -867,6 +870,7 @@
 	(raylib:play-sound (sebundle-shortcharge sounds))
 	(wait 60)
 	(let loop ([ang 0.0])
+	  (raylib:play-sound (sebundle-shootsoft sounds))
 	  (-> (cb)
 		  (cbabsolute-aim)
 		  (cbang ang)
@@ -943,7 +947,7 @@
 		(-> (fb)
 			(fbcount 1 3)
 			(fbspeed 4.0 5.0)
-			(fbshootenm enm blttype 2 (sebundle-shoot0 sounds)))))
+			(fbshootenm enm blttype 2 (sebundle-shootsoft sounds)))))
 	task)
   (loop-until (flpositive? (ex enm))
 	(linear-step-enm 0.0 4.0 enm))
@@ -959,7 +963,7 @@
 		(-> (fb)
 			(fbcount 1 3)
 			(fbspeed 4.0 5.0)
-			(fbshootenm enm blttype 2 (sebundle-shoot0 sounds)))))
+			(fbshootenm enm blttype 2 (sebundle-shootsoft sounds)))))
 	task)
   (loop-until (flnegative? (ex enm))
 	(linear-step-enm pi 4.0 enm))
@@ -1342,7 +1346,7 @@
 		(-> (cb)
 			(cbcount 12)
 			(cbspeed 4.5)
-			(cbshootenm enm 'rice-cyan 2 #f))))
+			(cbshootenm enm 'rice-cyan 2 (sebundle-shootsoft sounds)))))
 	task)
   (move-on-spline
    (if right-side
