@@ -68,7 +68,7 @@
 								  (fbcount 5 5)
 								  (fbang 0.0 18.0)
 								  (fbspeed 3.5 4.5)
-								  (fbshootez 'music-yellow
+								  (fbshootez 'music-orange
 											 (bx blt) (by blt)
 											 2 (sebundle-bell sounds)))
 							  (cancel-bullet blt #t))
@@ -414,6 +414,9 @@
 				 '()
 				 (constantly #f)))
   (define bossinfo (blank-hazuki-bossinfo))
+  (define (keep-running)
+	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
+		 (fxpositive? (enm-health hazuki))))
   (set! current-chapter 18)
   (spawn-subtask "doremi leave"
 	(λ (_)
@@ -423,11 +426,8 @@
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! hazuki bossinfo)
-  (declare-nonspell hazuki 1800 1000)
-  (wait-while
-   (thunk
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health hazuki)))))
+  (declare-nonspell hazuki 1800 6000)
+  (wait-while keep-running)
   (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp1 task hazuki))
 
@@ -503,13 +503,17 @@
   (letrec* ([center (spawn-bullet
 					 'pellet-white x y 5
 					 (λ (task blt)
+					   (define start-frames frames)
 					   (spawn-subtask "sync ring"
 						 (λ (_)
 						   (loop-forever
 							(position-bullets-around (bx blt) (by blt)
 													 12.0 ring-ang ring)))
 						 task)
-					   (linear-step-decelerate (fl* tau (roll game-rng)) 1.0 -0.02 blt)
+					   (linear-step-decelerate (fl* tau (roll game-rng))
+											   (roll-flrange game-rng 1.0 1.5)
+											   -0.02 blt)
+					   (loop-forever)
 					   ;; (wait 120)
 					   ;; (linear-step-accelerate-forever (fl* tau (roll game-rng))
 					   ;; 								   0.0 0.02 3.0 task blt)
@@ -1096,7 +1100,7 @@
 	  [(= i 8)]
 	(-> (fb)
 		(fbcount 12)
-		(fbspeed 2.0)
+		(fbspeed 1.5)
 		(fbabsolute-aim)
 		(fbang (todeg (facing-point (ex enm) (ey enm)
 									group-sp2-center-x group-sp2-center-y))
@@ -1131,7 +1135,7 @@
 				 (wait 30)
 				 (linear-step-accelerate-forever
 				  (bullet-facing blt)
-				  0.0 0.08 3.0
+				  0.0 0.08 2.0
 				  task blt))))))
 	(wait 30))
   (wait 60)
