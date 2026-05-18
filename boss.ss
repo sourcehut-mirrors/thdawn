@@ -38,8 +38,8 @@
 (define (group-non1 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
   (define (keep-running)
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi))))
+	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
+		 (fxpositive? (enm-health doremi))))
   (set! current-chapter 14)
   (play-music (musbundle-naisho-yo-ojamajo music))
   (bossinfo-healthbars-set!
@@ -403,6 +403,27 @@
   (common-spell-postlude bossinfo doremi)
   (hazuki-non1 task doremi))
 
+(define (hazuki-non1-flower petal-type x y speed facing)
+  (define ring-ang (fl* tau (roll game-rng)))
+  (letrec* ([center (spawn-bullet
+					 'pellet-white x y 5
+					 (λ (task blt)
+					   (loop-forever
+						(linear-step facing speed blt)
+						(position-bullets-around (bx blt) (by blt)
+													 12.0 ring-ang ring))))]
+			[center-idx (vector-index center live-bullets)]
+			[ring (map
+				   (λ (_)
+					 (spawn-bullet
+					  petal-type x y 5
+					  (λ (task blt)
+						(wait-until
+						 (thunk (not (eq? center (vnth live-bullets center-idx)))))
+						(delete-bullet blt))))
+				   (iota 5))])
+	(position-bullets-around x y 12.0 ring-ang ring)))
+
 (define (hazuki-non1 task doremi)
   (define bars (bossinfo-healthbars (enm-extras doremi)))
   (define _ (wait 90))
@@ -427,6 +448,80 @@
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! hazuki bossinfo)
   (declare-nonspell hazuki 1800 6000)
+  (wait 60)
+  (raylib:play-sound (sebundle-longcharge sounds))
+  (wait 60)
+  (spawn-subtask "circle"
+	(λ (task)
+	  (define init-ang (centered-roll game-rng 180.0))
+	  (let loop ([i 0])
+		(-> (cb)
+			(cbcount 15)
+			(cbspeed 3.75)
+			(cbabsolute-aim)
+			(cbang (fl+ init-ang (fx2fl (fx* 7 i))))
+			(cbshoot (ex hazuki) (ey hazuki)
+			  (λ (layer in-layer speed facing)
+				(define-values (x y) (dist-away (ex hazuki) (ey hazuki)
+												facing 70.0))
+				(hazuki-non1-flower
+				 (vnth-mod '#(small-ball-red
+							  small-ball-orange small-ball-blue small-ball-magenta) i)
+				 x y speed facing))))
+		(wait 10)
+		(loop (add1 i))))
+	task keep-running)
+  (spawn-subtask "aimed"
+	(λ (task)
+	  (define start-frames frames)
+	  (define init-ang (centered-roll game-rng pi))
+	  (define (compute-emitter-ang)
+		(define elapsed (- frames start-frames))
+		(fl+ init-ang (torad (fx2fl (* 2 elapsed)))))
+	  (define tempblt (spawn-bullet 'medium-ball-blue
+									(fl+ (ex hazuki) 100.0) (ey hazuki) 5 values))
+	  (define tempblt2 (spawn-bullet 'medium-ball-blue
+									 (fl- (ex hazuki) 100.0) (ey hazuki) 5 values))
+	  (yield) ;; skip the knife wave on first frame
+	  (let loop ()
+		(let*-values ([(ang) (compute-emitter-ang)]
+					  [(first-x first-y) (dist-away (ex hazuki) (ey hazuki) ang 85.0)]
+					  [(second-x second-y
+)					   (dist-away (ex hazuki) (ey hazuki) (fl+ ang pi) 85.0)])
+		  (bullet-x-set! tempblt first-x)
+		  (bullet-y-set! tempblt first-y)
+		  (bullet-x-set! tempblt2 second-x)
+		  (bullet-y-set! tempblt2 second-y)
+		  (when (fxzero? (fxmod (- frames start-frames) 180))
+			(spawn-subtask "knives"
+			  (λ (task)
+				(define (doit x y)
+				  (let*-values ([(facing) (fl+ (facing-player x y)
+											   ;;(centered-roll game-rng (torad 2.0))
+											   )])
+					(-> (spawn-bullet 'knife-orange x y 8
+									  (λ (task blt)
+										(dotimes 30
+										  (bullet-facing-set! blt (facing-player x y))
+										  (yield)
+										  )
+										(linear-step-accelerate-forever
+										 (facing-player x y) 0.0 0.2 5.0 task blt)
+										))
+						(bullet-facing-set! facing))))
+				(dotimes 45
+				  (let*-values ([(ang) (compute-emitter-ang)]
+								[(first-x first-y)
+								 (dist-away (ex hazuki) (ey hazuki) ang 85.0)]
+								[(second-x second-y)
+								 (dist-away (ex hazuki) (ey hazuki) (fl+ ang pi) 85.0)])
+					(doit first-x first-y)
+					(doit second-x second-y))
+				  (wait 2)))
+			  task)))
+		(yield)
+		(loop)))
+	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp1 task hazuki))

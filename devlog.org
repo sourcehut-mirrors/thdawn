@@ -1,3 +1,16 @@
+* [2026-05-17 Sun]
+
+Went on a diversion for hazuki non1, which is probably gonna be a kinda throwaway pattern
+that introduces the flower groupings that appear in the next spell. Hoping I think of a
+way to make it more interesting.
+
+Might need to reintroduce some sort of render layer system for bullets, actually.
+
+Some of the patterns need it when the default logic is not sufficient.
+
+It'll probably just be a field on the bullet that the sorter lambda looks at before
+looking at the spawn order.
+
 * [2026-05-13 Wed]
 Finished group sp1, pretty neat little pattern. Might add a rage phase.
 
