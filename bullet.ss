@@ -4,9 +4,35 @@
   (stage-ctx-next-bullet-id-set! current-stage-ctx (fx1+ res))
   res)
 
+(define-enumeration bltflag
+  (uncancelable ;; cannot be cancelled by bombs or other standard cancels
+   noprune ;; do not prune the bullet when it travels out of bounds
+   ;; on fixed lasers, do not render the spinning shine sprite at the laser origin
+   ;; no effect on non-fixed laser types
+   noshine
+   noclip ;; do not hurt the player through the standard collision logic
+   nocanceldrop ;; cancelable, but won't drop piv items
+   )
+  bltflags)
+(define empty-bltflags (bltflags))
+;; global overrides. when in effect, all spawned bullets automatically gain the
+;; corresponding flags. makes callsite code cleaner at the cost of some global state
+(define ovr-uncancelable (make-parameter #f))
+(define ovr-noclip (make-parameter #f))
+(define ovr-nocanceldrop (make-parameter #f))
+;; when non-#f, should be a flonum. if a bullet is to be spawned within this distance
+;; of the player, then it is not spawned, and its control function is never called
+;; the bullet is still constructed and returned so calling code doesn't have to
+;; do explicit checks
+(define seal-distance (make-parameter #f))
+
 (define-record-type bullet
   (fields
    id ;; globally incrementing number. Used to sort the bullets before rendering.
+   ;; secondary sort key for rendering. Bullets are first sorted by render priority,
+   ;; then by id. higher priority is rendered layer i.e. more on top.
+   ;; if no priority is provided at bullet spawn time, defaults to 0
+   render-priority 
    type
    (mutable x)
    (mutable y)
@@ -148,39 +174,43 @@
   (bullet-flags-set! blt (enum-set-difference (bullet-flags blt) flags))
   blt)
 
-(define (spawn-bullet type x y delay control-function)
-  (let ([idx (vector-index #f live-bullets)])
-	(unless idx
-	  (error 'spawn-bullet "No more open bullet slots"))
-	(let ([blt (make-bullet (get-next-bullet-id)
-							type x y 0.0 #f (- delay) (- delay)
-							empty-bltflags)]
-		  [sealed (let ([s (seal-distance)])
-					(and s (fl<= (distsq x y player-x player-y) (* s s))))])
-	  (when (ovr-uncancelable)
-		(bullet-addflags blt (bltflags uncancelable)))
-	  (when (ovr-noclip)
-		(bullet-addflags blt (bltflags noclip)))
-	  (when (ovr-nocanceldrop)
-		(bullet-addflags blt (bltflags nocanceldrop)))
-	  (unless sealed
-		(vector-set! live-bullets idx blt)
-		(spawn-task "bullet"
-		  (λ (task)
-			(do [(i 0 (fx1+ i))]
-				[(fx> i delay)]
-			  (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
-			  (yield))
-			(control-function task blt))
-		  (thunk (eq? blt (vnth live-bullets idx)))))
-	  blt)))
+(define spawn-bullet
+  (case-lambda
+	[(type x y delay control-function)
+	 (spawn-bullet type x y delay control-function 0)]
+	[(type x y delay control-function render-priority)
+	 (let ([idx (vector-index #f live-bullets)])
+	   (unless idx
+		 (error 'spawn-bullet "No more open bullet slots"))
+	   (let ([blt (make-bullet (get-next-bullet-id) render-priority
+							   type x y 0.0 #f (- delay) (- delay)
+							   empty-bltflags)]
+			 [sealed (let ([s (seal-distance)])
+					   (and s (fl<= (distsq x y player-x player-y) (* s s))))])
+		 (when (ovr-uncancelable)
+		   (bullet-addflags blt (bltflags uncancelable)))
+		 (when (ovr-noclip)
+		   (bullet-addflags blt (bltflags noclip)))
+		 (when (ovr-nocanceldrop)
+		   (bullet-addflags blt (bltflags nocanceldrop)))
+		 (unless sealed
+		   (vector-set! live-bullets idx blt)
+		   (spawn-task "bullet"
+			 (λ (task)
+			   (do [(i 0 (fx1+ i))]
+				   [(fx> i delay)]
+				 (bullet-livetime-set! blt (fx1+ (bullet-livetime blt)))
+				 (yield))
+			   (control-function task blt))
+			 (thunk (eq? blt (vnth live-bullets idx)))))
+		 blt))]))
 
 (define (spawn-laser type x y facing length radius despawn-time
 					 delay control-function)
   (let ([idx (vector-index #f live-bullets)])
 	(unless idx
 	  (error 'spawn-bullet "No more open bullet slots"))
-	(let ([blt (make-laser (get-next-bullet-id)
+	(let ([blt (make-laser (get-next-bullet-id) 0
 						   type x y facing #f (- delay) (- delay)
 						   empty-bltflags
 						   length radius despawn-time -1 #f)])

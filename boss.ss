@@ -503,11 +503,10 @@
 									  (λ (task blt)
 										(dotimes 30
 										  (bullet-facing-set! blt (facing-player x y))
-										  (yield)
-										  )
+										  (yield))
 										(linear-step-accelerate-forever
-										 (facing-player x y) 0.0 0.2 5.0 task blt)
-										))
+										 (facing-player x y) 0.0 0.2 5.0 task blt))
+									  1)
 						(bullet-facing-set! facing))))
 				(dotimes 45
 				  (let*-values ([(ang) (compute-emitter-ang)]

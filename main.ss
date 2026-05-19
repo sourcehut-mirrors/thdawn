@@ -79,28 +79,6 @@
 		  circle-hint clear-bonus
 		  text-hint)
   make-particletype-set)
-(define-enumeration bltflag
-  (uncancelable ;; cannot be cancelled by bombs or other standard cancels
-   noprune ;; do not prune the bullet when it travels out of bounds
-   ;; on fixed lasers, do not render the spinning shine sprite at the laser origin
-   ;; no effect on non-fixed laser types
-   noshine
-   noclip ;; do not hurt the player through the standard collision logic
-   nocanceldrop ;; cancelable, but won't drop piv items
-   )
-  bltflags)
-;; global overrides. when in effect, all spawned bullets automatically gain the
-;; corresponding flags. makes callsite code cleaner at the cost of some global state
-(define ovr-uncancelable (make-parameter #f))
-(define ovr-noclip (make-parameter #f))
-(define ovr-nocanceldrop (make-parameter #f))
-;; when non-#f, should be a flonum. if a bullet is to be spawned within this distance
-;; of the player, then it is not spawned, and its control function is never called
-;; the bullet is still constructed and returned so calling code doesn't have to
-;; do explicit checks
-(define seal-distance (make-parameter #f))
-
-(define empty-bltflags (bltflags))
 
 (define-enumeration miscentflag
   (;; special flag for doremi non2 behaviors
@@ -4082,7 +4060,13 @@
 	   (cond
 		[(not a) #t]
 		[(not b) #f]
-		[else (fx< (bullet-id a) (bullet-id b))]))
+		[else
+		 (let ([rpdiff (fx- (bullet-render-priority b)
+							(bullet-render-priority a))])
+		   (cond
+			[(fxpositive? rpdiff) #t]
+			[(fxnegative? rpdiff) #f]
+			[else (fx< (bullet-id a) (bullet-id b))]))]))
 	 sorted-bullets)
 	;; lasers go under enemies, all other bullets on top
 	(draw-lasers textures sorted-bullets)
