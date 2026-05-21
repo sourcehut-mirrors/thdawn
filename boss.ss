@@ -454,28 +454,24 @@
   (spawn-subtask "circle"
 	(λ (task)
 	  (define init-ang (centered-roll game-rng 180.0))
-	  (let loop ([i 0]
-				 [ang init-ang])
+	  (let loop ([i 0])
 		(-> (cb)
-			(cbcount 24)
-			(cbspeed 5.0)
+			(cbcount 15)
+			(cbspeed 3.75)
 			(cbabsolute-aim)
-			(cbang ang)
+			(cbang (fl+ init-ang (fx2fl (fx* 7 i))))
 			(cbshoot (ex hazuki) (ey hazuki)
 			  (λ (layer in-layer speed facing)
 				(define-values (x y) (dist-away (ex hazuki) (ey hazuki)
 												facing 70.0))
-				(raylib:play-sound (sebundle-shootsoft sounds))
 				(hazuki-non1-flower
 				 (vnth-mod '#(small-ball-red
 							  small-ball-orange small-ball-blue small-ball-magenta) i)
 				 x y speed facing))))
 		(wait 10)
-		(let* ([q (quotient i 4)]
-			   [next-ang (fl+ ang (centered-roll game-rng 7.5))])
-		  (loop (add1 i) next-ang))))
+		(loop (add1 i))))
 	task keep-running)
-  #;(spawn-subtask "aimed"
+  (spawn-subtask "aimed"
 	(λ (task)
 	  (define start-frames frames)
 	  (define init-ang (centered-roll game-rng pi))
