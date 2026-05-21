@@ -1705,16 +1705,20 @@
    (mutable global-angle)
    (mutable local-angle)
    (mutable aimed-at-player)
-   (mutable offset))
+   (mutable offset)
+   (mutable render-priority))
   (sealed #t))
 (define (fb)
-  (make-fan-builder 0 0 0.0 0.0 0.0 0.0 #t 0.0))
+  (make-fan-builder 0 0 0.0 0.0 0.0 0.0 #t 0.0 0))
 (define (fbabsolute-aim fb)
   (fan-builder-aimed-at-player-set! fb #f)
   fb)
 ;; NB: Only works when used with fbshootenm/ez
 (define (fboffset fb offset)
   (fan-builder-offset-set! fb offset)
+  fb)
+(define (fbrenderprio fb priority)
+  (fan-builder-render-priority-set! fb priority)
   fb)
 (define fbcount
   (case-lambda
@@ -1789,6 +1793,7 @@
 	 (fbshootez fb type x y delay sound linear-step-forever)]
 	[(fb type x y delay sound control-function)
 	 (define offset (fan-builder-offset fb))
+	 (define prio (fan-builder-render-priority fb))
 	 (fbshoot fb x y
 	   (λ (row col speed facing)
 		 (when sound
@@ -1797,7 +1802,7 @@
 			  type
 			  (fl+ x (fl* offset (flcos facing)))
 			  (fl+ y (fl* offset (flsin facing)))
-			  delay (curry control-function facing speed))
+			  delay (curry control-function facing speed) prio)
 			 (bullet-facing-set! facing))))]))
 
 (define-record-type circle-builder

@@ -105,8 +105,8 @@ for the first spell as the music transitions from the intro into the first verse
 and obvious for me to do.
 
 The nonspell is probably a blind killer (or at least will force a bomb), but it's easier
-than it seems. You can dodge it all with three small taps per wave, and the health is low
-enough it'll go down pretty quickly, too.
+than it seems. You can dodge it all with two or three small taps per wave, and the health
+is low enough it'll go down pretty quickly, too.
 
 ○ Barrage Sign "Ojamajo Doremi SHOOT!" (Group)
 
@@ -170,8 +170,22 @@ you have to dodge in the opposite direction of Okina's movement, which exerts
 psychological pressure on the player to get back over under her to keep dealing damage,
 because even the homing shots don't have their options at this point.
 
-
 ○ Boss Non-spell 3 (Hazuki)
+
+This was the thirteenth boss attack to be completed. It's a pretty standard attack that
+has mild shades of Shinmyoumaru's attacks in it.
+
+To beat it, just stream slowly across the screen, changing direction when needed.
+
+Do keep in mind that the flowers can be larger than they seem, because they're assembled
+from real bullets, meaning, like Aya's nonspells, they're basically "all hitbox", there's
+not the same leniency that a single larger bullet would give you. You'll have to read
+ahead when streaming to see if a flower is coming your way, and adjust your streaming
+speed accordingly.
+
+Also, the way the knives are shot means you could probably pull of a neat move by spinning
+close around Hazuki. Though it's pretty hard and you don't gain much score over just doing
+it at the bottom. But it looks cool! Post a video if you manage to do it!
 
 ○ Hazuki Sp1 (Hazuki)
 

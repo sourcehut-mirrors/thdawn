@@ -20,6 +20,7 @@
 (define ovr-uncancelable (make-parameter #f))
 (define ovr-noclip (make-parameter #f))
 (define ovr-nocanceldrop (make-parameter #f))
+(define ovr-noprune (make-parameter #f))
 ;; when non-#f, should be a flonum. if a bullet is to be spawned within this distance
 ;; of the player, then it is not spawned, and its control function is never called
 ;; the bullet is still constructed and returned so calling code doesn't have to
@@ -193,6 +194,8 @@
 		   (bullet-addflags blt (bltflags noclip)))
 		 (when (ovr-nocanceldrop)
 		   (bullet-addflags blt (bltflags nocanceldrop)))
+		 (when (ovr-noprune)
+		   (bullet-addflags blt (bltflags noprune)))
 		 (unless sealed
 		   (vector-set! live-bullets idx blt)
 		   (spawn-task "bullet"

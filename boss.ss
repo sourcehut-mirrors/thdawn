@@ -447,10 +447,10 @@
   (adjust-bars-non bars)
   (bossinfo-healthbars-set! bossinfo bars)
   (enm-extras-set! hazuki bossinfo)
-  (declare-nonspell hazuki 1800 6000)
+  (declare-nonspell hazuki 1800 7500)
   (wait 60)
   (raylib:play-sound (sebundle-longcharge sounds))
-  (wait 60)
+  (wait 45)
   (spawn-subtask "circle"
 	(λ (task)
 	  (define init-ang (centered-roll game-rng 180.0))
@@ -468,59 +468,48 @@
 				 (vnth-mod '#(small-ball-red
 							  small-ball-orange small-ball-blue small-ball-magenta) i)
 				 x y speed facing))))
-		(wait 10)
+		(wait 15)
 		(loop (add1 i))))
 	task keep-running)
   (spawn-subtask "aimed"
 	(λ (task)
-	  (define start-frames frames)
-	  (define init-ang (centered-roll game-rng pi))
-	  (define (compute-emitter-ang)
-		(define elapsed (- frames start-frames))
-		(fl+ init-ang (torad (fx2fl (* 2 elapsed)))))
-	  (define tempblt (spawn-bullet 'medium-ball-blue
-									(fl+ (ex hazuki) 100.0) (ey hazuki) 5 values))
-	  (define tempblt2 (spawn-bullet 'medium-ball-blue
-									 (fl- (ex hazuki) 100.0) (ey hazuki) 5 values))
-	  (yield) ;; skip the knife wave on first frame
-	  (let loop ()
-		(let*-values ([(ang) (compute-emitter-ang)]
-					  [(first-x first-y) (dist-away (ex hazuki) (ey hazuki) ang 85.0)]
-					  [(second-x second-y
-)					   (dist-away (ex hazuki) (ey hazuki) (fl+ ang pi) 85.0)])
-		  (bullet-x-set! tempblt first-x)
-		  (bullet-y-set! tempblt first-y)
-		  (bullet-x-set! tempblt2 second-x)
-		  (bullet-y-set! tempblt2 second-y)
-		  (when (fxzero? (fxmod (- frames start-frames) 180))
-			(spawn-subtask "knives"
-			  (λ (task)
-				(define (doit x y)
-				  (let*-values ([(facing) (fl+ (facing-player x y)
-											   ;;(centered-roll game-rng (torad 2.0))
-											   )])
-					(-> (spawn-bullet 'knife-orange x y 8
-									  (λ (task blt)
-										(dotimes 30
-										  (bullet-facing-set! blt (facing-player x y))
-										  (yield))
-										(linear-step-accelerate-forever
-										 (facing-player x y) 0.0 0.2 5.0 task blt))
-									  1)
-						(bullet-facing-set! facing))))
-				(dotimes 45
-				  (let*-values ([(ang) (compute-emitter-ang)]
-								[(first-x first-y)
-								 (dist-away (ex hazuki) (ey hazuki) ang 85.0)]
-								[(second-x second-y)
-								 (dist-away (ex hazuki) (ey hazuki) (fl+ ang pi) 85.0)])
-					(doit first-x first-y)
-					(doit second-x second-y))
-				  (wait 2)))
-			  task)))
-		(yield)
-		(loop)))
-	task keep-running)
+	  (define (doit i right-side)
+		(parameterize ([ovr-noprune #t])
+		  (-> (fb)
+			  (fbcount 3)
+			  (fbspeed (fl- 5.0 (fl* 0.6 (fx2fl i))))
+			  (fbabsolute-aim)
+			  (fbang
+			   (fl+ (todeg (facing-player (ex hazuki) (ey hazuki)))
+					90.0
+					(if right-side 180.0 0.0))
+			   15.0)
+			  (fbrenderprio 1)
+			  (fbshootenm
+			   hazuki
+			   (vnth
+				'#(knife-red knife-orange knife-blue knife-magenta knife-yellow) i)
+			   2 (sebundle-shoot0 sounds)
+			   (λ (facing speed task blt)
+				 (dotimes 30
+				   (linear-step facing speed blt)
+				   (yield))
+				 (wait 60)
+				 (-> (fb)
+					 (fbcount 3)
+					 (fbspeed 7.5)
+					 (fbang 0.0 22.5)
+					 (fbrenderprio 1)
+					 (fbshootez (bullet-type blt) (bx blt) (by blt)
+								2 (sebundle-bell sounds)))
+				 (cancel-bullet blt))))))
+	  (interval-loop 50
+		(do [(i 0 (add1 i))]
+			[(= i 5)]
+		  (doit i #f)
+		  (doit i #t)
+		  (wait 15))))
+	task keep-running)  
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp1 task hazuki))
