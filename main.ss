@@ -3300,27 +3300,24 @@
 									   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
 												(cdr dur) enm))
 									 '()
-									 (constantly #f))]
-				   [bossinfo (blank-bossinfo "Harukaze Doremi" #xff69fcff)])
-			   (enm-extras-set! enm bossinfo))]
+									 (constantly #f))])
+			   (enm-extras-set! enm (blank-doremi-bossinfo)))]
 			[(hazuki-enter)
 			 (let ([enm (spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
 									 (λ (task enm)
 									   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
 												(cdr dur) enm))
 									 '()
-									 (constantly #f))]
-				   [bossinfo (blank-bossinfo "Fujiwara Hazuki" #xffa500ff)])
-			   (enm-extras-set! enm bossinfo))]
+									 (constantly #f))])
+			   (enm-extras-set! enm (blank-hazuki-bossinfo)))]
 			[(aiko-enter)
 			 (let ([enm (spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
 									 (λ (task enm)
 									   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
 												(cdr dur) enm))
 									 '()
-									 (constantly #f))]
-				   [bossinfo (blank-bossinfo "Senoo Aiko" #x00ffffff)])
-			   (enm-extras-set! enm bossinfo))])))])))
+									 (constantly #f))])
+			   (enm-extras-set! enm (blank-aiko-bossinfo)))])))])))
 
 (define (handle-game-input inputs)
   (define level-pressed (inputset-level-pressed inputs))
