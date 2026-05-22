@@ -77,7 +77,7 @@
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
 		  circle-hint-opaque
 		  circle-hint clear-bonus
-		  text-hint)
+		  text-hint doremi-title hazuki-title aiko-title)
   make-particletype-set)
 
 (define-enumeration miscentflag
@@ -2584,7 +2584,51 @@
 				 [size (assqdr 'size extra-data)]
 				 [color (assqdr 'color extra-data)])
 			 (draw-centered-field-text
-			  fonts age max-age text render-y size color #t)))))))
+			  fonts age max-age text render-y size color #t)))
+		  ([doremi-title hazuki-title aiko-title]
+		   (let*-values
+			   ([(title-text boss-name)
+				 (case type
+				   ([doremi-title]
+					(values "World's Most Unfortunate Pretty Girl"
+							"Harukaze Doremi"))
+				   ([hazuki-title]
+					(values "Elegant and Perfect Lady" "Fujiwara Hazuki"))
+				   ([aiko-title]
+					(values "Straightforward Osakan Girl" "Senoo Aiko")))]
+				[(twidth theight)
+				 (raylib:measure-text-ex (fontbundle-bubblegum16 fonts)
+										 title-text 16.0 0.0)]
+				[(nwidth nheight)
+				 (raylib:measure-text-ex (fontbundle-bubblegum20 fonts)
+										 boss-name 20.0 0.0)]
+				[(animation-multiplier)
+				 (cond
+				  [(<= age 45)
+				   (inexact (/ age 45))]
+				  [(>= age (- max-age 45))
+				   (fl- 1.0 (inexact (/ (- age (- max-age 45)) 45)))]
+				  [else 1.0])])
+			 (raylib:draw-rectangle-rounded
+			  ;; name assumed to be narrower than title
+			  (fl+ (fl- render-x (fl/ twidth 2.0) 10.0)
+				   (lerp -20.0 0.0 animation-multiplier))
+			  render-y
+			  (fl+ 10.0 twidth 10.0) (fl+ 10.0 theight 5.0 nheight 10.0)
+			  0.25 0
+			  (fxlogior #x93939300 (eround (lerp 0 160 animation-multiplier))))
+			 (raylib:draw-text-ex
+			  (fontbundle-bubblegum16 fonts) title-text
+			  (fl- render-x (fl/ twidth 2.0))
+			  (fl+ render-y 10.0 (lerp -20.0 0.0 animation-multiplier))
+			  16.0 0.0
+			  (override-alpha -1 (eround (fl* animation-multiplier 255.0))))
+			 (raylib:draw-text-ex
+			  (fontbundle-bubblegum20 fonts) boss-name
+			  (fl- render-x (fl/ nwidth 2.0))
+			  (fl+ render-y 10.0 theight 5.0 (lerp -20.0 0.0 animation-multiplier))
+			  20.0 0.0
+			  (override-alpha -1 (eround (fl* animation-multiplier 255.0))))))))))
   (vector-for-each each live-particles))
 
 (define-record-type miscent
@@ -3298,7 +3342,9 @@
 			 (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
 									 (λ (task enm)
 									   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-												(cdr dur) enm))
+												(cdr dur) enm)
+									   (spawn-particle (particletype doremi-title)
+													   0.0 240.0 240 #f))
 									 '()
 									 (constantly #f))])
 			   (enm-extras-set! enm (blank-doremi-bossinfo)))]
@@ -3306,7 +3352,9 @@
 			 (let ([enm (spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
 									 (λ (task enm)
 									   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
-												(cdr dur) enm))
+												(cdr dur) enm)
+									   (spawn-particle (particletype hazuki-title)
+													   0.0 240.0 240 #f))
 									 '()
 									 (constantly #f))])
 			   (enm-extras-set! enm (blank-hazuki-bossinfo)))]
@@ -3314,7 +3362,9 @@
 			 (let ([enm (spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
 									 (λ (task enm)
 									   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
-												(cdr dur) enm))
+												(cdr dur) enm)
+									   (spawn-particle (particletype aiko-title)
+													   0.0 240.0 240 #f))
 									 '()
 									 (constantly #f))])
 			   (enm-extras-set! enm (blank-aiko-bossinfo)))])))])))
@@ -4196,6 +4246,7 @@
   (vector-fill! live-misc-ents #f)
   (vector-fill! live-particles #f)
   (stage-ctx-dialogue-set! current-stage-ctx #f)
+  (stage-ctx-dialogue-pinned-until-set! current-stage-ctx -1)
   (kill-all-tasks)
   (set! frames timestamp)
   (if (< chapter 14)

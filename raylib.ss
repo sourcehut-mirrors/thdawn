@@ -9,7 +9,7 @@
 		  draw-circle-lines-v
 		  draw-text draw-text-ex measure-text-ex draw-fps
 		  draw-rectangle-rec draw-rectangle-pro draw-rectangle-lines
-		  draw-rectangle-gradient-h draw-rectangle-gradient-v
+		  draw-rectangle-gradient-h draw-rectangle-gradient-v draw-rectangle-rounded
 		  draw-ring draw-ring-lines draw-poly
 		  init-audio-device close-audio-device
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
@@ -283,6 +283,14 @@
 	(load-global-rectangle global-rectangle x y width height)
 	(load-global-color global-color rgba)
 	(draw-rectangle-rec0 global-rectangle global-color))
+  
+  (define draw-rectangle-rounded0
+	(foreign-procedure __atomic "DrawRectangleRounded"
+					   ((& RayRect) float int (& Color)) void))
+  (define (draw-rectangle-rounded x y width height roundness segments rgba)
+	(load-global-rectangle global-rectangle x y width height)
+	(load-global-color global-color rgba)
+	(draw-rectangle-rounded0 global-rectangle roundness segments global-color))
 
   (define draw-rectangle-pro0
 	(foreign-procedure __atomic "DrawRectanglePro" ((& RayRect) (& RayVector2)
