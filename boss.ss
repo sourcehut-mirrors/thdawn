@@ -19,19 +19,19 @@
    ;; survival
    (make-healthbar 4 1 #xffd700ff #xdaa520ff)
    ;; aiko sp2
-   (make-healthbar 4 1 #x00ffffff #x008b8bff)
+   (make-healthbar 4 1 aiko-color #x008b8bff)
    ;; hazuki sp2
-   (make-healthbar 4 1 #xffa500ff #xf4a460ff)
+   (make-healthbar 4 1 hazuki-color #xf4a460ff)
    ;; doremi sp2
-   (make-healthbar 4 1 #xff69fcff #xba55d3ff)
+   (make-healthbar 4 1 doremi-color #xba55d3ff)
    ;; group sp2
    (make-healthbar 4 1 #xffd700ff #xdaa520ff)
    ;; aiko sp1
-   (make-healthbar 4 1 #x00ffffff #x008b8bff)
+   (make-healthbar 4 1 aiko-color #x008b8bff)
    ;; hazuki sp1
-   (make-healthbar 4 1 #xffa500ff #xf4a460ff)
+   (make-healthbar 4 1 hazuki-color #xf4a460ff)
    ;; doremi sp1
-   (make-healthbar 4 1 #xff69fcff #xba55d3ff)
+   (make-healthbar 4 1 doremi-color #xba55d3ff)
    ;; group sp1
    (make-healthbar 25 0 #xffd700ff #xdaa520ff)))
 
@@ -2260,9 +2260,9 @@
 				   40 60 ctrl)))
   (spawn-particle
    (particletype text-hint) 0.0 280.0 150
-   '((text . "Don't let Aiko score a goal!")
-	 (size . 24.0)
-	 (color . #x00ffffff)))
+   `((color . ,aiko-color)
+	 (text . "Don't let Aiko score a goal!")
+	 (size . 24.0)))
   (wait 60)
   (raylib:play-sound (sebundle-laser sounds))
   (spawn-subtask "protection"

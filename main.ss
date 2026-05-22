@@ -26,6 +26,9 @@
   vkeys)
 (define empty-vkeys (vkeys))
 (define vkeys-proc (enum-set-constructor empty-vkeys))
+(define doremi-color #xff69fcff) ;; or #xff7fbcff ?
+(define aiko-color #x00ffffff)
+(define hazuki-color #xffa500ff)
 
 (include "keyconsts.ss")
 (define (key-name k)
@@ -2628,7 +2631,12 @@
 			  (fl- render-x (fl/ nwidth 2.0))
 			  (fl+ render-y 10.0 theight 5.0 (lerp -20.0 0.0 animation-multiplier))
 			  20.0 0.0
-			  (override-alpha -1 (eround (fl* animation-multiplier 255.0))))))))))
+			  (override-alpha
+			   (case type
+				 [(doremi-title) doremi-color]
+				 [(hazuki-title) hazuki-color]
+				 [(aiko-title) aiko-color])
+			   (eround (fl* animation-multiplier 255.0))))))))))
   (vector-for-each each live-particles))
 
 (define-record-type miscent
@@ -3312,11 +3320,11 @@
 				 #f frames 0.0 0.0
 				 #f #f #f 0 0 0 (immutable-vector)))
 (define (blank-doremi-bossinfo)
-  (blank-bossinfo "Harukaze Doremi" #xff7fbcff))
+  (blank-bossinfo "Harukaze Doremi" doremi-color))
 (define (blank-hazuki-bossinfo)
-  (blank-bossinfo "Fujiwara Hazuki" #xffa500ff))
+  (blank-bossinfo "Fujiwara Hazuki" hazuki-color))
 (define (blank-aiko-bossinfo)
-  (blank-bossinfo "Senoo Aiko" #x00ffffff))
+  (blank-bossinfo "Senoo Aiko" aiko-color))
 
 (define (handle-dialogue-advance)
   (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
@@ -3794,9 +3802,9 @@
   (define text-color
 	(case (assqdr 'type current)
 	  [(reimu) -1]
-	  [(doremi) #xff69fcff]
-	  [(aiko) #x00ffffff]
-	  [(hazuki) #xffa500ff]))
+	  [(doremi) doremi-color]
+	  [(aiko) aiko-color]
+	  [(hazuki) hazuki-color]))
   (raylib:draw-rectangle-rec
    (rectangle-x dialog-dest-bounds)
    (rectangle-y dialog-dest-bounds)
