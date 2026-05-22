@@ -3834,33 +3834,41 @@
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
   (raylib:draw-text-ex
    (fontbundle-bubblegum24 fonts)
-   (format "Score: ~:d" current-score)
+   (format "High: ~:d"
+		   (let* ([hiscores (assqdr 'hiscore play-data)]
+				  [hiscore (if (null? hiscores)
+							   0 (score-entry-score (car hiscores)))])
+			 (if (is-replay) hiscore (max hiscore current-score))))
    440.0 15.0 24.0 0.0 -1)
   (raylib:draw-text-ex
    (fontbundle-bubblegum24 fonts)
+   (format "Score: ~:d" current-score)
+   440.0 45.0 24.0 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum24 fonts)
    "Life"
-   440.0 45.0
+   440.0 75.0
    24.0 0.0 #xFF69FCFF)
   (raylib:draw-text-ex
    (fontbundle-bubblegum24 fonts)
    "Bomb"
-   440.0 75.0
+   440.0 105.0
    24.0 0.0 #x72E57AFF)
   (raylib:draw-text-ex
    (fontbundle-bubblegum24 fonts)
    (format "Graze: ~d" graze)
-   440.0 105.0
+   440.0 135.0
    24.0 0.0 -1)
   (raylib:draw-text-ex
    (fontbundle-bubblegum24 fonts)
    (format "Value: ~:d" item-value)
-   440.0 135.0
+   440.0 165.0
    24.0 0.0 #x49D0FFFF)
   (when (is-replay)
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum24 fonts)
 	 "REPLAY"
-	 440.0 165.0
+	 440.0 195.0
 	 24.0 0.0 red)
 	;; TODO config option for liveplays?
 	(let ([get-color
@@ -3869,25 +3877,25 @@
 				 selected-color
 				 #x606060ff))])
 	  (raylib:draw-rectangle-rec
-	   440.0 220.0 24.0 24.0
+	   440.0 250.0 24.0 24.0
 	   (get-color (vkey left)))
 	  (raylib:draw-rectangle-rec
-	   466.0 220.0 24.0 24.0
+	   466.0 250.0 24.0 24.0
 	   (get-color (vkey down)))
 	  (raylib:draw-rectangle-rec
-	   466.0 194.0 24.0 24.0
+	   466.0 224.0 24.0 24.0
 	   (get-color (vkey up)))
 	  (raylib:draw-rectangle-rec
-	   492.0 220.0 24.0 24.0
+	   492.0 250.0 24.0 24.0
 	   (get-color (vkey right)))
 	  (raylib:draw-rectangle-rec
-	   532.0 220.0 24.0 24.0
+	   532.0 250.0 24.0 24.0
 	   (get-color (vkey focus)))
 	  (raylib:draw-rectangle-rec
-	   558.0 220.0 24.0 24.0
+	   558.0 250.0 24.0 24.0
 	   (get-color (vkey shoot)))
 	  (raylib:draw-rectangle-rec
-	   584.0 220.0 24.0 24.0
+	   584.0 250.0 24.0 24.0
 	   (get-color (vkey bomb)))))
 
   ;; this is kinda dumb but whatever
@@ -3904,7 +3912,7 @@
 	  (set! nth-boss (add1 nth-boss))))
 
   (let* ([start-x 490.0]
-		 [y 48.0]
+		 [y 78.0]
 		 [whole-lives (floor life-stock)]
 		 ;; will always be 0, 1, or 2
 		 [fractional-lives (* 3 (- life-stock whole-lives))])
@@ -3920,7 +3928,7 @@
 				   (+ start-x (* 16.0 whole-lives)) y -1)]))
 
   (let* ([start-x 490.0]
-		 [y 77.0]
+		 [y 107.0]
 		 [whole-bombs (floor bomb-stock)]
 		 ;; will always be 0, 1, or 2
 		 [fractional-bombs (* 3 (- bomb-stock whole-bombs))])
