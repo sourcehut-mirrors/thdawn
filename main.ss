@@ -1817,15 +1817,20 @@
    (mutable global-angle)
    (mutable per-layer-angle)
    (mutable offset)
-   (mutable aimed-at-player))
+   (mutable aimed-at-player)
+   (mutable render-priority))
   (sealed #t))
 (define (cb)
-  (make-circle-builder 0 0 0.0 0.0 0.0 0.0 0.0 #t))
+  (make-circle-builder 0 0 0.0 0.0 0.0 0.0 0.0 #t 0))
 
 ;; NB: Only works when used with cbshootenm/ez
 (define (cboffset cb offset)
   (circle-builder-offset-set! cb offset)
   cb)
+(define (cbrenderprio cb priority)
+  (circle-builder-render-priority-set! cb priority)
+  cb)
+
 (define cbcount
   (case-lambda
 	[(cb per-layer)
@@ -1896,6 +1901,7 @@
 	 (cbshootez cb type x y delay sound linear-step-forever)]
 	[(cb type x y delay sound control-function)
 	 (define offset (circle-builder-offset cb))
+	 (define prio (circle-builder-render-priority cb))
 	 (cbshoot cb x y
 			  (λ (layer in-layer speed facing)
 				(when sound
@@ -1903,7 +1909,7 @@
 				(-> (spawn-bullet type
 								  (fl+ x (fl* offset (flcos facing)))
 								  (fl+ y (fl* offset (flsin facing)))
-								  delay (curry control-function facing speed))
+								  delay (curry control-function facing speed) prio)
 					(bullet-facing-set! facing))))]))
 
 (define-record-type spell-descriptor
@@ -4129,12 +4135,11 @@
 		[(not a) #t]
 		[(not b) #f]
 		[else
-		 (let ([rpdiff (fx- (bullet-render-priority b)
-							(bullet-render-priority a))])
-		   (cond
-			[(fxpositive? rpdiff) #t]
-			[(fxnegative? rpdiff) #f]
-			[else (fx< (bullet-id a) (bullet-id b))]))]))
+		 (let ([rpa (bullet-render-priority a)]
+			   [rpb (bullet-render-priority b)])
+		   (if (fx= rpa rpb)
+			   (fx< (bullet-id a) (bullet-id b))
+			   (fx< rpa rpb)))]))
 	 sorted-bullets)
 	;; lasers go under enemies, all other bullets on top
 	(draw-lasers textures sorted-bullets)

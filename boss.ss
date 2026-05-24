@@ -364,7 +364,7 @@
 			(let ([x (centered-roll game-rng 140.0)]
 				  [facing (roll-flrange game-rng (torad 70.0) (torad 120.0))])
 			  (spawn-bullet 'small-ball-orange x 0.0 5
-							(curry linear-step-forever facing 2.25)))))
+							(curry linear-step-forever facing 2.25) 1))))
 		task)
 	  (let loop ([state 'center-left] [wave 0])
 		(raylib:play-sound (sebundle-shoot0 sounds))
