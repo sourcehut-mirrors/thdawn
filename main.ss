@@ -3075,6 +3075,7 @@
 	 (cancel-all #t)
 	 (raylib:play-sound (sebundle-shoot0 sounds))
 	 (spawn-enm-drops enm)
+	 (bossinfo-remaining-timer-set! bossinfo 0)
 	 (unless nodelay
 	   (wait 60))
 	 (bossinfo-healthbars-set!
