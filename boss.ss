@@ -514,71 +514,7 @@
   (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp1 task hazuki))
 
-(define (hazuki-sp1-flower right-side break-box)
-  (define x (if right-side (fx2fl +playfield-max-x+) (fx2fl +playfield-min-x+)))
-  (define y (fx2fl +playfield-max-y+))
-  (define speed (roll-flrange game-rng 3.0 4.0))
-  (define facing (if right-side
-					 (torad (roll-flrange game-rng -95.0 -122.0))
-					 (torad (roll-flrange game-rng -58.0 -85.0))))
-  (define accel (roll-flrange game-rng 0.02 0.03))
-  (define prebreak-delay (roll game-rng 20))
-  (define postbreak-delay (roll game-rng 20))
-  (define (ctrl task blt)
-	(define initial-dx (fl- x (bx blt)))
-	(define initial-dy (fl- y (by blt)))
-	(linear-step-decelerate facing speed -0.02 blt)
-	(wait-until (thunk (unbox break-box)))
-	(wait prebreak-delay)
-	(if (eq? 'pellet (bullet-family (bullet-type blt)))
-		(cancel-bullet blt)
-		(let* ([cur-cx (fl+ (bx blt) initial-dx)]
-			   [cur-cy (fl+ (by blt) initial-dy)]
-			   [facing (facing-point cur-cx cur-cy (bx blt) (by blt))])
-		  (linear-step-decelerate facing 2.0 -0.1 blt)
-		  (wait (+ 60 postbreak-delay))
-		  (linear-step-accelerate-forever
-		   (fl+ hpi (torad (centered-roll game-rng 20.0)))
-		   0.0 0.08 3.5 task blt))))
-  (define petal-type (vrand '#(small-ball-red
-							   small-ball-orange small-ball-blue small-ball-magenta)
-							game-rng))
-  (define blts
-	(map (λ (_) (spawn-bullet petal-type x y 5 ctrl))
-		 (iota 5)))
-  (position-bullets-around x y 12.0 (fl* tau (roll game-rng)) blts)
-  (spawn-bullet 'pellet-white x y 5 ctrl))
-
-(define (hazuki-sp1-wave task hazuki)
-  (define points (vector (vec2 -134.0 93.0)
-						 (vec2 0.0 222.0)
-						 (vec2 140.0 208.0)
-						 (vec2 151.0 121.0)))
-  (define break-box (box #f))
-  (dotimes 12
-	(hazuki-sp1-flower #f break-box)
-	(hazuki-sp1-flower #t break-box)
-	(wait 8))
-  (wait 240)
-  (raylib:play-sound (sebundle-longcharge sounds))
-  (ease-to ease-in-out-quad (v2x (vnth points 0)) (v2y (vnth points 0)) 60 hazuki)
-  (spawn-subtask "move"
-	(λ (task)
-	  (move-on-spline points (λ (_seg) (values values 180)) hazuki))
-	task)
-  (do [(i 0 (add1 i))]
-	  [(= i 6)]
-	(-> (fb)
-		(fbcount 1 5)
-		(fbspeed 1.0 5.0)
-		(fbabsolute-aim)
-		(fbang (vnth '#(100.0 90.0 80.0 70.0 60.0 50.0) i))
-		(fbshootenm hazuki 'bubble-orange 5 (sebundle-shoot0 sounds)))
-	(wait 30))
-  (set-box! break-box #t)
-  (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 hazuki))
-
-(define (hazuki-sp1-flower2 x y)
+(define (hazuki-sp1-flower x y)
   (define petal-type (vrand '#(small-ball-red
 							   small-ball-orange small-ball-blue small-ball-magenta)
 							game-rng))
@@ -614,19 +550,37 @@
 	(position-bullets-around x y 12.0 ring-ang ring)))
 
 (define (hazuki-sp1-glow-orb-control dest-x dest-y task blt)
-  (ease-bullet-to ease-in-out-quad dest-x dest-y 90 blt)
+  (ease-bullet-to ease-in-out-quad dest-x dest-y 60 blt)
   (wait 20)
   (spawn-subtask "spawn flowers"
 	(λ (task)
 	  (interval-loop 4
 		(raylib:play-sound (sebundle-shootsoft sounds))
-		(hazuki-sp1-flower2
+		(hazuki-sp1-flower
 		 (fl+ (bx blt) (centered-roll game-rng 30.0))
 		 (fl+ (by blt) (centered-roll game-rng 15.0)))))
 	task (thunk (in-bounds (bx blt) (by blt))))
   (if (flnegative? dest-x)
 	  (linear-step-accelerate-forever 0.0 0.0 0.1 6.0 task blt)
 	  (linear-step-accelerate-forever pi 0.0 0.1 6.0 task blt)))
+
+(define (hazuki-sp1-wave task hazuki)
+  (raylib:play-sound (sebundle-shortcharge sounds))
+  (wait 60)
+  (for-each-indexed
+   (λ (i y)
+	 (raylib:play-sound (sebundle-shoot0 sounds))
+	 (-> (spawn-bullet
+		  (vnth '#(glow-orb-orange glow-orb-orange glow-orb-red glow-orb-red) i)
+		  (ex hazuki) (ey hazuki) 5
+		  (curry hazuki-sp1-glow-orb-control
+				 (fx2fl (if (even? i) +playfield-min-x+ +playfield-max-x+))
+				 y))
+		 (bullet-addflags (bltflags uncancelable)))
+	 (unless (= i 3)
+	   (wait 5)))
+   '(148.0 218.0 288.0 358.0))
+  )
 
 (define (hazuki-sp1 task hazuki)
   (define bossinfo (enm-extras hazuki))
@@ -639,21 +593,7 @@
   (spawn-subtask "main"
 	(λ (task)
 	  (wait 60)
-	  (raylib:play-sound (sebundle-shortcharge sounds))
-	  (wait 60)
-	  (for-each-indexed
-	   (λ (i y)
-		 (raylib:play-sound (sebundle-shoot0 sounds))
-		 (-> (spawn-bullet
-			  (vnth '#(glow-orb-orange glow-orb-orange glow-orb-red glow-orb-red) i)
-			  (ex hazuki) (ey hazuki) 5
-			  (curry hazuki-sp1-glow-orb-control
-					 (fx2fl (if (even? i) +playfield-min-x+ +playfield-max-x+))
-					 y))
-			 (bullet-addflags (bltflags uncancelable)))
-		 (unless (= i 3)
-		   (wait 5)))
-	   '(148.0 218.0 288.0 358.0)))
+	  (hazuki-sp1-wave task hazuki))
 	task keep-running)
   
   (wait-while keep-running)
