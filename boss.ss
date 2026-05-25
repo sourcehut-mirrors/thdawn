@@ -514,7 +514,7 @@
   (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp1 task hazuki))
 
-(define (hazuki-sp1-flower x y)
+(define (hazuki-sp1-flower message-box x y)
   (define petal-type (vrand '#(small-ball-red
 							   small-ball-orange small-ball-blue small-ball-magenta)
 							game-rng))
@@ -532,39 +532,50 @@
 					   (linear-step-decelerate (fl* tau (roll game-rng))
 											   (roll-flrange game-rng 1.0 1.5)
 											   -0.02 blt)
-					   (loop-forever)
-					   ;; (wait 120)
-					   ;; (linear-step-accelerate-forever (fl* tau (roll game-rng))
-					   ;; 								   0.0 0.02 3.0 task blt)
-					   ))]
+					   (wait-until (thunk (unbox message-box)))
+					   (cancel-bullet center)))]
 			[center-idx (vector-index center live-bullets)]
 			[ring (map
 				   (λ (_)
 					 (spawn-bullet
 					  petal-type x y 5
 					  (λ (task blt)
-						(wait-until
-						 (thunk (not (eq? center (vnth live-bullets center-idx)))))
-						(delete-bullet blt))))
+						(wait-until (thunk (unbox message-box)))
+						(let ([facing (facing-point (bx center) (by center)
+													(bx blt) (by blt))])
+						  (linear-step-decelerate facing 2.0 -0.2 blt)
+						  (wait 90)
+						  (raylib:play-sound (sebundle-bell sounds))
+						  (linear-step-accelerate-forever
+						   facing 0.0 0.2 3.0 task blt)))))
 				   (iota 5))])
-	(position-bullets-around x y 12.0 ring-ang ring)))
+	(position-bullets-around x y 12.0 ring-ang ring)
+	center))
 
-(define (hazuki-sp1-glow-orb-control dest-x dest-y task blt)
+(define (hazuki-sp1-glow-orb-control
+		 dest-x dest-y flowers
+		 task blt)
   (ease-bullet-to ease-in-out-quad dest-x dest-y 60 blt)
   (wait 20)
   (spawn-subtask "spawn flowers"
 	(λ (task)
-	  (interval-loop 4
+	  (interval-loop 6
 		(raylib:play-sound (sebundle-shootsoft sounds))
-		(hazuki-sp1-flower
-		 (fl+ (bx blt) (centered-roll game-rng 30.0))
-		 (fl+ (by blt) (centered-roll game-rng 15.0)))))
+		(let* ([mbox (box #f)]
+			   [center (hazuki-sp1-flower
+						mbox
+						(fl+ (bx blt) (centered-roll game-rng 30.0))
+						(fl+ (by blt) (centered-roll game-rng 15.0)))])
+		  (set-box! flowers (cons (cons center mbox)
+								  (unbox flowers))))))
 	task (thunk (in-bounds (bx blt) (by blt))))
   (if (flnegative? dest-x)
 	  (linear-step-accelerate-forever 0.0 0.0 0.1 6.0 task blt)
 	  (linear-step-accelerate-forever pi 0.0 0.1 6.0 task blt)))
 
 (define (hazuki-sp1-wave task hazuki)
+  ;; list of (center . message box for that flower)
+  (define flowers (box '()))
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 60)
   (for-each-indexed
@@ -575,12 +586,38 @@
 		  (ex hazuki) (ey hazuki) 5
 		  (curry hazuki-sp1-glow-orb-control
 				 (fx2fl (if (even? i) +playfield-min-x+ +playfield-max-x+))
-				 y))
+				 y flowers))
 		 (bullet-addflags (bltflags uncancelable)))
 	 (unless (= i 3)
 	   (wait 5)))
-   '(148.0 218.0 288.0 358.0))
-  )
+   '(118.0 188.0 258.0 328.0))
+  (wait 180) ;; for orbs to finish
+  (ease-to ease-in-out-quad (ex hazuki) 240.0 45 hazuki)
+  (raylib:play-sound (sebundle-longcharge sounds))
+  (wait 60)
+  (-> (cb)
+	  (cbcount 48)
+	  (cbspeed 2.0)
+	  (cbshootenm
+	   hazuki 'knife-orange 2 (sebundle-shoot0 sounds)
+	   (λ (facing speed task blt)
+		 (spawn-subtask "breaker"
+		   (λ (task)
+			 (loop-forever
+			  (for-each
+			   (λ (p)
+				 (define center (car p))
+				 (define mbox (cdr p))
+				 (when (fl<
+						(distsq (bx center) (by center) (bx blt) (by blt))
+						(* 14.0 14.0))
+				   (set-box! mbox 'shatter)))
+			   (unbox flowers))))
+		   task)
+		 (linear-step-forever facing speed task blt))))
+  (wait 480)
+  (vector-for-each-truthy cancel-bullet live-bullets)
+  (ease-to ease-in-out-quad (ex hazuki) +middle-boss-y+ 45 hazuki))
 
 (define (hazuki-sp1 task hazuki)
   (define bossinfo (enm-extras hazuki))
@@ -590,10 +627,10 @@
   (set! current-chapter 19)
   (declare-spell hazuki 4)
 
+  (wait 60)
   (spawn-subtask "main"
 	(λ (task)
-	  (wait 60)
-	  (hazuki-sp1-wave task hazuki))
+	  (loop-forever (hazuki-sp1-wave task hazuki)))
 	task keep-running)
   
   (wait-while keep-running)
