@@ -1938,8 +1938,8 @@
 							2700 12000 1000000 'group std std-fail)
 	 (make-spell-descriptor "Spring Sign \"Harukaze Cherry Blossoms\""
 							3600 15000 1000000 'doremi std std-fail)
-	 (make-spell-descriptor "Hazuki Sp1"
-							3600 10000 1000000 'hazuki std std-fail)
+	 (make-spell-descriptor "Floral Sign \"Flower Dance\""
+							3600 9000 1000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
 							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
@@ -2438,6 +2438,16 @@
 				[yv (flsin facing)])
 			(linear-step-forever (flatan yv (fl- xv)) speed task blt))]))
 	  (loop))))
+
+(define (linear-step-curve facing speed angvel max-dfacing task blt)
+  (let loop ([ang facing])
+	(linear-step ang speed blt)
+	(bullet-facing-set! blt ang)
+	(yield)
+	(let ([next-ang (fl+ ang angvel)])
+	  (if (fl<= (flabs (fl- next-ang facing)) max-dfacing)
+		  (loop next-ang)
+		  ang))))
 
 (define-record-type particle
   (fields

@@ -187,7 +187,32 @@ Also, the way the knives are shot means you could probably pull of a neat move b
 close around Hazuki. Though it's pretty hard and you don't gain much score over just doing
 it at the bottom. But it looks cool! Post a video if you manage to do it!
 
-○ Hazuki Sp1 (Hazuki)
+○ Floral Sign "Flower Dance" (Hazuki)
+
+This was the fourteenth boss attack to be completed.
+
+I struggled for quite a while to come up with something that looked pretty. Originally,
+the flowers on this spell and the previous nonspell were made of small orbs, but that
+ended up feeling really "bulky". Things felt a lot better once I switched the petals out
+for rice bullets.
+
+The design itself also took a few iterations. Originally, I had the big glow orbs moving
+horizontal across the screen, spawning flowers along the way. Then, I had Hazuki either
+gather the flowers and shoot them at the player, or chop them apart with knives (after
+which the petals would scatter everywhere). However, I never got it feeling right after
+hours of attempts at refining it. I also realized that I have too many of these attacks in
+the game already where the boss shoots to set up some bullets, pauses, charges up, and
+then releases some stronger wave.
+
+So, after I got home from a work session at the cafe today, I ripped it all out and just
+made a U-shaped-streaming spell. It's similar to the nonspell, but not entirely trivial as
+you have to make large enough misdirects for the gaps to be safe. It took some
+number-tweaking, but I'm surprised how fast it came together. If only I didn't waste so
+much time on the previous design...
+
+And yes, the spell name is a reference to DJ Okawari's famous song. I'm sure every ACG fan
+heard this everywhere in the early- to mid-2010s. Hazuki's a dancer, there's flowers in
+the spell, and you're dancing around to misdirect them, so the name popped up immediately.
 
 ○ Boss Non-spell 4 (Aiko)
 

@@ -514,202 +514,30 @@
   (common-nonspell-postlude bossinfo hazuki)
   (hazuki-sp1 task hazuki))
 
-(define (hazuki-sp1-flower hazuki message-box x y)
-  (define petal-type (vrand '#(small-ball-red
-							   small-ball-orange small-ball-blue small-ball-magenta)
-							game-rng))
-  (define ring-ang (fl* tau (roll game-rng)))
-  (letrec* ([center (spawn-bullet
-					 'pellet-white x y 5
-					 (λ (task blt)
-					   (define start-frames frames)
-					   (define facing (fl* tau (roll game-rng)))
-					   ;; copy of linear-step-decelerate with subbullet positioning
-					   ;; TODO: make this cleaner?
-					   (let loop ([v (roll-flrange game-rng 1.0 1.5)])
-						 (bullet-x-set! blt (fl+ (bx blt)
-												 (fl* v (flcos facing))))
-						 (bullet-y-set! blt (fl+ (by blt)
-												 (fl* v (flsin facing))))
-						 (position-bullets-around (bx blt) (by blt)
-												  12.0 ring-ang ring)
-						 (yield)
-						 (let ([next-v (fl+ v -0.02)])
-						   (when (flpositive? next-v)
-							 (loop next-v))))
-					   
-					   (wait-until (thunk (unbox message-box)))
-					   (record-case (unbox message-box)
-						 [(shatter) ()
-						  (cancel-bullet center)]
-						 [(goto-hazuki) ()
-						  (let*-values ([(dist)
-										 (fl+ 40.0 (fl* (roll game-rng) 50.0))]
-										[(facing) (facing-point
-												   (ex hazuki) (ey hazuki)
-												   (bx blt) (by blt))]
-										[(x y) (dist-away (ex hazuki) (ey hazuki)
-														  facing dist)])
-							(if (fl> (distsq (ex hazuki) (ey hazuki)
-											 (bx blt) (by blt))
-									 (fl* dist dist))
-								;; HORRIBLE, HORRIBLE hack so we can hook in the
-								;; position-bullets-around call...
-								(ease-to-impl
-								 bx by bullet-x-set!
-								 (λ (blt y)
-								   (bullet-y-set! blt y)
-								   (position-bullets-around
-									(bx blt) (by blt) 12.0 ring-ang ring))
-								 ease-in-quad x y 90 blt)
-								(wait 90))
-							(wait (roll-range game-rng 165 225))
-							(set-box! message-box #f)
-							(raylib:play-sound (sebundle-shoot0 sounds))
-							(let ([facing (fl+ (facing-player (bx blt) (by blt))
-											   (centered-roll game-rng (torad 5.0)))])
-							  (loop-forever
-							   (linear-step facing 4.5 blt)
-							   (position-bullets-around (bx blt) (by blt)
-														12.0 ring-ang ring))))]
-						 [(shoot-at-player) () (void)])))]
-			[center-idx (vector-index center live-bullets)]
-			[ring (map
-				   (λ (_)
-					 (spawn-bullet
-					  petal-type x y 5
-					  (λ (task blt)
-						(wait-until (thunk (unbox message-box)))
-						(record-case (unbox message-box)
-						  [(shatter) ()
-						   (let ([facing (facing-point (bx center) (by center)
-													   (bx blt) (by blt))])
-							 (linear-step-decelerate facing 2.0 -0.2 blt)
-							 (wait 90)
-							 (raylib:play-sound (sebundle-bell sounds))
-							 (linear-step-accelerate-forever
-							  facing 0.0 0.2 3.0 task blt))]
-						  [(goto-hazuki shoot-at-player) () (void)]))))
-				   (iota 5))])
-	(position-bullets-around x y 12.0 ring-ang ring)
-	center))
-
-(define (hazuki-sp1-glow-orb-control
-		 hazuki variant dest-x dest-y flowers
-		 task blt)
-  (ease-bullet-to ease-in-out-quad dest-x dest-y 60 blt)
-  (wait 20)
-  (spawn-subtask "spawn flowers"
-	(λ (task)
-	  (define interval (case variant
-						 [(shatter) 6]
-						 [(goto-hazuki) 4]))
-	  (interval-loop 6
-		(raylib:play-sound (sebundle-shootsoft sounds))
-		(let* ([mbox (box #f)]
-			   [center (hazuki-sp1-flower
-						hazuki mbox
-						(fl+ (bx blt) (centered-roll game-rng 30.0))
-						(fl+ (by blt) (centered-roll game-rng 15.0)))])
-		  (set-box! flowers (cons (cons center mbox)
-								  (unbox flowers))))))
-	task (thunk (in-bounds (bx blt) (by blt))))
-  (if (flnegative? dest-x)
-	  (linear-step-accelerate-forever 0.0 0.0 0.1 6.0 task blt)
-	  (linear-step-accelerate-forever pi 0.0 0.1 6.0 task blt)))
-
-(define (hazuki-sp1-wave task hazuki)
-  ;; list of (center . message box for that flower)
-  (define flowers (box '()))
-  (define variant (vrand '#(shatter goto-hazuki) game-rng))
-  (raylib:play-sound (sebundle-shortcharge sounds))
-  (wait 60)
-  (for-each-indexed
-   (λ (i y)
-	 (raylib:play-sound (sebundle-shoot0 sounds))
-	 (-> (spawn-bullet
-		  (vnth '#(glow-orb-orange glow-orb-orange glow-orb-red glow-orb-red) i)
-		  (ex hazuki) (ey hazuki) 5
-		  (curry hazuki-sp1-glow-orb-control
-				 hazuki variant
-				 (fx2fl (if (even? i) +playfield-min-x+ +playfield-max-x+))
-				 y flowers))
-		 (bullet-addflags (bltflags uncancelable)))
-	 (unless (= i 3)
-	   (wait 5)))
-   '(118.0 188.0 258.0 328.0))
-  (wait 180) ;; for orbs to finish
-  (ease-to ease-in-out-quad (ex hazuki) 240.0 45 hazuki)
-  (raylib:play-sound (sebundle-longcharge sounds))
-  (wait 60)
-  (-> (cb)
-	  (cbcount 48)
-	  (cbspeed 2.0)
-	  (cbshootenm
-	   hazuki
-	   (case variant
-		 [(shatter) 'knife-orange]
-		 [(goto-hazuki) 'big-star-orange])
-	   2 (sebundle-shoot0 sounds)
-	   (λ (facing speed task blt)
-		 (spawn-subtask "breaker"
-		   (λ (task)
-			 (loop-forever
-			  (for-each
-			   (λ (p)
-				 (define center (car p))
-				 (define mbox (cdr p))
-				 (when (fl<
-						(distsq (bx center) (by center) (bx blt) (by blt))
-						(* 14.0 14.0))
-				   (set-box! mbox (list variant))))
-			   (unbox flowers))))
-		   task)
-		 (linear-step-forever facing speed task blt))))
-  (case variant
-	[(shatter) (wait 390)]
-	[(goto-hazuki)
-	 (wait 240)
-	 (dotimes 5
-	   (-> (cb)
-		   (cbcount 24 2)
-		   (cbspeed 3.0 4.0)
-		   (cbshootenm hazuki 'rest-magenta 2 (sebundle-bell sounds)))
-	   (wait 48))])
-  (vector-for-each-truthy cancel-bullet live-bullets)
-  (ease-to ease-in-out-quad (ex hazuki) +middle-boss-y+ 45 hazuki))
-
-(define (hazuki-sp1-flower2 hazuki x y)
+(define (hazuki-sp1-flower x y)
   (define petal-type (vrand '#(rice-red
 							   rice-orange rice-blue rice-magenta)
 							game-rng))
   (define ring-ang (fl* tau (roll game-rng)))
+  (define start-frames frames)
+  (define rev-spin (roll-bool game-rng))
+  (define (cur-ang)
+	(define dang (torad (flmod (* 1.2 (+ start-frames frames)) 360.0)))
+	(if rev-spin (fl- ring-ang dang) (fl+ ring-ang dang)))
   (letrec* ([center (spawn-bullet
 					 'small-ball-magenta x y 5
 					 (λ (task blt)
-					   (define start-frames frames)
-					   (define facing (fl* tau (roll game-rng)))
-					   ;; copy of linear-step-decelerate with subbullet positioning
-					   ;; TODO: make this cleaner?
-					   (let loop ([v (roll-flrange game-rng 1.0 1.2)])
-						 (bullet-x-set! blt (fl+ (bx blt)
-												 (fl* v (flcos facing))))
-						 (bullet-y-set! blt (fl+ (by blt)
-												 (fl* v (flsin facing))))
+					   (dotimes 85
 						 (position-bullets-around (bx blt) (by blt)
-												  12.0 ring-ang ring)
-						 (yield)
-						 (let ([next-v (fl+ v -0.02)])
-						   (when (flpositive? next-v)
-							 (loop next-v))))
-
-					   (wait 60)
+												  12.0 (cur-ang) ring)
+						 (yield))
+					   (raylib:play-sound (sebundle-bell sounds))
 					   (let ([facing (fl+ (facing-player (bx blt) (by blt))
 										  (centered-roll game-rng (torad 5.0)))])
 						 (loop-forever
-						  (linear-step facing 4.5 blt)
+						  (linear-step facing 3.75 blt)
 						  (position-bullets-around (bx blt) (by blt)
-												   12.0 ring-ang ring)))))]
+												   12.0 (cur-ang) ring)))))]
 			[center-idx (vector-index center live-bullets)]
 			[ring (map
 				   (λ (_)
@@ -720,7 +548,6 @@
 						 (thunk (not (eq? center (vnth live-bullets center-idx)))))
 						(delete-bullet blt))))
 				   (iota 5))])
-	(position-bullets-around x y 12.0 ring-ang ring)
 	center))
 
 (define (hazuki-sp1 task hazuki)
@@ -730,38 +557,42 @@
 		 (fxpositive? (enm-health hazuki))))
   (set! current-chapter 19)
   (declare-spell hazuki 4)
-
   (wait 60)
+  (raylib:play-sound (sebundle-shortcharge sounds))
+  (ease-to ease-in-out-quad (ex hazuki) (fl+ (ey hazuki) 50.0) 60 hazuki)
   (spawn-subtask "main"
 	(λ (task)
-	  (interval-loop 60
-		(-> (cb)
-			(cbcount 8)
-			(cbabsolute-aim)
-			(cbspeed 3.0)
-			(cbshootenm
-			 hazuki 'glow-orb-orange 2 (sebundle-shoot0 sounds)
-			 (λ (facing speed task blt)
-			   (spawn-subtask "spawn flowers"
-				 (λ (task)
-				   (wait (roll-range game-rng 10 60))
-				   (interval-loop 60
-					 (raylib:play-sound (sebundle-shootsoft sounds))
-					 (when (fl< (by blt) 315.0)
-					   (hazuki-sp1-flower2 hazuki (bx blt) (by blt)))))
-				 task (thunk (in-bounds (bx blt) (by blt))))
-			   (let loop ([i 0])
-				 (let ([real-facing (fl+ facing (torad (fx2fl (* i 3))))])
-				   (linear-step real-facing speed blt)
-				   (bullet-facing-set! blt real-facing)
-				   (yield)
-				   (if (< i 60)
-					   (loop (add1 i))
-					   (linear-step-forever real-facing speed task blt)))))))
-		;;(hazuki-sp1-wave task hazuki)
-		))
+	  (define base-ang (fl* 360.0 (roll game-rng)))
+	  (do [(i 0 (add1 i))]
+		  [#f]
+		(do [(j 0 (add1 j))]
+			[(= j 4)]
+		  (-> (cb)
+			  (cbcount 7)
+			  (cbabsolute-aim)
+			  (cbang (fl+ base-ang (fx2fl (* 15 i)) (fx2fl (* 5 j))))
+			  (cbspeed 3.0)
+			  (cbshootenm
+			   hazuki (if (even? j) 'glow-orb-orange 'glow-orb-magenta)
+			   2 (sebundle-shoot0 sounds)
+			   (λ (facing speed task blt)
+				 (spawn-subtask "spawn flowers"
+				   (λ (task)
+					 (wait 15)
+					 (dotimes 2
+					   (when (fl< (by blt) 315.0)
+						 (hazuki-sp1-flower (bx blt) (by blt)))
+					   (wait 60)))
+				   task)
+				 (-> (linear-step-curve facing speed
+										(torad (if (even? j) 3.0 -3.0))
+										(torad 225.0) task blt)
+					 (linear-step-curve speed
+										(torad (if (even? j) 0.2 -0.2))
+										+inf.0 task blt)))))
+		  (wait 20))
+		(wait 90)))
 	task keep-running)
-  
   (wait-while keep-running)
   (common-spell-postlude bossinfo hazuki)
   (aiko-non1 task hazuki))
