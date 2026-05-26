@@ -1255,7 +1255,7 @@
 				 (wait 30)
 				 (linear-step-accelerate-forever
 				  (bullet-facing blt)
-				  0.0 0.08 2.0
+				  0.0 0.08 4.0
 				  task blt))))))
 	(wait 30))
   (wait 60)
@@ -1265,7 +1265,7 @@
 
 (define (group-sp2-fairy-ctrl init-ang task enm)
   (define init-dist 160.0)
-  (define spin-time 180)
+  (define spin-time 120)
   (define-values (ix iy)
 	(dist-away group-sp2-center-x group-sp2-center-y init-ang init-dist))
   (define _ (ease-to values ix iy 60 enm))

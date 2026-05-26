@@ -1943,7 +1943,7 @@
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
 							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
-							4200 30000 3000000 'group std std-fail)
+							4200 25000 3000000 'group std std-fail)
 	 (make-spell-descriptor "Gourmet Sign \"Doremi's Steak Hunt\""
 							6000 9000 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Hazuki's Ghostbusting Challenge\""
