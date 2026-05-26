@@ -406,7 +406,7 @@
 (define (hazuki-non1-flower petal-type x y speed facing)
   (define ring-ang (fl* tau (roll game-rng)))
   (letrec* ([center (spawn-bullet
-					 'pellet-white x y 5
+					 'small-ball-white x y 5
 					 (λ (task blt)
 					   (loop-forever
 						(linear-step facing speed blt)
@@ -465,8 +465,8 @@
 				(define-values (x y) (dist-away (ex hazuki) (ey hazuki)
 												facing 70.0))
 				(hazuki-non1-flower
-				 (vnth-mod '#(small-ball-red
-							  small-ball-orange small-ball-blue small-ball-magenta) i)
+				 (vnth-mod '#(rice-red
+							  rice-orange rice-blue rice-magenta) i)
 				 x y speed facing))))
 		(wait 15)
 		(loop (add1 i))))
@@ -679,6 +679,50 @@
   (vector-for-each-truthy cancel-bullet live-bullets)
   (ease-to ease-in-out-quad (ex hazuki) +middle-boss-y+ 45 hazuki))
 
+(define (hazuki-sp1-flower2 hazuki x y)
+  (define petal-type (vrand '#(rice-red
+							   rice-orange rice-blue rice-magenta)
+							game-rng))
+  (define ring-ang (fl* tau (roll game-rng)))
+  (letrec* ([center (spawn-bullet
+					 'small-ball-magenta x y 5
+					 (λ (task blt)
+					   (define start-frames frames)
+					   (define facing (fl* tau (roll game-rng)))
+					   ;; copy of linear-step-decelerate with subbullet positioning
+					   ;; TODO: make this cleaner?
+					   (let loop ([v (roll-flrange game-rng 1.0 1.2)])
+						 (bullet-x-set! blt (fl+ (bx blt)
+												 (fl* v (flcos facing))))
+						 (bullet-y-set! blt (fl+ (by blt)
+												 (fl* v (flsin facing))))
+						 (position-bullets-around (bx blt) (by blt)
+												  12.0 ring-ang ring)
+						 (yield)
+						 (let ([next-v (fl+ v -0.02)])
+						   (when (flpositive? next-v)
+							 (loop next-v))))
+
+					   (wait 60)
+					   (let ([facing (fl+ (facing-player (bx blt) (by blt))
+										  (centered-roll game-rng (torad 5.0)))])
+						 (loop-forever
+						  (linear-step facing 4.5 blt)
+						  (position-bullets-around (bx blt) (by blt)
+												   12.0 ring-ang ring)))))]
+			[center-idx (vector-index center live-bullets)]
+			[ring (map
+				   (λ (_)
+					 (spawn-bullet
+					  petal-type x y 5
+					  (λ (task blt)
+						(wait-until
+						 (thunk (not (eq? center (vnth live-bullets center-idx)))))
+						(delete-bullet blt))))
+				   (iota 5))])
+	(position-bullets-around x y 12.0 ring-ang ring)
+	center))
+
 (define (hazuki-sp1 task hazuki)
   (define bossinfo (enm-extras hazuki))
   (define (keep-running)
@@ -690,7 +734,32 @@
   (wait 60)
   (spawn-subtask "main"
 	(λ (task)
-	  (loop-forever (hazuki-sp1-wave task hazuki)))
+	  (interval-loop 60
+		(-> (cb)
+			(cbcount 8)
+			(cbabsolute-aim)
+			(cbspeed 3.0)
+			(cbshootenm
+			 hazuki 'glow-orb-orange 2 (sebundle-shoot0 sounds)
+			 (λ (facing speed task blt)
+			   (spawn-subtask "spawn flowers"
+				 (λ (task)
+				   (wait (roll-range game-rng 10 60))
+				   (interval-loop 60
+					 (raylib:play-sound (sebundle-shootsoft sounds))
+					 (when (fl< (by blt) 315.0)
+					   (hazuki-sp1-flower2 hazuki (bx blt) (by blt)))))
+				 task (thunk (in-bounds (bx blt) (by blt))))
+			   (let loop ([i 0])
+				 (let ([real-facing (fl+ facing (torad (fx2fl (* i 3))))])
+				   (linear-step real-facing speed blt)
+				   (bullet-facing-set! blt real-facing)
+				   (yield)
+				   (if (< i 60)
+					   (loop (add1 i))
+					   (linear-step-forever real-facing speed task blt)))))))
+		;;(hazuki-sp1-wave task hazuki)
+		))
 	task keep-running)
   
   (wait-while keep-running)

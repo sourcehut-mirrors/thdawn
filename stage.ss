@@ -473,6 +473,7 @@
 	(unless (null? bullets)
 	  (bullet-x-set! (car bullets) (fl+ cx (fl* dist (flcos ang))))
 	  (bullet-y-set! (car bullets) (fl+ cy (fl* dist (flsin ang))))
+	  (bullet-facing-set! (car bullets) ang)
 	  (loop (fl+ ang dang)
 			(cdr bullets)))))
 
