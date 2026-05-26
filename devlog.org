@@ -1,3 +1,18 @@
+* [2026-05-25 Mon]
+
+Been hacking on hazuki sp1 but what I'm coming up with isn't very inspiring/seems overly messy
+
+Also realized that a lot of my spells (basically all of them aside from group sp1, doremi
+sp1 [which is a spring final ripoff], and aiko sp2) have the same basic structure of
+"shoot stuff for setup", pause and charge up, do something else. or have tri-variants or
+something. feels a bit one dimensional and slow.
+
+want some attacks that are a bit more constant active dodging like group sp1.
+
+will probably retain the "spawn flowers on the trail of another bullet" thing, but it
+might just be constant spamming of those glow bullets and the flowers follow the player
+around or something.
+
 * [2026-05-17 Sun]
 
 Went on a diversion for hazuki non1, which is probably gonna be a kinda throwaway pattern
