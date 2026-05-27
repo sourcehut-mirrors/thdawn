@@ -864,20 +864,21 @@
 	  (or (unbox dead-signalbox)
 		  (fx>= (fx- frames start-time) 150)))
 	(define start-ang-to (facing-player (ex enm) (ey enm)))
-	(raylib:play-sound (sebundle-laser sounds))
-	(spawn-laser 'fixed-laser-blue
-				 (ex enm) (ey enm)
-				 start-ang-to
-				 (fx2fl +playfield-height+)
-				 5.0 20 delay
-				 (λ (task blt)
-				   (define ang-to (facing-player (bx blt) (by blt)))
-				   (let ([turn-dir
-						  (if (fl< ang-to start-ang-to) -1.0 1.0)])
-					 (interval-loop-while 15 (not (stop-pred))
-					   (bullet-facing-set!
-						blt
-						(fl+ (bullet-facing blt) (fl* turn-dir (torad 4.0))))))))
+	(define _ (raylib:play-sound (sebundle-laser sounds)))
+	(define laser
+	  (spawn-laser 'fixed-laser-blue
+				   (ex enm) (ey enm)
+				   start-ang-to
+				   (fx2fl +playfield-height+)
+				   5.0 20 delay
+				   (λ (task blt)
+					 (define ang-to (facing-player (bx blt) (by blt)))
+					 (let ([turn-dir
+							(if (fl< ang-to start-ang-to) -1.0 1.0)])
+					   (interval-loop-while 15 (not (stop-pred))
+						 (bullet-facing-set!
+						  blt
+						  (fl+ (bullet-facing blt) (fl* turn-dir (torad 4.0)))))))))
 	(spawn-subtask "sub"
 	  (λ (task)
 		(wait delay)
@@ -886,7 +887,7 @@
 			  (fbspeed 3.2)
 			  (fbcount 20)
 			  (fbabsolute-aim)
-			  (fbang (fl+ (centered-roll game-rng 2.5) (todeg -hpi)) 9.0)
+			  (fbang (todeg (fl+ (bullet-facing laser) pi)) 9.0)
 			  (fbshootenm enm 'small-star-cyan 5 #f))))
 	  task
 	  (thunk (not (stop-pred)))))
