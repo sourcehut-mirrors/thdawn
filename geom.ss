@@ -10,6 +10,7 @@
 		  do-bounce-off
 		  lerp eval-bezier-quad eval-bezier-cubic bezier-cubic-easing
 		  pi -pi tau hpi -hpi
+		  hsv->rgba
 		  torad todeg eround epsilon-equal clamp flcopysign
 		  distsq
 		  ease-in-quad ease-out-quad ease-in-out-quad
@@ -33,11 +34,28 @@
 	(fl* (fl/ 180.0 pi) x))
   (define (eround x)
 	(exact (round x)))
+  ;; TODO: migrate eround to fleround where possible
+  (define (fleround x)
+	(flonum->fixnum (flround x)))
   (define (epsilon-equal a b)
 	(fl< (flabs (fl- a b)) 0.00000001))
 
   (define (clamp v lower upper)
 	(max (min v upper) lower))
+
+  ;; h [0.0, 360.0], sv [0.0, 1.0]
+  ;; returns rgba with zeros in the alpha bits for convenient subsequent OR-ing
+  (define (hsv->rgba h s v)
+	;; From Wikipedia https://en.wikipedia.org/wiki/HSL_and_HSV#HSV_to_RGB_alternative
+	(define (f n)
+	  (define k (flmod (fl+ n (fl/ h 60.0)) 6.0))
+	  (fl- v (fl* v s (flmax 0.0 (flmin k (fl- 4.0 k) 1.0)))))
+	(define r (f 5.0))
+	(define g (f 3.0))
+	(define b (f 1.0))
+	(fxior (fxsll (fleround (fl* r 255.0)) 24)
+		   (fxsll (fleround (fl* g 255.0)) 16)
+		   (fxsll (fleround (fl* b 255.0)) 8)))
   
   ;; doesn't handle nans or signed zeros, zeros treated as positive
   (define (flcopysign mag sign)
