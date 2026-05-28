@@ -873,6 +873,8 @@
 						   v2zero 0.0 tint))
 
 (define (title-render self textures fonts)
+  (define version-str (string-append "Version " (game-version)
+									 "; made with <3 by williewillus"))
   (draw-title-bg textures -1)
   (render-ingame-menu
    (fontbundle-bubblegum40 fonts)
@@ -880,11 +882,11 @@
    40.0 200 50 30.0 255)
   (let-values ([(width height) (raylib:measure-text-ex
 								 (fontbundle-cabin20 fonts)
-								 (game-version)
+								 version-str
 								 20.0 0.0)])
 	(raylib:draw-text-ex
 	 (fontbundle-cabin20 fonts)
-	 (game-version)
+	 version-str
 	 (fl- 640.0 width 5.0) (fl- 480.0 height 5.0)
 	 20.0 0.0 -1)))
 (define want-quit #f)
