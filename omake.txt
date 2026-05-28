@@ -210,9 +210,15 @@ you have to make large enough misdirects for the gaps to be safe. It took some
 number-tweaking, but I'm surprised how fast it came together. If only I didn't waste so
 much time on the previous design...
 
+The timing on the misdirects can be tricky. If you're struggling, try misdirecting to the
+sides as soon as the first group of sound effects ends (the normal "bullet shoot" sound,
+not the "chime" sound). So shoot-shoot-shoot-shoot -> (big misdirect to the side here) ->
+chime-chime-chime-chime -> (stream back to the middle) -> repeat on the other side.
+
 And yes, the spell name is a reference to DJ Okawari's famous song. I'm sure every ACG fan
-heard this everywhere in the early- to mid-2010s. Hazuki's a dancer, there's flowers in
-the spell, and you're dancing around to misdirect them, so the name popped up immediately.
+has heard this everywhere in the early- to mid-2010s. Hazuki's a dancer, there's flowers
+in the spell, and you're dancing around to misdirect them, so the name popped up
+immediately.
 
 ○ Boss Non-spell 4 (Aiko)
 
