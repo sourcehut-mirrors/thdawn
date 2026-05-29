@@ -3532,7 +3532,7 @@
 				(when (vnth r 5)
 				  (spawn-particle
 				   (particletype text-hint) 0.0 20.0 90
-				   `((text . ,(string-append "Paused for " (vnth r 5)))
+				   `((text . ,(string-append "Paused for " (vnth r 5) "s"))
 					 (size . 24.0)
 					 (color . #xff0000ff))))
 				(set! level-pressed-input-for-display level-pressed)
