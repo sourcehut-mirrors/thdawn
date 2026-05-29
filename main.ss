@@ -564,7 +564,13 @@
 (define invincible-flash (packcolor 64 64 255 255))
 (define damage-flash (packcolor 255 64 64 255))
 (define crit-damage-flash (packcolor 64 16 16 255))
-(define selected-color #xc87affff)
+(define selected-base-color #xc87affff)
+(define (selected-color)
+  (define t (fl+ 0.2 (fl* 0.2 (flsin (inexact (/ true-frames 12))))))
+  (fxior (hsv->rgba 275.0
+					(fl+ 0.4 t)
+					1.0)
+		 #xff))
 
 ;; [31-416] x bounds of playfield in the hud texture
 ;; [15-463] y bounds of playfield in the hud texture
@@ -819,7 +825,7 @@
 	   (if isel (fl+ x 15.0) x)
 	   (fx2fl (+ start-y (* step-y i))) size 0.0
 	   (if isel
-		   (override-alpha selected-color alpha)
+		   (override-alpha (selected-color) alpha)
 		   (override-alpha -1 alpha))))))
 
 (define-record-type title-gui
@@ -988,7 +994,7 @@
 	  (if (string=? " " label) "SP" label)
 	  (fx2fl (+ 162 (* col 25)))
 	  (fx2fl (+ 200 (* row 25)))
-	  30.0 0.0 (if (= selected i) selected-color -1)))
+	  30.0 0.0 (if (= selected i) (selected-color) -1)))
    (nameinput-gui-menu-options self)))
 ;; on-complete: function of the gui that runs when player submits the name
 (define (mk-nameinput-gui on-complete)
@@ -1223,7 +1229,7 @@
 			 [i 0]
 			 [y 90.0])
 	(unless (or (>= i 10) (null? cur))
-	  (let*-values ([(color) (if (eq? selected i) selected-color -1)]
+	  (let*-values ([(color) (if (eq? selected i) (selected-color) -1)]
 					[(entry) (car cur)]
 					[(name)
 					 (if entry
@@ -1383,7 +1389,7 @@
 	 (if (and (= i selected)
 			  (or (not (setting-gui-waiting-for-rebind self))
 				  (fx< (fxmod true-frames 14) 7)))
-		 selected-color
+		 (selected-color)
 		 -1))))
 
 (define-record-type keybind-menu-item
@@ -1582,7 +1588,7 @@
 	 title
 	 (+ (fl/ twidth -2.0) +playfield-render-offset-x+)
 	 (lerp 120.0 150.0 progress)
-	 32.0 0.0 (override-alpha selected-color alpha))
+	 32.0 0.0 (override-alpha selected-base-color alpha))
 	(render-ingame-menu (fontbundle-bubblegum20 fonts)
 						opts selected
 						(lerp 80.0 100.0 progress)
@@ -3893,7 +3899,7 @@
 	(let ([get-color
 		   (λ (key)
 			 (if (enum-set-member? key level-pressed-input-for-display)
-				 selected-color
+				 selected-base-color
 				 #x606060ff))])
 	  (raylib:draw-rectangle-rec
 	   440.0 250.0 24.0 24.0
