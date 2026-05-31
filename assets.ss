@@ -73,7 +73,7 @@
    ojamajo-wa-koko-ni-iru
    ojamajo-carnival
    naisho-yo-ojamajo
-   lupinasu-no-komoriuta-piano)
+   lupinasu-no-komoriuta-piano takaramono)
   (sealed #t))
 (define music #f)
 (define (each-music proc)
@@ -90,10 +90,11 @@
   (set! music
 		(apply
 		 make-musbundle
-		 (map (lambda (file) (raylib:load-music-stream
-							  (string-append "assets/bgm/" file)))
+		 (map (lambda (file)
+				(raylib:load-music-stream (string-append "assets/bgm/" file)))
 			  '("ojamajo_wa_kokoni_iru.mp3" "ojamajo_carnival.wav"
-				"naisho_yo_ojamajo.mp3" "lupinasu_no_komoriuta_piano.mp3"))))
+				"naisho_yo_ojamajo.mp3" "lupinasu_no_komoriuta_piano.mp3"
+				"takaramono_tv.mp3"))))
   (update-music-volumes))
 (define (unload-music)
   (each-music raylib:unload-music-stream)
