@@ -1947,7 +1947,7 @@
 	task keep-running)
   (ease-to values +middle-boss-x+ 225.0 300 aiko)
   (wait-while keep-running)
-  (common-nonspell-postlude bossinfo aiko)
+  (common-nonspell-postlude bossinfo aiko #t)
   (aiko-sp2 task aiko))
 
 (define aiko-sp2-x-margin 24)
