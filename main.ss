@@ -2823,11 +2823,13 @@
 												   (- player-y (miscent-y ent))))])
 				  (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 8)))
 				  (miscent-y-set! ent (+ (miscent-y ent) (* (v2y dir-to-player) 8))))]
-			   [(check-collision-circle-rec
-				 player-x player-y (if focused-immediate +vacuum-radius-focused+
-									   +vacuum-radius-unfocused+)
-				 (- (miscent-x ent) 8) (- (miscent-y ent) 8)
-				 16 16)
+			   [(and
+				 (not (eq? type 'small-piv)) (not (eq? type 'big-piv))
+				 (check-collision-circle-rec
+				  player-x player-y (if focused-immediate +vacuum-radius-focused+
+										+vacuum-radius-unfocused+)
+				  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
+				  16 16))
 				(let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
 												   (- player-y (miscent-y ent))))])
 				  (miscent-x-set! ent (+ (miscent-x ent) (* (v2x dir-to-player) 6)))
