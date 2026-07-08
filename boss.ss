@@ -1430,6 +1430,15 @@
 	  (wait 20)))
   (wait 80))
 
+(define (lbtestwave doremi start-frames)
+  (-> (lb)
+	  (lbang (fl+ 90.0 (fx2fl (* (fx- frames start-frames) 5))))
+	  (lbdist 80.0)
+	  (lblen 120.0)
+	  (lbcount 2)
+	  (lbspeed 3.0)
+	  (lbshootenm doremi 'amulet-red 5 (sebundle-shoot0 sounds))))
+
 (define (doremi-sp2 task doremi)
   (define bossinfo (enm-extras doremi))
   (define (keep-running)
@@ -1441,8 +1450,11 @@
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
-  (doremi-sp2-var0 successes task doremi)
-  (doremi-sp2-var1 successes task doremi)
+  (let ([start-frames frames])
+	(interval-loop-while 60 (keep-running)
+	  (lbtestwave doremi start-frames)))
+  ;; (doremi-sp2-var0 successes task doremi)
+  ;; (doremi-sp2-var1 successes task doremi)
 
   #;(interval-loop-while 1 (keep-running)
 	(let ([x (centered-roll game-rng (fx2fl +playfield-max-x+))]

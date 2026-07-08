@@ -1920,6 +1920,78 @@
 								  delay (curry control-function facing speed) prio)
 					(bullet-facing-set! facing))))]))
 
+(define-record-type line-builder
+  (fields
+   (mutable angle)
+   (mutable count)
+   (mutable speed)
+   (mutable distance)
+   (mutable length))
+  (sealed #t))
+
+(define (lb)
+  (make-line-builder 0.0 0 0.0 0.0 0.0))
+
+(define (lbang lb angle)
+  (line-builder-angle-set! lb angle)
+  lb)
+
+(define (lbdist lb dist)
+  (line-builder-distance-set! lb dist)
+  lb)
+
+(define (lblen lb length)
+  (line-builder-length-set! lb length)
+  lb)
+
+(define (lbcount lb count)
+  (line-builder-count-set! lb count)
+  lb)
+
+(define (lbspeed lb speed)
+  (line-builder-speed-set! lb speed)
+  lb)
+
+(define (lbshoot lb x y consume)
+  (define ang (torad (line-builder-angle lb)))
+  (define count (line-builder-count lb))
+  (define speed (line-builder-speed lb))
+  (define length (line-builder-length lb))
+  (define-values (offx offy)
+	(dist-away x y ang (line-builder-distance lb)))
+  (define-values (start-x start-y)
+	(dist-away offx offy (fl+ ang hpi) (fl/ length 2.0)))
+  (define-values (step-x step-y)
+	(let ([step-length (fl/ length (fx2fl (line-builder-count lb)))]
+		  [step-dir (fl- ang hpi)])
+	  (values (fl* step-length (flcos step-dir))
+			  (fl* step-length (flsin step-dir)))))
+  (do [(i 0 (fx1+ i))
+	   (x start-x (fl+ x step-x))
+	   (y start-y (fl+ y step-y))]
+	  [(fx= i count)]
+	(consume i x y speed ang)))
+
+(define lbshootez
+  (case-lambda
+	[(lb type x y delay sound)
+	 (lbshootez lb type x y delay sound linear-step-forever)]
+	[(lb type x y delay sound control-function)
+	 (lbshoot
+	  lb x y
+	  (λ (i x y speed facing)
+		(when sound
+		  (raylib:play-sound sound))
+		(-> (spawn-bullet type x y delay (curry control-function facing speed))
+			(bullet-facing-set! facing))))]))
+
+(define lbshootenm
+  (case-lambda
+	[(lb enm type delay sound)
+	 (lbshootenm lb enm type delay sound linear-step-forever)]
+	[(lb enm type delay sound control-function)
+	 (lbshootez lb type (ex enm) (ey enm) delay sound control-function)]))
+
 (define-record-type spell-descriptor
   (fields
    name
