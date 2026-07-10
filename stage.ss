@@ -180,38 +180,47 @@
 				  enm)
   (delete-enemy enm))
 
-(define (ch1-small-fairy task enm)
+(define (ch1-small-fairy type right task enm)
   (define (shoot task)
 	(interval-loop 20
 	  (-> (fb)
-		  (fbcount 4 3)
-		  (fbang 0.0 25.0)
-		  (fbspeed 6.0 7.0)
-		  (fbshootenm enm 'small-ball-red 5 (sebundle-shootsoft sounds)))))
-  (define facing (facing-player (ex enm) (ey enm)))
-  (define (move task)
-	;; FIXME: this breaks at shallow angles
-	(interval-loop-while 1 (< (ey enm) 470.0)
-	  (linear-step-enm facing 5.0 enm)))
-  (spawn-subtask "shoot" shoot task (thunk (fl< (ey enm) 350.0)))
-  (move task)
+		  (fbcount 7 3)
+		  (fbang 0.0 9.0)
+		  (fbspeed 7.0 9.0)
+		  (fbshootez type
+					 (fl+ (ex enm) (centered-roll game-rng 10.0))
+					 (fl+ (ey enm) (centered-roll game-rng 10.0))
+					 10 (sebundle-shootsoft sounds)))))
+  (define facing (facing-point (ex enm) (ey enm) (if right -192.0 192.0) 192.0))
+  (spawn-subtask "shoot" shoot task)
+  (interval-loop-while 1 (fl< (flabs (ex enm)) 200.0)
+	(linear-step-enm facing 5.0 enm))
   (delete-enemy enm))
 
 (define (chapter1 task)
+  (define (type-for-fairy i)
+	(cond
+	 [(fx< i 3) 'small-ball-red]
+	 [(fx< i 6) 'small-ball-orange]
+	 [else 'small-ball-blue]))
   (set! current-chapter 1)
   (wait 50)
   (spawn-enemy (enmtype big-fairy) -141.0 0.0 600 (curry ch1-big-fairy #f)
 			   five-point-items)
   (wait 225)
-  (dotimes 10
-	(spawn-enemy (enmtype red-fairy) -141.0 0.0 50 ch1-small-fairy)
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i 10)]
+	(spawn-enemy (enmtype red-fairy) -141.0 0.0 50
+				 (curry ch1-small-fairy (type-for-fairy i) #f))
 	(wait 7))
   (wait 70)
   (spawn-enemy (enmtype big-fairy) 141.0 0.0 600 (curry ch1-big-fairy #t)
 			   ten-point)
   (wait 220)
-  (dotimes 10
-	(spawn-enemy (enmtype red-fairy) 141.0 0.0 50 ch1-small-fairy)
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i 10)]
+	(spawn-enemy (enmtype red-fairy) 141.0 0.0 50
+				 (curry ch1-small-fairy (type-for-fairy i) #t))
 	(wait 7))
   (wait-until (thunk (>= frames 1645)))
   (chapter2 task))
