@@ -548,6 +548,8 @@
 						 (thunk (not (eq? center (vnth live-bullets center-idx)))))
 						(delete-bullet blt))))
 				   (iota 5))])
+	(bullet-addflags center (bltflags nocanceldrop))
+	(for-each (λ (blt) (bullet-addflags blt (bltflags nocanceldrop))) ring)
 	center))
 
 (define (hazuki-sp1 task hazuki)
