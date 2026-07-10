@@ -863,14 +863,26 @@
    enm)
   (delete-enemy enm))
 
+(define (ch7-fairy-on-death enm)
+  (define x (ex enm))
+  (define y (ey enm))
+  (spawn-task "revenge"
+	(λ (task)
+	  (dotimes 8
+		(raylib:play-sound (sebundle-shootsoft sounds))
+		(spawn-bullet 'ellipse-blue x y 2
+					  (curry linear-step-forever (facing-player x y) 8.5))
+		(wait 8)))
+	(constantly #t)))
+
 (define (chapter7 task)
   (set! current-chapter 7)
   (wait 50)
   (spawn-enemy (enmtype big-fairy) -200.0 250.0 800 (curry ch7-med-fairy #f)
-			   ten-point)
+			   ten-point ch7-fairy-on-death)
   (wait 370)
   (spawn-enemy (enmtype big-fairy) 200.0 250.0 800 (curry ch7-med-fairy #t)
-			   ten-point)
+			   ten-point ch7-fairy-on-death)
   (wait-until (thunk (>= frames 7497)))
   (chapter8 task))
 
