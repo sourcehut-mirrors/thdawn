@@ -1962,7 +1962,7 @@
   (define-values (start-x start-y)
 	(dist-away offx offy (fl+ ang hpi) (fl/ length 2.0)))
   (define-values (step-x step-y)
-	(let ([step-length (fl/ length (fx2fl (line-builder-count lb)))]
+	(let ([step-length (fl/ length (fx2fl (fx1- (line-builder-count lb))))]
 		  [step-dir (fl- ang hpi)])
 	  (values (fl* step-length (flcos step-dir))
 			  (fl* step-length (flsin step-dir)))))

@@ -1432,10 +1432,10 @@
 
 (define (lbtestwave doremi start-frames)
   (-> (lb)
-	  (lbang (fl+ 90.0 (fx2fl (* (fx- frames start-frames) 5))))
-	  (lbdist 80.0)
-	  (lblen 120.0)
-	  (lbcount 2)
+	  (lbang (fl* 360.0 (roll game-rng)))
+	  (lbdist 20.0)
+	  (lblen 60.0)
+	  (lbcount 8)
 	  (lbspeed 3.0)
 	  (lbshootenm doremi 'amulet-red 5 (sebundle-shoot0 sounds))))
 
