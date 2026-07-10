@@ -1,3 +1,21 @@
+* [2026-07-09 Thu]
+No devlog in a few months, but finally getting back into things after Touhoufest.
+
+Did a bunch of stage tweaks today, guess I was in a stagey mood.
+
+I should really be working on Doremi non2/sp2, but nothing has felt inspiring. I hacked up
+a line-builder helper yesterday, which will help if I want to e.g. draw polygons and such,
+but no great ideas yet.
+
+One funny idea that came to mind was something like score desire eater from TD. I'd want
+to give it a bit of a twist though instead of a straight clone.
+
+Also, if I cloned SDE too much I'd have to implement mobile/curvy lasers which sounds like
+a big distraction I don't need right now lol.
+
+Other things to do are find suitable frame textures for the name plates, and also
+implement the little flower icons that should show up when the nameplates show up.
+
 * [2026-05-25 Mon]
 
 Been hacking on hazuki sp1 but what I'm coming up with isn't very inspiring/seems overly messy
