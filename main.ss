@@ -426,6 +426,9 @@
   (make 'enemy-indicator txbundle-misc 128 72 48 16 (vec2 -24.0 0.0))
   (make 'maple-grayscale txbundle-misc 0 0 32 32 shift16)
   (make 'maple txbundle-misc 0 32 32 32 shift16)
+  (make 'flower-red txbundle-bosstitle-flowers 0 0 32 32 shift16)
+  (make 'flower-orange txbundle-bosstitle-flowers 0 32 32 32 shift16)
+  (make 'flower-blue txbundle-bosstitle-flowers 0 64 32 32 shift16)
   ret))
 
 (define current-stage-ctx #f)
@@ -2686,15 +2689,18 @@
 			  fonts age max-age text render-y size color #t)))
 		  ([doremi-title hazuki-title aiko-title]
 		   (let*-values
-			   ([(title-text boss-name)
+			   ([(title-text boss-name name-color flower-sprite)
 				 (case type
 				   ([doremi-title]
 					(values "World's Most Unfortunate Pretty Girl"
-							"Harukaze Doremi"))
+							"Harukaze Doremi"
+							doremi-color 'flower-red))
 				   ([hazuki-title]
-					(values "Elegant and Perfect Lady" "Fujiwara Hazuki"))
+					(values "Elegant and Perfect Lady" "Fujiwara Hazuki"
+							hazuki-color 'flower-orange))
 				   ([aiko-title]
-					(values "Straightforward Osakan Girl" "Senoo Aiko")))]
+					(values "Straightforward Osakan Girl" "Senoo Aiko"
+							aiko-color 'flower-blue)))]
 				[(twidth theight)
 				 (raylib:measure-text-ex (fontbundle-bubblegum16 fonts)
 										 title-text 16.0 0.0)]
@@ -2707,7 +2713,8 @@
 				   (inexact (/ age 45))]
 				  [(>= age (- max-age 45))
 				   (fl- 1.0 (inexact (/ (- age (- max-age 45)) 45)))]
-				  [else 1.0])])
+				  [else 1.0])]
+				[(alpha) (fl* animation-multiplier 255.0)])
 			 (raylib:draw-rectangle-rounded
 			  ;; name assumed to be narrower than title
 			  (fl+ (fl- render-x (fl/ twidth 2.0) 10.0)
@@ -2715,24 +2722,26 @@
 			  render-y
 			  (fl+ 10.0 twidth 10.0) (fl+ 10.0 theight 5.0 nheight 10.0)
 			  0.25 0
-			  (fxlogior #x93939300 (eround (lerp 0 160 animation-multiplier))))
+			  (fxlogior #x93939300 (eround (fl* alpha 0.628))))
+			 (draw-sprite-with-scale-rotation
+			  textures flower-sprite
+			  (fl* (ease-in-out-quad animation-multiplier) 180.0) 0.75
+			  (fl+ (fl- render-x (fl/ twidth 2.0) 10.0)
+				   (lerp -35.0 0.0 animation-multiplier))
+			  render-y
+			  (override-alpha -1 (eround alpha)))
 			 (raylib:draw-text-ex
 			  (fontbundle-bubblegum16 fonts) title-text
 			  (fl- render-x (fl/ twidth 2.0))
 			  (fl+ render-y 10.0 (lerp -20.0 0.0 animation-multiplier))
 			  16.0 0.0
-			  (override-alpha -1 (eround (fl* animation-multiplier 255.0))))
+			  (override-alpha -1 (eround alpha)))
 			 (raylib:draw-text-ex
 			  (fontbundle-bubblegum20 fonts) boss-name
 			  (fl- render-x (fl/ nwidth 2.0))
 			  (fl+ render-y 10.0 theight 5.0 (lerp -20.0 0.0 animation-multiplier))
 			  20.0 0.0
-			  (override-alpha
-			   (case type
-				 [(doremi-title) doremi-color]
-				 [(hazuki-title) hazuki-color]
-				 [(aiko-title) aiko-color])
-			   (eround (fl* animation-multiplier 255.0))))))))))
+			  (override-alpha name-color (eround alpha)))))))))
   (vector-for-each each live-particles))
 
 (define-record-type miscent
