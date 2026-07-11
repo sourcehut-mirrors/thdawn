@@ -977,6 +977,11 @@
 
 (define (group-sp2-fairy-wave-var1 this-ang task enm)
   (define is-dodo (eq? (enm-type enm) (enmtype dodo)))
+  (spawn-particle (particletype circle-hint-opaque)
+				  group-sp2-center-x group-sp2-center-y
+				  90 '((color . #x8fff39)
+					   (r1 . 35.0)
+					   (r2 . 35.0)))
   (let ([orb #f])
 	(do [(j 0 (add1 j))]
 		[(= j 8)]
@@ -1014,6 +1019,7 @@
 										100.0)
 						 (linear-step nf speed blt)))
 					 (delete-bullet blt)))
+				  (bullet-addflags (bltflags uncancelable))
 				  (bullet-facing-set! facing)))))
 	  (wait 10))
 	(raylib:play-sound (sebundle-longcharge sounds))
