@@ -21,7 +21,8 @@
 					  (pause . ,key-escape)
 					  (screenshot . ,key-p)
 					  (quick-restart . ,key-r)
-					  (quick-quit . ,key-q)))))
+					  (quick-quit . ,key-q)
+					  (skip-dialogue . ,key-left-control)))))
   (define config-path "config.dat")
 
   (define (read-config)

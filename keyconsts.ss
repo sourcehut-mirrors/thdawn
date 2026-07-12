@@ -5,6 +5,7 @@
 (define key-f2 291)
 (define key-f3 292)
 (define key-left-shift 340)
+(define key-left-control 341)
 (define key-right 262)
 (define key-left 263)
 (define key-down 264)

@@ -22,7 +22,7 @@
   game-version-impl)
 (define-enumeration vkey
   (up down left right shoot bomb focus pause
-	  screenshot quick-restart quick-quit)
+	  screenshot quick-restart quick-quit skip-dialogue)
   vkeys)
 (define empty-vkeys (vkeys))
 (define vkeys-proc (enum-set-constructor empty-vkeys))
@@ -2027,7 +2027,7 @@
 							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
 							4200 25000 3000000 'group std std-fail)
-	 (make-spell-descriptor "Gourmet Sign \"Doremi's Steak Hunt\""
+	 (make-spell-descriptor "Gourmet Sign \"Steak Desire Eater\""
 							6000 9000 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Hazuki's Ghostbusting Challenge\""
 							3000 9000 3000000 'hazuki std std-fail)
@@ -3434,6 +3434,13 @@
 (define (blank-aiko-bossinfo)
   (blank-bossinfo "Senoo Aiko" aiko-color))
 
+(define (handle-dialogue-skip)
+  (when (and (stage-ctx-dialogue current-stage-ctx)
+			 (fx= -1 (stage-ctx-dialogue-pinned-until current-stage-ctx))
+			 (let-values ([(doremi hazuki aiko) (find-bosses)])
+			   (and doremi hazuki aiko)))
+	(stage-ctx-dialogue-set! current-stage-ctx #f)))
+
 (define (handle-dialogue-advance)
   (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
 	(cond
@@ -3500,6 +3507,8 @@
 	(when (zero? death-timer)
 	  ;; don't allow moving between hit/death
 	  (handle-player-movement level-pressed))
+	(when (enum-set-member? (vkey skip-dialogue) edge-pressed)
+	  (handle-dialogue-skip))
 	(when (enum-set-member? (vkey shoot) level-pressed)
 	  (when (enum-set-member? (vkey shoot) edge-pressed)
 		(if (stage-ctx-dialogue current-stage-ctx)
