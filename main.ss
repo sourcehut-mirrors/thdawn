@@ -13,6 +13,11 @@
   (syntax-rules ()
 	[(_ f)
 	 (lambda _args (apply f _args))]))
+(define-syntax namedλ
+  (syntax-rules ()
+	[(_ name rest ...)
+	 (let ([name (lambda rest ...)])
+	   name)]))
 (define (game-version)
   (define-syntax (game-version-impl stx)
 	(syntax-case stx ()
@@ -595,7 +600,6 @@
 (define +playfield-width+ (- +playfield-max-x+ +playfield-min-x+))
 (define +playfield-height+ (- +playfield-max-y+ +playfield-min-y+))
 (define +poc-y+ 160)
-(define +oob-bullet-despawn-fuzz+ 80)
 
 (define (in-bounds x y)
   (and (fl<= (fx2fl +playfield-min-x+) x (fx2fl +playfield-max-x+))
@@ -2131,23 +2135,23 @@
 					   (/ remaining-time (- total-time grace-period))))]))
 
 (define (fail-current-attack)
-  (define (each enm)
+  (define (fail-each-enm enm)
 	(when (and enm (is-boss? enm))
 	  (bossinfo-active-attack-failed-set! (enm-extras enm) #t)))
-  (vector-for-each each live-enm))
+  (vector-for-each fail-each-enm live-enm))
 
 (define (pretick-enemies)
-  (define (each enm)
+  (define (pretick-one-enm enm)
 	(when enm
 	  (let ([damaged-recently (enm-damaged-recently enm)])
 		(when (fxpositive? damaged-recently)
 		  (enm-damaged-recently-set! enm (fx1- damaged-recently))))
 	  (enm-ox-set! enm (ex enm))
 	  (enm-oy-set! enm (ey enm))))
-  (vector-for-each each live-enm))
+  (vector-for-each pretick-one-enm live-enm))
 
 (define (posttick-enemies)
-  (define (each enm)
+  (define (posttick-one-enm enm)
 	(when enm
 	  (let ([bossinfo (and (is-boss? enm) (enm-extras enm))])
 		(when bossinfo
@@ -2201,7 +2205,7 @@
 		   [else
 			(record-start-move)
 			(enm-dx-render-set! enm (clamp (fl+ dx (fl- x ox)) -10.0 10.0))])))))
-  (vector-for-each each live-enm))
+  (vector-for-each posttick-one-enm live-enm))
 
 ;; TODO put the optional args in an alist or something?
 (define spawn-enemy
@@ -2389,7 +2393,7 @@
 		   radius)))))
 
 (define (process-collisions)
-  (define (each-bullet bullet)
+  (define (collide-one-bullet bullet)
 	(when (and bullet (bullet-active? bullet))
 	  (let ([is-laser (eq? 'fixed-laser (bullet-family (bullet-type bullet)))])
 		(when (and (if is-laser
@@ -2424,7 +2428,7 @@
 		  (unless is-laser
 			(cancel-bullet bullet))
 		  (damage-player)))))
-  (define (each-enm enm)
+  (define (collide-one-enm enm)
 	(when enm
 	  (unless (enm-hasflag? enm (enmflag nocollide))
 		(let-values ([(x y w h) (enm-collision-box enm)])
@@ -2432,8 +2436,8 @@
 				 player-x player-y +hit-radius+
 				 x y w h)
 			(damage-player))))))
-  (vector-for-each each-bullet live-bullets)
-  (vector-for-each each-enm live-enm))
+  (vector-for-each collide-one-bullet live-bullets)
+  (vector-for-each collide-one-enm live-enm))
 
 (define (linear-step-forever facing speed task blt)
   (bullet-facing-set! blt facing)
@@ -2565,7 +2569,7 @@
 	  (vector-set! live-particles idx #f))))
 
 (define (tick-particles)
-  (define (each p)
+  (define (tick-one-particle p)
 	(when p
 	  (particle-age-set! p (fx1+ (particle-age p)))
 	  (case (particle-type p)
@@ -2578,7 +2582,7 @@
 		 (particle-y-set! p (- (particle-y p) 0.5))))
 	  (when (fx> (particle-age p) (particle-max-age p))
 		(delete-particle p))))
-  (vector-for-each each live-particles))
+  (vector-for-each tick-one-particle live-particles))
 
 (define (draw-centered-field-text fonts age max-age text render-y size color bg)
   (define-values (width height)
@@ -2608,7 +2612,7 @@
    (override-alpha color alpha)))
 
 (define (draw-particles textures fonts)
-  (define (each p)
+  (define (draw-one-particle p)
 	(when p
 	  (let ([age (particle-age p)]
 			[max-age (particle-max-age p)]
@@ -2746,7 +2750,7 @@
 			  (fl+ render-y 10.0 theight 5.0 (lerp -20.0 0.0 animation-multiplier))
 			  20.0 0.0
 			  (override-alpha name-color (eround alpha)))))))))
-  (vector-for-each each live-particles))
+  (vector-for-each draw-one-particle live-particles))
 
 (define-record-type miscent
   (fields
@@ -2829,7 +2833,7 @@
 	  (raylib:play-sound (sebundle-item sounds))))
 
 (define (tick-misc-ents)
-  (define (each ent)
+  (define (tick-one-miscent ent)
 	(when ent
 	  (let* ([type (miscent-type ent)]
 			 [terminal-velocity
@@ -2961,13 +2965,13 @@
 			  (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
 				(delete-misc-ent ent))))))
 		(miscent-livetime-set! ent (add1 (miscent-livetime ent))))))
-  (vector-for-each each live-misc-ents))
+  (vector-for-each tick-one-miscent live-misc-ents))
 
 (define (miscent-should-spin? ent)
   (memq (miscent-type ent) '(point life life-frag bomb bomb-frag)))
 
 (define (draw-misc-ents textures)
-  (define (draw draw-type ent)
+  (define (draw-one-miscent draw-type ent)
 	(define type (and ent (miscent-type ent)))
 	(when (eq? type draw-type)
 	  (let ([render-x (+ +playfield-render-offset-x+ (miscent-x ent))]
@@ -3023,7 +3027,7 @@
   (for-each
    (λ (type)
 	 (vector-for-each
-	  (λ (e) (draw type e))
+	  (λ (e) (draw-one-miscent type e))
 	  live-misc-ents))
    miscent-render-order))
 
@@ -4245,7 +4249,7 @@
   (let ([sorted-bullets (stage-ctx-sorted-bullets current-stage-ctx)])
 	(vector-copy! live-bullets 0 sorted-bullets 0 (vlen live-bullets))
     (vector-sort!
-	 (λ (a b)
+	 (namedλ bullet-comparator (a b)
 	   (cond
 		[(not a) #t]
 		[(not b) #f]

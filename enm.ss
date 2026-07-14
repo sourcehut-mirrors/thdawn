@@ -255,7 +255,7 @@
   (draw-sprite textures 'yellow-fairy2 render-x render-y (enm-tint enm)))
 
 (define (draw-enemies textures)
-  (define (each enm)
+  (define (draw-one-enm enm)
 	(when enm
 	  (let ([render-x (+ (ex enm) +playfield-render-offset-x+)]
 			[render-y (+ (ey enm) +playfield-render-offset-y+)]
@@ -421,4 +421,4 @@
 			  (raylib:draw-rectangle-rec
 			   (+ x +playfield-render-offset-x+)
 			   (+ y +playfield-render-offset-y+) w h red)))))))
-  (vector-for-each each live-enm))
+  (vector-for-each draw-one-enm live-enm))

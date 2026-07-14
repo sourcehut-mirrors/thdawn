@@ -267,15 +267,16 @@
    live-bullets))
 
 (define (despawn-out-of-bound-bullet bullet)
+  (define +oob-bullet-despawn-fuzz+ 80)
   (when bullet
 	(let ([x (bx bullet)]
 		  [y (by bullet)])
 	  (when (and
 			 (not (bullet-hasflag? bullet (bltflag noprune)))
-			 (or (> x (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+))
-				 (< x (- +playfield-min-x+ +oob-bullet-despawn-fuzz+))
-				 (< y (- +playfield-min-y+ +oob-bullet-despawn-fuzz+))
-				 (> y (+ +playfield-max-y+ +oob-bullet-despawn-fuzz+))))
+			 (or (fl> x (fx2fl (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+)))
+				 (fl< x (fx2fl (- +playfield-min-x+ +oob-bullet-despawn-fuzz+)))
+				 (fl< y (fx2fl (- +playfield-min-y+ +oob-bullet-despawn-fuzz+)))
+				 (fl> y (fx2fl (+ +playfield-max-y+ +oob-bullet-despawn-fuzz+)))))
 		(delete-bullet bullet)))))
 
 (define (bullet-family type)
@@ -287,7 +288,7 @@
   (blttype-hit-radius bt))
 
 (define (draw-lasers textures sorted-bullets)
-  (define (each bullet)
+  (define (draw-one-laser bullet)
 	(when bullet
 	  (let* ([render-x (+ (bx bullet) +playfield-render-offset-x+)]
 			 [render-y (+ (by bullet) +playfield-render-offset-y+)]
@@ -313,11 +314,11 @@
 								length radius (bullet-facing bullet)
 								(and (not (bullet-hasflag? bullet (bltflag noshine)))
 									 (blttype-preimg-sprite bt)))))))))
-  (vector-for-each each sorted-bullets))
+  (vector-for-each draw-one-laser sorted-bullets))
 
 
 (define (draw-bullets textures sorted-bullets)
-  (define (each bullet)
+  (define (draw-one-bullet bullet)
 	(when bullet
 	  (let* ([render-x (fl+ (bx bullet) (fx2fl +playfield-render-offset-x+))]
 			 [render-y (fl+ (by bullet) (fx2fl +playfield-render-offset-y+))]
@@ -374,4 +375,4 @@
 			  (when show-hitboxes
 				(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
 									  red)))))))
-  (vector-for-each each sorted-bullets))
+  (vector-for-each draw-one-bullet sorted-bullets))
