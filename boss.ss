@@ -1448,6 +1448,25 @@
 	   (λ (i) (fl+ 3.0 (fl/ (fx2fl i) 10.0))))
 	  (lbshootenm doremi 'amulet-red 5 (sebundle-shoot0 sounds))))
 
+
+(define (lbchevron enm
+				   facing-deg dist layers max-spread stretch-per-layer)
+  ;; fired from tail to tip
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i layers)]
+	(-> (lb)
+		(lbang facing-deg)
+		(lbdist (fl+ dist (fl* (fx2fl i) stretch-per-layer)))
+		(lblen (lerp max-spread 0.0 (fl/ (fx2fl i) (fx2fl layers))))
+		(lbcount 2)
+		(lbspeed (fl+ 3.0 (fl* (fx2fl (- layers i)) 0.1)))
+		(lbshootenm enm 'amulet-red 5 (sebundle-shoot0 sounds)))
+	(let-values ([(x y) (dist-away (ex enm) (ey enm) (torad facing-deg)
+								   (fl+ dist
+										(fl* (fx2fl layers) stretch-per-layer)))])
+	  (spawn-bullet 'amulet-red x y 5 (curry linear-step-forever
+											 (torad facing-deg) 3.0)))))
+
 (define (doremi-sp2 task doremi)
   (define bossinfo (enm-extras doremi))
   (define (keep-running)
@@ -1461,7 +1480,9 @@
   (wait 30)
   (let ([start-frames frames])
 	(interval-loop-while 60 (keep-running)
-	  (lbtestwave doremi start-frames)))
+	  ;;(lbtestwave doremi start-frames)
+	  (lbchevron doremi 40.0 30.0 5 60.0 5.0)
+	  ))
   ;; (doremi-sp2-var0 successes task doremi)
   ;; (doremi-sp2-var1 successes task doremi)
 
