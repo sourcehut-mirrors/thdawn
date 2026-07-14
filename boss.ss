@@ -1444,7 +1444,8 @@
 	  (lbdist 20.0)
 	  (lblen 60.0)
 	  (lbcount 8)
-	  (lbspeed 3.0)
+	  (lbspeed
+	   (λ (i) (fl+ 3.0 (fl/ (fx2fl i) 10.0))))
 	  (lbshootenm doremi 'amulet-red 5 (sebundle-shoot0 sounds))))
 
 (define (doremi-sp2 task doremi)

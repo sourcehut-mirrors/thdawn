@@ -1927,6 +1927,8 @@
   (fields
    (mutable angle)
    (mutable count)
+   ;; Can be a function of bullet index in the line, or a constant
+   ;; TODO: potentially backport this to fan and circle builders?
    (mutable speed)
    (mutable distance)
    (mutable length))
@@ -1958,7 +1960,9 @@
 (define (lbshoot lb x y consume)
   (define ang (torad (line-builder-angle lb)))
   (define count (line-builder-count lb))
-  (define speed (line-builder-speed lb))
+  (define speed
+	(let ([orig (line-builder-speed lb)])
+	  (if (procedure? orig) orig (λ (_) orig))))
   (define length (line-builder-length lb))
   (define-values (offx offy)
 	(dist-away x y ang (line-builder-distance lb)))
@@ -1973,7 +1977,7 @@
 	   (x start-x (fl+ x step-x))
 	   (y start-y (fl+ y step-y))]
 	  [(fx= i count)]
-	(consume i x y speed ang)))
+	(consume i x y (speed i) ang)))
 
 (define lbshootez
   (case-lambda
