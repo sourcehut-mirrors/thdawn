@@ -1280,6 +1280,33 @@
   (common-spell-postlude bossinfo doremi)
   (doremi-non2 task doremi hazuki aiko))
 
+(define (lbchevron enm type head-type
+				   facing-deg dist layers max-spread stretch-per-layer
+				   )
+  ;; fired from tail to tip
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i layers)]
+	(-> (lb)
+		(lbang facing-deg)
+		(lbdist (fl+ dist (fl* (fx2fl i) stretch-per-layer)))
+		(lblen (lerp max-spread 0.0 (fl/ (fx2fl i) (fx2fl layers))))
+		(lbcount 2)
+		(lbspeed (fl+ 2.5 (fl* (fx2fl (- layers i)) 0.15)))
+		(lbshootenm enm type 5 (sebundle-shoot0 sounds)))
+	(let-values ([(x y) (dist-away (ex enm) (ey enm) (torad facing-deg)
+								   (fl+ dist
+										(fl* (fx2fl layers) stretch-per-layer)))])
+	  (spawn-bullet head-type x y 5 (curry linear-step-forever
+										   (torad facing-deg) 2.0)))))
+
+(define (lbchev-ring enm type head-type init-ang)
+  (define count 12)
+  (define angper (fl/ 360.0 (fx2fl count)))
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i count)]
+	(lbchevron enm type head-type
+			   (fl+ init-ang (fl* (fx2fl i) angper)) 30.0 5 62.0 5.0)))
+
 (define (doremi-non2 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
   (define (keep-running)
@@ -1304,7 +1331,20 @@
 	task)
   (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 doremi)
   (enm-clrflags doremi (enmflags nocollide))
-  (declare-nonspell doremi 1800 1000)
+  (declare-nonspell doremi 2400 6500)
+  (spawn-subtask "main"
+	(λ (task)
+	  (define init-ang (todeg (facing-player (ex doremi) (ey doremi))))
+	  (let loop ([i 0])
+		(let-values ([(type head-type)
+					  (case (mod i 3)
+						[(0) (values 'amulet-red 'big-star-red)]
+						[(1) (values 'amulet-yellow 'big-star-orange)]
+						[(2) (values 'amulet-blue 'big-star-cyan)])])
+		  (lbchev-ring doremi type head-type (fl+ init-ang (fl* (fx2fl i) 15.0))))
+		(wait 15)
+		(loop (add1 i))))
+	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo doremi)
   (doremi-sp2 task doremi))
@@ -1438,35 +1478,6 @@
 	  (wait 20)))
   (wait 80))
 
-(define (lbtestwave doremi start-frames)
-  (-> (lb)
-	  (lbang (fl* 360.0 (roll game-rng)))
-	  (lbdist 20.0)
-	  (lblen 60.0)
-	  (lbcount 8)
-	  (lbspeed
-	   (λ (i) (fl+ 3.0 (fl/ (fx2fl i) 10.0))))
-	  (lbshootenm doremi 'amulet-red 5 (sebundle-shoot0 sounds))))
-
-
-(define (lbchevron enm
-				   facing-deg dist layers max-spread stretch-per-layer)
-  ;; fired from tail to tip
-  (do [(i 0 (fx1+ i))]
-	  [(fx= i layers)]
-	(-> (lb)
-		(lbang facing-deg)
-		(lbdist (fl+ dist (fl* (fx2fl i) stretch-per-layer)))
-		(lblen (lerp max-spread 0.0 (fl/ (fx2fl i) (fx2fl layers))))
-		(lbcount 2)
-		(lbspeed (fl+ 3.0 (fl* (fx2fl (- layers i)) 0.1)))
-		(lbshootenm enm 'amulet-red 5 (sebundle-shoot0 sounds)))
-	(let-values ([(x y) (dist-away (ex enm) (ey enm) (torad facing-deg)
-								   (fl+ dist
-										(fl* (fx2fl layers) stretch-per-layer)))])
-	  (spawn-bullet 'amulet-red x y 5 (curry linear-step-forever
-											 (torad facing-deg) 3.0)))))
-
 (define (doremi-sp2 task doremi)
   (define bossinfo (enm-extras doremi))
   (define (keep-running)
@@ -1478,11 +1489,6 @@
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
-  (let ([start-frames frames])
-	(interval-loop-while 60 (keep-running)
-	  ;;(lbtestwave doremi start-frames)
-	  (lbchevron doremi 40.0 30.0 5 60.0 5.0)
-	  ))
   ;; (doremi-sp2-var0 successes task doremi)
   ;; (doremi-sp2-var1 successes task doremi)
 
