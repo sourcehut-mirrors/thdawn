@@ -1,6 +1,6 @@
 +--------------------------------------------------------+
 |                                                        |
-|   東方???～Touhou Magical Stage                         |
+|   おジャ魔女幻想～Magical Stage                           |
 |       williewillus                                     |
 |   Character Profiles and Miscellaneous                 |
 |                                                        |
@@ -322,7 +322,8 @@ room somewhere to slip in and hide...
 
 This was the fifteenth boss attack to be completed. When building my own danmaku engine,
 often the design of an attack follows from the latest new abstraction or feature I've
-implemented. In this case, I had just implemented "line builders", an abstraction capable of firing an oriented wall of bullets at a certain distance from any given spot.
+implemented. In this case, I had just implemented "line builders", an abstraction capable
+of firing an oriented wall of bullets at a certain distance from any given spot.
 
 Very quickly, I found out that I could make V-shaped "chevrons" by firing multiple layers
 of these "walls", each with a wider angle than the last, and with each wall only

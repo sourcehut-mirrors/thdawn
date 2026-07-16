@@ -1,6 +1,6 @@
 +--------------------------------------------------------+
 |                                                        |
-|   東方???～Touhou Magical Stage                         |
+|   おジャ魔女幻想～Magical Stage                           |
 |       williewillus                                     |
 |                                                        |
 +--------------------------------------------------------+
@@ -75,14 +75,16 @@ the old, open internet.
 I hope that helps you understand why these platforms were chosen. Please don't be shy; I'd
 love to hear from you!
 
-+--------------------+
-| 5. Known Issues    |
-+--------------------+
++------------------------------------+
+| 5. Known Issues and Limitations    |
++------------------------------------+
 
 * Game resolution is too low, leading to blurry text and aliasing artifacts
   This started as a random side project, and I hardcoded 640x480 literally everywhere in
   the rendering code orz.
   In the future, an update may increase the resolution of the game.
+* During the pre-battle dialogue, the Skip Dialogue button only works once all characters
+  have entered the screen.
 
 +-----------------+
 | 6. Licenses     |
@@ -102,7 +104,9 @@ licenses/Apache-2.0.txt.
 
 All other code and compiled binaries in this project are Copyright Vincent Lee
 (williewillus), and licensed to you under the GPLv3, or any later version, as listed in
-licenses/GPL-3.0-or-later.txt.
+licenses/GPL-3.0-or-later.txt. What this means in layman's terms is that if you modify and
+distribute my code, you must also publish and license your modifications under the same
+GPL licenses.
 
 This project is Free Software. You can read and modify the source code, subject to the
 aforementioned licenses, by cloning it from https://git.sr.ht/~williewillus/thdawn

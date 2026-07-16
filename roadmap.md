@@ -20,21 +20,13 @@ As in, when you work pick something off the list and get at it.
 * doremi portrait
 * hazuki portrait
 * aiko portrait
-* group non1
-* group sp1
-* hazuki non1
-* hazuki sp1
-* doremi non2
 * doremi sp2
 * group sp3 (survival)
 * group sp4 (final)
 * go through all bullet types and appropriately set their preimg sizes
-* freely noodle around with flower patterns for doremi/hazuki nons and spells
 * shot collide with enemy effect
 
 ## Medium-term TODOs
-* make sure IO is properly platform-independent (need to set transcoder newline format,
-  currently defaulting to platform default)
 * borderless fullscreen support
 * improve midsp1 wandering
 * menu system prettification

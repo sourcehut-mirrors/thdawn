@@ -1305,7 +1305,7 @@
   (do [(i 0 (fx1+ i))]
 	  [(fx= i count)]
 	(lbchevron enm type head-type
-			   (fl+ init-ang (fl* (fx2fl i) angper)) 30.0 3 max-spread 5.0 2.0 0.1)))
+			   (fl+ init-ang (fl* (fx2fl i) angper)) 30.0 3 max-spread 5.0 2.0 0.15)))
 
 (define (doremi-non2 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
@@ -1372,10 +1372,11 @@
 		(do [(i 0 (fx1+ i))]
 			[(fx= i num)]
 		  (let ([large-type (vnth-mod large-types j)]
+				[y (get-y (fxeven? j) i)]
 				[ctrl* (curry ctrl (vnth-mod small-types j))])
 			(raylib:play-sound (sebundle-shoot0 sounds))
-			(spawn-bullet large-type -160.0 (get-y (fxeven? j) i) 5 ctrl*)
-			(spawn-bullet large-type 160.0 (get-y (fxeven? j) i) 5 ctrl*))
+			(spawn-bullet large-type -160.0 y 5 ctrl*)
+			(spawn-bullet large-type 160.0 y 5 ctrl*))
 		  (wait 5))
 		(wait 240)
 		(loop (fx1+ j))))
