@@ -133,13 +133,6 @@
 		 b ...
 		 (wait intvl)
 		 (loop)))]))
-(define-syntax interval-loop-waitfirst
-  (syntax-rules ()
-	[(_ intvl b ...)
-	 (let loop ()
-	   (wait intvl)
-	   b ...
-	   (loop))]))
 (define-syntax loop-forever
   (syntax-rules ()
 	[(_ b ...)

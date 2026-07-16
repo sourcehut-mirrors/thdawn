@@ -50,6 +50,7 @@ Scarlet Devil and fan game Touhou Elegant Impermanence of Sakura. It just contai
 my musings and comments about the development of some of the spells and some hints if
 you can't capture them.
 
+
 ○ Beginner Sign "My First Spellcard!" (Midboss Spell 1)
 
 Despite the name, this spell card was the *second* one to be completed, though it was the
@@ -108,6 +109,7 @@ The nonspell is probably a blind killer (or at least will force a bomb), but it'
 than it seems. You can dodge it all with two or three small taps per wave, and the health
 is low enough it'll go down pretty quickly, too.
 
+
 ○ Barrage Sign "Ojamajo Doremi SHOOT!" (Group)
 
 This was the twelfth boss attack to be completed. I was struggling with making Doremi's
@@ -139,6 +141,7 @@ shmups I ever played (even before Touhou). It's an arcade-like horizontally-scro
 shmup that you can still find online. It's pretty tough, I can't find any record of
 full-stage 1cc's of the highest difficulty online, only single-stage clears.
 
+
 ○ Boss Non-spell 2 (Doremi)
 
 This was the ninth boss attack to be completed. I knew I wanted to do something with
@@ -151,6 +154,7 @@ bomb.
 
 Towards the end of the healthbar, things get more intense, but usually the attack ends
 before anything can happen to you. If you want to time it down, though...
+
 
 ○ Spring Sign "Harukaze Cherry Blossoms" (Doremi)
 
@@ -170,6 +174,7 @@ you have to dodge in the opposite direction of Okina's movement, which exerts
 psychological pressure on the player to get back over under her to keep dealing damage,
 because even the homing shots don't have their options at this point.
 
+
 ○ Boss Non-spell 3 (Hazuki)
 
 This was the thirteenth boss attack to be completed. It's a pretty standard attack that
@@ -187,6 +192,7 @@ Also, the way the knives are shot means you could probably pull of a neat move b
 close around Hazuki. Though it's pretty hard and you don't gain much score over just doing
 it at the bottom. But it looks cool! Post a video if you manage to do it!
 
+
 ○ Floral Sign "Flower Dance" (Hazuki)
 
 This was the fourteenth boss attack to be completed.
@@ -196,13 +202,13 @@ the flowers on this spell and the previous nonspell were made of small orbs, but
 ended up feeling really "bulky". Things felt a lot better once I switched the petals out
 for rice bullets.
 
-The design itself also took a few iterations. Originally, I had the big glow orbs moving
-horizontal across the screen, spawning flowers along the way. Then, I had Hazuki either
-gather the flowers and shoot them at the player, or chop them apart with knives (after
-which the petals would scatter everywhere). However, I never got it feeling right after
-hours of attempts at refining it. I also realized that I have too many of these attacks in
-the game already where the boss shoots to set up some bullets, pauses, charges up, and
-then releases some stronger wave.
+The design itself also took a few iterations. Originally, I had the big glow orbs spawning
+at the edges of the screen and moving horizontally across, spawning flowers along the
+way. Then, I had Hazuki either gather the flowers and shoot them at the player, or chop
+them apart with knives (after which the petals would scatter everywhere). However, I never
+got it feeling right after hours of attempts at refining it. I also realized that I have
+too many of these attacks in the game already where the boss shoots to set up some
+bullets, pauses, charges up, and then releases some stronger wave.
 
 So, after I got home from a work session at the cafe today, I ripped it all out and just
 made a U-shaped-streaming spell. It's similar to the nonspell, but not entirely trivial as
@@ -217,8 +223,9 @@ chime-chime-chime-chime -> (stream back to the middle) -> repeat on the other si
 
 And yes, the spell name is a reference to DJ Okawari's famous song. I'm sure every ACG fan
 has heard this everywhere in the early- to mid-2010s. Hazuki's a dancer, there's flowers
-in the spell, and you're dancing around to misdirect them, so the name popped up
+in the spell, and you're dancing around to misdirect them, so the name came to mind
 immediately.
+
 
 ○ Boss Non-spell 4 (Aiko)
 
@@ -235,6 +242,7 @@ once, then a ring of notes to dodge through. The difficulty of this ended up a b
 high though.
 
 TODO: Revise when rebalancing.
+
 
 ○ Love Sign "Star Spiral" (Aiko)
 
@@ -255,20 +263,21 @@ spirals fixed, and only the third one was allowed to vary. To dodge it, I recomm
 away horizontally from the third spiral and keeping your vision wide to make sure no stray
 bullets from the other spirals blindside you.
 
-
 TODO: Revise when rebalancing.
+
 
 ○ Boss Non-spell 5 (Group)
 
-When I first was deciding how many attacks I wanted to have, I settled on having two group
-and individual spell cards for each girl, plus the survival and the final spell as a
-trio. The first four spells would be more orthodox patterns focused on the dodging, while
-the next four spells would be wackier, more gimmicky attacks befitting an Extra-like
-stage, then the survival and final spells would round it back out a bit as the closers.
+When I first was deciding how many attacks I wanted to have, I settled on the following
+grouping: a trio spell, individual spells for each girl, another trio spell, three more
+individual spells, then the survival and final spells. The first four spells would be more
+orthodox patterns focused on the dodging, while the next four spells would be wackier,
+more gimmicky attacks befitting an Extra-like stage, then the survival and final spells
+would round it back out a bit as the closers.
 
-This was the fifth boss attack to be completed. I knew I wanted the trio gimmick spell to
-focus on the girls' fairy familiars, so I thought I'd introduce them in the prior
-nonspell.
+This was the fifth boss attack to be completed, and the first of the "gimmick" group of
+attacks. I knew I wanted the trio gimmick spell to focus on the girls' fairy familiars, so
+I thought I'd introduce them in the prior nonspell.
 
 Coming up with and coding this attack was a surprisingly smooth process. I just
 implementing the first thing that came to mind for all three fairies and it ended up
@@ -281,6 +290,7 @@ reflects their owner's shot in that game.
 
 Hint: Mimi (rightmost) has the most threatening attack, so concentrate on attacking her
 over the other fairies (sorry Mimi).
+
 
 ○ Witch Sign "Fairy Kaleidoscope" (Group)
 
@@ -310,7 +320,27 @@ room somewhere to slip in and hide...
 
 ○ Boss Non-spell 6 (Doremi)
 
-○ Gourmet Sign "I Want to Eat Steak!"
+This was the fifteenth boss attack to be completed. When building my own danmaku engine,
+often the design of an attack follows from the latest new abstraction or feature I've
+implemented. In this case, I had just implemented "line builders", an abstraction capable of firing an oriented wall of bullets at a certain distance from any given spot.
+
+Very quickly, I found out that I could make V-shaped "chevrons" by firing multiple layers
+of these "walls", each with a wider angle than the last, and with each wall only
+consisting of two bullets.
+
+Then, I thought "what if the edges move faster than the center?", and thus the core piece
+of this nonspell was born. These "flapping bird chevrons" get more unwieldy the lower on
+the screen you are, because they end up forming walls, and then a cone that traps you.
+
+The bullet waves to the sides are there to reinforce the fact that you should not be
+bottom hugging. To dodge this attack, stay as high as you can on the screen and tap
+downwards as the glow orbs fire their music bullets.
+
+This is a bit challenging of an attack for a non-spell, but it ends pretty quickly, so
+it's not too bad in the end.
+
+
+○ Gourmet Sign "Steak Desire Eater"
 
 
 ○ Boss Non-spell 7 (Hazuki)

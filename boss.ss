@@ -1282,7 +1282,7 @@
 
 (define (lbchevron enm type head-type
 				   facing-deg dist layers max-spread stretch-per-layer
-				   )
+				   base-speed speed-factor)
   ;; fired from tail to tip
   (do [(i 0 (fx1+ i))]
 	  [(fx= i layers)]
@@ -1291,27 +1291,27 @@
 		(lbdist (fl+ dist (fl* (fx2fl i) stretch-per-layer)))
 		(lblen (lerp max-spread 0.0 (fl/ (fx2fl i) (fx2fl layers))))
 		(lbcount 2)
-		(lbspeed (fl+ 2.5 (fl* (fx2fl (- layers i)) 0.15)))
-		(lbshootenm enm type 5 (sebundle-shoot0 sounds)))
+		(lbspeed (fl+ base-speed (fl* (fx2fl (- layers i)) speed-factor)))
+		(lbshootenm enm type 5 (sebundle-shootsoft sounds)))
 	(let-values ([(x y) (dist-away (ex enm) (ey enm) (torad facing-deg)
 								   (fl+ dist
 										(fl* (fx2fl layers) stretch-per-layer)))])
 	  (spawn-bullet head-type x y 5 (curry linear-step-forever
-										   (torad facing-deg) 2.0)))))
+										   (torad facing-deg) base-speed)))))
 
-(define (lbchev-ring enm type head-type init-ang)
+(define (lbchev-ring enm type head-type init-ang max-spread)
   (define count 12)
   (define angper (fl/ 360.0 (fx2fl count)))
   (do [(i 0 (fx1+ i))]
 	  [(fx= i count)]
 	(lbchevron enm type head-type
-			   (fl+ init-ang (fl* (fx2fl i) angper)) 30.0 5 62.0 5.0)))
+			   (fl+ init-ang (fl* (fx2fl i) angper)) 30.0 3 max-spread 5.0 2.0 0.1)))
 
 (define (doremi-non2 task doremi hazuki aiko)
   (define bossinfo (enm-extras doremi))
   (define (keep-running)
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi))))
+	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
+		 (fxpositive? (enm-health doremi))))
   (set! current-chapter 24)
   (wait 90)
   (adjust-bars-non (bossinfo-healthbars bossinfo))
@@ -1331,19 +1331,54 @@
 	task)
   (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 doremi)
   (enm-clrflags doremi (enmflags nocollide))
-  (declare-nonspell doremi 2400 6500)
-  (spawn-subtask "main"
+  (declare-nonspell doremi 2400 11000)
+  (raylib:play-sound (sebundle-oldvwoopslow sounds))
+  (wait 60)
+  (spawn-subtask "shoot"
 	(λ (task)
 	  (define init-ang (todeg (facing-player (ex doremi) (ey doremi))))
 	  (let loop ([i 0])
 		(let-values ([(type head-type)
-					  (case (mod i 3)
+					  (case (mod (quotient i 3) 3)
 						[(0) (values 'amulet-red 'big-star-red)]
 						[(1) (values 'amulet-yellow 'big-star-orange)]
 						[(2) (values 'amulet-blue 'big-star-cyan)])])
-		  (lbchev-ring doremi type head-type (fl+ init-ang (fl* (fx2fl i) 15.0))))
-		(wait 15)
+		  (lbchev-ring doremi type head-type (fl+ init-ang (fl* (fx2fl i) 13.0))
+					   40.0))
+		(wait 20)
 		(loop (add1 i))))
+	task keep-running)
+  (spawn-subtask "side shots"
+	(λ (task)
+	  (define num 5)
+	  (define bottom-y 430.0)
+	  (define spacing 50)
+	  (define top-y (fl- bottom-y (fx2fl (* spacing (sub1 num)))))
+	  (define (get-y upwards i)
+		(define space (fx2fl (* i spacing)))
+		(if upwards (fl- bottom-y space) (fl+ top-y space)))
+	  (define (ctrl type task blt)
+		(wait 90)
+		(cancel-bullet blt)
+		(-> (fb)
+			(fbcount 3 6)
+			(fbspeed 4.0 6.0)
+			(fbang 0.0 25.0)
+			(fbshootez type (bx blt) (by blt) 2 (sebundle-bell sounds))))
+	  (define large-types '#(glow-orb-red glow-orb-orange glow-orb-cyan))
+	  (define small-types '#(music-red music-orange music-blue))
+	  (wait 120)
+	  (let loop ([j 0])
+		(do [(i 0 (fx1+ i))]
+			[(fx= i num)]
+		  (let ([large-type (vnth-mod large-types j)]
+				[ctrl* (curry ctrl (vnth-mod small-types j))])
+			(raylib:play-sound (sebundle-shoot0 sounds))
+			(spawn-bullet large-type -160.0 (get-y (fxeven? j) i) 5 ctrl*)
+			(spawn-bullet large-type 160.0 (get-y (fxeven? j) i) 5 ctrl*))
+		  (wait 5))
+		(wait 240)
+		(loop (fx1+ j))))
 	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo doremi)
