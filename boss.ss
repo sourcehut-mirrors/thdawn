@@ -1312,6 +1312,8 @@
   (define (keep-running)
 	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
 		 (fxpositive? (enm-health doremi))))
+  (define (hurry)
+	(fx<= (bossinfo-remaining-timer bossinfo) 600))
   (set! current-chapter 24)
   (wait 90)
   (adjust-bars-non (bossinfo-healthbars bossinfo))
@@ -1340,12 +1342,12 @@
 	  (let loop ([i 0])
 		(let-values ([(type head-type)
 					  (case (mod (quotient i 3) 3)
-						[(0) (values 'amulet-red 'big-star-red)]
+						[(0) (values 'amulet-magenta 'big-star-red)]
 						[(1) (values 'amulet-yellow 'big-star-orange)]
 						[(2) (values 'amulet-blue 'big-star-cyan)])])
 		  (lbchev-ring doremi type head-type (fl+ init-ang (fl* (fx2fl i) 13.0))
 					   40.0))
-		(wait 20)
+		(wait (if (hurry) 15 20))
 		(loop (add1 i))))
 	task keep-running)
   (spawn-subtask "side shots"
@@ -1380,6 +1382,11 @@
 		  (wait 5))
 		(wait 240)
 		(loop (fx1+ j))))
+	task keep-running)
+  (spawn-subtask "hurry-sound"
+	(λ (task)
+	  (wait-until hurry)
+	  (raylib:play-sound (sebundle-longcharge sounds)))
 	task keep-running)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo doremi)
