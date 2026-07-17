@@ -192,6 +192,7 @@
   (dotimes 2
 	(raylib:play-sound (sebundle-shortcharge sounds))
 	(wait 60))
+  (raylib:play-sound (sebundle-release sounds))
   (spawn-subtask "doremi shoot"
 	(λ (task)
 	  (interval-loop 70
@@ -562,6 +563,7 @@
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (ease-to ease-in-out-quad (ex hazuki) (fl+ (ey hazuki) 50.0) 60 hazuki)
+  (raylib:play-sound (sebundle-release sounds))
   (spawn-subtask "main"
 	(λ (task)
 	  (define base-ang (fl* 360.0 (roll game-rng)))
@@ -694,7 +696,7 @@
 	  (-> (cb)
 		  (cbcount 16)
 		  (cbspeed 3.0)
-		  (cbshootenm aiko 'medium-ball-blue 2 (sebundle-shoot0 sounds)))
+		  (cbshootenm aiko 'medium-ball-blue 2 (sebundle-release sounds)))
 	  (-> (cb)
 		  (cbcount 16)
 		  (cbspeed 4.0)
@@ -1227,6 +1229,7 @@
   (wait 60)
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 60)
+  (raylib:play-sound (sebundle-release sounds))
   (let loop ([i 0]
 			 [ang init-ang])
 	(let-values ([(x y) (dist-away group-sp2-center-x group-sp2-center-y ang dist)])
@@ -1334,8 +1337,9 @@
   (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 doremi)
   (enm-clrflags doremi (enmflags nocollide))
   (declare-nonspell doremi 2400 11000)
-  (raylib:play-sound (sebundle-oldvwoopslow sounds))
+  (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 60)
+  (raylib:play-sound (sebundle-release sounds))
   (spawn-subtask "shoot"
 	(λ (task)
 	  (define init-ang (todeg (facing-player (ex doremi) (ey doremi))))
@@ -2032,7 +2036,7 @@
 			(cbcount 12)
 			(cbspeed 3.0)
 			(cbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds))))
-	  (raylib:play-sound (sebundle-shortcharge sounds))
+	  (raylib:play-sound (sebundle-longcharge sounds))
 	  (spawn-subtask "decor"
 		(λ (task)
 		  (interval-loop 23
