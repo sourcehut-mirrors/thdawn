@@ -586,10 +586,10 @@
 						 (hazuki-sp1-flower (bx blt) (by blt)))
 					   (wait 60)))
 				   task)
-				 (-> (linear-step-curve facing speed
+				 (-> (linear-step-curve facing speed 0.0
 										(torad (if (even? j) 3.0 -3.0))
 										(torad 225.0) task blt)
-					 (linear-step-curve speed
+					 (linear-step-curve speed 0.0
 										(torad (if (even? j) 0.2 -0.2))
 										+inf.0 task blt)))))
 		  (wait 20))
@@ -1524,24 +1524,38 @@
 (define (doremi-sp2 task doremi)
   (define bossinfo (enm-extras doremi))
   (define (keep-running)
-	(and (positive? (bossinfo-remaining-timer bossinfo))
-		 (positive? (enm-health doremi))))
+	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
+		 (fxpositive? (enm-health doremi))))
   (define successes (box 0))
   (set! current-chapter 25)
   (declare-spell doremi 7)
   (wait 60)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i 8)]
+	(-> (cb)
+		(cbcount 18)
+		(cbspeed 5.0)
+		(cbabsolute-aim)
+		(cbshoot (ex doremi) (ey doremi)
+		  (λ (layer in-layer speed facing)
+			(-> (spawn-bullet
+				 'amulet-red (ex doremi) (ey doremi) 5
+				 (λ (task blt)
+				   (linear-step-decelerate facing speed (values -0.05
+																#;(fl* (fx2fl i) 0.005)) blt)
+				   (wait 60)
+				   (linear-step-curve facing 0.0 0.04
+									  (if (fxodd? in-layer) (torad 1.4) (torad -1.4))
+									  (torad 280.0) task blt)
+				   (bullet-clrflags blt (bltflags noprune))
+				   (linear-step-forever (bullet-facing blt) 5.0 task blt)))
+				(bullet-addflags (bltflags noprune)))
+			)))
+	(wait 5))
   ;; (doremi-sp2-var0 successes task doremi)
   ;; (doremi-sp2-var1 successes task doremi)
-
-  #;(interval-loop-while 1 (keep-running)
-	(let ([x (centered-roll game-rng (fx2fl +playfield-max-x+))]
-		  [facing (fl+ hpi (centered-roll game-rng (torad 20.0)))])
-	  (spawn-bullet
-	   (vrand '#(fireball-magenta fireball-red) game-rng)
-	   x 10.0 5
-  (curry linear-step-forever facing 3.3))))
   (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
   (hazuki-non2 task doremi))

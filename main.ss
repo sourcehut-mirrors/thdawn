@@ -2523,14 +2523,15 @@
 			(linear-step-forever (flatan yv (fl- xv)) speed task blt))]))
 	  (loop))))
 
-(define (linear-step-curve facing speed angvel max-dfacing task blt)
-  (let loop ([ang facing])
+(define (linear-step-curve facing init-speed accel angvel max-dfacing task blt)
+  (let loop ([ang facing]
+			 [speed init-speed])
 	(linear-step ang speed blt)
 	(bullet-facing-set! blt ang)
 	(yield)
 	(let ([next-ang (fl+ ang angvel)])
 	  (if (fl<= (flabs (fl- next-ang facing)) max-dfacing)
-		  (loop next-ang)
+		  (loop next-ang (fl+ speed accel))
 		  ang))))
 
 (define-record-type particle
