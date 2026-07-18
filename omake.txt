@@ -340,8 +340,14 @@ downwards as the glow orbs fire their music bullets.
 This is a bit challenging of an attack for a non-spell, but it ends pretty quickly, so
 it's not too bad in the end.
 
+Another hint: Position yourself near the edge of one of the ^ chevrons. Do not position
+yourself underneath one of the large stars, as you'll get walled as the chevrons spread
+out.
+
 
 ○ Gourmet Sign "Steak Desire Eater"
+
+This was the sixteenth boss attack to be completed. 
 
 
 ○ Boss Non-spell 7 (Hazuki)
@@ -367,6 +373,7 @@ bullets. But playing for score is fun, try it out!
 
 I was quite satisfied with how I managed to make an attack inspired by two other
 influential fangames, but put together with a nice twist.
+
 
 ○ Paranormal Sign "Hazuki's Ghostbusting Challenge" (Hazuki)
 
@@ -415,6 +422,7 @@ keep insisting on going too far up, she starts shooting self-defense kunais to w
 not do that. I also made her do shoot the kunais when you try to time the nonspell out,
 just for fun. The kunais are randomly either aimed at you or aimed away from you just
 annoyingly enough to be a bit of a challenge for those wanting to time out every pattern.
+
 
 ○ Athletic Sign "Aiko's Pinball Penalty Shootout" (Aiko)
 
@@ -483,6 +491,11 @@ pretty tough!
 
 ○ "One Flower, One World" (Group)
 
+This was the seventeenth boss attack to be completed. 
+
 
 ○ "Magical Stage" (Group)
 
+This was the eighteenth and final boss attack to be completed. I had the idea for this
+spell pretty early on (when I was about halfway done with the boss fight), but I wanted to
+save the final spell as the final one I coded up.

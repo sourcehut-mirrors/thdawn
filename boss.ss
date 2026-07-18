@@ -1283,6 +1283,7 @@
   (common-spell-postlude bossinfo doremi)
   (doremi-non2 task doremi hazuki aiko))
 
+;; TODO: clean this up?
 (define (lbchevron enm type head-type
 				   facing-deg dist layers max-spread stretch-per-layer
 				   base-speed speed-factor)
@@ -1344,13 +1345,12 @@
 	(λ (task)
 	  (define init-ang (todeg (facing-player (ex doremi) (ey doremi))))
 	  (let loop ([i 0])
-		(let-values ([(type head-type)
-					  (case (mod (quotient i 3) 3)
-						[(0) (values 'amulet-magenta 'big-star-red)]
-						[(1) (values 'amulet-yellow 'big-star-orange)]
-						[(2) (values 'amulet-blue 'big-star-cyan)])])
-		  (lbchev-ring doremi type head-type (fl+ init-ang (fl* (fx2fl i) 13.0))
-					   40.0))
+		(let ([idx (mod (quotient i 3) 3)])
+		  (lbchev-ring
+		   doremi
+		   (vnth-mod '#(amulet-magenta amulet-yellow amulet-blue) idx)
+		   (vnth-mod '#(big-star-red big-star-orange big-star-cyan) idx)
+		   (fl+ init-ang (fl* (fx2fl i) 13.0)) 40.0))
 		(wait (if (hurry) 15 20))
 		(loop (add1 i))))
 	task keep-running)
@@ -1422,108 +1422,15 @@
 	(thunk (vector-index steak live-misc-ents)))
   steak)
 
-(define (doremi-sp2-var0 successes-box task doremi)
-  (define steak (doremi-sp2-spawn-steak -50.0 180.0 successes-box task))
-  (parameterize ([ovr-uncancelable #t])
-	(do [(i 0 (add1 i))]
-		[(= i 16)]
-	  (-> (cb)
-		  (cbcount 8)
-		  (cbabsolute-aim)
-		  (cboffset (fx2fl (+ 10 (* 20 i))))
-		  (cbspeed 0.2)
-		  (cbshootez
-		   (vnth-mod '#(butterfly-red butterfly-orange butterfly-yellow
-									  butterfly-green butterfly-cyan
-									  butterfly-blue butterfly-magenta
-									  butterfly-white) i)
-		   (miscent-x steak) (miscent-y steak)
-		   2 (sebundle-shoot0 sounds)
-		   (λ (facing speed task blt)
-			 (define accel (fl+ 0.03 (fl* (fx2fl i) 0.01)))
-			 (interval-loop-while 1 (vector-index steak live-misc-ents)
-			   (linear-step facing speed blt))
-			 (dotimes 30
-			   (linear-step facing speed blt)
-			   (yield))
-			 (raylib:play-sound (sebundle-bell sounds))
-			 (let loop ([v speed])
-			   (bullet-x-set! blt (fl+ (bx blt)
-									   (fl* v (flcos (fl+ facing pi)))))
-			   (bullet-y-set! blt (fl+ (by blt)
-									   (fl* v (flsin (fl+ facing pi)))))
-			   (yield)
-			   (let ([next-v (fl+ v accel)])
-				 (if (fl< (distsq (bx blt) (by blt)
-								  (miscent-x steak) (miscent-y steak))
-						  900.0)
-					 (linear-step-forever (fl+ facing pi (torad 15.0)) next-v
-										  task blt)
-					 (loop next-v)))))))
-	  (wait 4)))
-  (wait-while (thunk (vector-index steak live-misc-ents)))
-  (wait 80)
-  (-> (fb)
-	  (fbcount 3 5)
-	  (fbang 0.0 10.0)
-	  (fbspeed 2.0 4.5)
-	  (fbshootez 'ellipse-red
-				 (miscent-x steak) (miscent-y steak)
-				 10 (sebundle-shoot0 sounds)))
-  (wait 240))
-
-(define (doremi-sp2-var1 successes-box task doremi)
-  (define cx -50.0)
-  (define cy 180.0)
-  (define (heart order type multiplier count)
-	(raylib:play-sound (sebundle-shoot0 sounds))
-	(parameterize ([seal-distance 10.0]
-				   [ovr-uncancelable #t])
-	  (do [(i 0 (add1 i))]
-		  [(= i count)]
-		(let* ([theta (inexact (* tau (/ i count)))]
-			   [x (fl+ cx (fl* multiplier 16.0 (flexpt (flsin theta) 3.0)))]
-			   [y (fl+ cy (fl* -1.0 multiplier ;; -1 because we're y-down
-							   (fl- (fl* 13.0 (flcos theta))
-									(fl* 5.0 (flcos (fl* 2.0 theta)))
-									(fl* 2.0 (flcos (fl* 3.0 theta)))
-									(flcos (fl* 4.0 theta)))))])
-		  (spawn-bullet
-		   type x y 2
-		   (λ (task blt)
-			 (wait-while (thunk (vector-index steak live-misc-ents)))
-			 (wait 55)
-			 (wait (* order 8))
-			 (raylib:play-sound (sebundle-bell sounds))
-			 (let ([facing (if (fl< (distsq player-x player-y cx cy) 10000.0)
-							   (facing-point (bx blt) (by blt) cx cy)
-							   (facing-player (bx blt) (by blt)))])
-			   (linear-step-accelerate-forever
-				facing
-				0.0 0.025 4.5 task blt))))))))
-  (define steak (doremi-sp2-spawn-steak cx cy successes-box task))
-  (heart 0 'small-ball-red 4.5 32)
-  (wait 10)
-  (heart 1 'small-ball-orange 7.0 42)
-  (wait 10)
-  (heart 2 'small-ball-blue 9.0 56)
-  (wait 10)
-  (heart 3 'small-ball-magenta 12.0 64)
-  (wait 10)
-  (wait-while (thunk (vector-index steak live-misc-ents)))
-  (when (fl>= (distsq player-x player-y cx cy) 10000.0)
-	(dotimes 8
-	  (-> (fb)
-		  (fbcount (if (roll-bool game-rng) 5 4) 5)
-		  (fbang 0.0 12.0)
-		  (fbspeed 3.0 5.0)
-		  (fbshootez
-		   'heart-red
-		   (fl+ cx (centered-roll game-rng 100.0))
-		   (fl+ cy (centered-roll game-rng 100.0))
-		   15 (sebundle-shoot0 sounds)))
-	  (wait 20)))
-  (wait 80))
+(define (lbchev-ring2 enm type head-type init-ang)
+  (define count 12)
+  (define angper (fl/ 360.0 (fx2fl count)))
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i count)]
+	(lbchevron enm type head-type
+			   (fl+ init-ang (fl* (fx2fl i) angper))
+			   ;; dist layers max-spread stretch-per-layer base-speed speed-factor
+			   30.0 3 45.0 -4.0 3.0 -0.12)))
 
 (define (doremi-sp2 task doremi)
   (define bossinfo (enm-extras doremi))
@@ -1533,33 +1440,49 @@
   (define successes (box 0))
   (set! current-chapter 25)
   (declare-spell doremi 7)
-  (wait 60)
+  (ease-to ease-in-out-quad +middle-boss-x+ (fl+ 30.0 +middle-boss-y+) 60 doremi)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
-  (do [(i 0 (fx1+ i))]
-	  [(fx= i 8)]
-	(-> (cb)
-		(cbcount 18)
-		(cbspeed 5.0)
-		(cbabsolute-aim)
-		(cbshoot (ex doremi) (ey doremi)
-		  (λ (layer in-layer speed facing)
-			(-> (spawn-bullet
-				 'amulet-red (ex doremi) (ey doremi) 5
-				 (λ (task blt)
-				   (linear-step-decelerate facing speed (values -0.05
-																#;(fl* (fx2fl i) 0.005)) blt)
-				   (wait 60)
-				   (linear-step-curve facing 0.0 0.04
-									  (if (fxodd? in-layer) (torad 1.4) (torad -1.4))
-									  (torad 280.0) task blt)
-				   (bullet-clrflags blt (bltflags noprune))
-				   (linear-step-forever (bullet-facing blt) 5.0 task blt)))
-				(bullet-addflags (bltflags noprune)))
-			)))
-	(wait 5))
-  ;; (doremi-sp2-var0 successes task doremi)
-  ;; (doremi-sp2-var1 successes task doremi)
+
+  (spawn-subtask "shoot"
+	(λ (task)
+	  (define wind 45)
+	  (define rings-per-wave 6)
+	  (interval-loop 250
+		(dotimes 7
+		  (-> (cb)
+			  (cbcount 36)
+			  (cbspeed 5.0)
+			  (cbabsolute-aim)
+			  (cbang (fl* 360.0 (roll game-rng)))
+			  (cbshootez
+			   'kunai-orange
+			   (roll-flrange game-rng -50.0 50.0)
+			   (roll-flrange game-rng (fl- (ey doremi) 30.0) (fl+ (ey doremi) 90.0))
+			   5 (sebundle-shoot0 sounds)
+			   (λ (facing speed task blt)
+				 (define slow-speed 0.8)
+				 (linear-step-decelerate-to facing speed -0.15 slow-speed blt)
+				 (dotimes 70
+				   (linear-step facing slow-speed blt)
+				   (yield))
+				 (raylib:play-sound (sebundle-bell sounds))
+				 (linear-step-accelerate-forever
+				  facing slow-speed 0.08 speed task blt))))
+		  (wait 10))
+		(wait 45)
+		(raylib:play-sound (sebundle-shortcharge sounds))
+		(wait 60)
+		(raylib:play-sound (sebundle-release sounds))
+		(do [(j 0 (add1 j))]
+			[(= j rings-per-wave)]
+		  (lbchev-ring2
+		   doremi
+		   (vnth-mod '#(amulet-magenta amulet-yellow amulet-blue) j)
+		   (vnth-mod '#(big-star-red big-star-orange big-star-cyan) j)
+		   (fx2fl (* j wind)))
+		  (wait 12))))
+	task keep-running)
   (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
   (hazuki-non2 task doremi))
