@@ -81,9 +81,7 @@
 	(λ (e) (and e (eq? 'boss-aiko (enm-type e)))) live-enm)))
 (define (find-spellcaster)
   (vector-find
-   (λ (e)
-	 (and e (is-boss? e)
-		  (bossinfo-active-spell-id (enm-extras e))))
+   (λ (e) (and e (is-boss? e) (bossinfo-active-spell-id (enm-extras e))))
    live-enm))
 
 (define (enm-invincible? enm)

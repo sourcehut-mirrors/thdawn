@@ -80,7 +80,6 @@
   make-miscent-type-set)
 (define miscent-render-order (enum-set->list
 							  (enum-set-universe (make-miscent-type-set))))
-(define miscent-doremi-non2-livetime 300)
 (define-enumeration particletype
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
 		  circle-hint-opaque
@@ -760,6 +759,7 @@
 (define +hit-radius+ 3.0)
 (define +vacuum-radius-unfocused+ 25.0)
 (define +vacuum-radius-focused+ 55.0)
+(define +vacuum-radius-steak+ 38.0)
 (define +initial-player-y+ (- +playfield-max-y+ 20.0))
 (define +max-focus-frames+ 10)
 (define visual-rng (make-pseudo-random-generator))
@@ -2964,7 +2964,7 @@
 (define (miscent-should-spin? ent)
   (memq (miscent-type ent) '(point life life-frag bomb bomb-frag)))
 
-(define (draw-misc-ents textures)
+(define (draw-misc-ents-except-steak textures)
   (define (draw-one-miscent draw-type ent)
 	(define type (and ent (miscent-type ent)))
 	(when (eq? type draw-type)
@@ -3001,29 +3001,34 @@
 		   (when show-hitboxes
 			 (raylib:draw-rectangle-rec
 			  (fl- render-x 8.0) (fl- render-y 8.0) 16.0 16.0
-			  red)))
-		  ([steak]
-		   (let* ([livetime (miscent-livetime ent)]
-				  [rot (fl* 15.0 (flsin (inexact (/ livetime 15))))]
-				  [ring-rad (-> (fl+ 0.5 (fl* 0.5 (flsin (inexact (/ livetime 8)))))
-								(fl+ 12.0))]
-				  [ring-fullness (lerp 360.0 0.0
-									   (inexact (/ livetime
-												   miscent-doremi-non2-livetime)))])
-			 (raylib:draw-ring render-x render-y ring-rad (fl+ ring-rad 3.2)
-							   -90.0 (fl- ring-fullness 90.0) 30 #xffd700ff)
-			 (draw-sprite-with-rotation
-			  textures type rot render-x render-y -1)
-			 (when show-hitboxes
-			   (raylib:draw-rectangle-rec
-				(fl- render-x 10.0) (fl- render-y 10.0) 20.0 20.0
-				red))))))))
+			  red)))))))
   (for-each
    (λ (type)
 	 (vector-for-each
 	  (λ (e) (draw-one-miscent type e))
 	  live-misc-ents))
    miscent-render-order))
+
+(define (draw-steaks textures)
+  (vector-for-each
+   (λ (ent)
+	 (and ent (eq? 'steak (miscent-type ent))
+		  (let* ([render-x (+ +playfield-render-offset-x+ (miscent-x ent))]
+				 [render-y (+ +playfield-render-offset-y+ (miscent-y ent))]
+				 [livetime (miscent-livetime ent)]
+				 [rot (fl* 15.0 (flsin (inexact (/ livetime 15))))])
+			(draw-sprite-with-scale-rotation
+			 textures 'aura-blue
+			 (fxmod (fx* 2 livetime) 360)
+			 (fl+ 1.25 (fl* 0.25 (flsin (inexact (/ livetime 8)))))
+			 render-x render-y -1)
+			(draw-sprite-with-rotation
+			 textures 'steak rot render-x render-y -1)
+			(when show-hitboxes
+			  (raylib:draw-rectangle-rec
+			   (fl- render-x 10.0) (fl- render-y 10.0) 20.0 20.0
+			   red)))))
+   live-misc-ents))
 
 (define (ease-to-impl getx gety setx sety
 					  easer x y duration obj)
@@ -3079,7 +3084,7 @@
   (bossinfo-active-spell-id-set!
    bossinfo idx)
   (bossinfo-active-spell-bonus-set!
-   bossinfo (+ (* 100 item-value)
+   bossinfo (+ (if (= idx 7) 0 (* 100 item-value))
 			   (spell-descriptor-bonus descriptor)))
   (bossinfo-remaining-timer-set! bossinfo (spell-descriptor-duration descriptor))
   (bossinfo-total-timer-set! bossinfo (spell-descriptor-duration descriptor))
@@ -3704,6 +3709,9 @@
   (define aiko-sp2-overlay
 	(and aiko-sp2 (fx>= (bossinfo-elapsed-frames (enm-extras spellcaster))
 						120)))
+  (define doremi-sp2 (and spellcaster
+						  (fx= 7
+							   (bossinfo-active-spell-id (enm-extras spellcaster)))))
   (define-values (render-player-x render-player-y)
 	(get-player-render-pos))
   (when aiko-sp2-overlay
@@ -3759,9 +3767,10 @@
 	(let ([focus-progress (/ focus-frames +max-focus-frames+)])
 	  (raylib:draw-circle-lines-v
 	   render-player-x render-player-y
-	   (lerp +vacuum-radius-unfocused+ +vacuum-radius-focused+
-			 focus-progress)
-	   (override-alpha -1 (eround (lerp 16 128 focus-progress))))))
+	   (if doremi-sp2 +vacuum-radius-steak+
+		   (lerp +vacuum-radius-unfocused+ +vacuum-radius-focused+ focus-progress))
+	   (override-alpha
+		-1 (if doremi-sp2 160 (eround (lerp 16 128 focus-progress)))))))
 
   (when show-hitboxes
 	(raylib:draw-circle-v render-player-x render-player-y +graze-radius+
@@ -3949,6 +3958,7 @@
 			  3.0 0.0))
 	 3 5.0 90.0 -1)))
 
+(define doremi-sp2-steaks-collected (box 0))
 (define (draw-hud textures fonts)
   (raylib:draw-texture (txbundle-hud textures) 0 0 #xffffffff)
   (raylib:draw-text-ex
@@ -4258,10 +4268,9 @@
 	(draw-lasers textures sorted-bullets)
 	(draw-enemies textures)
 	(draw-player textures)
-	(with-cost-center miscent-cc
-					  (thunk (draw-misc-ents textures)))
-	(with-cost-center bullet-cc
-					  (thunk (draw-bullets textures sorted-bullets))))
+	(draw-misc-ents-except-steak textures)
+	(draw-bullets textures sorted-bullets)
+	(draw-steaks textures))
   (draw-particles textures fonts)
 
   ;; focus sigil. Done here after the bullets because we want the player hitbox

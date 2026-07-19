@@ -1396,31 +1396,42 @@
   (common-nonspell-postlude bossinfo doremi)
   (doremi-sp2 task doremi))
 
-(define (doremi-sp2-spawn-steak x y successes-box task)
-  (define steak (spawn-misc-ent (miscenttype steak) x y 0.0 0.0))
-  (define start-time frames)
-  (spawn-subtask "steak despawner"
-	(λ (task)
-	  (let loop ()
-		;; TODO: sfx
-		(when (check-collision-circle-rec
-			   player-x player-y +hit-radius+
-			   (- (miscent-x steak) 10) (- (miscent-y steak) 10)
-			   20 20)
-		  (set! current-score (+ current-score 500))
-		  (set-box! successes-box (add1 (unbox successes-box)))
-		  (delete-misc-ent steak))
-		(when (fx> (fx- frames start-time) miscent-doremi-non2-livetime)
-		  (spawn-particle
-		   (particletype cancel)
-		   (miscent-x steak) (miscent-y steak)
-		   23 #f)
-		  (delete-misc-ent steak))
-		(yield)
-		(loop)))
-	task
-	(thunk (vector-index steak live-misc-ents)))
-  steak)
+(define (steak-ctrl doremi steak task)
+  (define speed 0.0)
+  (wait 120)
+  (loop-forever
+   (let ([x (miscent-x steak)]
+		 [y (miscent-y steak)])
+	 ;; motion
+	 (if (check-collision-circle-rec
+		  player-x player-y +vacuum-radius-steak+
+		  (- x 10) (- y 10) 20 20)
+		 (let ([dir-to-player (v2unit (vec2 (- player-x x) (- player-y y)))])
+		   (miscent-x-set! steak (+ x (* (v2x dir-to-player) 4)))
+		   (miscent-y-set! steak (+ y (* (v2y dir-to-player) 4))))
+		 (let ([dir-to-boss (v2unit (vec2 (- (ex doremi) x)
+										  (- (ey doremi) y)))])
+		   (miscent-x-set! steak (+ x (* (v2x dir-to-boss) speed)))
+		   (miscent-y-set! steak (+ y (* (v2y dir-to-boss) speed)))
+		   (when (fl< speed 4.0)
+			 (set! speed (fl+ speed 0.05)))))
+
+	 ;; collision
+	 (cond
+	  [(check-collision-circle-rec
+		player-x player-y +hit-radius+ (- x 10) (- y 10) 20 20)
+	   (raylib:play-sound (sebundle-dropbomb sounds))
+	   (set-box! doremi-sp2-steaks-collected (1+ (unbox doremi-sp2-steaks-collected)))
+	   (let ([bossinfo (enm-extras doremi)])
+		 (bossinfo-active-spell-bonus-set!
+		  bossinfo (+ item-value (bossinfo-active-spell-bonus bossinfo))))
+	   (delete-misc-ent steak)]
+	  [(check-collision-circle-rec
+		(ex doremi) (ey doremi) +hit-radius+
+		(- x 10) (- y 10) 20 20)
+	   (raylib:play-sound (sebundle-spiritget sounds))
+	   (delete-misc-ent steak)])
+   )))
 
 (define (lbchev-ring2 enm type head-type init-ang)
   (define count 12)
@@ -1440,6 +1451,7 @@
   (define successes (box 0))
   (set! current-chapter 25)
   (declare-spell doremi 7)
+  (set-box! doremi-sp2-steaks-collected 0)
   (ease-to ease-in-out-quad +middle-boss-x+ (fl+ 30.0 +middle-boss-y+) 60 doremi)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
@@ -1474,6 +1486,20 @@
 		(raylib:play-sound (sebundle-shortcharge sounds))
 		(wait 60)
 		(raylib:play-sound (sebundle-release sounds))
+		(spawn-subtask "spawn steaks"
+		  ;; NB: Purposefully not bound so steak-ctrl uses outer task as parent
+		  ;; Otherwise, the steak-ctrl task dies as soon as this task finishes
+		  (λ (_) 
+			(dotimes 5
+			  (let* ([steak (spawn-misc-ent 'steak
+											(centered-roll game-rng 160.0)
+											100.0 0.0 0.0)]
+					 [steak-idx (vector-index steak live-misc-ents)])
+				(spawn-subtask "steak control"
+				  (curry steak-ctrl doremi steak)
+				  task (thunk (eq? steak (vnth live-misc-ents steak-idx)))))
+			  (wait 15)))
+		  task)
 		(do [(j 0 (add1 j))]
 			[(= j rings-per-wave)]
 		  (lbchev-ring2
