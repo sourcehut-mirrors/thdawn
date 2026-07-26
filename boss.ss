@@ -1398,7 +1398,7 @@
 
 (define (steak-ctrl doremi steak task)
   (define speed 0.0)
-  (wait 120)
+  (wait 80)
   (loop-forever
    (let ([x (miscent-x steak)]
 		 [y (miscent-y steak)])
@@ -1415,23 +1415,23 @@
 		   (miscent-y-set! steak (+ y (* (v2y dir-to-boss) speed)))
 		   (when (fl< speed 4.0)
 			 (set! speed (fl+ speed 0.05)))))
-
 	 ;; collision
 	 (cond
 	  [(check-collision-circle-rec
 		player-x player-y +hit-radius+ (- x 10) (- y 10) 20 20)
 	   (raylib:play-sound (sebundle-dropbomb sounds))
 	   (set-box! doremi-sp2-steaks-collected (1+ (unbox doremi-sp2-steaks-collected)))
-	   (let ([bossinfo (enm-extras doremi)])
-		 (bossinfo-active-spell-bonus-set!
-		  bossinfo (+ item-value (bossinfo-active-spell-bonus bossinfo))))
+	   (set! current-score (+ current-score item-value))
+	   (spawn-particle
+		(particletype itemvalue)
+		x (- y 10.0)
+		60 (cons #xffd70000 (number->string item-value)))
 	   (delete-misc-ent steak)]
 	  [(check-collision-circle-rec
-		(ex doremi) (ey doremi) +hit-radius+
+		(ex doremi) (ey doremi) 8.0
 		(- x 10) (- y 10) 20 20)
-	   (raylib:play-sound (sebundle-spiritget sounds))
-	   (delete-misc-ent steak)])
-   )))
+	   (raylib:play-sound (sebundle-ophide sounds))
+	   (delete-misc-ent steak)]))))
 
 (define (lbchev-ring2 enm type head-type init-ang)
   (define count 12)
@@ -1455,7 +1455,7 @@
   (ease-to ease-in-out-quad +middle-boss-x+ (fl+ 30.0 +middle-boss-y+) 60 doremi)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
-
+  (enm-addflags doremi (enmflags nocollide))
   (spawn-subtask "shoot"
 	(λ (task)
 	  (define wind 45)
@@ -1463,7 +1463,7 @@
 	  (interval-loop 250
 		(dotimes 7
 		  (-> (cb)
-			  (cbcount 36)
+			  (cbcount 28)
 			  (cbspeed 5.0)
 			  (cbabsolute-aim)
 			  (cbang (fl* 360.0 (roll game-rng)))
@@ -1474,7 +1474,7 @@
 			   5 (sebundle-shoot0 sounds)
 			   (λ (facing speed task blt)
 				 (define slow-speed 0.8)
-				 (linear-step-decelerate-to facing speed -0.15 slow-speed blt)
+				 (linear-step-decelerate-to facing speed -0.18 slow-speed blt)
 				 (dotimes 70
 				   (linear-step facing slow-speed blt)
 				   (yield))
@@ -1491,10 +1491,14 @@
 		  ;; Otherwise, the steak-ctrl task dies as soon as this task finishes
 		  (λ (_) 
 			(dotimes 5
-			  (let* ([steak (spawn-misc-ent 'steak
-											(centered-roll game-rng 160.0)
-											100.0 0.0 0.0)]
+			  (let* ([steak (spawn-misc-ent
+							 'steak
+							 (roll-sign
+							  game-rng (roll-flrange game-rng 85.0 160.0))
+							 (roll-flrange game-rng 80.0 110.0)
+							 0.0 0.0)]
 					 [steak-idx (vector-index steak live-misc-ents)])
+				(raylib:play-sound (sebundle-opshow sounds))
 				(spawn-subtask "steak control"
 				  (curry steak-ctrl doremi steak)
 				  task (thunk (eq? steak (vnth live-misc-ents steak-idx)))))
@@ -1510,7 +1514,15 @@
 		  (wait 12))))
 	task keep-running)
   (wait-while keep-running)
-  (common-spell-postlude bossinfo doremi)
+  (common-spell-postlude
+   bossinfo doremi
+   (thunk
+	(let ([count (unbox doremi-sp2-steaks-collected)])
+	  (and (positive? count)
+		   (* item-value (expt 2 count))))))
+  (vector-for-each-truthy
+   (λ (e) (when (eq? 'steak (miscent-type e)) (delete-misc-ent e)))
+   live-misc-ents)
   (hazuki-non2 task doremi))
 
 (define (hazuki-non2-wisp-control ring1 ring2 task enm)

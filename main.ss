@@ -772,6 +772,8 @@
   (fx+ min (roll rng (fx1+ (fx- max min)))))
 (define (roll-flrange rng min max)
   (fl+ min (fl* (roll rng) (fl- max min))))
+(define (roll-sign rng num)
+  (if (roll-bool rng) (fl- num) num))
 (define chapter-select 0)
 (define spline-editor-positions '#())
 (define spline-editor-selected-position 0)
@@ -2029,7 +2031,7 @@
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
 							4200 25000 3000000 'group std std-fail)
 	 (make-spell-descriptor "Gourmet Sign \"Steak Desire Eater\""
-							6000 9000 3000000 'doremi std std-fail)
+							2700 10000 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Hazuki's Ghostbusting Challenge\""
 							3000 9000 3000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Athletic Sign \"Aiko's Pinball Penalty Shootout\""
@@ -3084,8 +3086,7 @@
   (bossinfo-active-spell-id-set!
    bossinfo idx)
   (bossinfo-active-spell-bonus-set!
-   bossinfo (+ (if (= idx 7) 0 (* 100 item-value))
-			   (spell-descriptor-bonus descriptor)))
+   bossinfo (+ (* 100 item-value) (spell-descriptor-bonus descriptor)))
   (bossinfo-remaining-timer-set! bossinfo (spell-descriptor-duration descriptor))
   (bossinfo-total-timer-set! bossinfo (spell-descriptor-duration descriptor))
   (enm-superarmor-set! boss 120)
@@ -3993,6 +3994,16 @@
    (format "Value: ~:d" item-value)
    440.0 165.0
    24.0 0.0 #x49D0FFFF)
+  (let ([enm (find-spellcaster)])
+	(when (and enm (= 7 (bossinfo-active-spell-id (enm-extras enm))))
+	  (let ([x 452.0] [y 211.0])
+		(draw-sprite textures 'steak x y -1)
+		(raylib:draw-text-ex
+		 (fontbundle-bubblegum24 fonts)
+		 ;; todo: load and use unicode multiply symbol
+		 (format "x ~2,'0d" (unbox doremi-sp2-steaks-collected))
+		 (fl+ x 16.0) (fl- y 12.0) 24.0 0.0 -1))))
+  
   (when (is-replay)
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum24 fonts)
@@ -4037,8 +4048,7 @@
 	  (draw-boss-hud nth-boss hazuki textures fonts)
 	  (set! nth-boss (add1 nth-boss)))
 	(when aiko
-	  (draw-boss-hud nth-boss aiko textures fonts)
-	  (set! nth-boss (add1 nth-boss))))
+	  (draw-boss-hud nth-boss aiko textures fonts)))
 
   (let* ([start-x 490.0]
 		 [y 78.0]

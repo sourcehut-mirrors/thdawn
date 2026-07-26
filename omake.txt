@@ -347,7 +347,32 @@ out.
 
 ○ Gourmet Sign "Steak Desire Eater"
 
-This was the sixteenth boss attack to be completed. 
+This was the sixteenth boss attack to be completed. I knew from the start that I wanted
+this to be a steak-themed attack, in honor of Doremi's love for steak (did you know that
+she never gets to eat a steak in the entire series?).
+
+I had several ideas around having to go through a maze to find steak pieces, etc. but
+ultimately I settled on a clone of Score Desire Eater from Ten Desires.
+
+It's my own twist on it (partially because I haven't implemented curvy lasers and will
+probably be too lazy to do so given that this is the third to last attack I need to make
+and the two remaining attacks don't need curvy lasers).
+
+The chevrons from the preceding nonspell, expectedly, make an appearance. Except this time
+instead of unfolding downwards, they unfold upwards. To get through to grab as many steaks
+as possible, position yourself in the correct vertical position and rapidly tap
+right-left-right-left to weave through the chevrons while they're straight lines.
+
+If it's too much to bear, you can just wait at the bottom for gaps to form in the
+chevrons, you'll just lose out on the steaks.
+
+Score-wise, each steak is equivalent to one point item, but more importantly, if you
+capture the spell, you receive an extra bonus of PIV * 2^(steaks eaten). So there's a
+pretty big reward in store if you reach this spell with high PIV. But if you fail the
+spell, though, that all goes down the drain.
+
+This took longer than you'd think to get the feel and balance down, and I'm not entirely
+sure it's the best it could be, so apologies in advance orz.
 
 
 ○ Boss Non-spell 7 (Hazuki)
