@@ -724,7 +724,11 @@
    ;; Set when a pause gui is opened. when non-#f, the next frame after unpausing, the
    ;; time difference from this timestamp to the current time is computed and saved in the
    ;; replay.
-   (mutable paused-at))
+   (mutable paused-at)
+   ;; scratchpad for places that need to determine whether the player bombed or died since
+   ;; this was set to false. always set to true when the player bombs/dies, so it's the
+   ;; responsibility of any setup code to set it to false on entry.
+   (mutable bombed-or-died))
   (sealed #t))
 
 (define (fresh-stage-ctx replay)
@@ -743,7 +747,7 @@
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
    0 0 #f
-   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1 v2zero #f))
+   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1 v2zero #f #f))
 
 (define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
@@ -2010,7 +2014,9 @@
   (sealed #t))
 (define spells
   (let ([std '((bomb-frag . 1) (point . 50))]
-		[std-fail '((bomb-frag . 1) (point . 10))])
+		[std-fail '((bomb-frag . 1) (point . 10))]
+		[life-frag '((life-frag . 1) (point . 50))]
+		[life-frag-fail '((life-frag . 1) (point . 10))])
 	(immutable-vector
 	 (make-spell-descriptor
 	  "Beginner Sign \"My First Spell Card!\"" 1540 -1 1000000 #f
@@ -2021,7 +2027,7 @@
 	  '((life . 1) (point . 50))
 	  '((life . 1) (point . 10)))
 	 (make-spell-descriptor "Barrage Sign \"Ojamajo Doremi SHOOT!\""
-							2700 12000 1000000 'group std std-fail)
+							2700 12000 1000000 'group life-frag life-frag-fail)
 	 (make-spell-descriptor "Spring Sign \"Harukaze Cherry Blossoms\""
 							3600 15000 1000000 'doremi std std-fail)
 	 (make-spell-descriptor "Floral Sign \"Flower Dance\""
@@ -2029,17 +2035,17 @@
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
 							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
-							4200 25000 3000000 'group std std-fail)
+							4200 25000 3000000 'group life-frag life-frag-fail)
 	 (make-spell-descriptor "Gourmet Sign \"Steak Desire Eater\""
 							2700 10000 3000000 'doremi std std-fail)
 	 (make-spell-descriptor "Paranormal Sign \"Hazuki's Ghostbusting Challenge\""
-							3000 9000 3000000 'hazuki std std-fail)
+							3000 9000 3000000 'hazuki life-frag std-fail)
 	 (make-spell-descriptor "Athletic Sign \"Aiko's Pinball Penalty Shootout\""
 							2400 25000 3000000 'aiko
 							'((bomb . 1) (point . 50))
 							'((bomb . 1) (point . 10)))
 	 (make-spell-descriptor "\"One Flower, One World\""
-							2400 -1 5000000 'group std std-fail)
+							2400 -1 5000000 'group life-frag life-frag-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
 							5940 20000 5000000 'group std std-fail))))
 (define-record-type score-entry
@@ -2331,6 +2337,7 @@
 (define (kill-player)
   (set! iframes 180)
   (fail-current-attack)
+  (stage-ctx-bombed-or-died-set! current-stage-ctx #t)
   (when (and force-invincible
 			 (< bomb-stock 3))
 	(set! bomb-stock 3))
@@ -3554,6 +3561,7 @@
 	(set! bombing +bombing-max+)
 	(set! iframes 180)
 	(set! bomb-stock (sub1 bomb-stock))
+	(stage-ctx-bombed-or-died-set! current-stage-ctx #t)
 	(autocollect-all-items)
 	(raylib:play-sound (sebundle-spelldeclare sounds))
 	(cancel-all #f)

@@ -731,13 +731,16 @@
 	(when (= next (* 2 (length xs)))
 	  ;; all yinyangs killed, reward
 	  (spawn-drops-with-autocollect
-	   '((bomb . 1) (life-frag . 1))
+	   (if (stage-ctx-bombed-or-died current-stage-ctx)
+		   '((bomb . 1))
+		   '((life . 1)))
 	   0.0 (fx2fl +poc-y+)))
 	#t)
   (set! current-chapter 5)
   (spawn-enemy (enmtype big-fairy) 0.0 -20.0 2500 ch5-bigfairy
 			   '((point . 20)))
   (wait 360)
+  (stage-ctx-bombed-or-died-set! current-stage-ctx #f)
   (for-each
    (λ (pair)
 	 (-> (spawn-enemy (enmtype magenta-yinyang)
@@ -1071,7 +1074,7 @@
 					(λ (_)
 					  (set-box! killed (add1 (unbox killed)))
 					  (when (= (unbox killed) 3)
-						(spawn-drops '((bomb-frag . 1)) 0.0 110.0))))])
+						(spawn-drops '((bomb . 1)) 0.0 110.0))))])
 	(spawn-enemy (enmtype big-fairy) -90.0 -20.0 400 ch9-w2 drops on-death)
 	(spawn-enemy (enmtype big-fairy) 0.0 -30.0 400 ch9-w2 drops on-death)
 	(spawn-enemy (enmtype big-fairy) 90.0 -20.0 400 ch9-w2 drops on-death))
@@ -1235,9 +1238,9 @@
   (set! current-chapter 10)
   (wait 70)
   (spawn-enemy 'medium-red-fairy -192.0 100.0 270 (curry ch10-w1 #f)
-			   '((point . 5) (bomb-frag . 1)))
+			   '((point . 5) (life-frag . 1)))
   (spawn-enemy 'medium-red-fairy 192.0 100.0 270 (curry ch10-w1 #t)
-			   '((point . 5) (bomb-frag . 1)))
+			   '((point . 5) (life-frag . 1)))
   (wait 300)
   (let loop ([y 50.0]
 			 [right-side #f]
