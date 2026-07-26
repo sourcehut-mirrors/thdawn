@@ -2047,7 +2047,8 @@
 	 (make-spell-descriptor "\"One Flower, One World\""
 							2400 -1 5000000 'group life-frag life-frag-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
-							5940 20000 5000000 'group std std-fail))))
+							5940 20000 5000000 'group
+							'((point . 100)) '((point . 15))))))
 (define-record-type score-entry
   (fields name score unixtime cleared version)
   (sealed #t)
