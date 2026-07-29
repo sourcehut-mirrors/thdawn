@@ -9,9 +9,10 @@
 		  check-collision-circles check-collision-recs check-collision-circle-rec
 		  do-bounce-off
 		  lerp eval-bezier-quad eval-bezier-cubic bezier-cubic-easing
+		  eval-bezier-spline
 		  pi -pi tau hpi -hpi
 		  hsv->rgba
-		  torad todeg eround epsilon-equal clamp flcopysign
+		  torad todeg eround fleround epsilon-equal clamp flcopysign
 		  distsq
 		  ease-in-quad ease-out-quad ease-in-out-quad
 		  ease-out-cubic
@@ -217,6 +218,19 @@
 	 (v2* p1 (* 3 invt invt t))
 	 (v2* p2 (* 3 invt t t))
 	 (v2* p3 (* t t t))))
+
+  ;; must be whole spline with no extra points, t in [0.0, 1.0]
+  (define (eval-bezier-spline spline t)
+	(define segments (fxquotient (fx1- (vector-length spline)) 3))
+	(define segt (fl/ 1.0 (fixnum->flonum segments)))
+	(define-values (segmentf in-seg) (fldiv-and-mod t segt))
+	(define segment-idx (* 3 (flonum->fixnum segmentf)))
+	(eval-bezier-cubic
+	 (vector-ref spline segment-idx)
+	 (vector-ref spline (fx1+ segment-idx))
+	 (vector-ref spline (fx+ 2 segment-idx))
+	 (vector-ref spline (fx+ 3 segment-idx))
+	 (fl/ in-seg segt)))
 
   ;; CSS-style cubic-bezier()
   ;; A cubic bezier curve takes 4 control points plus t and returns another point

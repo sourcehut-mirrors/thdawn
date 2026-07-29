@@ -2356,21 +2356,142 @@
    (thunk (and (unbox ball-killing-blow-box) (* 100 item-value))))
   (group-sp3 task aiko))
 
+(define (group-sp3-setup-field task)
+  (define ringrad 30.0)
+  (define ringcnt 24)
+  (define qringcnt (fx/ ringcnt 4))
+  (define quad0 0)
+  (define quad1 qringcnt)
+  (define quad2 (* 2 qringcnt))
+  (define quad3 (* 3 qringcnt))
+  (define (ring cx cy start-i end-i)
+	(define angper (fl/ tau (fx2fl ringcnt)))
+	(define (body i)
+	  (let*-values ([(ang) (fl* angper (fx2fl i))]
+					[(x y) (dist-away cx cy ang ringrad)])
+		(raylib:play-sound (sebundle-shootsoft sounds))
+		(-> (spawn-bullet 'pellet-red x y 5 values)
+			(bullet-addflags (bltflags uncancelable)))
+		(wait 3)))
+	(if (< start-i end-i)
+		(do [(i start-i (add1 i))]
+			[(> i end-i)]
+		  (body i))
+		(do [(i start-i (sub1 i))]
+			[(< i end-i)]
+		  (body i))))
+  (define (lace-horiz points)
+	(do [(t 0.0 (fl+ t 0.05))]
+		[(fl> t 1.0)]
+	  (let ([p (eval-bezier-spline points t)])
+		(raylib:play-sound (sebundle-shootsoft sounds))
+		(-> (spawn-bullet 'pellet-red (v2x p) (v2y p) 5 values)
+			(bullet-addflags (bltflags uncancelable)))
+		(wait 3))))
+  (define (heart bottom secondhalf)
+	(define n 20)
+	(define angper (fl/ tau (fx2fl n)))
+	(define (body i)
+	  (let* ([t (fl* (fx2fl i) angper)]
+			 [x (fl* 16.0 (flexpt (flsin t) 3.0))]
+			 [y (fl- (fl* 13.0 (flcos t))
+					 (fl* 5.0 (flcos (fl* 2.0 t)))
+					 (fl* 2.0 (flcos (fl* 3.0 t)))
+					 (flcos (fl* 4.0 t)))])
+		(raylib:play-sound (sebundle-shootsoft sounds))
+		(-> (spawn-bullet 'pellet-red
+					  (fl* 1.3 x)
+					  (if bottom
+						  (fl+ (fl* -1.3 y) 380.0)
+						  (fl+ (fl* 1.3 y) 115.0))
+					  5 values)
+			(bullet-addflags (bltflags uncancelable)))
+		(wait 3)))
+	(if secondhalf
+		(do [(i (quotient n 2) (add1 i))]
+			[(= i n)]
+		  (body i))
+		(do [(i (sub1 (quotient n 2)) (sub1 i))]
+			[(fxnegative? i)]
+		  (body i))))
+  (define x 150.0)
+  (define top-y 85.0)
+  (define bot-y 410.0)
+  (parameterize ([ovr-uncancelable #t])
+	(spawn-bullet 'big-star-magenta (fl- x) top-y 5 values)
+	(spawn-bullet 'big-star-magenta x top-y 5 values)
+	(spawn-bullet 'big-star-magenta (fl- x) bot-y 5 values)
+	(spawn-bullet 'big-star-magenta x bot-y 5 values))
+  (spawn-subtask "ring0"
+	(λ (task)
+	  (ring (fl- x) top-y ringcnt quad1)
+	  (lace-horiz (vector (vec2 (fl- x) (fl+ top-y ringrad))
+						  (vec2 (fl+ (fl- x) 40.0) (fl+ top-y ringrad -10.0))
+						  (vec2 (fl+ (fl- x) 40.0) (fl+ top-y (fl- ringrad) 10.0))
+						  (vec2 (fl+ (fl- x) 80.0) (fl+ top-y (fl- ringrad) 10.0))
+						  (vec2 (fl+ (fl- x) 120.0) (fl+ top-y (fl- ringrad) 10.0))
+						  (vec2 0.0 top-y)
+						  (vec2 0.0 top-y)))
+	  (heart #f #f))
+	task)
+  (spawn-subtask "ring1"
+	(λ (task)
+	  (ring x top-y quad2 (+ ringcnt quad1))
+	  (lace-horiz (vector (vec2 x (fl+ top-y ringrad))
+						  (vec2 (fl- x 40.0) (fl+ top-y ringrad -10.0))
+						  (vec2 (fl- x 40.0) (fl+ top-y (fl- ringrad) 10.0))
+						  (vec2 (fl- x 80.0) (fl+ top-y (fl- ringrad) 10.0))
+						  (vec2 (fl- x 120.0) (fl+ top-y (fl- ringrad) 10.0))
+						  (vec2 0.0 top-y)
+						  (vec2 0.0 top-y)))
+	  (heart #f #t))
+	task)
+  (spawn-subtask "ring2"
+	(λ (task)
+	  (ring (fl- x) bot-y quad0 quad3)
+	  (lace-horiz (vector (vec2 (fl- x) (fl- bot-y ringrad))
+						  (vec2 (fl+ (fl- x) 40.0) (fl+ bot-y (fl- ringrad) 10.0))
+						  (vec2 (fl+ (fl- x) 40.0) (fl+ bot-y ringrad -10.0))
+						  (vec2 (fl+ (fl- x) 80.0) (fl+ bot-y ringrad -10.0))
+						  (vec2 (fl+ (fl- x) 120.0) (fl+ bot-y ringrad -10.0))
+						  (vec2 0.0 bot-y)
+						  (vec2 0.0 bot-y)))
+	  (heart #t #f))
+	task)
+  (spawn-subtask "ring3"
+	(λ (task)
+	  (ring x bot-y (+ ringcnt quad2) quad3)
+	  (lace-horiz (vector (vec2 x (fl- bot-y ringrad))
+						  (vec2 (fl- x 40.0) (fl+ bot-y (fl- ringrad) 10.0))
+						  (vec2 (fl- x 40.0) (fl+ bot-y ringrad -10.0))
+						  (vec2 (fl- x 80.0) (fl+ bot-y ringrad -10.0))
+						  (vec2 (fl- x 120.0) (fl+ bot-y ringrad -10.0))
+						  (vec2 0.0 bot-y)
+						  (vec2 0.0 bot-y)))
+	  (heart #t #t))
+	task)
+  (-> (spawn-bullet 'heart-magenta 0.0 bot-y 5 values)
+	  (bullet-facing-set! hpi)
+	  )
+  (-> (spawn-bullet 'heart-magenta 0.0 top-y 5 values)
+	  	  (bullet-facing-set! -hpi)
+	  )
+  
+  )
+
 (define (group-sp3 task aiko)
   (define bossinfo (blank-doremi-bossinfo))
-  (define _ (wait 90))
+  (define _ (begin (wait 90) (raylib:play-sound (sebundle-longcharge sounds))))
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-							60 enm))
+				   (ease-to ease-out-cubic 0.0 150.0 80 enm))
 				 '()
 				 (constantly #f)))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) -100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
-							60 enm))
+				   (ease-to ease-out-cubic -100.0 310.0 80 enm))
 				 '()
 				 (constantly #f)))
   (set! current-chapter 30)
@@ -2378,7 +2499,9 @@
   (enm-extras-set! hazuki (blank-hazuki-bossinfo))
   (enm-redirect-damage-set! hazuki doremi)
   (enm-redirect-damage-set! aiko doremi)
-  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
+  (for-each (λ (e) (enm-addflags e (enmflags nocollide invincible)))
+			(list doremi hazuki aiko))
+  (ease-to ease-out-cubic 100.0 310.0 80 aiko)
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars (enm-extras aiko))))
@@ -2387,9 +2510,8 @@
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
   (declare-spell doremi 10)
-  (enm-addflags doremi (enmflags invincible))
-  (enm-addflags hazuki (enmflags invincible))
-  (enm-addflags aiko (enmflags invincible))
+  (wait 45)
+  (group-sp3-setup-field task)
   (wait-while
    (thunk (positive? (bossinfo-remaining-timer bossinfo))))
   (common-spell-postlude bossinfo doremi)
