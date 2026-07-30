@@ -2521,17 +2521,17 @@
 
 (define (group-sp3 task aiko)
   (define bossinfo (blank-doremi-bossinfo))
-  (define _ (begin (wait 90) (raylib:play-sound (sebundle-longcharge sounds))))
+  (define _ (wait 60))
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic 0.0 150.0 80 enm))
+				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 80 enm))
 				 '()
 				 (constantly #f)))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) -100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic -100.0 310.0 80 enm))
+				   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+ 80 enm))
 				 '()
 				 (constantly #f)))
   (set! current-chapter 30)
@@ -2539,9 +2539,33 @@
   (enm-extras-set! hazuki (blank-hazuki-bossinfo))
   (enm-redirect-damage-set! hazuki doremi)
   (enm-redirect-damage-set! aiko doremi)
-  (for-each (λ (e) (enm-addflags e (enmflags nocollide invincible)))
+  (for-each (λ (e) (enm-addflags e (enmflags nocollide)))
 			(list doremi hazuki aiko))
-  (ease-to ease-out-cubic 100.0 310.0 80 aiko)
+  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 80 aiko)
+  (for-each-indexed
+   (λ (i type)
+	 (-> (cb)
+		 (cbcount 36)
+		 (cboffset 250.0)
+		 (cbabsolute-aim)
+		 (cbang (fx2fl (* i 15)))
+		 (cbshootez type 0.0 230.0 5 (sebundle-shoot0 sounds)
+					(λ (facing _speed task blt)
+					  (linear-step-accelerate (fl+ pi facing) 0.0 0.02 1.1 blt)
+					  (linear-step-forever (fl+ pi facing) 1.1 task blt))))
+	 (wait (vnth '#(30 15 120) i)))
+   '(big-star-red big-star-orange big-star-blue))
+  (raylib:play-sound (sebundle-longcharge sounds))
+  (spawn-subtask "hazuki exit"
+	(λ (task)
+	  (ease-to ease-out-cubic -180.0 -150.0 60 hazuki))
+	task)
+  (spawn-subtask "aiko exit"
+	(λ (task)
+	  (ease-to ease-out-cubic 180.0 -150.0 60 aiko))
+	task)
+  (ease-to ease-out-cubic -180.0 -150.0 60 doremi)
+  (cancel-all #f)
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars (enm-extras aiko))))
@@ -2550,7 +2574,7 @@
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
   (declare-spell doremi 10)
-  (wait 45)
+
   (group-sp3-setup-field task)
   (wait-while
    (thunk (positive? (bossinfo-remaining-timer bossinfo))))
