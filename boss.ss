@@ -2558,13 +2558,13 @@
   (raylib:play-sound (sebundle-longcharge sounds))
   (spawn-subtask "hazuki exit"
 	(λ (task)
-	  (ease-to ease-out-cubic -180.0 -150.0 60 hazuki))
+	  (ease-to ease-out-cubic -200.0 -150.0 60 hazuki))
 	task)
   (spawn-subtask "aiko exit"
 	(λ (task)
-	  (ease-to ease-out-cubic 180.0 -150.0 60 aiko))
+	  (ease-to ease-out-cubic 200.0 -150.0 60 aiko))
 	task)
-  (ease-to ease-out-cubic -180.0 -150.0 60 doremi)
+  (ease-to ease-out-cubic -200.0 -150.0 60 doremi)
   (cancel-all #f)
   (bossinfo-healthbars-set!
    bossinfo
@@ -2574,7 +2574,7 @@
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
   (declare-spell doremi 10)
-
+  (wait 45)
   (group-sp3-setup-field task)
   (wait-while
    (thunk (positive? (bossinfo-remaining-timer bossinfo))))
@@ -2588,6 +2588,13 @@
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 31)
   (wait 90)
+  (spawn-subtask "hazuki reenter"
+	(λ (task) (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+ 45 hazuki))
+	task)
+  (spawn-subtask "aiko reenter"
+	(λ (task) (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 45 aiko))
+	task)
+  (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 45 doremi)
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars bossinfo)))

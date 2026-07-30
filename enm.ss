@@ -163,20 +163,25 @@
 
 (define (draw-boss textures enm render-x render-y)
   (define bossinfo (enm-extras enm))
+  (define survival (eq? 10 (bossinfo-active-spell-id bossinfo)))
   (define lazy-t (-> (- frames (bossinfo-start-move-frame bossinfo))
 					 (/ +spellcircle-context+)
 					 (clamp 0 1)
 					 (ease-in-out-quad)))
   (define lazy-render-x (+ +playfield-render-offset-x+
-						   (lerp
-							(bossinfo-start-move-x bossinfo)
-							(ex enm)
-							lazy-t)))
+						   (if survival 
+							   0.0
+							   (lerp
+								(bossinfo-start-move-x bossinfo)
+								(ex enm)
+								lazy-t))))
   (define lazy-render-y (+ +playfield-render-offset-y+
-						   (lerp
-							(bossinfo-start-move-y bossinfo)
-							(ey enm)
-							lazy-t)))
+						   (if survival
+							   248.0
+							   (lerp
+								(bossinfo-start-move-y bossinfo)
+								(ey enm)
+								lazy-t))))
   ;; add the spawn timestamp to seed the rotation so multiple bosses don't
   ;; render their aura the exact same way
   (let* ([t (fx+ frames (enm-time-spawned enm))]

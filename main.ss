@@ -2045,7 +2045,7 @@
 							'((bomb . 1) (point . 50))
 							'((bomb . 1) (point . 10)))
 	 (make-spell-descriptor "\"One Flower, One World\""
-							120000 -1 5000000 'group life-frag life-frag-fail)
+							3600 -1 5000000 'group life-frag life-frag-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
 							5940 20000 5000000 'group
 							'((point . 100)) '((point . 15))))))
@@ -3131,12 +3131,12 @@
 	 (define failed (or timeout-fail
 						(bossinfo-active-attack-failed bossinfo)))
 	 (define bonus (and (not failed) (calculate-spell-bonus bossinfo)))
-
-	 (enm-drops-set!
-	  enm
+	 (define spid (bossinfo-active-spell-id bossinfo))
+	 (spawn-drops
 	  ((if failed spell-descriptor-failed-drops spell-descriptor-drops)
-	   (vnth spells (bossinfo-active-spell-id bossinfo))))
-	 (spawn-enm-drops enm)
+	   (vnth spells (bossinfo-active-spell-id bossinfo)))
+	  (if (= spid 10) +middle-boss-x+ (ex enm))
+	  (if (= spid 10) +middle-boss-y+ (ey enm)))
 	 (raylib:play-sound (sebundle-shoot0 sounds))
 	 (when timeout-fail
 	   (raylib:play-sound (sebundle-laugh sounds)))
@@ -3144,8 +3144,7 @@
 	   (raylib:play-sound (sebundle-spellcapture sounds))
 	   (set! current-score (+ current-score bonus))
 	   (when (is-liveplay)
-		 (let ([history (vnth (assqdr 'spell-history play-data)
-							  (bossinfo-active-spell-id bossinfo))])
+		 (let ([history (vnth (assqdr 'spell-history play-data) spid)])
 		   (set-car! history (add1 (car history))))
 		 (save-play-data play-data))
 	   (when-let ([exbonus (exbonus-provider)])
@@ -3857,7 +3856,7 @@
 	(raylib:draw-text-ex (fontbundle-sharetechmono20 fonts)
 						 (format "~2,'0d"
 								 (exact (ceiling
-								  (/ remaining-timer 60.0))))
+										 (/ remaining-timer 60.0))))
 						 (fx2fl (- +playfield-max-render-x+ 18))
 						 (fx2fl (- +playfield-min-render-y+ 0))
 						 20.0 0.0
@@ -3921,12 +3920,11 @@
 		 (fontbundle-sharetechmono15 fonts) bonus-txt
 		 bonus-x (+ spy height 5.0)
 		 15.0 0.0 color))))
-  (draw-sprite textures 'enemy-indicator
-			   (+ +playfield-render-offset-x+
-				  (clamp (ex enm) +playfield-min-x+ +playfield-max-x+))
-			   (fx2fl (+ +playfield-max-y+ +playfield-render-offset-y+
-						 2))
-			   #xffffffc0))
+  (when (< +playfield-min-x+ (ex enm) +playfield-max-x+)
+	(draw-sprite textures 'enemy-indicator
+				 (+ +playfield-render-offset-x+ (ex enm))
+				 (fx2fl (+ +playfield-max-y+ +playfield-render-offset-y+ 2))
+				 #xffffffc0)))
 
 (define dialog-src-bounds (make-rectangle 0.0 0.0 368.0 60.0))
 (define dialog-dest-bounds
