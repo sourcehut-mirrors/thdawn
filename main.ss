@@ -2031,7 +2031,7 @@
 	 (make-spell-descriptor "Spring Sign \"Harukaze Cherry Blossoms\""
 							3600 15000 1000000 'doremi std std-fail)
 	 (make-spell-descriptor "Floral Sign \"Flower Dance\""
-							3600 9000 1000000 'hazuki std std-fail)
+							2400 6000 1000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
 							2400 9000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
