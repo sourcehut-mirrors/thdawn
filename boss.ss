@@ -2369,7 +2369,7 @@
 		(raylib:play-sound (sebundle-shootsoft sounds))
 		(-> (spawn-bullet 'pellet-red x y 5 values)
 			(bullet-addflags (bltflags uncancelable)))
-		(wait 3)))
+		(wait 4)))
 	(if (< start-i end-i)
 		(do [(i start-i (add1 i))]
 			[(> i end-i)]
@@ -2384,7 +2384,7 @@
 		(raylib:play-sound (sebundle-bell sounds))
 		(-> (spawn-bullet 'pellet-red (v2x p) (v2y p) 5 values)
 			(bullet-addflags (bltflags uncancelable)))
-		(wait 3))))
+		(wait 4))))
   (define (heart bottom secondhalf)
 	(define n 20)
 	(define angper (fl/ tau (fx2fl n)))
@@ -2403,7 +2403,7 @@
 						  (fl+ (fl* 1.3 y) 115.0))
 					  5 values)
 			(bullet-addflags (bltflags uncancelable)))
-		(wait 3)))
+		(wait 4)))
 	(if secondhalf
 		(do [(i (quotient n 2) (add1 i))]
 			[(= i n)]
