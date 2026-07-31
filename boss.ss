@@ -687,7 +687,7 @@
 			   [(0) (fx2fl (roll-range game-rng -115 -80))]
 			   [(1) (fx2fl (roll-range game-rng 80 115))]
 			   [(2) (centered-roll game-rng 50.0)])]
-		  [y (vnth '#(150.0 230.0 300.0) i)])
+		  [y (vnth '#(130.0 200.0 270.0) i)])
 	  (spawn-particle (particletype circle-hint-opaque)
 					  x y 40 '((color . #x8b008ba0)
 							   (r1 . 100.0)
@@ -709,7 +709,7 @@
 		'big-star-red x y 2
 		(λ (task blt)
 		  (-> (cb)
-			  (cbcount 9 17)
+			  (cbcount 8 15)
 			  (cbspeed 1.8 4.0)
 			  (cbabsolute-aim)
 			  (cbang (centered-roll game-rng 180.0) (fl* winding 4.0))
@@ -723,9 +723,9 @@
 					  (linear-step-decelerate facing speed -0.10 blt)
 					  (wait-until (thunk (unbox spread-signal)))
 					  (bullet-clrflags blt (bltflags uncancelable))
-					  (wait (* 10 layer))
-					  (linear-step-accelerate (fl+ facing pi) 0.0 0.02 4.5 blt)
-					  (linear-step-forever (fl+ facing pi) 4.5 task blt)))
+					  (wait (* 9 layer))
+					  (linear-step-accelerate (fl+ facing pi) 0.0 0.02 4.0 blt)
+					  (linear-step-forever (fl+ facing pi) 4.0 task blt)))
 				   (bullet-addflags (bltflags uncancelable))))))
 		  (wait-until (thunk (unbox spread-signal)))
 		  (wait 30)

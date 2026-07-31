@@ -2033,7 +2033,7 @@
 	 (make-spell-descriptor "Floral Sign \"Flower Dance\""
 							2400 6000 1000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
-							2400 9000 1000000 'aiko std std-fail)
+							2400 12000 1000000 'aiko std std-fail)
 	 (make-spell-descriptor "Witch Sign \"Fairy Kaleidoscope\""
 							4200 25000 3000000 'group life-frag life-frag-fail)
 	 (make-spell-descriptor "Gourmet Sign \"Steak Desire Eater\""

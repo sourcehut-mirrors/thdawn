@@ -257,13 +257,17 @@ actually strictly needing to be valuable in a gameplay manner.
 Eventually, I landed on having Aiko set up these spirals, then have them disintegrate
 while Aiko fires aimed fans (another example of the simple two-layered approach).
 
-The spiral positions used to be nearly completely random horizontally which made for some
-impossible situations if the arms overlapped weirdly. Eventually, I made the first two
-spirals fixed, and only the third one was allowed to vary. To dodge it, I recommend moving
-away horizontally from the third spiral and keeping your vision wide to make sure no stray
-bullets from the other spirals blindside you.
+Adjusting the balance of this spell was a struggle; I landed on something suitable only
+near the end of making all the boss patterns. This is in part due to how many variables
+there could be: where are the spirals positioned? how many bullets and arms in each
+spiral? how long does each bullet in an arm delay before it moves? how fast does it move?
 
-TODO: Revise when rebalancing.
+After much experimentation, I think I landed on something that should be mostly
+reasonable, though there may be some occasional RNG situations that require on-the-fly
+dodging. To dodge it, I recommend moving away horizontally from the third spiral and
+keeping your vision wide to make sure no stray bullets from the other spirals blindside
+you. Also, use the visual hints to keep yourself Aiko as much as possible to end the spell
+as early as possible.
 
 
 ○ Boss Non-spell 5 (Group)
