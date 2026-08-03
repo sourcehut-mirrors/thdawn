@@ -2591,6 +2591,17 @@
   (declare-spell doremi 10)
   (wait 45)
   (group-sp3-setup-field task)
+  (let ([angper (fl* 3.0 pi 0.2)])
+	(do [(petal 0 (add1 petal))]
+		[(= petal 10)]
+	  (let* ([start-ang (fl* (fx2fl petal) angper)]
+			 [end-ang (fl+ start-ang angper)])
+		(do [(t 0.0 (fl+ t 0.05))]
+			[(fl> t 1.0)]
+		  (let*-values ([(theta) (lerp start-ang end-ang t)]
+						[(r) (fl+ 20.0 (fl* 50.0 (flasin (flabs (flsin (* 5/3 theta))))))]
+						[(x y) (dist-away 0.0 248.0 theta r)])
+			(spawn-bullet (vnth-mod '#(pellet-red pellet-blue pellet-orange) petal) x y 2 values))))))
   (wait-while
    (thunk (positive? (bossinfo-remaining-timer bossinfo))))
   (common-spell-postlude bossinfo doremi)
