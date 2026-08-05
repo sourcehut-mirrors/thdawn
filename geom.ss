@@ -214,10 +214,10 @@
   (define (eval-bezier-cubic p0 p1 p2 p3 t)
 	(define invt (fl- 1.0 t))
 	(v2+
-	 (v2* p0 (* invt invt invt))
-	 (v2* p1 (* 3 invt invt t))
-	 (v2* p2 (* 3 invt t t))
-	 (v2* p3 (* t t t))))
+	 (v2* p0 (fl* invt invt invt))
+	 (v2* p1 (fl* 3.0 invt invt t))
+	 (v2* p2 (fl* 3.0 invt t t))
+	 (v2* p3 (fl* t t t))))
 
   ;; must be whole spline with no extra points, t in [0.0, 1.0]
   (define (eval-bezier-spline spline t)
