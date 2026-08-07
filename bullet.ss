@@ -107,6 +107,7 @@
 	(make-family 'amulet basic-colors-str 3.1)
 	(make-family 'glow-ball basic-colors-str 3.0)
 	(make-family 'small-ball basic-colors-str 3.0)
+	(make-family 'border-ball basic-colors-str 3.0)
 	(make-family 'medium-ball basic-colors-str 9.0)
 	(make-family 'ice-shard basic-colors-str 2.5)
 	(make-family 'fixed-laser basic-colors-str 0.0)
@@ -341,7 +342,7 @@
 			(let ()
 			  (case (bullet-family type)
 				;; basic
-				([pellet small-ball glow-ball medium-ball glow-orb]
+				([pellet small-ball border-ball glow-ball medium-ball glow-orb]
 				 (draw-sprite textures type render-x render-y #xffffffff))
 				;; aimed in direction of movement
 				([butterfly ellipse arrowhead amulet ice-shard rice

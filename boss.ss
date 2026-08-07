@@ -2380,7 +2380,7 @@
 	  (let*-values ([(ang) (fl* angper (fx2fl i))]
 					[(x y) (dist-away cx cy ang ringrad)])
 		(raylib:play-sound (sebundle-shootsoft sounds))
-		(-> (spawn-bullet 'pellet-red x y 5 values)
+		(-> (spawn-bullet 'pellet-blue x y 5 values)
 			(bullet-addflags (bltflags uncancelable)))
 		(wait 4)))
 	(if (< start-i end-i)
@@ -2395,10 +2395,10 @@
 		[(fl> t 1.0)]
 	  (let ([p (eval-bezier-spline points t)])
 		(raylib:play-sound (sebundle-bell sounds))
-		(-> (spawn-bullet 'pellet-red (v2x p) (v2y p) 5 values)
+		(-> (spawn-bullet 'pellet-blue (v2x p) (v2y p) 5 values)
 			(bullet-addflags (bltflags uncancelable)))
 		(wait 4))))
-  (define (heart bottom secondhalf)
+  (define (heart task)
 	(define n 20)
 	(define angper (fl/ tau (fx2fl n)))
 	(define (body i)
@@ -2410,20 +2410,20 @@
 					 (flcos (fl* 4.0 t)))])
 		(raylib:play-sound (sebundle-bell sounds))
 		(-> (spawn-bullet 'pellet-red
-					  (fl* 1.3 x)
-					  (if bottom
-						  (fl+ (fl* -1.3 y) 380.0)
-						  (fl+ (fl* 1.3 y) 115.0))
-					  5 values)
+						  (fl* 1.5 x)
+						  (fl+ (fl* -1.5 y) 50.0)
+						  5 values)
 			(bullet-addflags (bltflags uncancelable)))
-		(wait 4)))
-	(if secondhalf
+		(wait 2)))
+	(spawn-subtask "second half"
+	  (λ (task)
 		(do [(i (quotient n 2) (add1 i))]
 			[(= i n)]
-		  (body i))
-		(do [(i (sub1 (quotient n 2)) (sub1 i))]
-			[(fxnegative? i)]
-		  (body i))))
+		  (body i)))
+	  task)
+	(do [(i (sub1 (quotient n 2)) (sub1 i))]
+		[(fxnegative? i)]
+	  (body i)))
   (define right-x 150.0)
   (define left-x -150.0)
   (define top-y 85.0)
@@ -2443,7 +2443,7 @@
 						  (vec2 (fl+ left-x 120.0) (fl+ top-y (fl- ringrad) 10.0))
 						  (vec2 0.0 top-y)
 						  (vec2 0.0 top-y)))
-	  (heart #f #f))
+	  (heart task))
 	task)
   (spawn-subtask "top right"
 	(λ (task)
@@ -2454,8 +2454,7 @@
 						  (vec2 (fl- right-x 80.0) (fl+ top-y (fl- ringrad) 10.0))
 						  (vec2 (fl- right-x 120.0) (fl+ top-y (fl- ringrad) 10.0))
 						  (vec2 0.0 top-y)
-						  (vec2 0.0 top-y)))
-	  (heart #f #t))
+						  (vec2 0.0 top-y))))
 	task)
   (spawn-subtask "bottom left"
 	(λ (task)
@@ -2466,8 +2465,7 @@
 						  (vec2 (fl+ left-x 80.0) (fl+ bot-y ringrad -10.0))
 						  (vec2 (fl+ left-x 120.0) (fl+ bot-y ringrad -10.0))
 						  (vec2 0.0 bot-y)
-						  (vec2 0.0 bot-y)))
-	  (heart #t #f))
+						  (vec2 0.0 bot-y))))
 	task)
   (spawn-subtask "bottom right"
 	(λ (task)
@@ -2478,64 +2476,61 @@
 						  (vec2 (fl- right-x 80.0) (fl+ bot-y ringrad -10.0))
 						  (vec2 (fl- right-x 120.0) (fl+ bot-y ringrad -10.0))
 						  (vec2 0.0 bot-y)
-						  (vec2 0.0 bot-y)))
-	  (heart #t #t))
+						  (vec2 0.0 bot-y))))
 	task)
   (spawn-subtask "left bottom"
 	(λ (task)
 	  (ring left-x bot-y 9 0)
-	  (let ([points (vector
-					 (vec2 (fl+ left-x ringrad) bot-y)
-					 (vec2 (fl+ left-x 10.0) (fl- bot-y 60.0))
-					 (vec2 (fl- left-x 20.0) (fl- bot-y 60.0))
-					 (vec2 (fl- left-x 20.0) (fl- bot-y 100.0))
-					 (vec2 (fl- left-x 20.0) (fl- bot-y 140.0))
-					 (vec2 left-x 248.0)
-					 (vec2 left-x 248.0))])
-		(lace-horiz points)))
+	  (lace-horiz (vector (vec2 (fl+ left-x ringrad) bot-y)
+						  (vec2 (fl+ left-x 10.0) (fl- bot-y 60.0))
+						  (vec2 (fl- left-x 20.0) (fl- bot-y 60.0))
+						  (vec2 (fl- left-x 20.0) (fl- bot-y 100.0))
+						  (vec2 (fl- left-x 20.0) (fl- bot-y 140.0))
+						  (vec2 left-x 248.0)
+						  (vec2 left-x 248.0))))
 	task)
   (spawn-subtask "left top"
 	(λ (task)
 	  (ring left-x top-y 15 24)
-	  (let ([points (vector
-					 (vec2 (fl+ left-x ringrad) top-y)
-					 (vec2 (fl+ left-x 10.0) (fl+ top-y 60.0))
-					 (vec2 (fl- left-x 20.0) (fl+ top-y 60.0))
-					 (vec2 (fl- left-x 20.0) (fl+ top-y 100.0))
-					 (vec2 (fl- left-x 20.0) (fl+ top-y 140.0))
-					 (vec2 left-x 248.0)
-					 (vec2 left-x 248.0))])
-		(lace-horiz points)))
+	  (lace-horiz (vector (vec2 (fl+ left-x ringrad) top-y)
+						  (vec2 (fl+ left-x 10.0) (fl+ top-y 60.0))
+						  (vec2 (fl- left-x 20.0) (fl+ top-y 60.0))
+						  (vec2 (fl- left-x 20.0) (fl+ top-y 100.0))
+						  (vec2 (fl- left-x 20.0) (fl+ top-y 140.0))
+						  (vec2 left-x 248.0)
+						  (vec2 left-x 248.0))))
 	task)
   (spawn-subtask "right bottom"
 	(λ (task)
 	  (ring right-x bot-y 3 12)
-	  (let ([points (vector
-					 (vec2 (fl- right-x ringrad) bot-y)
-					 (vec2 (fl- right-x 10.0) (fl- bot-y 60.0))
-					 (vec2 (fl+ right-x 20.0) (fl- bot-y 60.0))
-					 (vec2 (fl+ right-x 20.0) (fl- bot-y 100.0))
-					 (vec2 (fl+ right-x 20.0) (fl- bot-y 140.0))
-					 (vec2 right-x 248.0)
-					 (vec2 right-x 248.0))])
-		(lace-horiz points)))
+	  (lace-horiz (vector (vec2 (fl- right-x ringrad) bot-y)
+						  (vec2 (fl- right-x 10.0) (fl- bot-y 60.0))
+						  (vec2 (fl+ right-x 20.0) (fl- bot-y 60.0))
+						  (vec2 (fl+ right-x 20.0) (fl- bot-y 100.0))
+						  (vec2 (fl+ right-x 20.0) (fl- bot-y 140.0))
+						  (vec2 right-x 248.0)
+						  (vec2 right-x 248.0))))
 	task)
   (spawn-subtask "right top"
 	(λ (task)
 	  (ring right-x top-y 21 12)
-	  (let ([points (vector
-					 (vec2 (fl- right-x ringrad) top-y)
-					 (vec2 (fl- right-x 10.0) (fl+ top-y 60.0))
-					 (vec2 (fl+ right-x 20.0) (fl+ top-y 60.0))
-					 (vec2 (fl+ right-x 20.0) (fl+ top-y 100.0))
-					 (vec2 (fl+ right-x 20.0) (fl+ top-y 140.0))
-					 (vec2 right-x 248.0)
-					 (vec2 right-x 248.0))])
-		(lace-horiz points)))
+	  (lace-horiz (vector (vec2 (fl- right-x ringrad) top-y)
+						  (vec2 (fl- right-x 10.0) (fl+ top-y 60.0))
+						  (vec2 (fl+ right-x 20.0) (fl+ top-y 60.0))
+						  (vec2 (fl+ right-x 20.0) (fl+ top-y 100.0))
+						  (vec2 (fl+ right-x 20.0) (fl+ top-y 140.0))
+						  (vec2 right-x 248.0)
+						  (vec2 right-x 248.0))))
 	task))
+
+(define (group-sp3-flower-pos theta offset)
+  (define r (fl+ offset (fl* 85.0 (flasin (flabs (flsin (* 5/3 theta)))))))
+  (dist-away 0.0 248.0 theta r))
 
 (define (group-sp3 task aiko)
   (define bossinfo (blank-doremi-bossinfo))
+  (define (keep-running)
+	(fxpositive? (bossinfo-remaining-timer bossinfo)))
   (define _ (wait 60))
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
@@ -2549,6 +2544,7 @@
 				   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+ 80 enm))
 				 '()
 				 (constantly #f)))
+  (define start-moving (box #f))
   (set! current-chapter 30)
   (enm-extras-set! doremi bossinfo)
   (enm-extras-set! hazuki (blank-hazuki-bossinfo))
@@ -2564,7 +2560,7 @@
 		 (cboffset 250.0)
 		 (cbabsolute-aim)
 		 (cbang (fx2fl (* i 15)))
-		 (cbshootez type 0.0 230.0 5 (sebundle-shoot0 sounds)
+		 (cbshootez type 0.0 248.0 5 (sebundle-shoot0 sounds)
 					(λ (facing _speed task blt)
 					  (linear-step-accelerate (fl+ pi facing) 0.0 0.02 1.1 blt)
 					  (linear-step-forever (fl+ pi facing) 1.1 task blt))))
@@ -2591,19 +2587,46 @@
   (declare-spell doremi 10)
   (wait 45)
   (group-sp3-setup-field task)
-  (let ([angper (fl* 3.0 pi 0.2)])
+  (let ([angper (fl* 3.0 pi 0.2)]
+		[flower-ctrl
+		 (λ (backward task blt)
+		   (define initial-ang (facing-point 0.0 248.0 (bx blt) (by blt)))
+		   (define initial-dist (flsqrt (distsq 0.0 248.0 (bx blt) (by blt))))
+		   (define omega (torad (if backward -0.2 0.3)))
+		   (wait-until (thunk (unbox start-moving)))
+		   (let loop ([ang initial-ang])
+			 (let*-values ([(new-ang) (fl+ ang omega)]
+						   [(x y) (dist-away 0.0 248.0 new-ang initial-dist)])
+			   (bullet-x-set! blt x)
+			   (bullet-y-set! blt y)
+			   (yield)
+			   (loop new-ang)))
+		   )])
 	(do [(petal 0 (add1 petal))]
 		[(= petal 10)]
-	  (let* ([start-ang (fl* (fx2fl petal) angper)]
-			 [end-ang (fl+ start-ang angper)])
-		(do [(t 0.0 (fl+ t 0.05))]
-			[(fl> t 1.0)]
-		  (let*-values ([(theta) (lerp start-ang end-ang t)]
-						[(r) (fl+ 20.0 (fl* 50.0 (flasin (flabs (flsin (* 5/3 theta))))))]
-						[(x y) (dist-away 0.0 248.0 theta r)])
-			(spawn-bullet (vnth-mod '#(pellet-red pellet-blue pellet-orange) petal) x y 2 values))))))
-  (wait-while
-   (thunk (positive? (bossinfo-remaining-timer bossinfo))))
+	  (spawn-subtask "spawn petal"
+		(λ (task)
+		  (when (fxeven? petal)
+			(wait 50))
+		  (let* ([start-ang (fl* (fx2fl petal) angper)]
+				 [end-ang (fl+ start-ang angper)])
+			(do [(t 0.0 (fl+ t (inexact 1/30)))]
+				[(fl> t 1.0)]
+			  (let-values ([(x y)
+							(group-sp3-flower-pos
+							 (lerp start-ang end-ang
+								   (if (fxeven? petal) t (fl- 1.0 t)))
+							 40.0)])
+				(raylib:play-sound (sebundle-shootsoft sounds))
+				(-> (spawn-bullet
+					 (if (fxeven? petal) 'border-ball-red 'border-ball-yellow)
+					 x y 2 (curry flower-ctrl (fxeven? petal)))
+					(bullet-addflags (bltflags uncancelable)))
+				(wait 2)))))
+		task)))
+  (wait 120)
+  (set-box! start-moving #t)
+  (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
   (enm-clrflags doremi (enmflags invincible))
   (enm-clrflags hazuki (enmflags invincible))

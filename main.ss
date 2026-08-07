@@ -261,7 +261,10 @@
    txbundle-bullet3 112 0 16 16 shift8)
   (make-vertical-group
    'heart basic-colors
-   txbundle-bullet4 128 0 32 32 shift16) ;; TODO this is too big, needs scaling
+   txbundle-bullet4 128 0 32 32 shift16)
+  (make-vertical-group
+   'border-ball basic-colors
+   txbundle-bullet4 224 0 32 32 shift16)
   (make-vertical-group
    'arrow basic-colors
    txbundle-bullet4 96 0 32 32 (vec2 -24.0 -16.0)) ;; also too big
