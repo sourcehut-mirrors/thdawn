@@ -170,14 +170,14 @@
 					 (ease-in-out-quad)))
   (define lazy-render-x (+ +playfield-render-offset-x+
 						   (if survival 
-							   0.0
+							   (car group-sp3-flower-center)
 							   (lerp
 								(bossinfo-start-move-x bossinfo)
 								(ex enm)
 								lazy-t))))
   (define lazy-render-y (+ +playfield-render-offset-y+
 						   (if survival
-							   248.0
+							   (cdr group-sp3-flower-center)
 							   (lerp
 								(bossinfo-start-move-y bossinfo)
 								(ey enm)

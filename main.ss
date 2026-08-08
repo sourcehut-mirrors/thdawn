@@ -2048,7 +2048,7 @@
 							'((bomb . 1) (point . 50))
 							'((bomb . 1) (point . 10)))
 	 (make-spell-descriptor "\"One Flower, One World\""
-							3600 -1 5000000 'group life-frag life-frag-fail)
+							3600 -1 5000000 #f life-frag life-frag-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
 							5940 20000 5000000 'group
 							'((point . 100)) '((point . 15))))))
