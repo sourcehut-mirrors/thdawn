@@ -1,0 +1,12 @@
+#(
+((type . reimu) (text . "Had enough yet?"))
+((type . aiko) (text . "Agh, you're strong, alright!")
+ (event . aiko-reenter) (duration . 90))
+((type . hazuki) (text . "Time to use our strongest magic!")
+ (event . hazuki-reenter) (duration . 90))
+((type . doremi) (text . "I've been waiting for this!")
+ (event . doremi-reenter) (duration . 90))
+((type . doremi) (text . "Pirika Pirilala, Nobiyaka ni!") (event . chargesound))
+((type . hazuki) (text . "Paipai Ponpoi, Shinayaka ni!") (event . chargesound))
+((type . aiko) (text . "Pameruku Raruku, Takaraka ni!") (event . chargesound))
+)

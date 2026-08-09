@@ -3453,6 +3453,7 @@
   (blank-bossinfo "Senoo Aiko" aiko-color))
 
 (define (handle-dialogue-skip)
+  ;; TODO(LAUNCH BLOCKER): Ban this during the pre-final spell dialogue
   (when (and (stage-ctx-dialogue current-stage-ctx)
 			 (fx= -1 (stage-ctx-dialogue-pinned-until current-stage-ctx))
 			 (let-values ([(doremi hazuki aiko) (find-bosses)])
@@ -3508,7 +3509,33 @@
 													   0.0 240.0 240 #f))
 									 '()
 									 (constantly #f))])
-			   (enm-extras-set! enm (blank-aiko-bossinfo)))])))])))
+			   (enm-extras-set! enm (blank-aiko-bossinfo)))]
+			[(doremi-reenter)
+			 (call-with-values find-bosses
+			   (λ (doremi _h _a)
+				 (spawn-task "doremi reenter"
+				   (λ (task)
+					 (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ (cdr dur)
+							  doremi))
+				   (constantly #t))))]
+			[(hazuki-reenter)
+			 (call-with-values find-bosses
+			   (λ (_d hazuki _a)
+				 (spawn-task "hazuki reenter"
+				   (λ (task)
+					 (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+ (cdr dur)
+							  hazuki))
+				   (constantly #t))))]
+			[(aiko-reenter)
+			 (call-with-values find-bosses
+			   (λ (_d _h aiko)
+				 (spawn-task "aiko reenter"
+				   (λ (task)
+					 (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ (cdr dur)
+							  aiko))
+				   (constantly #t))))]
+			[(chargesound)
+			 (raylib:play-sound (sebundle-longcharge sounds))])))])))
 
 (define (handle-game-input inputs)
   (define level-pressed (inputset-level-pressed inputs))

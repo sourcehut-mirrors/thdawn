@@ -2785,13 +2785,11 @@
   (define bossinfo (enm-extras doremi))
   (set! current-chapter 31)
   (wait 90)
-  (spawn-subtask "hazuki reenter"
-	(λ (task) (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+ 45 hazuki))
-	task)
-  (spawn-subtask "aiko reenter"
-	(λ (task) (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 45 aiko))
-	task)
-  (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 45 doremi)
+  (stage-ctx-dialogue-set!
+   current-stage-ctx
+   (with-input-from-file "assets/dialogue/finalspell.dat" read))
+  (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
+  (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars bossinfo)))
