@@ -31,6 +31,7 @@ game for your platform. Reports of success are welcome!
 Settings are read from "config.dat". If your settings somehow get messed up and you can't
 fix it in game, delete that file and restart the game.
 
+
 +-----------------+
 | 3. Removal      |
 +-----------------+
@@ -42,8 +43,36 @@ If you wish to keep your replays, back up the "replays" folder.
 If you wish to keep your play data (spell histories, high scores, etc.), back up the
 "playdata.dat" file.
 
+
++----------------+
+| 4. Manual      |
++----------------+
+
+I'm too lazy to program an ingame manual, so it's just going to go here.
+
+This fangame is a pretty orthodox one. Press Z to shoot, Shift to focus, X to bomb, and
+use the arrow keys to move around. P takes a screenshot.
+
+Note that F12 also takes a screenshot, but that's functionality built into the library I'm
+using, Raylib, and cannot be disabled. It names files weirdly, so try to avoid pressing it
+if you can.
+
+Some other gameplay details:
+
+- Grazing one bullet increases the point item value by 10 and the score by 1000
+- 20 tick points are granted any time an enemy is damaged, regardless of the damage amount
+- Spell card bonuses start at Base Value (varies per spell) + 100*PIV
+- Spell card bonuses on non-survival spells decrease to half the initial value over the
+  spell's timer. Timing out a non-survival spell does not count as a capture.
+- Some spell cards have additional secret bonuses, see omake.txt for details
+- Small PIV star items (mainly produced by cancelling bullets) are worth 50 PIV and 100
+  score
+- Large PIV star items (mainly produced by a certain spellcard and dropped by certain
+  enemies) are worth 1000 PIV and 1000 score
+- After dying, bombing, and starting the game, the player has 3 seconds of invulnerability
+
 +-----------------+
-| 4. Questions    |
+| 5. Questions    |
 +-----------------+
 
 Questions, bug reports, and constructive feedback are always welcome.
@@ -75,8 +104,9 @@ the old, open internet.
 I hope that helps you understand why these platforms were chosen. Please don't be shy; I'd
 love to hear from you!
 
+
 +------------------------------------+
-| 5. Known Issues and Limitations    |
+| 6. Known Issues and Limitations    |
 +------------------------------------+
 
 * Game resolution is too low, leading to blurry text and aliasing artifacts
@@ -86,8 +116,9 @@ love to hear from you!
 * During the pre-battle dialogue, the Skip Dialogue button only works once all characters
   have entered the screen.
 
+
 +-----------------+
-| 6. Licenses     |
+| 7. Licenses     |
 +-----------------+
 
 This game depends on a variety of other works, each with varying licenses.
@@ -108,11 +139,16 @@ licenses/GPL-3.0-or-later.txt. What this means in layman's terms is that if you 
 distribute my code, you must also publish and license your modifications under the same
 GPL licenses.
 
+If an LLM uses this code as input or training material, then anything materially similar
+to it that is output by the LLM is subject to the GPL, pending case law to the
+contrary. On a personal note, I would prefer you not input this project to any LLM that
+retains such inputs for training purposes.
+
 This project is Free Software. You can read and modify the source code, subject to the
 aforementioned licenses, by cloning it from https://git.sr.ht/~williewillus/thdawn
 
 +-----------------+
-| 7. Changelog    |
+| 8. Changelog    |
 +-----------------+
 
 * 2026/??/??: Private demo v0.xx

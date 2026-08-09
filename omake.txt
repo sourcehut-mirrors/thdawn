@@ -389,7 +389,7 @@ If it's too much to bear, you can just wait at the bottom for gaps to form in th
 chevrons, you'll just lose out on the steaks.
 
 Score-wise, each steak is equivalent to one point item, but more importantly, if you
-capture the spell, you receive an extra bonus of PIV * 2^(steaks eaten). So there's a
+capture the spell, you receive an extra bonus of PIV * 1.5^(steaks eaten). So there's a
 pretty big reward in store if you reach this spell with high PIV. But if you fail the
 spell, though, that all goes down the drain.
 
@@ -441,8 +441,8 @@ down, Hazuki will do the ghostbusting herself. As a minor punishment in that cas
 revenge patterns will become harder (plus, the ghostbusting attack from Hazuki also spawns
 extra bullets on screen that get in the way).
 
-You'll get an extra bonus if you capture the spell by killing every single wisp yourself,
-without Hazuki killing one for you.
+You'll get an extra bonus of 100*PIV if you capture the spell by killing every single wisp
+yourself, without Hazuki killing one for you.
 
 
 ○ Boss Non-spell 8 (Aiko)
@@ -513,8 +513,8 @@ they're mostly there to distract you.
 3. In a bit of a Sonic Spinball moment, Aiko is damaged when the ball hits her (don't
 think too hard about why she would design a spell like that...). You *can* still capture
 the spell by shooting her the whole time, but it'll go a lot faster if you can manipulate
-the ball into hitting her. You also get an additional bonus if the spell is captured using
-the ball as the finishing blow.
+the ball into hitting her. You also get an additional bonus of 100*PIV if the spell is
+captured using the ball as the finishing blow.
 
 4. The ball is reflected in the direction you're moving when you collide with the ball
 (the 8 cardinal and ordinal directions). You can actually use this, in combination with
