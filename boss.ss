@@ -2427,7 +2427,9 @@
 	  task)
 	(do [(i (sub1 (quotient n 2)) (sub1 i))]
 		[(fxnegative? i)]
-	  (body i)))
+	  (body i))
+	(-> (spawn-bullet 'small-star-white 0.0 42.0 5 values)
+		(bullet-addflags (bltflags uncancelable))))
   (define right-x group-sp3-right-x)
   (define left-x group-sp3-left-x)
   (define top-y group-sp3-top-y)
@@ -2547,10 +2549,6 @@
 				 (constantly #f)))
   (define spin-speed (cons 0.0 0.0))
   (define flower-distmod (box 0.0))
-  (define corner-positions (vector (vec2 group-sp3-left-x group-sp3-top-y)
-								   (vec2 group-sp3-right-x group-sp3-top-y)
-								   (vec2 group-sp3-left-x group-sp3-bot-y)
-								   (vec2 group-sp3-right-x group-sp3-bot-y)))
   (set! current-chapter 30)
   (set-car! group-sp3-flower-center 0.0)
   (set-cdr! group-sp3-flower-center 248.0)
@@ -2561,19 +2559,19 @@
   (for-each (λ (e) (enm-addflags e (enmflags nocollide)))
 			(list doremi hazuki aiko))
   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 80 aiko)
-  ;; (for-each-indexed
-  ;;  (λ (i type)
-  ;; 	 (-> (cb)
-  ;; 		 (cbcount 36)
-  ;; 		 (cboffset 250.0)
-  ;; 		 (cbabsolute-aim)
-  ;; 		 (cbang (fx2fl (* i 15)))
-  ;; 		 (cbshootez type 0.0 248.0 5 (sebundle-shoot0 sounds)
-  ;; 					(λ (facing _speed task blt)
-  ;; 					  (linear-step-accelerate (fl+ pi facing) 0.0 0.02 1.1 blt)
-  ;; 					  (linear-step-forever (fl+ pi facing) 1.1 task blt))))
-  ;; 	 (wait (vnth '#(30 15 120) i)))
-  ;;  '(big-star-red big-star-orange big-star-blue))
+  (for-each-indexed
+   (λ (i type)
+	 (-> (cb)
+		 (cbcount 36)
+		 (cboffset 250.0)
+		 (cbabsolute-aim)
+		 (cbang (fx2fl (* i 15)))
+		 (cbshootez type 0.0 248.0 5 (sebundle-shoot0 sounds)
+					(λ (facing _speed task blt)
+					  (linear-step-accelerate (fl+ pi facing) 0.0 0.02 1.1 blt)
+					  (linear-step-forever (fl+ pi facing) 1.1 task blt))))
+	 (wait (vnth '#(30 15 120) i)))
+   '(big-star-red big-star-orange big-star-blue))
   (raylib:play-sound (sebundle-longcharge sounds))
   (spawn-subtask "hazuki exit"
 	(λ (task)
@@ -2642,9 +2640,8 @@
   (set-car! spin-speed -0.5)
   (set-cdr! spin-speed 0.7)
   (vector-for-each
-   (λ (p)
-	 (define init-ang (fl* 360.0 (roll game-rng)))
-	 (define winding (flcopysign 55.0 (v2x p)))
+   (λ (x y init-ang)
+	 (define winding (flcopysign 55.0 x))
 	 (spawn-subtask "corner"
 	   (λ (task)
 		 (let loop ([ang init-ang])
@@ -2656,11 +2653,13 @@
 			   (fbshootez
 				;; really arrowhead-green, the sprite data is wrong but I'm too lazy
 				;; to deal with it right for this game lol
-				'arrowhead-cyan (v2x p) (v2y p) 8 (sebundle-shootsoft sounds)))
-		   (wait 30)
+				'arrowhead-cyan x y 8 (sebundle-shootsoft sounds)))
+		   (wait 45)
 		   (loop (fl+ ang winding))))
 	   task keep-running))
-   corner-positions)
+   (vector group-sp3-left-x group-sp3-right-x group-sp3-left-x group-sp3-right-x)
+   (vector group-sp3-top-y group-sp3-top-y group-sp3-bot-y group-sp3-bot-y)
+   '#(0.0 135.0 180.0 -135.0))
   (wait 90)
 
   (spawn-subtask "main flow"
@@ -2691,26 +2690,22 @@
 		(define start-y (if left 185.0 200.0))
 		(define x (if left group-sp3-left-x group-sp3-right-x))
 		(define final-facing (if left 0.0 pi))
-		(raylib:play-sound (sebundle-shoot0 sounds))
 		(do [(i 0 (add1 i))]
 			[(= i 6)]
 		  (let ([dest-y (fl+ start-y (fx2fl (* 30 i)))])
+			(raylib:play-sound (sebundle-shoot0 sounds))
 			(-> (spawn-bullet
 				 (vnth-mod
 				  '#(glow-orb-red glow-orb-orange glow-orb-cyan
 								  glow-orb-magenta glow-orb-yellow) i)
 				 0.0 heart-y 5
 				 (λ (task blt)
-				   (define init-facing (bullet-facing blt))
 				   (ease-bullet-to ease-in-out-quad x dest-y 120 blt)
-				   (raylib:play-sound (sebundle-shortcharge sounds))
-				   (do [(j 0 (add1 j))]
-					   [(> j 60)]
-					 (bullet-facing-set!
-					  blt (lerp init-facing final-facing (/ j 60.0)))
-					 (yield))
-				   (raylib:play-sound (sebundle-release sounds))
-				   (raylib:play-sound (sebundle-bell sounds))
+				   (when (zero? i)
+					 (raylib:play-sound (sebundle-shortcharge sounds)))
+				   (wait 60)
+				   (when (zero? i)
+					 (raylib:play-sound (sebundle-release sounds)))
 				   (cancel-bullet blt)
 				   (-> (fb)
 					   (fbcount 1 4)
@@ -2721,8 +2716,9 @@
 						(vnth-mod
 						 '#(knife-red knife-orange knife-blue
 									  knife-magenta knife-yellow) i)
-						(bx blt) (by blt) 0 #f))))
-				(bullet-facing-set! (facing-point 0.0 heart-y x dest-y))))))
+						(bx blt) (by blt) 0 (sebundle-bell sounds)))))
+				(bullet-facing-set! (facing-point 0.0 heart-y x dest-y)))
+			(wait 3))))
 	  (wait 120)
 	  (w1 #t) (wait 60) (w1 #f) (wait 90)
 	  (w2 #t) (wait 60) (w2 #f) (wait 60)
@@ -2730,24 +2726,42 @@
 	  (spawn-subtask "hearts"
 		(λ (task)
 		  (wait 90)
-		  (dotimes 13
+		  (do [(i 0 (add1 i))]
+			  [(= i 13)]
 			(-> (cb)
-				(cbcount 9 3)
+				(cbcount 18 3)
+				(cbspeed 3.25 4.0)
 				(cbang 0.0 10.0)
-				(cbspeed 2.0 3.0)
 				(cbrenderprio -1)
 				(cbshootez 'heart-red 0.0 heart-y 5 (sebundle-bell sounds)))
+			(when (= i 12)
+			  (raylib:play-sound (sebundle-shortcharge sounds)))
 			(wait 60))
-		  (dotimes 14
+		  (raylib:play-sound (sebundle-release sounds))		  
+		  (do [(i 0 (add1 i))]
+			  [(= i 18)]
 			(-> (fb)
-				(fbcount 1 4)
-				(fbspeed 2.0 3.5)
+				(fbcount 3 2)
+				(fbang 0.0 30.0)
+				(fbspeed 2.0 3.6)
 				(fbrenderprio -1)
 				(fbshootez 'heart-orange 0.0 heart-y 5 (sebundle-bell sounds)))
-			(wait 60)))
+			(when (= i 17)
+			  (raylib:play-sound (sebundle-shortcharge sounds)))
+			(wait 50))
+		  (wait 10)
+		  (raylib:play-sound (sebundle-release sounds))
+		  (interval-loop 30
+			(-> (cb)
+				(cbcount 16)
+				(cbang 11.25)
+				(cbspeed 4.0 5.0)
+				(cbrenderprio -1)
+				(cbshootez 'heart-blue 0.0 heart-y 5 (sebundle-bell sounds)))))
 		task)
 	  (vector-for-each
 	   (λ (x y)
+		 (raylib:play-sound (sebundle-oldvwoopslow sounds))
 		 (ease-to-impl car cdr set-car! set-cdr!
 					   values x y 300 group-sp3-flower-center)
 		 (unless (flzero? x)

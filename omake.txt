@@ -520,7 +520,32 @@ pretty tough!
 
 ○ "One Flower, One World" (Group)
 
-This was the seventeenth boss attack to be completed. 
+This was the seventeenth boss attack to be completed. From the start, I wanted a survival
+themed around flower(s), and I wanted a "lacey" or "frilly" border around the edge of the
+screen. Setting up the border led me down a pretty big rabbit hole to set up nice curves
+including Cornu/Euler curves, how to evaluate them effectively, etc.
+
+Then, I realized I was wasting too much time and threw it all out and just hand-bashed
+some bezier curves into place :P.
+
+As for the flower pattern, I knew I had to use some sort of polar diagram, but I was never
+very good at going from the shape I wanted to an equation. Thanks Alwinfy from the #vazkii
+(Violet Moon) IRC channel for looking at my drawing and giving me an equation. I modified
+it to add a few more petals and had it spin and move around, similar to Perfect Cherry
+Blossom's survival spell.
+
+I think this spell will seem really hard and chaotic at first. However, if you look
+closely, nearly everything is static. The only elements that are not static are the hearts
+that are shot from the top of the screen, which are aimed. It's theoretically possible to
+devise a series of inputs that will always make it through this attack. I also added
+plenty of audio cues to indicate when the heart pattern will change, or when the flower is
+starting to move. Keep trying if you can't get through, and don't be afraid of checking
+out other peoples' solutions if necessary!
+
+The name of the spell is a reference to Hana-chan from Ojamajo Doremi, but it's also a
+Buddhist saying, roughly about how a single flower can be a microcosm for the
+world. Explaining it properly is beyond my capabilities, so I recommend consulting a
+search engine if you're curious about the meaning.
 
 
 ○ "Magical Stage" (Group)
