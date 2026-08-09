@@ -2751,7 +2751,7 @@
 			(wait 50))
 		  (wait 10)
 		  (raylib:play-sound (sebundle-release sounds))
-		  (interval-loop 30
+		  (interval-loop 25
 			(-> (cb)
 				(cbcount 16)
 				(cbang 11.25)
@@ -2770,15 +2770,15 @@
 	   '#(312.0 312.0 184.0 184.0 248.0))
 	  (do [(i 0 (add1 i))]
 		  [(= i 600)]
-		(set-box! flower-distmod (fl* (fx2fl i) -0.06))
+		(set-box! flower-distmod (fl* (fx2fl i) -0.08))
 		(yield))
 	  (loop-forever))
 	task keep-running)
   (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
-  (enm-clrflags doremi (enmflags invincible))
-  (enm-clrflags hazuki (enmflags invincible))
-  (enm-clrflags aiko (enmflags invincible))
+  (enm-clrflags doremi (enmflags invincible nocollide))
+  (enm-clrflags hazuki (enmflags invincible nocollide))
+  (enm-clrflags aiko (enmflags invincible nocollide))
   (group-sp4 task doremi hazuki aiko))
 
 (define (group-sp4 task doremi hazuki aiko)

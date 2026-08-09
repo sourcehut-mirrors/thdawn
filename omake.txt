@@ -41,14 +41,32 @@ Ability: Capable of
 Species: Human (Witch Apprentice)
 Ability: Capable of
 
-+---------------------------------------+
-| 3. Boss Pattern Commentary and Hints  |
-+---------------------------------------+
++----------------------------------------+
+| 3. Stage Pattern Commentary and Hints  |
++----------------------------------------+
 
-This section is inspired by similar sections in the omakes of Touhou 6 ~ the Embodiment of
-Scarlet Devil and fan game Touhou Elegant Impermanence of Sakura. It just contains some of
-my musings and comments about the development of some of the spells and some hints if
-you can't capture them.
+
+This section and the next are inspired by similar sections in the omakes of Touhou 6 ~ the
+Embodiment of Scarlet Devil and fan game Touhou Elegant Impermanence of Sakura. It just
+contains some of my musings and comments about the development of the patterns and some
+hints if you can't beat them.
+
+The stage design is generally very straightforward. If you watched my Touhoufest 2026
+talk, it's basically a fun little rhythm game-like stage that syncs with Ojamajo Carnival.
+
+There's only a few hints:
+1. Try your hardest to kill all the yin-yangs in the chapter after the first midboss
+spell. Try even harder to do it no-miss no-bomb. If you can do so, you will get some extra
+rewards that will be very useful.
+2. The BoWaP fairies in the second half of the stage have no hitbox, so you can get inside
+there and graze if you want.
+3. Kill all three of the big fairies firing star rings in the second half of the stage for
+extra resources. If necessary, try circling around the top.
+
+
++---------------------------------------+
+| 4. Boss Pattern Commentary and Hints  |
++---------------------------------------+
 
 
 ○ Beginner Sign "My First Spellcard!" (Midboss Spell 1)
@@ -522,11 +540,11 @@ pretty tough!
 
 This was the seventeenth boss attack to be completed. From the start, I wanted a survival
 themed around flower(s), and I wanted a "lacey" or "frilly" border around the edge of the
-screen. Setting up the border led me down a pretty big rabbit hole to set up nice curves
-including Cornu/Euler curves, how to evaluate them effectively, etc.
+screen. Setting up the border led me down a pretty big rabbit hole of Cornu/Euler curves,
+how to evaluate them effectively, etc.
 
-Then, I realized I was wasting too much time and threw it all out and just hand-bashed
-some bezier curves into place :P.
+Then, I realized I was wasting too much time on something that was overkill, threw it all
+out, and just hand-bashed some bezier curves into place :P.
 
 As for the flower pattern, I knew I had to use some sort of polar diagram, but I was never
 very good at going from the shape I wanted to an equation. Thanks Alwinfy from the #vazkii
@@ -536,11 +554,19 @@ Blossom's survival spell.
 
 I think this spell will seem really hard and chaotic at first. However, if you look
 closely, nearly everything is static. The only elements that are not static are the hearts
-that are shot from the top of the screen, which are aimed. It's theoretically possible to
-devise a series of inputs that will always make it through this attack. I also added
-plenty of audio cues to indicate when the heart pattern will change, or when the flower is
-starting to move. Keep trying if you can't get through, and don't be afraid of checking
-out other peoples' solutions if necessary!
+that are shot from the top of the screen, which are aimed at or around you. It's
+theoretically possible to devise a series of inputs that will always make it through this
+attack. I also added plenty of audio cues to indicate when the heart pattern will change,
+or when the flower is starting to move. Keep trying if you can't get through, and don't be
+afraid of checking out other peoples' solutions if necessary!
+
+Hints:
+
+- First thing to do is learn how the flower moves around the screen.
+- Secondly, most of your attention should be focused on the green arrowheads. They are
+static, which means once you figure out a good path for them, you can memorize it for
+future attempts. However, it's still easy for one to snipe you if you let yourself get
+distracted by the other bullets on screen.
 
 The name of the spell is a reference to Hana-chan from Ojamajo Doremi, but it's also a
 Buddhist saying, roughly about how a single flower can be a microcosm for the
