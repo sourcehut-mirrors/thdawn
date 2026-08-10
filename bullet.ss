@@ -34,7 +34,7 @@
    ;; then by id. higher priority is rendered layer i.e. more on top.
    ;; if no priority is provided at bullet spawn time, defaults to 0
    render-priority 
-   type
+   (mutable type)
    (mutable x)
    (mutable y)
    ;; radians. This is used ONLY for rendering, not for movement!

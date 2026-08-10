@@ -1671,6 +1671,12 @@
   (values (fl+ cx (fl* dist (flcos facing)))
 		  (fl+ cy (fl* dist (flsin facing)))))
 
+(define (enm-set-dist-away enm cx cy facing dist)
+  (define-values (x y)
+	(dist-away cx cy facing dist))
+  (enm-x-set! enm x)
+  (enm-y-set! enm y))
+
 (define (player-invincible?)
   (or (fxpositive? iframes)
 	  (stage-ctx-dialogue current-stage-ctx)))
