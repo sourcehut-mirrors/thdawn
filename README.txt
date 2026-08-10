@@ -67,7 +67,7 @@ Some other gameplay details:
 - Some spell cards have additional secret bonuses, see omake.txt for details
 - Small PIV star items (mainly produced by cancelling bullets) are worth 50 PIV and 100
   score
-- Large PIV star items (mainly produced by a certain spellcard and dropped by certain
+- Large PIV star items (mainly produced by a certain nonspell and dropped by certain
   enemies) are worth 1000 PIV and 1000 score
 - After dying, bombing, and starting the game, the player has 3 seconds of invulnerability
 
