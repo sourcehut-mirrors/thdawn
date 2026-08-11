@@ -2788,21 +2788,21 @@
 	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
 		 (fxpositive? (enm-health doremi))))
   (define (p2)
-	(or (fx< (bossinfo-remaining-timer bossinfo) (* 95 60))
-		(fx< (enm-health doremi) 10000)))
+	(or (fx< (bossinfo-remaining-timer bossinfo) (* 85 60))
+		(fx< (enm-health doremi) 17000)))
   (define (p3)
-	(or (fx< (bossinfo-remaining-timer bossinfo) (* 70 60))
-		(fx< (enm-health doremi) 6000)))
+	(or (fx< (bossinfo-remaining-timer bossinfo) (* 50 60))
+		(fx< (enm-health doremi) 10000)))
   (define (p4)
-	(or (fx< (bossinfo-remaining-timer bossinfo) (* 40 60))
-		(fx< (enm-health doremi) 6000)))
+	(or (fx< (bossinfo-remaining-timer bossinfo) (* 20 60))
+		(fx< (enm-health doremi) 3000)))
   (set! current-chapter 31)
   (wait 90)
-  ;; (stage-ctx-dialogue-set!
-  ;;  current-stage-ctx
-  ;;  (with-input-from-file "assets/dialogue/finalspell.dat" read))
-  ;; (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
-  ;; (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
+  (stage-ctx-dialogue-set!
+   current-stage-ctx
+   (with-input-from-file "assets/dialogue/finalspell.dat" read))
+  (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
+  (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars bossinfo)))
@@ -2813,34 +2813,23 @@
   (enm-redirect-damage-set! hazuki doremi)
   (enm-redirect-damage-set! aiko doremi)
 
-  ;; tmp for testing
-  (let ([radius 50.0])
-	(enm-set-dist-away doremi 0.0 120.0 -hpi radius)
-	(enm-set-dist-away aiko 0.0 120.0 (torad 30.0) radius)
-	(enm-set-dist-away hazuki 0.0 120.0 (torad 150.0) radius))
-
   (declare-spell doremi 11)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 90)
   (raylib:play-sound (sebundle-release sounds))
-  (do [(i 0 (add1 i))]
-	  [(= i 45)]
-	(let-values ([(x y) (dist-away 0.0 120.0 (torad (fx2fl (* 8 i))) 95.0)])
-	  (-> (spawn-bullet 'pellet-white x y 5 values)
-		  (bullet-addflags (bltflags uncancelable)))))
   (spawn-subtask "boss spin"
 	(λ (task)
 	  (define radius 50.0)
 	  (let loop ([ang -hpi])
 		(enm-set-dist-away doremi 0.0 center-y ang radius)
 		(enm-set-dist-away aiko 0.0 center-y (fl+ ang (torad 120.0)) radius)
-		(enm-set-dist-away hazuki 0.0 center-y (fl+ ang (torad 240.0)) radius)
+		(enm-set-dist-away hazuki 0.0 center-y
+						   (fl+ ang (torad 240.0)) radius)
 		(yield)
 		(loop (fl+ ang (torad 1.0)))))
 	task keep-running)
   (spawn-subtask "revspin bullets"
 	(λ (task)
-	  (define radius 95.0)
 	  (do [(ang 0.0 (fl- ang 5.1))
 		   (i 0 (add1 i))]
 		  [#f]
@@ -2851,62 +2840,85 @@
 			(cbspeed 4.0)
 			(cbabsolute-aim)
 			(cbang ang)
-			(cboffset radius)
+			(cboffset 20.0)
 			(cbshootez
 			 'music-blue 0.0 center-y 5 (sebundle-shootsoft sounds)
 			 (λ (facing speed task blt)
-			   (dotimes 10
+			   (dotimes 15
 				 (linear-step facing speed blt)
 				 (yield))
 			   (bullet-type-set! blt 'music-green)
-			   (dotimes 10
+			   (dotimes 15
 				 (linear-step facing speed blt)
 				 (yield))
 			   (bullet-type-set! blt 'music-red)
 			   (linear-step-forever facing speed task blt))))
 		(wait (cond
-			   [(p4) 6] [(p3) 6]
+			   [(or (p4) (p3)) 6]
 			   [(p2) 8] [else 10]))))
 	task keep-running)
-  (spawn-subtask "p2 side"
+  (spawn-subtask "p2+ rings"
 	(λ (task)
-	  (define (do-one left)
-		(let ([x (fl* (if left -1.0 1.0) (roll-flrange game-rng 75.0 135.0))]
-			  [y (fl+ 120.0 (centered-roll game-rng 25.0))])
-		  (-> (cb)
-			  (cbcount 12)
-			  (cbspeed 2.0)
-			  (cbabsolute-aim)
-			  (cbang (fl* 360.0 (roll game-rng)))
-			  (cbshootez 'small-ball-cyan x y 5 (sebundle-shoot0 sounds)))))
 	  (wait-until p2)
-	  (raylib:play-sound (sebundle-shoot0 sounds))
-	  (cancel-all #f)
-	  (let loop ()
-		(do-one #t) (do-one #f)
-		(wait (if (p4) 20 30))
-		(loop)))
-	task keep-running)
-  (spawn-subtask "p3"
-	(λ (task)
-	  (wait-until p3)
 	  (raylib:play-sound (sebundle-shoot0 sounds))
 	  (cancel-all #f)
 	  (do [(i 0 (add1 i))]
 		  [#f]
 		(-> (cb)
-			(cbcount 32)
+			(cbcount (cond
+					  [(p4) 36] [(p3) 30]
+					  [(p2) 24] [else 18]))
 			(cbspeed 3.5)
-			(cbshootez (vnth-mod
-						'#(rest-red rest-yellow rest-blue) i)
-					   0.0 center-y 5 (sebundle-bell sounds)))
-		(wait 45)))
+			(cbshoot 0.0 center-y
+			  (λ (layer in-layer speed facing)
+				(define-values (x y)
+				  (dist-away 0.0 center-y facing 20.0))
+				(define type
+				  (vnth-mod
+				   '#(small-ball-red small-ball-yellow small-ball-blue) i))
+				(define glow-type
+				  (vnth-mod
+				   '#(glow-orb-red glow-orb-yellow glow-orb-cyan) i))
+				(spawn-bullet
+				 (if (fxzero? (fxmod in-layer 6)) glow-type type)
+				 x y 5 (curry linear-step-forever facing speed)))))
+		(wait (cond
+			   [(or (p4) (p3)) 45]
+			   [else 60]))))
+	task keep-running)
+  (spawn-subtask "p3"
+	(λ (task)
+	  (define (ctrl facing speed task blt)
+		(dotimes 15
+		  (linear-step facing speed blt)
+		  (yield))
+		(wait 60)
+		(linear-step-forever
+		 (facing-player (bx blt) (by blt)) 4.5 task blt))
+	  (wait-until p3)
+	  (raylib:play-sound (sebundle-shoot0 sounds))
+	  (cancel-all #f)
+	  (interval-loop 60
+		(vector-for-each
+		 (λ (e)
+		   (-> (cb)
+			   (cbcount 8)
+			   (cbspeed 3.25)
+			   (cbabsolute-aim)
+			   (cbshootenm e 'heart-red 5
+						   (sebundle-bell sounds) ctrl)))
+		 (vector doremi hazuki aiko))))
 	task keep-running)
   (spawn-subtask "p4"
 	(λ (task)
 	  (wait-until p4)
-	  (raylib:play-sound (sebundle-shoot0 sounds))
-	  (cancel-all #f))
+	  (raylib:play-sound (sebundle-longcharge sounds))
+	  (interval-loop 15
+		(-> (cb)
+			(cbcount 6)
+			(cbspeed 5.0)
+			(cbabsolute-aim)
+			(cbshootez 'ellipse-blue 0.0 center-y 5 #f))))
 	task keep-running)
   
   (wait-while keep-running)
@@ -2924,8 +2936,8 @@
    (with-input-from-file "assets/dialogue/postbattle.dat" read))
   (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
-  ;; todo formula
-  (let ([clear-bonus 10000000])
+  (let ([clear-bonus (+ (* 10000000 (floor life-stock))
+						(* 1000000 (floor bomb-stock)))])
 	(set! current-score (+ current-score clear-bonus))
 	(spawn-particle
 	 (particletype clear-bonus)

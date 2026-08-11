@@ -2049,7 +2049,7 @@
 	 (make-spell-descriptor "\"One Flower, One World\""
 							3600 -1 5000000 #f life-frag life-frag-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
-							5940 20000 5000000 'group
+							5940 22000 5000000 'group
 							'((point . 100)) '((point . 15))))))
 (define-record-type score-entry
   (fields name score unixtime cleared version)
@@ -3505,24 +3505,27 @@
 			   (λ (doremi _h _a)
 				 (spawn-task "doremi reenter"
 				   (λ (task)
-					 (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ (cdr dur)
-							  doremi))
+					 (define-values (x y)
+					   (dist-away 0.0 120.0 -hpi 50.0))
+					 (ease-to ease-out-cubic x y (cdr dur) doremi))
 				   (constantly #t))))]
 			[(hazuki-reenter)
 			 (call-with-values find-bosses
 			   (λ (_d hazuki _a)
 				 (spawn-task "hazuki reenter"
 				   (λ (task)
-					 (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+ (cdr dur)
-							  hazuki))
+					 (define-values (x y)
+					   (dist-away 0.0 120.0 (torad 30.0) 50.0))
+					 (ease-to ease-out-cubic x y (cdr dur) hazuki))
 				   (constantly #t))))]
 			[(aiko-reenter)
 			 (call-with-values find-bosses
 			   (λ (_d _h aiko)
 				 (spawn-task "aiko reenter"
 				   (λ (task)
-					 (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ (cdr dur)
-							  aiko))
+					 (define-values (x y)
+					   (dist-away 0.0 120.0 (torad 150.0) 50.0))
+					 (ease-to ease-out-cubic x y (cdr dur) aiko))
 				   (constantly #t))))]
 			[(chargesound)
 			 (raylib:play-sound (sebundle-longcharge sounds))])))])))

@@ -140,15 +140,17 @@ catching up to the earlier bullets. I wish I could name an exact example because
 pattern is so clear in my mind, but I can't think of it off the top of my head, sorry orz.
 
 Anyways, how that manifested here was I had Aiko and Hazuki moving in a figure eight
-pattern you see, firing bullets downward. It ended up not really looking like rings,
-though. To round out the pattern, Aiko and Hazuki fire circles of aimed music notes, while
-Doremi takes aim with a fan of butterflies.
+pattern you see, firing bullets downward. It ended up not really looking like the arcade
+patterns I had in mind, though. To round out the pattern, Aiko and Hazuki fire circles of
+aimed music notes, while Doremi takes aim with a fan of butterflies.
 
 The speed of the bullets can make this attack a bit of a challenge, but essentially all
 elements of this attack are static or directly aimed, so with some practice you can
 develop a route that is pretty consistent. The easiest strategy is to move liberally
 between the left, right, and center of the screen, as you can keep dealing good damage to
-the bosses even at the sides, and it gets pretty fun swinging across the screen to dodge. However, you could even develop a strategy that slowly streams across the screen, micrododging everything coming your way. Try that out, too!
+the bosses even at the sides, and it gets pretty fun swinging across the screen to
+dodge. However, you could even develop a strategy that slowly streams across the screen,
+micrododging everything coming your way. Try that out, too!
 
 I contemplated giving this spell a rage phase, but that felt too mean given the spell's
 already higher-than-usual difficulty, so you're welcome :P.
@@ -156,7 +158,7 @@ already higher-than-usual difficulty, so you're welcome :P.
 The spell name isn't really relevant to the pattern, I just wanted to honor the OG Ojamajo
 Doremi shmup fangame from 2002 called "Ojamajo Doremi SHOOT", which is probably the first
 shmups I ever played (even before Touhou). It's an arcade-like horizontally-scrolling
-shmup that you can still find online. It's pretty tough, I can't find any record of
+shmup that you can still find online. It's pretty tough: I can't find any record of
 full-stage 1cc's of the highest difficulty online, only single-stage clears.
 
 
@@ -189,8 +191,7 @@ Programming this and referencing the original made me realize how much of a geni
 was by ZUN to make the winding of the petals alternate each wave, but Okina's movement in
 phase of three (left-middle-right-middle-left). This 3-on-2 hemiola means every few waves
 you have to dodge in the opposite direction of Okina's movement, which exerts
-psychological pressure on the player to get back over under her to keep dealing damage,
-because even the homing shots don't have their options at this point.
+psychological pressure on the player to get back over under her to keep dealing damage.
 
 
 ○ Boss Non-spell 3 (Hazuki)
@@ -228,9 +229,9 @@ got it feeling right after hours of attempts at refining it. I also realized tha
 too many of these attacks in the game already where the boss shoots to set up some
 bullets, pauses, charges up, and then releases some stronger wave.
 
-So, after I got home from a work session at the cafe today, I ripped it all out and just
-made a U-shaped-streaming spell. It's similar to the nonspell, but not entirely trivial as
-you have to make large enough misdirects for the gaps to be safe. It took some
+So, after I got home from a work session at the cafe, I ripped it all out and just made a
+U-shaped-streaming spell. It's similar to the nonspell, but not entirely trivial as you
+have to make large enough misdirects for the gaps to be safe. It took some
 number-tweaking, but I'm surprised how fast it came together. If only I didn't waste so
 much time on the previous design...
 
@@ -284,8 +285,8 @@ After much experimentation, I think I landed on something that should be mostly
 reasonable, though there may be some occasional RNG situations that require on-the-fly
 dodging. To dodge it, I recommend moving away horizontally from the third spiral and
 keeping your vision wide to make sure no stray bullets from the other spirals blindside
-you. Also, use the visual hints to keep yourself Aiko as much as possible to end the spell
-as early as possible.
+you. Also, use the Enemy marker to keep yourself below Aiko as much as possible to end the
+spell as early as possible.
 
 
 ○ Boss Non-spell 5 (Group)
@@ -386,12 +387,13 @@ as possible, position yourself in the correct vertical position and rapidly tap
 right-left-right-left to weave through the chevrons while they're straight lines.
 
 If it's too much to bear, you can just wait at the bottom for gaps to form in the
-chevrons, you'll just lose out on the steaks.
+chevrons, you'll just lose out on the steaks (and a lot of score).
 
 Score-wise, each steak is equivalent to one point item, but more importantly, if you
 capture the spell, you receive an extra bonus of PIV * 1.5^(steaks eaten). So there's a
 pretty big reward in store if you reach this spell with high PIV. But if you fail the
-spell, though, that all goes down the drain.
+spell, though, that all goes down the drain. Also, in this spell you must collect at least
+one steak to get the spell bonus. If you fail to collect any steak, you fail the spell.
 
 This took longer than you'd think to get the feel and balance down, and I'm not entirely
 sure it's the best it could be, so apologies in advance orz.
@@ -460,7 +462,7 @@ down the screen, forcing you into the aforementioned position. While this happen
 lasers spawn aimed stars where they hit the sides of the screen. It's just easy streaming,
 but it's probably a blind-killer if you're seeing it for the first time, since there's not
 much room to maneuver if you aren't streaming properly. Implementing the "where do the
-lasers hit the sides of the screen" logic took me back to my Algebra days in high school
+lasers hit the sides of the screen" logic took me back to my Algebra days in middle school
 (finally, a use for point-slope form linear equations).
 
 Once Aiko reaches the bottom of the screen, she switches to some rapidly aimed heart fans
@@ -565,13 +567,13 @@ Hints:
 - First thing to do is learn how the flower moves around the screen.
 - Secondly, most of your attention should be focused on the green arrowheads. They are
 static, which means once you figure out a good path for them, you can memorize it for
-future attempts. However, it's still easy for one to snipe you if you let yourself get
-distracted by the other bullets on screen.
+future attempts. However, it's still easy for one to snipe you from an unexpected
+direction if you let yourself get distracted by the other bullets on screen.
 
 The name of the spell is a reference to Hana-chan from Ojamajo Doremi, but it's also a
 Buddhist saying, roughly about how a single flower can be a microcosm for the
 world. Explaining it properly is beyond my capabilities, so I recommend consulting a
-search engine if you're curious about the meaning.
+search engine if you're curious about the deeper meaning.
 
 
 ○ "Magical Stage" (Group)
@@ -579,3 +581,11 @@ search engine if you're curious about the meaning.
 This was the eighteenth and final boss attack to be completed. I had the idea for this
 spell pretty early on (when I was about halfway done with the boss fight), but I wanted to
 save the final spell as the final one I coded up.
+
+The inspiration is from the animated opening for Ojamajo Carnival!!. Right at the climax,
+when the girls cast "Magical Stage", their power explodes into a flurry of sparkles, with
+emanating rings and spiral arms of particles. This is about 1:02 in the TV-sized OP.
+
+It's a pretty plain design, and the dodging isn't too complicated either, but the bullet
+speed should present a reasonable challenge for weary players looking to clear the
+game. Watch out for places where the small orbs overlap with the note bullets.
