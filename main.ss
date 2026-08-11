@@ -2129,7 +2129,9 @@
   (define total-time (bossinfo-total-timer bossinfo))
   (define max-bonus (bossinfo-active-spell-bonus bossinfo))
   (cond
-   [(bossinfo-active-attack-failed bossinfo)
+   [(or (bossinfo-active-attack-failed bossinfo)
+		(and (= 7 (bossinfo-active-spell-id bossinfo))
+			 (zero? (unbox doremi-sp2-steaks-collected))))
 	0]
    [(or (= -1 (bossinfo-max-health bossinfo))
 		(fx<= (fx- total-time remaining-time) grace-period))
@@ -4026,13 +4028,17 @@
    24.0 0.0 #x49D0FFFF)
   (let ([enm (find-spellcaster)])
 	(when (and enm (= 7 (bossinfo-active-spell-id (enm-extras enm))))
-	  (let ([x 452.0] [y 211.0])
+	  (let ([x 452.0] [y 211.0]
+			[steaks (unbox doremi-sp2-steaks-collected)])
 		(draw-sprite textures 'steak x y -1)
 		(raylib:draw-text-ex
 		 (fontbundle-bubblegum24 fonts)
 		 ;; todo: load and use unicode multiply symbol
-		 (format "x ~2,'0d" (unbox doremi-sp2-steaks-collected))
-		 (fl+ x 16.0) (fl- y 12.0) 24.0 0.0 -1))))
+		 (format "x ~2,'0d" steaks)
+		 (fl+ x 16.0) (fl- y 12.0) 24.0 0.0
+		 (cond
+		  [(and (fxzero? steaks) (< (fxmod frames 10) 5)) #xdc143cff]
+		  [else -1])))))
   
   (when (is-replay)
 	(raylib:draw-text-ex
