@@ -15,16 +15,16 @@ None of the code nor assets in this project were generated with Generative
 AI. Unfortunately, I cannot guarantee whether that is the case for any of the project's
 libraries.
 
-Some generative AI tools (such as Google's search summaries) may have been briefly
-consulted for targeted math and technical questions, but each line of code is my
-own. Generative AI was also not consulted in any creative process such as bullet pattern
-or enemy formation design.
+Some generative AI tools (such as Google's search summaries) were been briefly consulted
+for targeted math and technical questions, but each line of code is my own. Generative AI
+was also not consulted in any creative process such as bullet pattern or enemy formation
+design.
 
 ## License
 See Section 6 of README.txt for license information
 
 ## Dependencies
-* Chez Scheme 10.3.0+
+* Chez Scheme 10.4.0+
 * Raylib dynamic library
 
 ## Setup
@@ -45,7 +45,8 @@ All these steps are one time
 
 ## Distribution Build
 Run the `build.ss` program, which will create the output artifact `thdawn.boot`. On Unix
-systems you can do this by running `make`.
+systems you can do this by running `make`. Set the PROD environment variable to compile
+in optimization mode 3 (unsafe mode).
 
 Distribute this with the assets, a copy of Chez Scheme, and raylib's dynamic library. This
 step is probably going to be manual.

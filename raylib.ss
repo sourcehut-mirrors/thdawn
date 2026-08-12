@@ -20,7 +20,10 @@
 		  draw-texture-rec draw-texture draw-texture-pro
 		  load-font load-font-ex unload-font
 		  is-key-down get-key-pressed set-exit-key is-key-pressed is-key-released
-		  get-key-name
+		  get-key-name is-gamepad-available get-gamepad-name
+		  is-gamepad-button-pressed is-gamepad-button-down
+		  is-gamepad-button-released get-gamepad-button-pressed
+		  get-gamepad-axis-movement
 		  set-trace-log-level
 		  push-matrix pop-matrix with-matrix translatef rotatef scalef
 		  rlbegin rlend vertex2 texcoord color4f color4ub normal3f set-texture
@@ -449,6 +452,27 @@
 
   (define get-key-pressed
 	(foreign-procedure __atomic "GetKeyPressed" () int))
+
+  (define is-gamepad-available
+	(foreign-procedure __atomic "IsGamepadAvailable" (int) stdbool))
+
+  (define get-gamepad-name
+	(foreign-procedure __atomic "GetGamepadName" (int) string))
+
+  (define is-gamepad-button-pressed
+	(foreign-procedure __atomic "IsGamepadButtonPressed" (int int) stdbool))
+
+  (define is-gamepad-button-down
+	(foreign-procedure __atomic "IsGamepadButtonDown" (int int) stdbool))
+
+  (define is-gamepad-button-released
+	(foreign-procedure __atomic "IsGamepadButtonReleased" (int int) stdbool))
+
+  (define get-gamepad-button-pressed
+	(foreign-procedure __atomic "GetGamepadButtonPressed" () int))
+
+  (define get-gamepad-axis-movement
+	(foreign-procedure __atomic "GetGamepadAxisMovement" (int int) float))
 
   (define set-exit-key
 	(foreign-procedure __atomic "SetExitKey" (int) void))
