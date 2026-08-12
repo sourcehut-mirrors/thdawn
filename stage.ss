@@ -236,7 +236,7 @@
 		  (cbspeed 3.0 4.0)
 		  (cbshootenm enm 'small-star-green 5 (sebundle-bell sounds)))))
   (spawn-subtask "shoot" shoot task (thunk (fx< (fx- frames start-time) 240)))
-  (ease-to values (if flip 160.0 -160.0) 150.0 30 enm)
+  (ease-to values (if flip 140.0 -140.0) 150.0 30 enm)
   (wait 240)
   (move-on-spline
    (if flip
