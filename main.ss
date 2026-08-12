@@ -4028,7 +4028,7 @@
    24.0 0.0 #x49D0FFFF)
   (let ([enm (find-spellcaster)])
 	(when (and enm (= 7 (bossinfo-active-spell-id (enm-extras enm))))
-	  (let ([x 452.0] [y 211.0]
+	  (let ([x 452.0] [y 205.0]
 			[steaks (unbox doremi-sp2-steaks-collected)])
 		(draw-sprite textures 'steak x y -1)
 		(raylib:draw-text-ex
@@ -4044,7 +4044,7 @@
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum24 fonts)
 	 "REPLAY"
-	 440.0 195.0
+	 440.0 225.0
 	 24.0 0.0 red)
 	;; TODO config option for liveplays?
 	(let ([get-color
@@ -4053,25 +4053,25 @@
 				 selected-base-color
 				 #x606060ff))])
 	  (raylib:draw-rectangle-rec
-	   440.0 250.0 24.0 24.0
+	   440.0 280.0 24.0 24.0
 	   (get-color (vkey left)))
 	  (raylib:draw-rectangle-rec
-	   466.0 250.0 24.0 24.0
+	   466.0 280.0 24.0 24.0
 	   (get-color (vkey down)))
 	  (raylib:draw-rectangle-rec
-	   466.0 224.0 24.0 24.0
+	   466.0 254.0 24.0 24.0
 	   (get-color (vkey up)))
 	  (raylib:draw-rectangle-rec
-	   492.0 250.0 24.0 24.0
+	   492.0 280.0 24.0 24.0
 	   (get-color (vkey right)))
 	  (raylib:draw-rectangle-rec
-	   532.0 250.0 24.0 24.0
+	   532.0 280.0 24.0 24.0
 	   (get-color (vkey focus)))
 	  (raylib:draw-rectangle-rec
-	   558.0 250.0 24.0 24.0
+	   558.0 280.0 24.0 24.0
 	   (get-color (vkey shoot)))
 	  (raylib:draw-rectangle-rec
-	   584.0 250.0 24.0 24.0
+	   584.0 280.0 24.0 24.0
 	   (get-color (vkey bomb)))))
 
   ;; this is kinda dumb but whatever
