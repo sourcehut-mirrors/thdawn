@@ -1108,8 +1108,8 @@
 		   (+ (ex enm) (if right-side -50.0 50.0))
 		   (ey enm) 20 enm)
   (-> (fb)
-	  (fbcount 1 10)
-	  (fbspeed 1.0 (fl+ 5.5 (centered-roll game-rng 0.7)))
+	  (fbcount 1 12)
+	  (fbspeed 0.3 (fl+ 6.1 (centered-roll game-rng 0.7)))
 	  (fbabsolute-aim)
 	  (fbang (if right-side 180.0 0.0) 0.0)
 	  (fbshootenm enm type
