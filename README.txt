@@ -15,7 +15,7 @@
 | 2. Installation and Execution |
 +-------------------------------+
 
-Extract this ZIP archive to any place of your choosing.
+Extract the game ZIP archive to any place of your choosing.
 
 Starting the game depends on your platform:
 
@@ -115,7 +115,7 @@ love to hear from you!
   In the future, an update may increase the resolution of the game.
 * During the pre-battle dialogue, the Skip Dialogue button only works once all characters
   have entered the screen.
-
+* Only the first controller detected will be used for gameplay.
 
 +-----------------+
 | 7. Licenses     |

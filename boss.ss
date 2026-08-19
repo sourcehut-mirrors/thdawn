@@ -2815,6 +2815,9 @@
 
   (declare-spell doremi 11)
   (raylib:play-sound (sebundle-shortcharge sounds))
+  (-> (spawn-bullet 'heart-red 0.0 center-y 15 values)
+	  (bullet-addflags (bltflags uncancelable))
+	  (bullet-facing-set! hpi))
   (wait 90)
   (raylib:play-sound (sebundle-release sounds))
   (spawn-subtask "boss spin"
@@ -2861,7 +2864,6 @@
 	(λ (task)
 	  (wait-until p2)
 	  (raylib:play-sound (sebundle-shoot0 sounds))
-	  (cancel-all #f)
 	  (do [(i 0 (add1 i))]
 		  [#f]
 		(-> (cb)
@@ -2888,26 +2890,20 @@
 	task keep-running)
   (spawn-subtask "p3"
 	(λ (task)
-	  (define (ctrl facing speed task blt)
-		(dotimes 15
-		  (linear-step facing speed blt)
-		  (yield))
-		(wait 60)
-		(linear-step-forever
-		 (facing-player (bx blt) (by blt)) 4.5 task blt))
 	  (wait-until p3)
 	  (raylib:play-sound (sebundle-shoot0 sounds))
-	  (cancel-all #f)
-	  (interval-loop 60
-		(vector-for-each
-		 (λ (e)
-		   (-> (cb)
-			   (cbcount 8)
-			   (cbspeed 3.25)
-			   (cbabsolute-aim)
-			   (cbshootenm e 'heart-red 5
-						   (sebundle-bell sounds) ctrl)))
-		 (vector doremi hazuki aiko))))
+	  (do [(i 0 (add1 i))]
+		  [#f]
+		(dotimes 8
+		  (vector-for-each
+		   (λ (e)
+			 (define facing (facing-point 0.0 center-y (ex e) (ey e)))
+			 (spawn-bullet
+			  (vnth-mod '#(kunai-red kunai-orange kunai-blue) i)
+			  (ex e) (ey e) 5 (curry linear-step-forever facing 2.5)))
+		   (vector doremi hazuki aiko))
+		  (wait 3))
+		(wait 10)))
 	task keep-running)
   (spawn-subtask "p4"
 	(λ (task)
@@ -2915,7 +2911,7 @@
 	  (raylib:play-sound (sebundle-longcharge sounds))
 	  (interval-loop 15
 		(-> (cb)
-			(cbcount 6)
+			(cbcount 18)
 			(cbspeed 5.0)
 			(cbabsolute-aim)
 			(cbshootez 'ellipse-blue 0.0 center-y 5 #f))))
