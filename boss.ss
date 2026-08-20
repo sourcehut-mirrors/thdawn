@@ -2789,13 +2789,13 @@
 		 (fxpositive? (enm-health doremi))))
   (define (p2)
 	(or (fx< (bossinfo-remaining-timer bossinfo) (* 85 60))
-		(fx< (enm-health doremi) 17000)))
+		(fx< (enm-health doremi) 25000)))
   (define (p3)
 	(or (fx< (bossinfo-remaining-timer bossinfo) (* 50 60))
-		(fx< (enm-health doremi) 10000)))
+		(fx< (enm-health doremi) 18000)))
   (define (p4)
 	(or (fx< (bossinfo-remaining-timer bossinfo) (* 20 60))
-		(fx< (enm-health doremi) 3000)))
+		(fx< (enm-health doremi) 7500)))
   (set! current-chapter 31)
   (wait 90)
   (stage-ctx-dialogue-set!
@@ -2815,7 +2815,7 @@
 
   (declare-spell doremi 11)
   (raylib:play-sound (sebundle-shortcharge sounds))
-  (-> (spawn-bullet 'heart-red 0.0 center-y 15 values)
+  (-> (spawn-bullet 'big-star-white 0.0 center-y 15 values)
 	  (bullet-addflags (bltflags uncancelable))
 	  (bullet-facing-set! hpi))
   (wait 90)
@@ -2866,6 +2866,7 @@
 	  (raylib:play-sound (sebundle-shoot0 sounds))
 	  (do [(i 0 (add1 i))]
 		  [#f]
+		(raylib:play-sound (sebundle-bell sounds))
 		(-> (cb)
 			(cbcount (cond
 					  [(p4) 36] [(p3) 30]
@@ -2881,8 +2882,12 @@
 				(define glow-type
 				  (vnth-mod
 				   '#(glow-orb-red glow-orb-yellow glow-orb-cyan) i))
+				(define use-glow-type
+				  (cond
+				   [(or (p4) (p3)) (fx= 3 (fxmod in-layer 6))]
+				   [else (fxzero? (fxmod in-layer 6))]))
 				(spawn-bullet
-				 (if (fxzero? (fxmod in-layer 6)) glow-type type)
+				 (if use-glow-type glow-type type)
 				 x y 5 (curry linear-step-forever facing speed)))))
 		(wait (cond
 			   [(or (p4) (p3)) 45]
@@ -2900,10 +2905,10 @@
 			 (define facing (facing-point 0.0 center-y (ex e) (ey e)))
 			 (spawn-bullet
 			  (vnth-mod '#(kunai-red kunai-orange kunai-blue) i)
-			  (ex e) (ey e) 5 (curry linear-step-forever facing 2.5)))
+			  (ex e) (ey e) 5 (curry linear-step-forever facing 4.2)))
 		   (vector doremi hazuki aiko))
 		  (wait 3))
-		(wait 10)))
+		(wait 8)))
 	task keep-running)
   (spawn-subtask "p4"
 	(λ (task)
