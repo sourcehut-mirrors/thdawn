@@ -2815,22 +2815,29 @@
 
   (declare-spell doremi 11)
   (raylib:play-sound (sebundle-shortcharge sounds))
-  (-> (spawn-bullet 'big-star-white 0.0 center-y 15 values)
-	  (bullet-addflags (bltflags uncancelable))
-	  (bullet-facing-set! hpi))
   (wait 90)
   (raylib:play-sound (sebundle-release sounds))
-  (spawn-subtask "boss spin"
-	(λ (task)
-	  (define radius 50.0)
-	  (let loop ([ang -hpi])
-		(enm-set-dist-away doremi 0.0 center-y ang radius)
-		(enm-set-dist-away aiko 0.0 center-y (fl+ ang (torad 120.0)) radius)
-		(enm-set-dist-away hazuki 0.0 center-y
-						   (fl+ ang (torad 240.0)) radius)
-		(yield)
-		(loop (fl+ ang (torad 1.0)))))
-	task keep-running)
+  (let* ([ring-rad 8.0]
+		 [ring (map (λ (i type)
+					  (define init-ang (fl+ -hpi (torad (fx2fl (* i 120)))))
+					  (define-values (x y)
+						(dist-away 0.0 center-y init-ang ring-rad))
+					  (-> (spawn-bullet type x y 0 values)
+						  (bullet-addflags (bltflags uncancelable))))
+					(iota 3)
+					'(music-red music-yellow music-cyan))])
+	(spawn-subtask "boss spin"
+	  (λ (task)
+		(define radius 50.0)
+		(let loop ([ang -hpi])
+		  (enm-set-dist-away doremi 0.0 center-y ang radius)
+		  (enm-set-dist-away aiko 0.0 center-y (fl+ ang (torad 120.0)) radius)
+		  (enm-set-dist-away hazuki 0.0 center-y
+							 (fl+ ang (torad 240.0)) radius)
+		  (position-bullets-around 0.0 center-y ring-rad ang ring)
+		  (yield)
+		  (loop (fl+ ang (torad 1.0)))))
+	  task keep-running))
   (spawn-subtask "revspin bullets"
 	(λ (task)
 	  (do [(ang 0.0 (fl- ang 5.1))

@@ -586,6 +586,14 @@ The inspiration is from the animated opening for Ojamajo Carnival!!. Right at th
 when the girls cast "Magical Stage", their power explodes into a flurry of sparkles, with
 emanating rings and spiral arms of particles. This is about 1:02 in the TV-sized OP.
 
-It's a pretty plain design, and the dodging isn't too complicated either, but the bullet
-speed should present a reasonable challenge for weary players looking to clear the
-game. Watch out for places where the small orbs overlap with the note bullets.
+It's a pretty conventional final spell design, but it's a tough challenge befitting a
+final spell. I had Divine Virtue of Wind God and Pristine Danmaku Hell in mind when making
+this; you'll have to ensure your vision is wide as you must quickly determine whether you
+should macro around a line of kunai, or micro through (and if so, how to do it without
+getting blocked by another bullet).
+
+Potentially too tough of an attack relative to the rest of the fight, but I think it's
+fine given it's the final spell :P.
+
+If you're struggling, make sure to use your bomb and death invincibility frames to push up
+on the screen to clear out bullets, then slowly move back down as it wears off.
