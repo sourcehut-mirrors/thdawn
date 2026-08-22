@@ -1,7 +1,7 @@
 ;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 (library (raylib)
   (export init-window close-window window-should-close set-target-fps get-frame-time
-		  toggle-borderless-windowed toggle-fullscreen
+		  toggle-borderless-windowed toggle-fullscreen is-window-focused
 		  set-window-min-size get-screen-height get-screen-width
 		  begin-texture-mode end-texture-mode
 		  load-render-texture unload-render-texture render-texture-inner
@@ -110,6 +110,8 @@
 
   (define close-window
 	(foreign-procedure __atomic "CloseWindow" () void))
+  (define is-window-focused
+	(foreign-procedure __atomic "IsWindowFocused" () stdbool))
 
   (define toggle-borderless-windowed
 	(foreign-procedure __atomic "ToggleBorderlessWindowed" () void))

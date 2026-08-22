@@ -3393,7 +3393,64 @@
 ;; gathers the pending input to be used for the current frame
 ;; No gameplay-facing keys should be checked outside this function.
 ;; Debug-facing keys can still be checked outside.
-(define (gather-input)
+(define last-stick-vkeys empty-vkeys)
+(define (gather-pad-input)
+  ;; TODO rebinding
+  (define pad 1)
+  (define mapping 
+	`((,(vkeys up) . 1) (,(vkeys right) . 2)
+	 (,(vkeys down) . 3) (,(vkeys left) . 4)
+	 (,(vkeys focus) . 11) (,(vkeys shoot) . 8)
+	 (,(vkeys bomb) . 7) (,(vkeys pause) . 15)))
+  (define (clamp-deadzone mvmt)
+	(if (fl< (flabs mvmt) 0.3) 0.0 mvmt))
+  (define (sticks-to-vkeys x y)
+	(enum-set-union
+	 (exclusive-cond
+	   [(flpositive? x) (vkeys right)]
+	   [(flnegative? x) (vkeys left)]
+	   [else empty-vkeys])
+	 (exclusive-cond
+	   [(flpositive? y) (vkeys down)]
+	   [(flnegative? y) (vkeys up)]
+	   [else empty-vkeys])))
+  (define stick-x (clamp-deadzone (raylib:get-gamepad-axis-movement pad 0)))
+  (define stick-y (clamp-deadzone (raylib:get-gamepad-axis-movement pad 1)))
+  (define stick-vkeys (sticks-to-vkeys stick-x stick-y))
+  (define stick-edge-press (enum-set-difference stick-vkeys last-stick-vkeys))
+  (define stick-edge-release (enum-set-difference last-stick-vkeys stick-vkeys))
+  (define edge-pressed-raw '()) ;; TODO: probably don't need this for controller?
+  (define level-pressed
+	(enum-set-union
+	 stick-vkeys
+	 (fold-left
+	  (λ (acc pair)
+		(if (raylib:is-gamepad-button-down pad (cdr pair))
+			(enum-set-union acc (car pair))
+			acc))
+	  empty-vkeys mapping)))
+  (define edge-pressed
+	(enum-set-union
+	 stick-edge-press
+	 (fold-left
+	  (λ (acc pair)
+		(if (raylib:is-gamepad-button-pressed pad (cdr pair))
+			(enum-set-union acc (car pair))
+			acc))
+	  empty-vkeys mapping)))
+  (define edge-released
+	(enum-set-union
+	 stick-edge-release
+	 (fold-left
+	  (λ (acc pair)
+		(if (raylib:is-gamepad-button-released pad (cdr pair))
+			(enum-set-union acc (car pair))
+			acc))
+	  empty-vkeys mapping)))
+  (set! last-stick-vkeys stick-vkeys)
+  (make-inputset edge-pressed-raw edge-pressed edge-released level-pressed))
+
+(define (gather-keyboard-input)
   (define edge-pressed-raw
 	(let loop ([result '()]
 			   [k (raylib:get-key-pressed)])
@@ -3425,6 +3482,16 @@
 	 (vkeys)
 	 keybindings))
   (make-inputset edge-pressed-raw edge-pressed edge-released level-pressed))
+(define (gather-input)
+  (define pad (gather-pad-input))
+  (define kb (gather-keyboard-input))
+  (if (raylib:is-window-focused)
+	  (make-inputset
+	   (inputset-edge-pressed-raw kb)
+	   (enum-set-union (inputset-edge-pressed pad) (inputset-edge-pressed kb))
+	   (enum-set-union (inputset-edge-released pad) (inputset-edge-released kb))
+	   (enum-set-union (inputset-level-pressed pad) (inputset-level-pressed kb)))
+	  kb))
 
 (define +left-boss-x+ -127.0)
 (define +left-boss-y+ 117.0)
