@@ -882,10 +882,10 @@
   (set! current-chapter 7)
   (wait 50)
   (spawn-enemy (enmtype big-fairy) -200.0 250.0 800 (curry ch7-med-fairy #f)
-			   ten-point ch7-fairy-on-death)
+			   '((point . 20)) ch7-fairy-on-death)
   (wait 370)
   (spawn-enemy (enmtype big-fairy) 200.0 250.0 800 (curry ch7-med-fairy #t)
-			   ten-point ch7-fairy-on-death)
+			   '((point . 20)) ch7-fairy-on-death)
   (wait-until (thunk (>= frames 7497)))
   (chapter8 task))
 

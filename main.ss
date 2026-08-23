@@ -2996,7 +2996,7 @@
 	  (let* ([type (miscent-type ent)]
 			 [terminal-velocity
 			  (case type
-				([point life-frag big-piv life bomb-frag small-piv bomb] 10.0)
+				([point life-frag big-piv life bomb-frag small-piv bomb] 8.0)
 				(else +inf.0))]
 			 [do-standard-movement
 			  (thunk
