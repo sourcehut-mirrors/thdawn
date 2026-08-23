@@ -1633,20 +1633,23 @@
 		  (wait 180)
 		  (interval-loop 40
 			(raylib:play-sound (sebundle-shoot0 sounds))
-			(-> (cb)
-				(cbcount 56)
-				(cbabsolute-aim)
-				(cbspeed 3.0)
-				(cbshoot (ex hazuki) (ey hazuki)
-				  (λ (layer in-layer speed facing)
-					(-> (spawn-bullet 'rice-white (ex hazuki) (ey hazuki) 5
-									  (curry linear-step-forever facing speed))
-						(bullet-addflags (bltflags nocanceldrop))))))))
+			(parameterize ([seal-distance 25.0]
+						   [ovr-nocanceldrop #t])
+			  (-> (cb)
+				  (cbcount 56)
+				  (cbabsolute-aim)
+				  (cbspeed 3.0)
+				  (cbshoot (ex hazuki) (ey hazuki)
+					(λ (layer in-layer speed facing)
+					  (spawn-bullet 'rice-white (ex hazuki) (ey hazuki) 5
+									(curry linear-step-forever facing speed))))))))
 		task)
 	  (spawn-subtask "decor"
 		(λ (task)
 		  (wait 180)
 		  (interval-loop 20
+			(parameterize ([seal-distance 25.0]
+						   [ovr-nocanceldrop #t])
 			(-> (cb)
 				(cbcount 56 2)
 				(cbang 90.0)
@@ -1656,9 +1659,8 @@
 				  (λ (layer in-layer speed facing)
 					(unless (or (fx<= 0 in-layer 5)
 								(fx<= 50 in-layer 55))
-					  (-> (spawn-bullet 'rice-yellow (ex hazuki) (ey hazuki) 5
-										(curry linear-step-forever facing speed))
-						  (bullet-addflags (bltflags nocanceldrop)))))))))
+					  (spawn-bullet 'rice-yellow (ex hazuki) (ey hazuki) 5
+									(curry linear-step-forever facing speed)))))))))
 		task)
 	  (interval-loop 90
 		(hazuki-non2-spawn-one

@@ -188,7 +188,7 @@
 							   type x y 0.0 #f (- delay) (- delay)
 							   empty-bltflags)]
 			 [sealed (let ([s (seal-distance)])
-					   (and s (fl<= (distsq x y player-x player-y) (* s s))))])
+					   (and s (fl<= (distsq x y player-x player-y) (fl* s s))))])
 		 (when (ovr-uncancelable)
 		   (bullet-addflags blt (bltflags uncancelable)))
 		 (when (ovr-noclip)
