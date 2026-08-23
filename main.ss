@@ -1321,20 +1321,21 @@
   (define selected (setting-gui-selected-option self))
   (cond
    [(and (setting-gui-waiting-for-rebind self)
-		 (not (eq? '() edge-pressed-raw))
 		 (keybind-menu-item? (vnth opts selected)))
-	(let* ([opt (vnth opts selected)]
-		   [vk (keybind-menu-item-vk opt)]
-		   [k (car edge-pressed-raw)]
-		   [binds (assqdr 'keybindings config)]
-		   [pair (assq vk binds)]
-		   [conflict (find (λ (p) (= k (cdr p))) binds)])
-	  (when conflict ;; swap
-		(set-cdr! conflict (cdr pair)))
-	  (set-cdr! pair k))
-	(save-config config)
-	(refresh-keybindings)
-	(setting-gui-waiting-for-rebind-set! self #f)]
+	(when (not (eq? '() edge-pressed-raw))
+	  (let* ([opt (vnth opts selected)]
+			 [vk (keybind-menu-item-vk opt)]
+			 [k (car edge-pressed-raw)]
+			 [binds (assqdr 'keybindings config)]
+			 [pair (assq vk binds)]
+			 [conflict (find (λ (p) (= k (cdr p))) binds)])
+		(when conflict ;; swap
+		  (set-cdr! conflict (cdr pair)))
+		(set-cdr! pair k))
+	  (raylib:play-sound (sebundle-menuselect sounds))
+	  (save-config config)
+	  (refresh-keybindings)
+	  (setting-gui-waiting-for-rebind-set! self #f))]
    [(enum-set-member? (vkey down) edge-pressed)
 	(when (< selected (sub1 (vlen opts)))
 	  (setting-gui-selected-option-set!
@@ -1412,6 +1413,7 @@
 	  (λ (_gui)
 		(set! config (reset-config))
 		(refresh-keybindings)
+		(refresh-padmappings)
 		(update-music-volumes)
 		(update-sound-volumes)))
 	 (make-menu-item
@@ -1425,7 +1427,10 @@
 	   (string-append "Music Volume: < "
 					  (number->string (assqdr 'music-vol config))
 					  " >"))
-	  (λ (_gui) (void))))
+	  (λ (_gui) (void)))
+	 (make-menu-item
+	  (thunk "Gamepad Config")
+	  (λ (_gui) (set! gui-stack (cons (mk-padconfig-gui) gui-stack)))))
 	(list->vector
 	 (map
 	  (λ (vk)
@@ -1438,7 +1443,152 @@
 							(assqdr vk (assqdr 'keybindings config))))))
 		 (λ (gui) (setting-gui-waiting-for-rebind-set! gui #t))
 		 vk))
-	  (enum-set->list (enum-set-universe (vkeys))))))
+	  (enum-set->list (enum-set-universe empty-vkeys)))))
+   0 #f))
+
+(define pad-supported-vkeys
+  (-> (vkeys up right down left focus shoot bomb pause)
+	  enum-set->list
+	  list->vector))
+(define-record-type padconfig-gui
+  (parent gui)
+  (fields
+   (mutable menu-options)
+   (mutable selected-option)
+   (mutable rebind-buffer)))
+(define (padconfig-handle-input self inputs)
+  (define edge-pressed (inputset-edge-pressed inputs))
+  (define edge-pressed-gamepad-raw (inputset-edge-pressed-gamepad-raw inputs))
+  (define opts (padconfig-gui-menu-options self))
+  (define selected (padconfig-gui-selected-option self))
+  (cond
+   [(padconfig-gui-rebind-buffer self) =>
+	(λ (buf)
+	  (when (not (eq? '() edge-pressed-gamepad-raw))
+		(let ([next-index (vector-index 0 buf)])
+		  (vector-set! buf next-index (car edge-pressed-gamepad-raw))
+		  (when (= next-index (sub1 (vlen pad-supported-vkeys)))
+			(let ([p (assq 'padmappings config)])
+			  (set-cdr! p (-> (vector-map cons pad-supported-vkeys buf)
+							  vector->list))
+			  (save-config config)
+			  (refresh-padmappings))
+			(padconfig-gui-rebind-buffer-set! self #f)
+			(raylib:play-sound (sebundle-extend sounds))))))]
+   [(enum-set-member? (vkey down) edge-pressed)
+	(when (< selected (sub1 (vlen opts)))
+	  (padconfig-gui-selected-option-set!
+	   self
+	   (add1 selected))
+	  (raylib:play-sound (sebundle-menuselect sounds)))]
+   [(enum-set-member? (vkey up) edge-pressed)
+	(when (> selected 0)
+	  (padconfig-gui-selected-option-set!
+	   self
+	   (sub1 selected))
+	  (raylib:play-sound (sebundle-menuselect sounds)))]
+   [(enum-set-member? (vkey left) edge-pressed)
+	(cond
+	 [(= selected 1)
+	  (let ([p (assq 'gamepad-id config)])
+		(when (> (cdr p) 0)
+		  (set-cdr! p (sub1 (cdr p)))
+		  (save-config config)))]
+	 [(or (= selected 2) (= selected 3))
+	  (let* ([p (assq (if (= selected 2) 'x-deadzone 'y-deadzone) config)])
+		(when (fl> (cdr p) 0.0)
+		  (set-cdr! p (flmax 0.0 (fl- (cdr p) 0.05)))
+		  (save-config config)))])]
+   [(enum-set-member? (vkey right) edge-pressed)
+	(cond
+	 [(= selected 1)
+	  (let ([p (assq 'gamepad-id config)])
+		(when (< (cdr p) 3) ;; default hardcoded max gamepad limit of 4 in raylib
+		  (set-cdr! p (add1 (cdr p)))
+		  (save-config config)))]
+	 [(or (= selected 2) (= selected 3))
+	  (let ([p (assq (if (= selected 2) 'x-deadzone 'y-deadzone) config)])
+		(when (fl< (cdr p) 1.0)
+		  (set-cdr! p (flmin 1.0 (fl+ (cdr p) 0.05)))
+		  (save-config config)))])]
+   [(enum-set-member? (vkey shoot) edge-pressed)
+	(raylib:play-sound (sebundle-menuselect sounds))
+	((menu-item-on-select (vnth opts selected)) self)]
+   [(enum-set-member? (vkey bomb) edge-pressed)
+	(raylib:play-sound (sebundle-menuback sounds))
+	(if (= selected 0) ;; Back
+		((menu-item-on-select (vnth opts selected)) self)
+		(padconfig-gui-selected-option-set! self 0))]))
+(define (padconfig-render self textures fonts)
+  (define items (padconfig-gui-menu-options self))
+  (define selected (padconfig-gui-selected-option self))
+  (define start-y 100)
+  (define step-y 20)
+  (draw-title-bg textures #x808080ff)
+  (let*-values ([(title) "Fiddle Some Knobs"]
+				[(twidth _theight)
+				 (raylib:measure-text-ex
+				  (fontbundle-bubblegum40 fonts)
+				  title
+				  40.0 0.0)])
+	(raylib:draw-text-ex
+	 (fontbundle-bubblegum40 fonts) title
+	 (fl- 320.0 (fl/ twidth 2.0)) 15.0 40.0 0.0 -1))
+  (do [(i 0 (add1 i))]
+	  [(>= i (vlen items))]
+	(raylib:draw-text-ex
+	 (fontbundle-bubblegum24 fonts)
+	 ((menu-item-label (vnth items i)))
+	 40.0 (fx2fl (+ start-y (* step-y i))) 24.0 0.0
+	 (if (= i selected) (selected-color) -1)))
+
+  (let ([rebind-idx (and (padconfig-gui-rebind-buffer self)
+						 (vector-index 0 (padconfig-gui-rebind-buffer self)))]
+		[mappings (assqdr 'padmappings config)])
+	(do [(i 0 (add1 i))]
+		[(>= i (vlen pad-supported-vkeys))]
+	  (raylib:draw-text-ex
+	   (fontbundle-bubblegum24 fonts)
+	   (format "~a: ~a"
+			   (string-titlecase (symbol->string (vnth pad-supported-vkeys i)))
+			   (if (padconfig-gui-rebind-buffer self)
+				   (vnth (padconfig-gui-rebind-buffer self) i)
+				   (assqdr (vnth pad-supported-vkeys i) mappings)))
+	   40.0 (fx2fl (+ 220 (* step-y i))) 24.0 0.0
+	   (if (and rebind-idx
+				(= i rebind-idx)
+				(fx< (fxmod true-frames 14) 7))
+		   (selected-color)
+		   -1)))))
+(define (mk-padconfig-gui)
+  (make-padconfig-gui
+   padconfig-handle-input values padconfig-render
+   (vector
+	(make-menu-item
+	 (thunk "Back")
+	 (λ (_gui) (set! gui-stack (cdr gui-stack))))
+	(make-menu-item
+	 (thunk (format "Selected Gamepad: < ~d (~a) >"
+					(assqdr 'gamepad-id config)
+					(let ([n (raylib:get-gamepad-name (assqdr 'gamepad-id config))])
+					  (if (zero? (string-length n)) "Unknown Gamepad" n))))
+	 (λ (_gui) (void)))
+	(make-menu-item
+	 (thunk
+	  (string-append "X deadzone: < "
+					 (format "~,2f" (assqdr 'x-deadzone config))
+					 " >"))
+	 (λ (_gui) (void)))
+	(make-menu-item
+	 (thunk
+	  (string-append "Y deadzone: < "
+					 (format "~,2f" (assqdr 'y-deadzone config))
+					 " >"))
+	 (λ (_gui) (void)))
+	(make-menu-item
+	 (thunk "Remap all")
+	 (λ (gui) (padconfig-gui-rebind-buffer-set!
+			   gui (make-vector (vlen pad-supported-vkeys) 0)))))
    0 #f))
 
 (define +menu-animate-dur+ 10)
@@ -3369,12 +3519,18 @@
 ;; every time we read input
 (define keybindings '())
 (define (refresh-keybindings)
-  (let ([ctor (enum-set-constructor (vkeys))])
-	(set! keybindings
-		  (map (λ (pair)
-				 (cons (ctor (list (car pair)))
-					   (cdr pair)))
-			   (assqdr 'keybindings config)))))
+  (set! keybindings
+		(map (λ (pair)
+			   (cons (vkeys-proc (list (car pair)))
+					 (cdr pair)))
+			 (assqdr 'keybindings config))))
+(define padmappings '())
+(define (refresh-padmappings)
+  (set! padmappings
+		(map (λ (pair)
+			   (cons (vkeys-proc (list (car pair)))
+					 (cdr pair)))
+			 (assqdr 'padmappings config))))
 
 (define-record-type inputset
   (fields
@@ -3384,6 +3540,8 @@
    ;; we need to drain it every frame,
    ;; or else raylib will stop populating the internal queue once it fills.
    edge-pressed-raw
+   ;; same as above but for gamepad
+   edge-pressed-gamepad-raw
    ;; these are enumsets of vkey
    edge-pressed
    edge-released
@@ -3395,31 +3553,33 @@
 ;; Debug-facing keys can still be checked outside.
 (define last-stick-vkeys empty-vkeys)
 (define (gather-pad-input)
-  ;; TODO rebinding
-  (define pad 1)
-  (define mapping 
-	`((,(vkeys up) . 1) (,(vkeys right) . 2)
-	 (,(vkeys down) . 3) (,(vkeys left) . 4)
-	 (,(vkeys focus) . 11) (,(vkeys shoot) . 8)
-	 (,(vkeys bomb) . 7) (,(vkeys pause) . 15)))
-  (define (clamp-deadzone mvmt)
-	(if (fl< (flabs mvmt) 0.3) 0.0 mvmt))
-  (define (sticks-to-vkeys x y)
+  (define pad (assqdr 'gamepad-id config))
+  (define stick-x
+	(let ([v (raylib:get-gamepad-axis-movement pad 0)])
+	  (if (fl< (flabs v) (assqdr 'x-deadzone config)) 0.0 v)))
+  (define stick-y
+	(let ([v (raylib:get-gamepad-axis-movement pad 1)])
+	  (if (fl< (flabs v) (assqdr 'y-deadzone config)) 0.0 v)))
+  (define stick-vkeys
 	(enum-set-union
 	 (exclusive-cond
-	   [(flpositive? x) (vkeys right)]
-	   [(flnegative? x) (vkeys left)]
+	   [(flpositive? stick-x) (vkeys right)]
+	   [(flnegative? stick-x) (vkeys left)]
 	   [else empty-vkeys])
 	 (exclusive-cond
-	   [(flpositive? y) (vkeys down)]
-	   [(flnegative? y) (vkeys up)]
+	   [(flpositive? stick-y) (vkeys down)]
+	   [(flnegative? stick-y) (vkeys up)]
 	   [else empty-vkeys])))
-  (define stick-x (clamp-deadzone (raylib:get-gamepad-axis-movement pad 0)))
-  (define stick-y (clamp-deadzone (raylib:get-gamepad-axis-movement pad 1)))
-  (define stick-vkeys (sticks-to-vkeys stick-x stick-y))
   (define stick-edge-press (enum-set-difference stick-vkeys last-stick-vkeys))
   (define stick-edge-release (enum-set-difference last-stick-vkeys stick-vkeys))
-  (define edge-pressed-raw '()) ;; TODO: probably don't need this for controller?
+  ;; so GetGamepadButtonPressed is a single variable that is updated once a frame
+  ;; it isn't really a queue like GetKeyPressed suitable for use in the rebinding
+  ;; screen. Instead, we'll just hackily iterate all the possible buttons and see
+  ;; which were pressed this frame...
+  (define edge-pressed-gamepad-raw
+	(filter
+	 (λ (k) (raylib:is-gamepad-button-pressed pad k))
+	 (cdr (iota 32)))) ;; MAX_GAMEPAD_BUTTONS in raylib
   (define level-pressed
 	(enum-set-union
 	 stick-vkeys
@@ -3428,7 +3588,7 @@
 		(if (raylib:is-gamepad-button-down pad (cdr pair))
 			(enum-set-union acc (car pair))
 			acc))
-	  empty-vkeys mapping)))
+	  empty-vkeys padmappings)))
   (define edge-pressed
 	(enum-set-union
 	 stick-edge-press
@@ -3437,7 +3597,7 @@
 		(if (raylib:is-gamepad-button-pressed pad (cdr pair))
 			(enum-set-union acc (car pair))
 			acc))
-	  empty-vkeys mapping)))
+	  empty-vkeys padmappings)))
   (define edge-released
 	(enum-set-union
 	 stick-edge-release
@@ -3446,9 +3606,11 @@
 		(if (raylib:is-gamepad-button-released pad (cdr pair))
 			(enum-set-union acc (car pair))
 			acc))
-	  empty-vkeys mapping)))
+	  empty-vkeys padmappings)))
   (set! last-stick-vkeys stick-vkeys)
-  (make-inputset edge-pressed-raw edge-pressed edge-released level-pressed))
+  (make-inputset
+   '() edge-pressed-gamepad-raw
+   edge-pressed edge-released level-pressed))
 
 (define (gather-keyboard-input)
   (define edge-pressed-raw
@@ -3463,31 +3625,29 @@
 	   (if (raylib:is-key-down (cdr pair))
 		   (enum-set-union acc (car pair))
 		   acc))
-	 (vkeys)
-	 keybindings))
+	 empty-vkeys keybindings))
   (define edge-pressed
 	(fold-left
 	 (λ (acc pair)
 	   (if (raylib:is-key-pressed (cdr pair))
 		   (enum-set-union acc (car pair))
 		   acc))
-	 (vkeys)
-	 keybindings))
+	 empty-vkeys keybindings))
   (define edge-released
 	(fold-left
 	 (λ (acc pair)
 	   (if (raylib:is-key-released (cdr pair))
 		   (enum-set-union acc (car pair))
 		   acc))
-	 (vkeys)
-	 keybindings))
-  (make-inputset edge-pressed-raw edge-pressed edge-released level-pressed))
+	 empty-vkeys keybindings))
+  (make-inputset edge-pressed-raw '() edge-pressed edge-released level-pressed))
 (define (gather-input)
   (define pad (gather-pad-input))
   (define kb (gather-keyboard-input))
   (if (raylib:is-window-focused)
 	  (make-inputset
 	   (inputset-edge-pressed-raw kb)
+	   (inputset-edge-pressed-gamepad-raw pad)
 	   (enum-set-union (inputset-edge-pressed pad) (inputset-edge-pressed kb))
 	   (enum-set-union (inputset-edge-released pad) (inputset-edge-released kb))
 	   (enum-set-union (inputset-level-pressed pad) (inputset-level-pressed kb)))
@@ -3687,7 +3847,7 @@
 	(set! spline-editor-positions (vector-pop spline-editor-positions))))
 
 ;; NEVER for gameplay!
-(define level-pressed-input-for-display (vkeys))
+(define level-pressed-input-for-display empty-vkeys)
 
 (define (handle-input)
   (define inputs (gather-input))
@@ -3737,7 +3897,7 @@
 					 (color . #xff0000ff))))
 				(set! level-pressed-input-for-display level-pressed)
 				(handle-game-input
-				 (make-inputset '()
+				 (make-inputset '() '()
 								(vkeys-proc (vnth r 1))
 								(vkeys-proc (vnth r 2))
 							    level-pressed))
@@ -4601,6 +4761,7 @@
   (raylib:set-exit-key 0)
   (set! config (read-config))
   (refresh-keybindings)
+  (refresh-padmappings)
   (raylib:init-audio-device)
   (load-music)
   (load-sfx)

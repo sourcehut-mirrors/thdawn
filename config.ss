@@ -10,7 +10,6 @@
   (define default-config
 	`((music-vol . 100)
 	  (sfx-vol . 85)
-	  ;; meh, too lazy to get the typed wrappers, punt the checks to runtime
 	  (keybindings . ((up . ,key-up)
 					  (down . ,key-down)
 					  (left . ,key-left)
@@ -22,7 +21,14 @@
 					  (screenshot . ,key-p)
 					  (quick-restart . ,key-r)
 					  (quick-quit . ,key-q)
-					  (skip-dialogue . ,key-left-control)))))
+					  (skip-dialogue . ,key-left-control)))
+	  (gamepad-id . 0)
+	  (x-deadzone . 0.2)
+	  (y-deadzone . 0.2)
+	  (padmappings . ((up . 1) (right . 2)
+					  (down . 3) (left . 4)
+					  (focus . 11) (shoot . 7)
+					  (bomb . 6) (pause . 15)))))
   (define config-path "config.dat")
 
   (define (read-config)
