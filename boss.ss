@@ -560,9 +560,9 @@
 	(fx< (bossinfo-remaining-timer bossinfo) 600))
   (set! current-chapter 19)
   (declare-spell hazuki 4)
-  (wait 60)
-  (raylib:play-sound (sebundle-shortcharge sounds))
   (ease-to ease-in-out-quad (ex hazuki) (fl+ (ey hazuki) 50.0) 60 hazuki)
+  (raylib:play-sound (sebundle-shortcharge sounds))
+  (wait 60)
   (raylib:play-sound (sebundle-release sounds))
   (spawn-subtask "main"
 	(λ (task)
@@ -599,6 +599,7 @@
 	task keep-running)
   (wait-while keep-running)
   (common-spell-postlude bossinfo hazuki)
+  (ease-to ease-in-out-quad (ex hazuki) (fl- (ey hazuki) 50.0) 45 hazuki)
   (aiko-non1 task hazuki))
 
 (define (aiko-non1 task hazuki)
@@ -1523,6 +1524,7 @@
   (vector-for-each-truthy
    (λ (e) (when (eq? 'steak (miscent-type e)) (delete-misc-ent e)))
    live-misc-ents)
+  (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 45 doremi)
   (hazuki-non2 task doremi))
 
 (define (hazuki-non2-wisp-control ring1 ring2 task enm)
@@ -1897,8 +1899,8 @@
   (set! current-chapter 27)
   (declare-spell hazuki 8)
   (enm-superarmor-set! hazuki (bossinfo-remaining-timer bossinfo))
-  (wait 45)
   (ease-to ease-out-quad 0.0 179.0 45 hazuki)
+  (wait 45)
   (spawn-subtask "main"
 	(λ (task)
 	  (interval-loop 120
@@ -1909,6 +1911,7 @@
    bossinfo hazuki
    ;; Extra bonus if all waves were cleared without a wisp being killed by hazuki
    (thunk (and (unbox all-waves-clean) (* 100 item-value))))
+  (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 45 hazuki)
   (aiko-non2 task hazuki))
 
 (define (aiko-non2-laser-ctrl is-right aiko task blt)
