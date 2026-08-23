@@ -231,7 +231,7 @@
 	  (define start-time frames)
 	  (define (rage)
 		(or (fx< (bossinfo-remaining-timer bossinfo) 600)
-			(fx< (enm-health doremi) 3000)))
+			(fx< (enm-health doremi) 4000)))
 	  (spawn-subtask "ring"
 		(λ (task)
 		  (wait 400)
@@ -290,11 +290,9 @@
 						  (linear-step-forever facing speed task blt))))
 		(wait (cond
 			   [(rage) 3]
-			   [(>= i 40) 5]
-			   [else (vnth '#(25 25 25 25 25 25 25 25 25 25
-								 15 15 15 15 15 15 15 15 15 15
-								 10 10 10 10 10 10 10 10 10 10
-								 8 8 8 8 8 8 8 8 8 8) i)]))
+			   [(>= i 25) 5]
+			   [else (vnth '#(25 25 25 25 25 15 15 15 15 15 
+								 10 10 10 10 10 8 8 8 8 8 8 8 8 8 8) i)]))
 		(loop (add1 i) (fl+ ang 14.0))))
 	task keep-running)
   (wait-while keep-running)
