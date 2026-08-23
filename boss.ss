@@ -2794,7 +2794,7 @@
 	(or (fx< (bossinfo-remaining-timer bossinfo) (* 85 60))
 		(fx< (enm-health doremi) 25000)))
   (define (p3)
-	(or (fx< (bossinfo-remaining-timer bossinfo) (* 50 60))
+	(or (fx< (bossinfo-remaining-timer bossinfo) (* 70 60))
 		(fx< (enm-health doremi) 18000)))
   (define (p4)
 	(or (fx< (bossinfo-remaining-timer bossinfo) (* 20 60))
