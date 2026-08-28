@@ -2948,7 +2948,8 @@
   (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (let ([clear-bonus (+ (* 10000000 (floor life-stock))
-						(* 1000000 (floor bomb-stock)))])
+						(* 1000000 (floor bomb-stock))
+						10000000)])
 	(set! current-score (+ current-score clear-bonus))
 	(spawn-particle
 	 (particletype clear-bonus)
