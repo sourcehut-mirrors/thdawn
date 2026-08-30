@@ -389,7 +389,7 @@ Score-wise, each steak is equivalent to one point item, but more importantly, if
 capture the spell, you receive an extra bonus of PIV * 1.5^(steaks eaten). So there's a
 pretty big reward in store if you reach this spell with high PIV. But if you fail the
 spell, though, that all goes down the drain. Also, in this spell you must collect at least
-one steak to get the spell bonus. If you fail to collect any steak, you fail the spell.
+three steaks to get the spell bonus. If you fail to do so, you fail the spell.
 
 This took longer than you'd think to get the feel and balance down, and I'm not entirely
 sure it's the best it could be, so apologies in advance orz.

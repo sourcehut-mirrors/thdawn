@@ -1522,7 +1522,7 @@
    (thunk
 	(let ([count (unbox doremi-sp2-steaks-collected)])
 	  (and (positive? count)
-		   (* item-value (eround (expt 1.6 count)))))))
+		   (* item-value (eround (expt 1.5 count)))))))
   (vector-for-each-truthy
    (λ (e) (when (eq? 'steak (miscent-type e)) (delete-misc-ent e)))
    live-misc-ents)

@@ -2281,7 +2281,7 @@
   (cond
    [(or (bossinfo-active-attack-failed bossinfo)
 		(and (= 7 (bossinfo-active-spell-id bossinfo))
-			 (zero? (unbox doremi-sp2-steaks-collected))))
+			 (< (unbox doremi-sp2-steaks-collected) 3)))
 	0]
    [(or (= -1 (bossinfo-max-health bossinfo))
 		(fx<= (fx- total-time remaining-time) grace-period))
@@ -3303,9 +3303,9 @@
 	  ;; Position dynamically calculated at render to avoid
 	  ;; the enemy tasks needing to access the fonts.
 	  0.0 75.0 180
-	  (if failed
-		  "Bonus Failed..."
-		  (format "GET Spell Bonus!! ~:d" bonus)))
+	  (if (and bonus (positive? bonus))
+		  (format "GET Spell Bonus!! ~:d" bonus)
+		  "Bonus Failed..."))
 	 (spawn-particle
 	  (particletype enmdeath)
 	  (+ (ex enm) (centered-roll visual-rng 20.0))
@@ -4264,7 +4264,7 @@
 		 (format "x ~2,'0d" steaks)
 		 (fl+ x 16.0) (fl- y 12.0) 24.0 0.0
 		 (cond
-		  [(and (fxzero? steaks) (< (fxmod frames 10) 5)) #xdc143cff]
+		  [(and (fx< steaks 3) (fx< (fxmod frames 10) 5)) #xdc143cff]
 		  [else -1])))))
   
   (when (is-replay)
