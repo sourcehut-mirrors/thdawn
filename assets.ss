@@ -13,7 +13,7 @@
    timeout timeoutwarn item damage0 damage1
    dropbomb droplife
    laser damageresist laugh opshow ophide brasscharge drum
-   spiritget focusfix release)
+   spiritget focusfix release nice)
   (sealed #t))
 (define sounds #f)
 (define (each-sound proc)
@@ -50,7 +50,7 @@
 				"se_bonus2.wav" "se_bonus.wav"
 				"se_old_lazer01.wav" "se_nodamage.wav" "se_fault.wav"
 				"se_opshow.wav" "se_ophide.wav" "se_boon01.wav" "se_don00.wav"
-				"se_lgodsget.wav" "se_focusfix.wav" "se_enep02.wav"))))
+				"se_lgodsget.wav" "se_focusfix.wav" "se_enep02.wav" "se_nice.wav"))))
   (update-sound-volumes))
 (define (unload-sfx)
   (each-sound raylib:unload-sound)

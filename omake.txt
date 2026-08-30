@@ -235,10 +235,9 @@ have to make large enough misdirects for the gaps to be safe. It took some
 number-tweaking, but I'm surprised how fast it came together. If only I didn't waste so
 much time on the previous design...
 
-The timing on the misdirects can be tricky. If you're struggling, try misdirecting to the
-sides as soon as the first group of sound effects ends (the normal "bullet shoot" sound,
-not the "chime" sound). So shoot-shoot-shoot-shoot -> (big misdirect to the side here) ->
-chime-chime-chime-chime -> (stream back to the middle) -> repeat on the other side.
+The timing on the misdirects can be tricky, so I added in a "nice shot" sound effect
+between the waves. When you hear the pleasant chime sound, rush towards the edge of the
+screen and stream back to the center, then repeat on the other side for the next wave.
 
 And yes, the spell name is a reference to DJ Okawari's famous song. I'm sure every ACG fan
 has heard this everywhere in the early- to mid-2010s. Hazuki's a dancer, there's flowers
@@ -257,10 +256,7 @@ Aiko's second nonspell, but I moved it up here to make room for another necessar
 requirement in that nonspell (see below for details).
 
 The pattern is a pretty basic loop of a spread of yin-yang orbs that bounce off the walls
-once, then a ring of notes to dodge through. The difficulty of this ended up a bit too
-high though.
-
-TODO: Revise when rebalancing.
+once, then a ring of notes to dodge through, so just get your dodging chops ready.
 
 
 ○ Love Sign "Star Spiral" (Aiko)
