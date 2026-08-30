@@ -2773,11 +2773,11 @@
 		   (wait 130)))
 	   '#(-60.0 60.0 -60.0 60.0 0.0)
 	   '#(312.0 312.0 184.0 184.0 248.0))
+	  (raylib:play-sound (sebundle-oldvwoopslow sounds))
 	  (do [(i 0 (add1 i))]
 		  [(= i 600)]
 		(set-box! flower-distmod (fl* (fx2fl i) -0.08))
-		(yield))
-	  (loop-forever))
+		(yield)))
 	task keep-running)
   (wait-while keep-running)
   (common-spell-postlude bossinfo doremi)
