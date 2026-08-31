@@ -111,11 +111,10 @@ love to hear from you!
 
 * Game resolution is too low, leading to blurry text and aliasing artifacts
   This started as a random side project, and I hardcoded 640x480 literally everywhere in
-  the rendering code orz.
-  In the future, an update may increase the resolution of the game.
+  the rendering code orz. I may increase the resolution of the game in a future update,
+  but no promises.
 * During the pre-battle dialogue, the Skip Dialogue button only works once all characters
   have entered the screen.
-* Only the first controller detected will be used for gameplay.
 
 +-----------------+
 | 7. Licenses     |
