@@ -289,7 +289,8 @@
   (blttype-hit-radius bt))
 
 (define (draw-lasers textures sorted-bullets)
-  (define (draw-one-laser bullet)
+  (define (draw-one-laser idx)
+	(define bullet (vnth live-bullets idx))
 	(when bullet
 	  (let* ([render-x (+ (bx bullet) +playfield-render-offset-x+)]
 			 [render-y (+ (by bullet) +playfield-render-offset-y+)]
@@ -319,7 +320,8 @@
 
 
 (define (draw-bullets textures sorted-bullets)
-  (define (draw-one-bullet bullet)
+  (define (draw-one-bullet idx)
+	(define bullet (vnth live-bullets idx))
 	(when bullet
 	  (let* ([render-x (fl+ (bx bullet) (fx2fl +playfield-render-offset-x+))]
 			 [render-y (fl+ (by bullet) (fx2fl +playfield-render-offset-y+))]

@@ -665,7 +665,9 @@
    (mutable replay-idx)
    (mutable next-bullet-id)
    live-bullets
-   sorted-bullets ;; for render, completely overwritten from live-bullets each frame
+   ;; for render. Does not hold the bullet objects, merely indexes into live-bullets
+   ;; this avoids having to copy all the bullets into this array before sorting
+   sorted-bullets 
    live-enm
    live-misc-ents
    ;; Number of frames the current stage has been running.
@@ -734,7 +736,11 @@
    (if (vector? replay) 0 -1)
    1
    (make-vector 2048 #f)
-   (make-vector 2048 #f)
+   (let ([ret (make-vector 2048)])
+	 (do [(i 0 (add1 i))]
+		 [(= i (vlen ret))]
+	   (vector-set-fixnum! ret i i))
+	 ret)
    (make-vector 256 #f)
    (make-vector 2048 #f)
    0 180 +respawning-max+
@@ -4524,9 +4530,10 @@
 					  -1))
 
   (let ([sorted-bullets (stage-ctx-sorted-bullets current-stage-ctx)])
-	(vector-copy! live-bullets 0 sorted-bullets 0 (vlen live-bullets))
     (vector-sort!
-	 (namedλ bullet-comparator (a b)
+	 (namedλ bullet-comparator (ai bi)
+	   (define a (vnth live-bullets ai))
+	   (define b (vnth live-bullets bi))
 	   (cond
 		[(not a) #t]
 		[(not b) #f]
