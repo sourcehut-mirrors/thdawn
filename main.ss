@@ -1900,7 +1900,6 @@
 	[(fb row-width)
 	 (fbcount fb row-width 1)]
 	[(fb row-width rows)
-	 (assert (and (positive? rows) (positive? row-width)))
 	 (fan-builder-rows-set! fb rows)
 	 (fan-builder-row-width-set! fb row-width)
 	 fb]))
