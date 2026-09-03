@@ -873,8 +873,10 @@
 	(λ (task)
 	  (dotimes 8
 		(raylib:play-sound (sebundle-shootsoft sounds))
-		(spawn-bullet 'ellipse-blue x y 2
-					  (curry linear-step-forever (facing-player x y) 8.5))
+		(let ([facing (facing-player x y)])
+		  (-> (spawn-bullet 'ellipse-blue x y 2
+							(curry linear-step-forever facing 8.5))
+			  (bullet-facing-set! facing)))
 		(wait 8)))
 	(constantly #t)))
 
