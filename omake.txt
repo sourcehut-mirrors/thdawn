@@ -41,6 +41,7 @@ Ability: Capable of
 Species: Human (Witch Apprentice)
 Ability: Capable of
 
+
 +----------------------------------------+
 | 3. Stage Pattern Commentary and Hints  |
 +----------------------------------------+
@@ -593,3 +594,34 @@ fine given it's the final spell :P.
 
 If you're struggling, make sure to use your bomb and death invincibility frames to push up
 on the screen to clear out bullets, then slowly move back down as it wears off.
+
+
++-------------------------+
+| 5. "Achievement" Ideas  |
++-------------------------+
+
+
+I didn't have time to code in a real achievements system, so here are some things to try,
+ranked from the mundane to the weird NETA challenges:
+
+* Clear the game
+* Clear the game No-Miss
+* Clear the game No-Bomb
+* Clear the game No-Miss No-Bomb
+* Individually capture all 12 spell cards in the game
+* Obtain the extra bonus on all three eligible spell cards
+* Clear the game No-Miss No-Bomb Full-Spell
+* Get a score of 500,000,000
+* Get a score of 1,000,000,000
+  * If you score above 1 billion, you should send your score and replay/video to me at
+  	me@williewillus.net. I'll put you on the leaderboard page (TODO put URL)
+* Individually time out every spell in the game
+* Clear the game without shooting and bombing (it's incredibly tough, but should be
+  possible with deaths.)
+* Capture Barrage Sign "Ojamajo Doremi SHOOT!" while staying in the center third of the
+  screen (it's possible!)
+* Time out Floral Sign "Flower Dance" by circling around the boss
+* Time out Witch Sign "Fairy Kaleidoscope" while staying outside of the boss/rice bullet
+  ring the whole time
+* Capture Athletic Sign "Aiko's Pinball Penalty Shootout" without shooting (only dealing
+  damage with the ball)

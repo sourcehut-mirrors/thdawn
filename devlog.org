@@ -1,3 +1,22 @@
+* [2026-09-02 Wed]
+
+Reached this milestone a while ago but just now updating the devlog, but all the patterns
+are finally done! It actually feels a bit weird but now there's going to be a sizeable
+break in (major) code changes, because now the portraits finally the bottleneck, so that
+means spending time to finish off _Anime Art Class_ and then drawing all of the 5 required
+portraits for the game.
+
+For the pixel art, I'm probably going to outsource and look for someone on BHE. I don't
+think I have the requisite expertise, nor can I get it in time for a year-end release.
+
+I guess there are some odds and ends that still need doing, like hiding all the cheat mode
+stuff properly for release, coding in the Staff Roll screen, writing the profiles in the
+omake, and other QoL or extras that comes up (like achievements).
+
+And of course, there's still room for balance tweaks. But either way, I'm very happy as a
+whole with how the pattern design turned out. I don't foresee any major changes to any
+pattern.
+
 * [2026-07-10 Fri]
 Did the flower icons for the nameplates, which was surprisingly little effort. Kind of
 annoyed I procrastinated so hard on it til now lol.
