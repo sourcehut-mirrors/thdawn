@@ -25,6 +25,7 @@
 	  (let ([ver (getenv "BUILD_VERSION")])
 		(datum->syntax #'id (or ver "v0.0")))]))
   game-version-impl)
+(define is-dev (string=? "v0.0" (game-version)))
 (define-enumeration vkey
   (up down left right shoot bomb focus pause
 	  screenshot quick-restart quick-quit skip-dialogue)
@@ -101,6 +102,8 @@
 	  res))
 
 (define config #f)
+(define (cheats-on?)
+  (assqdr 'cheats config))
 
 (define-syntax interval-loop
   (syntax-rules ()
@@ -1776,8 +1779,11 @@
 	 (let ([label (string-append "Save and Quit" quick-quit-key)])
 	   (thunk label))
 	 (λ (gui)
-	   (pause-gui-close-fn-set! gui (thunk (quit gui #t)))
-	   (pause-gui-closing-set! gui 1))))
+	   (if (cheats-on?)
+		   (raylib:play-sound (sebundle-invalid sounds))
+		   (begin
+			 (pause-gui-close-fn-set! gui (thunk (quit gui #t)))
+			 (pause-gui-closing-set! gui 1))))))
   (define quit-nosave-opt
 	(make-menu-item
 	 (let ([label (case type
@@ -3807,9 +3813,9 @@
 
   (when (enum-set-member? (vkey shoot) edge-released)
 	(set! start-shot-frames -1))
-  (when (raylib:is-key-pressed key-f1)
+  (when (and (cheats-on?) (raylib:is-key-pressed key-f1))
 	(set! force-invincible (not force-invincible)))
-  (when (raylib:is-key-pressed key-f3)
+  (when (and (cheats-on?) (raylib:is-key-pressed key-f3))
 	(set! show-hitboxes (not show-hitboxes)))
   (when (and
 		 (enum-set-member? (vkey bomb) edge-pressed)
@@ -3835,26 +3841,28 @@
 	(set! initial-bomb-sweep-y-down bomb-sweep-y-down)
 	(set! bomb-sweep-y-up (- player-y 50.0))
 	(set! initial-bomb-sweep-y-up bomb-sweep-y-up))
-  (when (raylib:is-key-pressed key-period)
-	(set! chapter-select (min (add1 chapter-select) 31)))
-  (when (raylib:is-key-pressed key-comma)
-	(set! chapter-select (max (sub1 chapter-select) 0)))
-  (when (and (not (paused?)) (raylib:is-key-pressed key-r))
-	(reset-to chapter-select))
-  (when (raylib:is-key-pressed key-a)
-	(when (> spline-editor-selected-position 0)
-	  (set! spline-editor-selected-position (sub1 spline-editor-selected-position))))
-  (when (raylib:is-key-pressed key-d)
-	(set! spline-editor-selected-position (add1 spline-editor-selected-position)))
-  (when (raylib:is-key-pressed key-s)
-	(if (<= 0 spline-editor-selected-position (sub1 (vlen spline-editor-positions)))
-		(vector-set! spline-editor-positions spline-editor-selected-position
-					 (vec2 player-x player-y))
-		(set! spline-editor-positions (vector-add spline-editor-positions
-												  (vec2 player-x player-y)))))
-  (when (and (raylib:is-key-pressed key-f)
-			 (not (zero? (vlen spline-editor-positions))))
-	(set! spline-editor-positions (vector-pop spline-editor-positions))))
+  (when (cheats-on?)
+	(when (raylib:is-key-pressed key-period)
+	  (set! chapter-select (min (add1 chapter-select) 31)))
+	(when (raylib:is-key-pressed key-comma)
+	  (set! chapter-select (max (sub1 chapter-select) 0)))
+	(when (and (not (paused?)) (raylib:is-key-pressed key-r))
+	  (reset-to chapter-select))
+	(when (raylib:is-key-pressed key-a)
+	  (when (> spline-editor-selected-position 0)
+		(set! spline-editor-selected-position
+			  (sub1 spline-editor-selected-position))))
+	(when (raylib:is-key-pressed key-d)
+	  (set! spline-editor-selected-position (add1 spline-editor-selected-position)))
+	(when (raylib:is-key-pressed key-s)
+	  (if (<= 0 spline-editor-selected-position (sub1 (vlen spline-editor-positions)))
+		  (vector-set! spline-editor-positions spline-editor-selected-position
+					   (vec2 player-x player-y))
+		  (set! spline-editor-positions (vector-add spline-editor-positions
+													(vec2 player-x player-y)))))
+	(when (and (raylib:is-key-pressed key-f)
+			   (not (zero? (vlen spline-editor-positions))))
+	  (set! spline-editor-positions (vector-pop spline-editor-positions)))))
 
 ;; NEVER for gameplay!
 (define level-pressed-input-for-display empty-vkeys)
@@ -4239,6 +4247,8 @@
 							   0 (score-entry-score (car hiscores)))])
 			 (if (is-replay) hiscore (max hiscore current-score))))
    440.0 15.0 24.0 0.0 -1)
+  (when (and (cheats-on?) (fx< (fxmod frames 30) 15))
+	(raylib:draw-text "CHEATS ON" 440 38 10 #xff0000ff))
   (raylib:draw-text-ex
    (fontbundle-bubblegum24 fonts)
    (format "Score: ~:d" current-score)
@@ -4355,7 +4365,6 @@
 	  (draw-sprite textures 'bomb-two-thirds
 				   (+ start-x (* 16.0 whole-bombs)) y -1)]))
 
-  ;; todo: for prod release, hide this behind f3
   (when show-hitboxes
 	(raylib:draw-text (format "SPLED: ~d of [0, ~d]" spline-editor-selected-position
 							  (sub1 (vlen spline-editor-positions)))

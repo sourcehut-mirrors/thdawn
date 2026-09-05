@@ -28,7 +28,8 @@
 	  (padmappings . ((up . 1) (right . 2)
 					  (down . 3) (left . 4)
 					  (focus . 11) (shoot . 7)
-					  (bomb . 6) (pause . 15)))))
+					  (bomb . 6) (pause . 15)))
+	  (cheats . #f)))
   (define config-path "config.dat")
 
   (define (read-config)
