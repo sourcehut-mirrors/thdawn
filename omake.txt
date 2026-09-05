@@ -46,7 +46,6 @@ Ability: Capable of
 | 3. Stage Pattern Commentary and Hints  |
 +----------------------------------------+
 
-
 This section and the next are inspired by similar sections in the omakes of Touhou 6 ~ the
 Embodiment of Scarlet Devil and fan game Touhou Elegant Impermanence of Sakura. It just
 contains some of my musings and comments about the development of the patterns and some
@@ -68,7 +67,6 @@ extra resources. If necessary, try circling around the top.
 +---------------------------------------+
 | 4. Boss Pattern Commentary and Hints  |
 +---------------------------------------+
-
 
 ○ Beginner Sign "My First Spellcard!" (Midboss Spell 1)
 
@@ -551,13 +549,13 @@ very good at going from the shape I wanted to an equation. Thanks Alwinfy from t
 it to add a few more petals and had it spin and move around, similar to Perfect Cherry
 Blossom's survival spell.
 
-I think this spell will seem really hard and chaotic at first. However, if you look
-closely, nearly everything is static. The only elements that are not static are the hearts
-that are shot from the top of the screen, which are aimed at or around you. It's
-theoretically possible to devise a series of inputs that will always make it through this
-attack. I also added plenty of audio cues to indicate when the heart pattern will change,
-or when the flower is starting to move. Keep trying if you can't get through, and don't be
-afraid of checking out other peoples' solutions if necessary!
+I think this spell will seem hard and chaotic to inexperienced players at first. However,
+if you look closely, nearly everything is static. The only elements that are not static
+are the hearts that are shot from the top of the screen, which are aimed at you or around
+you. It's theoretically possible to devise a series of inputs that will always make it
+through this attack. I also added plenty of audio cues to indicate when the heart pattern
+will change, or when the flower is starting to move. Keep trying if you can't get through,
+and don't be afraid of checking out other peoples' solutions if necessary!
 
 Hints:
 
@@ -600,7 +598,6 @@ on the screen to clear out bullets, then slowly move back down as it wears off.
 | 5. "Achievement" Ideas  |
 +-------------------------+
 
-
 I didn't have time to code in a real achievements system, so here are some things to try,
 ranked from the mundane to the weird NETA challenges:
 
@@ -620,8 +617,25 @@ ranked from the mundane to the weird NETA challenges:
   possible with deaths.)
 * Capture Barrage Sign "Ojamajo Doremi SHOOT!" while staying in the center third of the
   screen (it's possible!)
-* Time out Floral Sign "Flower Dance" by circling around the boss
+* Time out Floral Sign "Flower Dance" by circling around the boss (I'm mostly sure? this
+  is possible but this is a bit chaotic so attempt at your own risk lol)
 * Time out Witch Sign "Fairy Kaleidoscope" while staying outside of the boss/rice bullet
-  ring the whole time
-* Capture Athletic Sign "Aiko's Pinball Penalty Shootout" without shooting (only dealing
-  damage with the ball)
+  ring the whole time (same)
+* Capture Athletic Sign "Aiko's Pinball Penalty Shootout" without shooting, only dealing
+  damage with the ball. This should be pretty easy.
+
+
++------------+
+| 6. Cheats  |
++------------+
+
+If you figure out how to enable cheats (ooooh......it's not too hard, just poke around the
+files a bit), here's the controls:
+
+* Comma and Period keys: select a chapter or attack to jump to
+* R key (when not paused): jump to the selected scene
+* F1 key: toggle invincibility
+* F3 key: show hitboxes, POC, and detailed debug information
+
+If the cheat option is on, replay saving is disabled (even if you didn't actually use any
+of the above controls), and a indicator shows up on the HUD to remind you it's on.
