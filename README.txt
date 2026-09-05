@@ -9,6 +9,36 @@
 | 1. Foreword     |
 +-----------------+
 
+Hi everyone, I'm williewillus. Thanks for downloading and playing this fangame.
+
+I've been a Touhou fan for 11 years and counting now, but in fact, I've known about Touhou
+for longer. My earliest memories of it were my oldest sister showing me the games in the
+early 2000's, around when the original trilogy were shining new. I was very young and
+didn't remember much of it; the part that stuck in my head the most was, strangely, how
+the logo in EoSD unfolded itself whenever you started a game.
+
+In the spring of 2015, I heard of Touhou through Twitch Plays Pokemon's runs of Touhoumon,
+and from there I (re-)discovered Bad Apple, and the rest is history.
+
+This fangame is a crossover with Ojamajo Doremi. I imagine not many of you know it. It's a
+magical girl anime from the late 90's/early 00's targeted at kids. Despite its target
+audience, it has one of the best stories for a magical girl anime. It touches on
+surprisingly mature themes in gentle and loving ways, and even side characters get
+incredible depth and development. I watched it from 2023 to 2025, and I think even adults
+will have a blast watching it.
+
+The spark for this fangame came from the first opening theme of Ojamajo Doremi, the song
+Ojamajo Carnival!! I used to walk to work every morning, and while I was watching the
+anime, this *absolute banger* of a theme would be stuck in my head. One day, I suddenly
+though "what if this was a danmaku stage theme?". The ideas slowly came together in my
+head: which phrases in the music would be a chapter transition, when the midboss would
+enter and cast their spell, how the stage would end. Watch my Touhoufest 2026 talk[1] for
+more information about how I think about stage-music syncing.
+
+This is already getting a bit long, so I'll save the yapping for the Afterword in the
+omake. Good luck with the clear, and see you on the other side!
+
+[1]: https://www.youtube.com/watch?v=iVgS-Hr3W0Y
 
 
 +-------------------------------+
@@ -64,12 +94,14 @@ Some other gameplay details:
 - Spell card bonuses start at Base Value (varies per spell) + 100*PIV
 - Spell card bonuses on non-survival spells decrease to half the initial value over the
   spell's timer. Timing out a non-survival spell does not count as a capture.
-- Some spell cards have additional secret bonuses, see omake.txt for details
+- Some spell cards have additional secret bonuses, see omake.txt for the spoilers.
 - Small PIV star items (mainly produced by cancelling bullets) are worth 50 PIV and 100
-  score
+  score.
 - Large PIV star items (mainly produced by a certain nonspell and dropped by certain
-  enemies) are worth 1000 PIV and 1000 score
-- After dying, bombing, and starting the game, the player has 3 seconds of invulnerability
+  enemies) are worth 1000 PIV and 1000 score.
+- After dying, bombing, and when starting the game, the player has 3 seconds of
+  invulnerability.
+
 
 +-----------------+
 | 5. Questions    |
@@ -77,13 +109,15 @@ Some other gameplay details:
 
 Questions, bug reports, and constructive feedback are always welcome.
 
+You can start a new discussion by emailing the public mailing list at
+"~williewillus/games-discuss@lists.sr.ht", no quotes. Make sure the tilde at the front is
+there.
+
 You can see and reply to messages others have sent here:
 https://lists.sr.ht/~williewillus/games-discuss
 
-You can contribute to the discussion by emailing the public mailing list at
-"~williewillus/games-discuss@lists.sr.ht", no quotes. Make sure the tilde at the front is
-there. You can also click the "New Post" button on the webpage above to pop open your
-email client with the address pre-filled.
+You can also click the "New Post" button (or "Reply to thread" on an existing discussion)
+on the webpage above to pop open your email client with the address pre-filled.
 
 As an alternative, you can comment on the Maidens of the Kaleidoscope (Shrinemaiden) forum
 thread here: <TODO>.
@@ -116,6 +150,7 @@ love to hear from you!
 * During the pre-battle dialogue, the Skip Dialogue button only works once all characters
   have entered the screen.
 
+
 +-----------------+
 | 7. Licenses     |
 +-----------------+
@@ -145,6 +180,7 @@ retains such inputs for training purposes.
 
 This project is Free Software. You can read and modify the source code, subject to the
 aforementioned licenses, by cloning it from https://git.sr.ht/~williewillus/thdawn
+
 
 +-----------------+
 | 8. Changelog    |

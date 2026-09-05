@@ -23,23 +23,27 @@
 Species: Human
 Ability: Capable of Floating in the Air
 
-On a certain night after too much caffeine (not alcohol, for once), Reimu decided to go
-out for a night flight.
+On a certain night after too much caffeine (not alcohol for once), Reimu decided to go out
+and fly around a bit. As she flew further and further, she noticed a strange light shining
+through the border. Worried it was a gap in the border, she approached and peered
+through. Within was a beautiful starry sky, much like Gensokyo's night sky.
+
+Reimu felt an irresistable urge dive in and explore the otherworld. Far from being cold
+and imposing, it emanated warmth, kindness, and excitement.
+
+"What if I get lost?"
+
+Reimu shrugged. She trusted in her ability, and more importantly, her luck. Taking a
+breath, she dove through the barrier, smiling with anticipation for the fun adventure
+ahead.
+
 
 * Doremi Harukaze
-
-Species: Human (Witch Apprentice)
-Ability: Capable of
-
 * Hazuki Fujiwara
-
-Species: Human (Witch Apprentice)
-Ability: Capable of
-
 * Aiko Senoo
 
 Species: Human (Witch Apprentice)
-Ability: Capable of
+Ability: Capable of Using Magic
 
 
 +----------------------------------------+
@@ -156,9 +160,9 @@ already higher-than-usual difficulty, so you're welcome :P.
 
 The spell name isn't really relevant to the pattern, I just wanted to honor the OG Ojamajo
 Doremi shmup fangame from 2002 called "Ojamajo Doremi SHOOT", which is probably the first
-shmups I ever played (even before Touhou). It's an arcade-like horizontally-scrolling
-shmup that you can still find online. It's pretty tough: I can't find any record of
-full-stage 1cc's of the highest difficulty online, only single-stage clears.
+shmup I ever played (even before Touhou). It's an arcade-like horizontally-scrolling shmup
+that you can still find online. It's pretty tough: I can't find any record of full-stage
+1cc's of the highest difficulty online, only single-stage clears.
 
 
 ○ Boss Non-spell 2 (Doremi)
@@ -302,8 +306,8 @@ implementing the first thing that came to mind for all three fairies and it ende
 fitting together super well.
 
 The attack patterns are very tangentially based on each girl's shot type from the
-earlier-mentioned Ojamajo Doremi SHOOT. In it, Hazuki has a homing shot, Doremi has a 5
-way shot, and Aiko has a direct, forward-focus shot. Each of the fairies' patterns vaguely
+aforementioned Ojamajo Doremi SHOOT. In it, Hazuki has a homing shot, Doremi has a 5 way
+shot, and Aiko has a direct, forward-focus shot. Each of the fairies' patterns vaguely
 reflects their owner's shot in that game.
 
 Hint: Mimi (rightmost) has the most threatening attack, so concentrate on attacking her
@@ -388,7 +392,7 @@ Score-wise, each steak is equivalent to one point item, but more importantly, if
 capture the spell, you receive an extra bonus of PIV * 1.5^(steaks eaten). So there's a
 pretty big reward in store if you reach this spell with high PIV. But if you fail the
 spell, though, that all goes down the drain. Also, in this spell you must collect at least
-three steaks to get the spell bonus. If you fail to do so, you fail the spell.
+three steaks to get the spell and extra bonuses. If you fail to do so, you fail the spell.
 
 This took longer than you'd think to get the feel and balance down, and I'm not entirely
 sure it's the best it could be, so apologies in advance orz.
