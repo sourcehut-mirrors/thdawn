@@ -915,7 +915,7 @@
 	   (replace-gui #f)))
 	(make-menu-item
 	 (thunk "Replay")
-	 (λ (_gui) (set! gui-stack (cons (mk-replist-gui #f) gui-stack))))
+	 (λ (_gui) (set! gui-stack (cons (mk-replist-gui #f "") gui-stack))))
 	(make-menu-item
 	 (thunk "Play Data")
 	 (λ (_gui) (set! gui-stack (cons (mk-playdata-gui) gui-stack))))
@@ -1005,7 +1005,8 @@
 	  30.0 0.0 (if (= selected i) (selected-color) -1)))
    (nameinput-gui-menu-options self)))
 ;; on-complete: function of the gui that runs when player submits the name
-(define (mk-nameinput-gui on-complete)
+(define (mk-nameinput-gui prefill-name on-complete)
+  (define name (make-string +name-max+ #\nul))
   (define (mk-option ch)
 	(define label (string ch))
 	(make-menu-item
@@ -1018,10 +1019,10 @@
 		 (when (= (add1 pos) +name-max+)
 		   (nameinput-gui-selected-option-set!
 			gui (sub1 (vlen (nameinput-gui-menu-options gui)))))))))
+  (string-copy! prefill-name 0 name 0 (string-length prefill-name))
   (make-nameinput-gui
    nameinput-handle-input values nameinput-render
-   (make-string +name-max+ #\nul)
-   0
+   name (string-length prefill-name)
    (vector-append
 	(list->vector (map (λ (i)
 						 (mk-option (integer->char (+ i (char->integer #\A)))))
@@ -1054,6 +1055,8 @@
    ;; if saving a new replay, the (score-entry . records) to save,
    ;; otherwise #f
    records-to-save
+   ;; if saving a new replay, prefill this name when selecting an empty slot
+   prefill-name
    (mutable selected-page)
    (mutable selected-row)
    ;; when the page is changed, we read in the data for the page of replays
@@ -1122,6 +1125,7 @@
 			   [records (cdr (replist-gui-records-to-save self))]
 			   [ni-gui
 				(mk-nameinput-gui
+				 (replist-gui-prefill-name self)
 				 (λ (ni-gui)
 				   (define real-entry
 					 (make-score-entry
@@ -1178,13 +1182,13 @@
    (fl- 320.0 (fl/ pgwidth 2.0)) 370.0 20.0 0.0 -1)
   (draw-scores fonts (replist-gui-cached-data self)
 			   (replist-gui-selected-row self)))
-(define (mk-replist-gui to-save)
+(define (mk-replist-gui to-save prefill-name)
   (define result
 	(make-replist-gui
 	 replist-handle-input
 	 values
 	 replist-render
-	 to-save
+	 to-save prefill-name
 	 0 0 '()))
   (replist-refresh result)
   result)
@@ -1608,6 +1612,7 @@
 
 (define (mk-scoresave-nameinput-gui score time records cleared)
   (mk-nameinput-gui
+   ""
    (λ (ni-gui)
 	 (define hiscore (assq 'hiscore play-data))
 	 (define name (nameinput-final-name ni-gui))
@@ -1620,7 +1625,7 @@
 	   (cons entry (cdr hiscore))))
 	 (save-play-data play-data)
 	 (raylib:play-sound (sebundle-extend sounds))
-	 (replace-gui (mk-replist-gui (cons entry records))))))
+	 (replace-gui (mk-replist-gui (cons entry records) name)))))
 
 (define (mk-pause-gui type)
   (define (unpause gui)
