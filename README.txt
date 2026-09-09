@@ -9,11 +9,11 @@
 | 1. Foreword     |
 +-----------------+
 
-Hi everyone, I'm williewillus. Thanks for downloading and playing this fangame.
+Hi everyone, I'm williewillus. Thank you for downloading and playing this fangame.
 
 I've been a Touhou fan for 11 years and counting now, but in fact, I've known about Touhou
 for longer. My earliest memories of it were my oldest sister showing me the games in the
-early 2000's, around when the original trilogy were shining new. I was very young and
+early 2000's, around when the original trilogy were shiny and new. I was very young and
 didn't remember much of it; the part that stuck in my head the most was, strangely, how
 the logo in EoSD unfolded itself whenever you started a game.
 
@@ -23,9 +23,9 @@ and from there I (re-)discovered Bad Apple, and the rest is history.
 This fangame is a crossover with Ojamajo Doremi. I imagine not many of you know it. It's a
 magical girl anime from the late 90's/early 00's targeted at kids. Despite its target
 audience, it has one of the best stories for a magical girl anime. It touches on
-surprisingly mature themes in gentle and loving ways, and even side characters get
-incredible depth and development. I watched it from 2023 to 2025, and I think even adults
-will have a blast watching it.
+surprisingly mature themes like anxiety, loss of loved ones, etc. in gentle and loving
+ways, and even side characters are fleshed out, deeply-developed characters. I watched it
+from 2023 to 2025, and I think even grown-ups will have a blast watching it.
 
 The spark for this fangame came from the first opening theme of Ojamajo Doremi, the song
 Ojamajo Carnival!! I used to walk to work every morning, and while I was watching the
@@ -36,7 +36,7 @@ enter and cast their spell, how the stage would end. Watch my Touhoufest 2026 ta
 more information about how I think about stage-music syncing.
 
 This is already getting a bit long, so I'll save the yapping for the Afterword in the
-omake. Good luck with the clear, and see you on the other side!
+omake.txt. Good luck with the clear, and see you on the other side!
 
 [1]: https://www.youtube.com/watch?v=iVgS-Hr3W0Y
 
@@ -49,8 +49,8 @@ Extract the game ZIP archive to any place of your choosing.
 
 Starting the game depends on your platform:
 
-- On Linux, double-click start.sh.
-- On macOS, double-click start.sh. You will likely need to bypass Gatekeeper.
+- On Linux, double-click start_linux.sh.
+- On macOS, double-click start_mac.sh. You will likely need to bypass Gatekeeper.
 - On Windows, double-click start.bat. Note that on ARM systems, this will run via x86_64
   emulation.
 
@@ -81,7 +81,8 @@ If you wish to keep your play data (spell histories, high scores, etc.), back up
 I'm too lazy to program an ingame manual, so it's just going to go here.
 
 This fangame is a pretty orthodox one. Press Z to shoot, Shift to focus, X to bomb, and
-use the arrow keys to move around. P takes a screenshot.
+use the arrow keys to move around. P takes a screenshot. All these keys are rebindable in
+the in-game settings, as are the controller button mappings.
 
 Note that F12 also takes a screenshot, but that's functionality built into the library I'm
 using, Raylib, and cannot be disabled. It names files weirdly, so try to avoid pressing it
@@ -101,7 +102,14 @@ Some other gameplay details:
   enemies) are worth 1000 PIV and 1000 score.
 - After dying, bombing, and when starting the game, the player has 3 seconds of
   invulnerability.
-
+- Reimu's bomb is an EoSD Reimu B clone. The barrier field starts in a square around reimu
+  and moves outwards as the bomb progresses. The damage and bullet cancellation zone is
+  the area 40 units outside of the barrier square. This is a pretty small zone, so this
+  bomb is intended mainly for scoring. However, because the barrier is stationary for 1
+  second when first activated, if you get close to an enemy and bomb near them where the
+  damage zone overlaps, then you can deal quite a bit of damage.
+  - As a reference, the game field is 384 by 448 units.
+- As is tradition for extra stages, the boss is immune to bombs during spell cards.
 
 +-----------------+
 | 5. Questions    |

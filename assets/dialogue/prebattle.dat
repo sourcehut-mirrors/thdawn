@@ -10,14 +10,14 @@ You'll get lost!"))
 ((type . doremi) (text . "Don't worry about that, Hazuki-chan, look who I met!"))
 ((type . reimu) (text . "...? Who are these...little girls?"))
 ((type . reimu) (text . "Are you lost?"))
-((type . doremi) (text . "Actually, we're on our way to the Witch World!
-Today, we're visiting some of our witch friends!"))
+((type . doremi) (text . "Actually, we're on the way back from the Witch World!
+We visited some of our witch friends!"))
 ((type . doremi) (text . "Who are you, by the way? Your dress is really pretty~"))
 ((type . reimu) (text . "The Witch World, huh..."))
 ((type . reimu) (text . "Let's put that aside for a moment.
 How did you learn how to cast spell cards?"))
 ((type . doremi) (text . "Ah, the...what was it called...danmaku from earlier?"))
-((type . doremi) (text . "Another onee-san taught us the previous time
+((type . doremi) (text . "Another onee-san taught us when
 we were in the Witch World!"))
 ((type . hazuki) (text . "Ah yes, she had such beautiful golden hair..."))
 ((type . hazuki) (text . "And she had a pointy hat and rode around on a broom!"))

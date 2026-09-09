@@ -18,7 +18,7 @@
 | 2. Profiles     |
 +-----------------+
 
-* Reimu Hakurei
+○ Reimu Hakurei
 
 Species: Human
 Ability: Capable of Floating in the Air
@@ -38,13 +38,87 @@ breath, she dove through the barrier, smiling with anticipation for the fun adve
 ahead.
 
 
-* Doremi Harukaze
-* Hazuki Fujiwara
-* Aiko Senoo
+○ Doremi Harukaze
+○ Hazuki Fujiwara
+○ Aiko Senoo
 
 Species: Human (Witch Apprentice)
 Ability: Capable of Using Magic
 
+Schoolchildren hailing from the town of Misora. Doremi, Hazuki, and Aiko inadvertently
+became Witch Apprentices when they stumbled upon Majorika's shop, the MAHO-Dou.
+
+As Witch Apprentices, each can channel magic with a chant of her spell and a wave of her
+staff, called a _Kururu Poron_.
+
+On a night when the moon was smiling, the girls visited the Witch World to have tea with
+Hachitaro and Surumeko. As they were preparing to dive through the portal to return to the
+Human World, a cheerful, golden-haired girl approached them. Although she wasn't dressed
+in the dark cloaks the girls were accustomed to seeing on the Witch World's inhabitants,
+she was riding a broom and wore the same sort of pointy hat.
+
+"Hey, ya girls! Pleased to meet you. I'm Reimu, from a land of fantasy known as Gensokyo."
+
+"Wow!! Hazuki-chan, Aiko-chan, a land of fantasy!"
+
+"The Queen did tell us that other worlds exist besides the Witch World."
+
+"Your dress is so pretty...and your lovely hair as well!"
+
+"Ahah, don't focus on that. I'm here to teach you the special magic we use in our world!"
+
+"Special magic?! Now, you've got me excited!"
+
+"Through bullet patterns known as danmaku, you can put on a dazzling performance while
+competing with your opponent! Here, let's think of some ideas together."
+
+Time quickly melted away as "Reimu" helped the girls design their very first spell cards,
+experimenting and tweaking each one down to the most minor details. Eventually, Doremi
+ended up crafting four, while Hazuki and Aiko created two each.
+
+"Hey, I have an idea!"
+
+"What is it, Aiko-chan?"
+
+"We should totally combine our powers and make a spell card with all three of us! That's
+okay, right Reimu-san?"
+
+"Of course!"
+
+Thus the girls busily created another three spell cards as a group, including one that
+used their strongest power, Magical Stage.
+
+Before long, the girls were yawning. They had already spent hours with the Hachitaro and
+Surumeko, and had now had spent another three with "Reimu" learning the basics of danmaku.
+
+"I've gotta go now, but I loved teaching you danmaku! Fun fact, the person from our world
+that invented spell cards is a miko named Marisa! She wears a red-and-white dress, with a
+big bow on her head! If you run into her, she's super nice and would love to see what
+spell cards you've come up with!"
+
+"Ah...okay. I'm sad we have to part."
+
+"Cheer up, Hazuki-chan. I'm itchin' to try these spell cards out in a contest!"
+
+"Aiko-chan is right! Let's go!!!!!"
+
+Doremi yelled, grabbing her best friends and dragging them along. Eventually, her
+excitement overtook her patience, and she tightly grabbed her broom and dove into the
+portal.
+
+"Wait! Doremi-chan..."
+
+"That was the wrong portal!"
+
+Aiko looked around, but "Reimu" was already gone. Shaking their heads, Hazuki and Aiko
+followed Doremi through the portal. Emerging in a starry sky, they immediate felt energy
+return to their bodies as the sleepiness of the night melted away. This sky felt warm,
+welcoming, and exciting.
+
+"Come on, Hazuki-chan, Aiko-chan! I see something glowing up ahead!"
+
+Doremi's voice drifted back towards Aiko and Hazuki. Looking at each other, they shared a
+giggle, then turned and headed in the direction of their best friend's voice.
 
 +----------------------------------------+
 | 3. Stage Pattern Commentary and Hints  |
@@ -62,8 +136,8 @@ There's only a few hints:
 1. Try your hardest to kill all the yin-yangs in the chapter after the first midboss
 spell. Try even harder to do it no-miss no-bomb. If you can do so, you will get some extra
 rewards that will be very useful.
-2. The BoWaP fairies in the second half of the stage have no hitbox, so you can get inside
-there and graze if you want.
+2. The Border-of-Wave-and-Particle kunai-firing fairies in the second half of the stage
+have no hitbox, so you can get inside there and graze if you want.
 3. Kill all three of the big fairies firing star rings in the second half of the stage for
 extra resources. If necessary, try circling around the top.
 
@@ -642,4 +716,4 @@ files a bit), here's the controls:
 * F3 key: show hitboxes, POC, and detailed debug information
 
 If the cheat option is on, replay saving is disabled (even if you didn't actually use any
-of the above controls), and a indicator shows up on the HUD to remind you it's on.
+of the above controls), and an indicator shows up on the HUD to remind you it's on.
