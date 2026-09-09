@@ -182,8 +182,6 @@
 	 (spawn-bullet type x y delay control-function 0)]
 	[(type x y delay control-function render-priority)
 	 (let ([idx (vector-index #f live-bullets)])
-	   (unless idx
-		 (error 'spawn-bullet "No more open bullet slots"))
 	   (let ([blt (make-bullet (get-next-bullet-id) render-priority
 							   type x y 0.0 #f (- delay) (- delay)
 							   empty-bltflags)]
@@ -197,7 +195,7 @@
 		   (bullet-addflags blt (bltflags nocanceldrop)))
 		 (when (ovr-noprune)
 		   (bullet-addflags blt (bltflags noprune)))
-		 (unless sealed
+		 (when (and idx (not sealed))
 		   (vector-set! live-bullets idx blt)
 		   (spawn-task "bullet"
 			 (λ (task)

@@ -2732,10 +2732,9 @@
 
 (define (spawn-particle type x y max-age extra)
   (let ([idx (vector-index #f live-particles)])
-	(unless idx
-	  (error 'spawn-particle "No more open particle slots!"))
 	(let ([p (make-particle type x y max-age 0 extra)])
-	  (vector-set! live-particles idx p)
+	  (when idx
+		(vector-set! live-particles idx p))
 	  p)))
 
 (define (delete-particle p)
