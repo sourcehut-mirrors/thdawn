@@ -463,7 +463,7 @@
   bomb-sweep-x-left bomb-sweep-x-right bomb-sweep-y-up bomb-sweep-y-down
   initial-bomb-sweep-x-left initial-bomb-sweep-x-right
   initial-bomb-sweep-y-up initial-bomb-sweep-y-down
-  player-dx-render focus-frames focused-immediate option-xs option-ys)
+  player-dx-render focus-frames focused-immediate option-xs option-ys screenshake)
 (define (is-replay)
   (fxnonnegative? (stage-ctx-replay-idx current-stage-ctx)))
 (define (is-liveplay)
@@ -729,7 +729,9 @@
    ;; scratchpad for places that need to determine whether the player bombed or died since
    ;; this was set to false. always set to true when the player bombs/dies, so it's the
    ;; responsibility of any setup code to set it to false on entry.
-   (mutable bombed-or-died))
+   (mutable bombed-or-died)
+   ;; frames of screenshake, decremented toward zero each frame a game is running
+   (mutable screenshake))
   (sealed #t))
 
 (define (fresh-stage-ctx replay)
@@ -752,7 +754,7 @@
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
    0 0 #f
-   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1 v2zero #f #f))
+   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1 v2zero #f #f 0))
 
 (define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
@@ -3381,6 +3383,7 @@
 			 (fl+ (ey enm) (centered-roll game-rng 30.0))
 			 90 enm))
   (raylib:play-sound (sebundle-bossdie sounds))
+  (set! screenshake (if short 20 40))
   (cancel-all #t)
   (dotimes 90
 	(spawn-particle
@@ -4508,6 +4511,12 @@
 
 (define bgcolor #xc0c0c0ff)
 (define (do-render-game textures fonts)
+  (define-values (offsetx offsety)
+	(if (fxzero? screenshake)
+		(values 0.0 0.0)
+		(let ([x (roll visual-rng)] ;; deterministic eval order
+			  [y (roll visual-rng)])
+		  (values (fl* 60.0 x) (fl* 60.0 y)))))
   (raylib:clear-background #x000000ff) ;;#x42024aff) ;; todo: some variability :D
   (unless (paused?)
 	(let-values ([(bg1-vel bg2-vel bg3-vel) (background-acceleration frames)])
@@ -4526,6 +4535,9 @@
 						   (make-rectangle 0.0 bg3-scroll 256.0 224.0)
 						   background-draw-bounds
 						   v2zero 0.0 bgcolor)
+  (when (fxpositive? screenshake)
+	(raylib:push-matrix)
+	(raylib:translatef offsetx offsety 0.0))
   (let ([enm (find-spellcaster)])
 	(when enm
 	  (let* ([bossinfo (enm-extras enm)]
@@ -4584,6 +4596,9 @@
 
   (when (fxpositive? bombing)
 	(draw-bomb))
+
+  (when (fxpositive? screenshake)
+	(raylib:pop-matrix))
 
   (draw-hud textures fonts)
 
@@ -4770,7 +4785,9 @@
 	(posttick-enemies)
 	(tick-misc-ents)
 	(tick-particles)
-	(process-collisions)))
+	(process-collisions)
+	(when (fxpositive? screenshake)
+	  (set! screenshake (fx1- screenshake)))))
 
 (define +frame-time-factor+ 0.8)
 (define frame-time-ema 0.0)
