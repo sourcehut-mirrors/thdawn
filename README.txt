@@ -25,18 +25,21 @@ magical girl anime from the late 90's/early 00's targeted at kids. Despite its t
 audience, it has one of the best stories for a magical girl anime. It touches on
 surprisingly mature themes like anxiety, loss of loved ones, etc. in gentle and loving
 ways, and even side characters are fleshed out, deeply-developed characters. I watched it
-from 2023 to 2025, and I think even grown-ups will have a blast watching it.
+from 2023 to 2025, and I think even grown-ups will have a blast watching it, just as I
+did.
 
 The spark for this fangame came from the first opening theme of Ojamajo Doremi, the song
 Ojamajo Carnival!! I used to walk to work every morning, and while I was watching the
-anime, this *absolute banger* of a theme would be stuck in my head. One day, I suddenly
-though "what if this was a danmaku stage theme?". The ideas slowly came together in my
-head: which phrases in the music would be a chapter transition, when the midboss would
-enter and cast their spell, how the stage would end. Watch my Touhoufest 2026 talk[1] for
-more information about how I think about stage-music syncing.
+anime, this *absolute banger* of a theme would be stuck in my head nearly every
+morning. One day, on my walk, I suddenly though "what if this was a danmaku stage theme?"
+The ideas slowly came together in my head: which phrases in the music would be a chapter
+transition, when the midboss would enter and cast their spell, how the stage would
+end. For more about how I (and ZUN) approach stage-music syncing, watch my Touhoufest 2026
+talk[1]!
 
 This is already getting a bit long, so I'll save the yapping for the Afterword in the
-omake.txt. Good luck with the clear, and see you on the other side!
+omake.txt. Good luck with the clear, and I'll see you on the other side! Make sure to use
+all your bombs!
 
 [1]: https://www.youtube.com/watch?v=iVgS-Hr3W0Y
 
@@ -86,7 +89,7 @@ the in-game settings, as are the controller button mappings.
 
 Note that F12 also takes a screenshot, but that's functionality built into the library I'm
 using, Raylib, and cannot be disabled. It names files weirdly, so try to avoid pressing it
-if you can.
+if you can, and avoid binding other keys to it.
 
 Some other gameplay details:
 

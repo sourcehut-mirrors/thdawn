@@ -898,7 +898,7 @@
   (render-ingame-menu
    (fontbundle-bubblegum40 fonts)
    (title-gui-menu-options self) (title-gui-selected-option self)
-   40.0 200 50 30.0 255)
+   40.0 180 50 30.0 255)
   (let-values ([(width height) (raylib:measure-text-ex
 								 (fontbundle-cabin20 fonts)
 								 version-str
@@ -928,9 +928,75 @@
 	 (thunk "Setting")
 	 (λ (_gui) (set! gui-stack (cons (mk-setting-gui) gui-stack))))
 	(make-menu-item
+	 (thunk "Credits")
+	 (λ (_gui) (set! gui-stack (cons (mk-credits-gui) gui-stack))))
+	(make-menu-item
 	 (thunk "Quit")
 	 (λ (_gui) (set! want-quit #t))))
    0))
+
+(define credits-data
+  '((h1 . "Ojamajo Gensou ~ Magical Stage")
+	(h2 . "2026/??/??")
+	(h2 . "Original Works")
+	"Touhou Project, by Team Shanghai Alice"
+	"Ojamajo Doremi, by Toei Animation"
+	(h2 . "Credits")
+	"Lead:                williewillus"
+	"Music:                   MAHO-Dou"
+	"Programming:         williewillus"
+	"Story:               williewillus"
+	"Portraits:           williewillus"
+	"Boss Sprites:                TODO"
+	(h2 . "Assets Authors")
+	"Enjl (Stage Background)"
+	"Shigeki Nakamura (Spell Backgrounds)"
+	"CraftPix.net (Main Menu Background)"
+	"GhostPixxells (Steak Sprite)"
+	"Delirious Steve (Boss Title Flowers)"
+	"Screaming Brain Studios (Credits Background)"
+	"nixxiam (SFX)"
+	"All RyannLib contributors (Bullets, SFX, etc.)"
+	"Angel Koziupa, Alejandro Paul (Bubblegum Font)"
+	"The Cabin Project Authors (Cabin Font)"
+	"Carrois Type Design (ShareTechMono Font)"
+	(h2 . "Special Thanks")
+	"Raylib and Raylib-Extras Developers"
+	"Chez Scheme Developers"
+	"Kamefrede, Alwinfy, and Eutro"
+	"Adorable Plushies (esp. Willie and Dumple)"
+	"Precious Family"
+	""
+	"...And you!"
+	(h1 . "Thanks for Playing!!")
+	))
+
+;; Credits are a list of sections and content, which are both just text blocks the only
+;; difference between sections and content are that sections use a larger font size
+;; Each item spends 1s to slide onto screen, 2s, then slides off for 1s, then the next item goes.
+;; This way, we can always calculate what item should be on screen solely based on the framecounter.
+(define-record-type credits-gui
+  (parent gui)
+  (fields
+   (mutable skip-pressed)
+   ;; counts up from 0 when the gui is opened. pressing the skip key doubles the rate of counting
+   (mutable framecounter)
+   (mutable scroll)))
+(define (credits-handle-input self inputs)
+  (credits-gui-skip-pressed-set!
+   self
+   (enum-set-member? (vkey skip-dialogue) (inputset-level-pressed inputs))))
+(define (credits-tick self)
+  (credits-gui-scroll-set! self (fl+ 0.5 (credits-gui-scroll self))))
+(define (credits-render self textures fonts)
+  (define tex (txbundle-creditsbg textures))
+  (define src (make-rectangle (credits-gui-scroll self) 0.0 640.0 480.0))
+  (raylib:draw-texture-pro tex
+						   src screen-bounds v2zero 0.0 -1))
+(define (mk-credits-gui)
+  (make-credits-gui (lazify credits-handle-input)
+					(lazify credits-tick) (lazify credits-render)
+					#f 0 0.0))
 
 (define +name-max+ 8)
 (define +nameinput-per-row+ 13)
@@ -4648,6 +4714,7 @@
 
 (define (render-all render-texture render-texture-inner textures fonts)
   (raylib:begin-texture-mode render-texture)
+  (raylib:clear-background #x000000ff)
   (do-render-all textures fonts)
   (raylib:end-texture-mode)
 

@@ -136,7 +136,7 @@
    laser1 laser2 laser3 laser4
    magicircle boss boss-flip boss-ui dialog-box wisp
    spellbg-aiko spellbg-group spellbg-doremi spellbg-hazuki
-   bosstitle-flowers)
+   bosstitle-flowers creditsbg)
   (sealed #t))
 (define (load-textures)
   (define (ltex file)
@@ -158,7 +158,7 @@
 					 "eff_magicsquare.png" "boss.png" "boss_rot.png"
 					 "boss_ui.png" "dialog_box.png" "wisp.png"
 					 "01_003.png" "01_006.png" "01_020.png" "01_035.png"
-					 "flowers.png"))))
+					 "flowers.png" "creditsbg.png"))))
 
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))
