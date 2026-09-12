@@ -2959,7 +2959,7 @@
 	 ;; needing to access the fonts here
 	 0.0 75.0 240
 	 (format "Clear Bonus: ~:d" clear-bonus)))
-  (when (is-liveplay)
+  (when (and (is-liveplay) (not (cheats-on?)))
 	(let ([pair (assq 'games-cleared play-data)])
 	  (set-cdr! pair (add1 (cdr pair))))
 	(save-play-data play-data))

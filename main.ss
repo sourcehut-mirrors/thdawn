@@ -4846,18 +4846,20 @@
 	   (raylib:close-window)))))
 
 (define (update-play-time)
-  (let ([pair (assq 'play-frames play-data)])
-	(set-cdr! pair (+ (cdr pair) frames)))
-  (save-play-data play-data))
+  (unless (cheats-on?)
+	(let ([pair (assq 'play-frames play-data)])
+	  (set-cdr! pair (+ (cdr pair) frames)))
+	(save-play-data play-data)))
 
 (define (start-game)
   ;; update playtime if an existing game is already in progress, e.g.
   ;; if this was called from pause->restart
   (when current-stage-ctx
 	(update-play-time))
-  (let ([pair (assq 'games-started play-data)])
-	(set-cdr! pair (add1 (cdr pair)))
-	(save-play-data play-data))
+  (unless (cheats-on?)
+	(let ([pair (assq 'games-started play-data)])
+	  (set-cdr! pair (add1 (cdr pair)))
+	  (save-play-data play-data)))
   (set! current-stage-ctx (fresh-stage-ctx #f))
   (vector-fill! live-particles #f)
   (kill-all-tasks)
