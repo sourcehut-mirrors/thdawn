@@ -868,9 +868,9 @@
 	((menu-item-on-select (vnth opts selected)) self)]
    [(enum-set-member? (vkey bomb) edge-pressed)
 	(raylib:play-sound (sebundle-menuback sounds))
-	(if (= selected 4) ;; Quit
+	(if (= selected (sub1 (vlen opts))) ;; Quit
 		((menu-item-on-select (vnth opts selected)) self)
-		(title-gui-selected-option-set! self 4))]))
+		(title-gui-selected-option-set! self (sub1 (vlen opts))))]))
 
 (define title-img-bounds (make-rectangle 0.0 0.0 576.0 324.0))
 (define screen-bounds (make-rectangle 0.0 0.0 640.0 480.0))
@@ -929,74 +929,152 @@
 	 (λ (_gui) (set! gui-stack (cons (mk-setting-gui) gui-stack))))
 	(make-menu-item
 	 (thunk "Credits")
-	 (λ (_gui) (set! gui-stack (cons (mk-credits-gui) gui-stack))))
+	 (λ (_gui)
+	   (play-music (musbundle-takaramono music))
+	   (set! gui-stack (cons (mk-credits-gui) gui-stack))))
 	(make-menu-item
 	 (thunk "Quit")
 	 (λ (_gui) (set! want-quit #t))))
    0))
 
+;; Credits are just a list of strings, some with an additional heading marker.
+;; Each item takes a constant amount of time to slide on/off and stay on screen.
+;; This way, we can always calculate what item should be on screen solely based on the
+;; framecounter. All strings are rendered centered.
 (define credits-data
-  '((h1 . "Ojamajo Gensou ~ Magical Stage")
-	(h2 . "2026/??/??")
-	(h2 . "Original Works")
-	"Touhou Project, by Team Shanghai Alice"
-	"Ojamajo Doremi, by Toei Animation"
-	(h2 . "Credits")
-	"Lead:                williewillus"
-	"Music:                   MAHO-Dou"
-	"Programming:         williewillus"
-	"Story:               williewillus"
-	"Portraits:           williewillus"
-	"Boss Sprites:                TODO"
-	(h2 . "Assets Authors")
-	"Enjl (Stage Background)"
-	"Shigeki Nakamura (Spell Backgrounds)"
-	"CraftPix.net (Main Menu Background)"
-	"GhostPixxells (Steak Sprite)"
-	"Delirious Steve (Boss Title Flowers)"
-	"Screaming Brain Studios (Credits Background)"
-	"nixxiam (SFX)"
-	"All RyannLib contributors (Bullets, SFX, etc.)"
-	"Angel Koziupa, Alejandro Paul (Bubblegum Font)"
-	"The Cabin Project Authors (Cabin Font)"
-	"Carrois Type Design (ShareTechMono Font)"
-	(h2 . "Special Thanks")
-	"Raylib and Raylib-Extras Developers"
-	"Chez Scheme Developers"
-	"Kamefrede, Alwinfy, and Eutro"
-	"Adorable Plushies (esp. Willie and Dumple)"
-	"Precious Family"
-	""
-	"...And you!"
-	(h1 . "Thanks for Playing!!")
-	))
+  '#(("")
+	 (h1 . ("Ojamajo Gensou ~ Magical Stage" "2026/??/??"))
+	 (h2 . ("Original Works"))
+	 ("Touhou Project --- Team Shanghai Alice"
+	  "Ojamajo Doremi --- Toei Animation")
+	 (h2 . ("Credits"))
+	 ("Lead:                williewillus")
+	 ("Music:                   MAHO-Dou")
+	 ("Programming:         williewillus")
+	 ("Story:               williewillus")
+	 ("Portraits:           williewillus")
+	 ("Boss Sprites:                TODO")
+	 (h2 . ("External Asset Creators"))
+	 ("Enjl (Stage Background)"
+	  "Shigeki Nakamura (Spell Backgrounds)"
+	  "CraftPix.net (Main Menu Background)")
+	 ("Screaming Brain Studios (Credits Background)"
+	  "Delirious Steve (Boss Title Flowers)"
+	  "GhostPixxells (Steak Sprite)")
+	 ("nixxiam (SFX)"
+	  "All RyannLib contributors (Bullets, SFX, etc.)")
+	 ("Angel Koziupa, Alejandro Paul (Bubblegum Font)"
+	  "The Cabin Project Authors (Cabin Font)"
+	  "Carrois Type Design (ShareTechMono Font)")
+	 (h2 . ("Test Players"))
+	 ("TODO single list of everyone")
+	 (h2 . ("Greatest Treasures \"Takaramono\" (Special Thanks)"))
+	 ("Raylib and Raylib-Extras Developers")
+	 ("Chez Scheme Developers")
+	 ("Kamefrede, Alwinfy, and Eutro")
+	 ("Adorable Plushies (shoutout to Willie and Dumple)")
+	 ("Precious Friends and Family")
+	 ("...And you!")
+	 (h1 . ("Thank You for Playing!!"))))
 
-;; Credits are a list of sections and content, which are both just text blocks the only
-;; difference between sections and content are that sections use a larger font size
-;; Each item spends 1s to slide onto screen, 2s, then slides off for 1s, then the next item goes.
-;; This way, we can always calculate what item should be on screen solely based on the framecounter.
 (define-record-type credits-gui
   (parent gui)
   (fields
+   ;; precached text measurements for credits-data
+   ;; vector of same length as credits-data, each element is a list:
+   ;; (total height . ((width . height) ...))
+   ;; calculated on first render
+   (mutable measurements)
    (mutable skip-pressed)
-   ;; counts up from 0 when the gui is opened. pressing the skip key doubles the rate of counting
+   ;; counts up from 0 when the gui is opened.
+   ;; pressing the skip key doubles the rate of counting
    (mutable framecounter)
-   (mutable scroll)))
+   (mutable bgscroll)))
 (define (credits-handle-input self inputs)
   (credits-gui-skip-pressed-set!
    self
    (enum-set-member? (vkey skip-dialogue) (inputset-level-pressed inputs))))
 (define (credits-tick self)
-  (credits-gui-scroll-set! self (fl+ 0.5 (credits-gui-scroll self))))
+  (define skip-pressed (credits-gui-skip-pressed self))
+  (credits-gui-bgscroll-set! self (fl+ (if skip-pressed 1.0 0.5)
+									   (credits-gui-bgscroll self)))
+  (credits-gui-framecounter-set!
+   self (fx+ (credits-gui-framecounter self)
+			 (if skip-pressed 2 1))))
+(define (credits-get-measurements self fonts)
+  (define (compute-measurements)
+	(vector-map
+	 (λ (item)
+	   (define strs-to-render (if (symbol? (car item)) (cdr item) item))
+	   (define sizes
+		 (map (λ (s)
+				(call-with-values
+					(thunk
+					 ;; todo pass proper size based on header
+					 (raylib:measure-text-ex (fontbundle-bubblegum20 fonts) s
+											 20.0 0.0))
+				  cons))
+			  strs-to-render))
+	   (define total-height
+		 (fl+ (fx2fl (* (sub1 (length sizes)) 15))
+			  (fold-left (λ (acc sz) (fl+ acc (cdr sz))) 0.0 sizes)))
+	   (cons total-height sizes))
+	 credits-data))
+  (or (credits-gui-measurements self)
+	  (let ([ms (compute-measurements)])
+		(credits-gui-measurements-set! self ms)
+		ms)))
 (define (credits-render self textures fonts)
+  (define transition-frames 45)
+  (define stationary-frames 120)
+  (define cx 320.0)
+  (define cy 240.0)
+  (define frames-per-item (+ transition-frames stationary-frames transition-frames))
+  (define fc (credits-gui-framecounter self))
   (define tex (txbundle-creditsbg textures))
-  (define src (make-rectangle (credits-gui-scroll self) 0.0 640.0 480.0))
-  (raylib:draw-texture-pro tex
-						   src screen-bounds v2zero 0.0 -1))
+  (define src (make-rectangle (credits-gui-bgscroll self) 0.0 640.0 480.0))
+  (define bgfadein (if (fx> fc 120) 255 (eround (* (/ fc 120) 255))))
+  (define measurements (credits-get-measurements self fonts))
+  (define-values (idx0 within-item) (fxdiv-and-mod fc frames-per-item))
+  (define idx (fxmin idx0 (sub1 (vlen credits-data))))
+  (define item (vnth credits-data idx))
+  (define strs-to-render (if (symbol? (car item)) (cdr item) item))
+  (define-values (total-height strs-measurements)
+	(let ([m (vnth measurements idx)])
+	  (values (car m) (cdr m))))
+  (define-values (txtalpha dy)
+	(cond
+	 ;; past this point, no more animations and stuff
+	 [(fx>= fc (fx+ (fx* frames-per-item (sub1 (vlen credits-data)))
+					transition-frames stationary-frames))
+	  (values 255 0.0)]
+	 [(fx< within-item transition-frames)
+	  (let ([t (/ within-item transition-frames)])
+		(values (eround (lerp 0 255 t))
+				(lerp 40.0 0.0 t)))]
+	 [(fx> within-item (+ transition-frames stationary-frames))
+	  (let ([t (/ (- within-item transition-frames stationary-frames)
+				  transition-frames)])
+		(values (eround (lerp 255 0 t))
+				(lerp 0.0 -40.0 t)))]
+	 [else (values 255 0.0)]))
+  (raylib:draw-texture-pro tex src screen-bounds
+						   v2zero 0.0 (packcolor bgfadein bgfadein bgfadein 255))
+  (let loop ([y (fl+ cy dy (fl/ total-height -2.0))]
+			 [lst strs-to-render]
+			 [ms strs-measurements])
+	(raylib:draw-text-ex
+	 (fontbundle-bubblegum20 fonts) (car lst)
+	 (fl- cx (fl/ (caar ms) 2.0)) y
+	 20.0 0.0 (fxior #xffffff00 txtalpha))
+	(unless (eq? '() (cdr lst))
+	  (loop (fl+ y 15.0 (cdar ms))
+			(cdr lst) (cdr ms))))
+  )
 (define (mk-credits-gui)
   (make-credits-gui (lazify credits-handle-input)
 					(lazify credits-tick) (lazify credits-render)
-					#f 0 0.0))
+					#f #f 0 0.0))
 
 (define +name-max+ 8)
 (define +nameinput-per-row+ 13)
