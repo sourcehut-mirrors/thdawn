@@ -4493,7 +4493,6 @@
 	 "REPLAY"
 	 440.0 225.0
 	 24.0 0.0 red)
-	;; TODO config option for liveplays?
 	(let ([get-color
 		   (λ (key)
 			 (if (enum-set-member? key level-pressed-input-for-display)

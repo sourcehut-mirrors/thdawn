@@ -11,7 +11,7 @@ Boss: Doremi/Hazuki/Aiko/Onpu. BGM: Naisho yo ojamajo (no syncing)
 ## Immediate TODOs
 As in, when you work pick something off the list and get at it.
 
-* logo (and pick a name)
+* logo
 * doremi sprite
 * hazuki sprite
 * aiko sprite
@@ -20,9 +20,6 @@ As in, when you work pick something off the list and get at it.
 * doremi portrait
 * hazuki portrait
 * aiko portrait
-* doremi sp2
-* group sp3 (survival)
-* group sp4 (final)
 * go through all bullet types and appropriately set their preimg sizes
 * shot collide with enemy effect
 
@@ -39,7 +36,6 @@ As in, when you work pick something off the list and get at it.
 * adjust ch6 rewards
 * consider nonlinear preimg based on the initial delay
 * boss theme loop points (dynamic jump to "thank you!" if possible?)
-* controller support
 
 ## Nice to haves (non release blocking)
 * make sure we're doing proper alpha blending (premultiplication and such)

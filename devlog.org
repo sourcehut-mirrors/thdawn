@@ -1,3 +1,27 @@
+* [2026-09-13 Sun]
+
+Properly hid everything behind cheat mode a week ago, wrote up the profiles, and these
+past couple days implemented the credits screen.
+
+Implementing the credits screen really drove it home that the beginning of the end of this
+project is nearing. It's making me a bit emotional, especially when I'm using Takaramono
+as the credits theme, which is my favorite credits theme from the Ojamajo Doremi
+series. I'm trying not to look back behind me too much until I actually release this into
+the world, but I've been succumbing to it more often now that I'm getting to the end.
+
+I'll try to fend that off for a while more.
+
+Obviously, the missing pieces of art (and a logo, too) are major blockers before release,
+but implementing that into the game once I have the art in hand is going to be pretty
+straightforward, and the number of other blockers that need to be done besides the art is
+shrinking fast.
+
+Though there still are some tech things left that I'd consider blockers, namely making the
+skip dialogue not broken when used in the middle/end of the bossfight, and properly
+setting loop points for the boss music. I'm going on a business trip this coming week,
+with no opportunity to draw, so I'll probably bring my laptop and hack these two things in
+over the course of next week.
+
 * [2026-09-02 Wed]
 
 Reached this milestone a while ago but just now updating the devlog, but all the patterns
