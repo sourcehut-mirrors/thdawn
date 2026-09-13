@@ -3488,9 +3488,10 @@
 	 (define timeout-fail
 	   (and (not (= -1 (bossinfo-max-health bossinfo)))
 			(positive? (enm-health enm))))
-	 (define failed (or timeout-fail
-						(bossinfo-active-attack-failed bossinfo)))
-	 (define bonus (and (not failed) (calculate-spell-bonus bossinfo)))
+	 (define bonus (and (not timeout-fail)
+						(not (bossinfo-active-attack-failed bossinfo))
+						(calculate-spell-bonus bossinfo)))
+	 (define failed (or (not bonus) (nonpositive? bonus)))
 	 (define spid (bossinfo-active-spell-id bossinfo))
 	 (spawn-drops
 	  ((if failed spell-descriptor-failed-drops spell-descriptor-drops)
@@ -3518,9 +3519,9 @@
 	  ;; Position dynamically calculated at render to avoid
 	  ;; the enemy tasks needing to access the fonts.
 	  0.0 75.0 180
-	  (if (and bonus (positive? bonus))
-		  (format "GET Spell Bonus!! ~:d" bonus)
-		  "Bonus Failed..."))
+	  (if failed
+		  "Bonus Failed..."
+		  (format "GET Spell Bonus!! ~:d" bonus)))
 	 (spawn-particle
 	  (particletype enmdeath)
 	  (+ (ex enm) (centered-roll visual-rng 20.0))
