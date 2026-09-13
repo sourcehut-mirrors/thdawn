@@ -931,7 +931,8 @@
 	 (thunk "Credits")
 	 (λ (_gui)
 	   (play-music (musbundle-takaramono music))
-	   (set! gui-stack (cons (mk-credits-gui) gui-stack))))
+	   (set! gui-stack (cons (mk-credits-gui #t)
+							 gui-stack))))
 	(make-menu-item
 	 (thunk "Quit")
 	 (λ (_gui) (set! want-quit #t))))
@@ -980,39 +981,74 @@
 (define-record-type credits-gui
   (parent gui)
   (fields
+   allow-skip
+   (mutable fadeout)
    ;; precached text measurements for credits-data
    ;; vector of same length as credits-data, each element is a list:
    ;; (total height . ((width . height) ...))
    ;; calculated on first render
    (mutable measurements)
-   (mutable skip-pressed)
+   (mutable fastforward)
    ;; counts up from 0 when the gui is opened.
    ;; pressing the skip key doubles the rate of counting
    (mutable framecounter)
    (mutable bgscroll)))
+(define credits-transition-frames 45)
+(define credits-stationary-frames 120)
+(define credits-frames-per-item
+  (+ credits-transition-frames credits-stationary-frames credits-transition-frames))
+(define (credits-at-end self)
+  (fx>= (credits-gui-framecounter self)
+		(fx+ (fx* credits-frames-per-item (sub1 (vlen credits-data)))
+			 credits-transition-frames credits-stationary-frames)))
 (define (credits-handle-input self inputs)
-  (credits-gui-skip-pressed-set!
-   self
-   (enum-set-member? (vkey skip-dialogue) (inputset-level-pressed inputs))))
+  (define level-pressed (inputset-level-pressed inputs))
+  (define edge-pressed (inputset-edge-pressed inputs))
+  (when (credits-gui-allow-skip self)
+	(credits-gui-fastforward-set!
+	 self
+	 (or (enum-set-member? (vkey skip-dialogue) level-pressed)
+		 (and (enum-set-member? (vkey shoot) level-pressed)
+			  (not (credits-at-end self))))))
+  (when (or (and (credits-gui-allow-skip self)
+				 (enum-set-member? (vkey bomb) edge-pressed))
+			(and (credits-at-end self)
+				 (or (enum-set-member? (vkey shoot) edge-pressed)
+					 (enum-set-member? (vkey bomb) edge-pressed))))
+	(credits-gui-fadeout-set! self 120)))
 (define (credits-tick self)
-  (define skip-pressed (credits-gui-skip-pressed self))
-  (credits-gui-bgscroll-set! self (fl+ (if skip-pressed 1.0 0.5)
+  (define ff (credits-gui-fastforward self))
+  (credits-gui-bgscroll-set! self (fl+ (if ff 1.0 0.5)
 									   (credits-gui-bgscroll self)))
   (credits-gui-framecounter-set!
    self (fx+ (credits-gui-framecounter self)
-			 (if skip-pressed 2 1))))
+			 (if ff 2 1)))
+  (let ([fadeout (credits-gui-fadeout self)])
+	(when fadeout
+	  (credits-gui-fadeout-set! self (fx1- fadeout))
+	  (when (fxzero? fadeout)
+		(replace-gui (mk-title-gui))
+		(play-music
+		 (musbundle-ojamajo-wa-koko-ni-iru music))))))
+(define (credits-font-size fonts hsym)
+  (case hsym
+	[(h1) (values (fontbundle-bubblegum40 fonts) 40.0)]
+	[(h2) (values (fontbundle-bubblegum32 fonts) 32.0)]
+	[else (values (fontbundle-bubblegum20 fonts) 20.0)]))
 (define (credits-get-measurements self fonts)
   (define (compute-measurements)
 	(vector-map
 	 (λ (item)
-	   (define strs-to-render (if (symbol? (car item)) (cdr item) item))
+	   (define-values (hsym strs-to-render)
+		 (if (symbol? (car item))
+			 (values (car item) (cdr item))
+			 (values #f item)))
+	   (define-values (font fontsz) (credits-font-size fonts hsym))
 	   (define sizes
 		 (map (λ (s)
 				(call-with-values
 					(thunk
-					 ;; todo pass proper size based on header
-					 (raylib:measure-text-ex (fontbundle-bubblegum20 fonts) s
-											 20.0 0.0))
+					 (raylib:measure-text-ex font s fontsz 0.0))
 				  cons))
 			  strs-to-render))
 	   (define total-height
@@ -1025,56 +1061,66 @@
 		(credits-gui-measurements-set! self ms)
 		ms)))
 (define (credits-render self textures fonts)
-  (define transition-frames 45)
-  (define stationary-frames 120)
   (define cx 320.0)
   (define cy 240.0)
-  (define frames-per-item (+ transition-frames stationary-frames transition-frames))
   (define fc (credits-gui-framecounter self))
   (define tex (txbundle-creditsbg textures))
   (define src (make-rectangle (credits-gui-bgscroll self) 0.0 640.0 480.0))
-  (define bgfadein (if (fx> fc 120) 255 (eround (* (/ fc 120) 255))))
+  (define bgfade
+	(cond
+	 [(credits-gui-fadeout self) =>
+	  (λ (fadeout)
+		(eround (* (/ fadeout 120) 255)))]
+	 [(fx< fc 120)
+	  (eround (* (/ fc 120) 255))]
+	 [else 255]))
   (define measurements (credits-get-measurements self fonts))
-  (define-values (idx0 within-item) (fxdiv-and-mod fc frames-per-item))
+  (define-values (idx0 within-item) (fxdiv-and-mod fc credits-frames-per-item))
   (define idx (fxmin idx0 (sub1 (vlen credits-data))))
   (define item (vnth credits-data idx))
-  (define strs-to-render (if (symbol? (car item)) (cdr item) item))
+  (define-values (hsym strs-to-render)
+	(if (symbol? (car item))
+		(values (car item) (cdr item))
+		(values #f item)))
+  (define-values (font fontsz) (credits-font-size fonts hsym))
   (define-values (total-height strs-measurements)
 	(let ([m (vnth measurements idx)])
 	  (values (car m) (cdr m))))
-  (define-values (txtalpha dy)
+  (define txtcolor
+	(case hsym
+	  [(h2) hazuki-color]
+	  [else #xf5f5f500]))
+  (define-values (txtalpha0 dy)
 	(cond
 	 ;; past this point, no more animations and stuff
-	 [(fx>= fc (fx+ (fx* frames-per-item (sub1 (vlen credits-data)))
-					transition-frames stationary-frames))
-	  (values 255 0.0)]
-	 [(fx< within-item transition-frames)
-	  (let ([t (/ within-item transition-frames)])
+	 [(credits-at-end self) (values 255 0.0)]
+	 [(fx< within-item credits-transition-frames)
+	  (let ([t (/ within-item credits-transition-frames)])
 		(values (eround (lerp 0 255 t))
 				(lerp 40.0 0.0 t)))]
-	 [(fx> within-item (+ transition-frames stationary-frames))
-	  (let ([t (/ (- within-item transition-frames stationary-frames)
-				  transition-frames)])
+	 [(fx> within-item (+ credits-transition-frames credits-stationary-frames))
+	  (let ([t (/ (- within-item credits-transition-frames credits-stationary-frames)
+				  credits-transition-frames)])
 		(values (eround (lerp 255 0 t))
 				(lerp 0.0 -40.0 t)))]
 	 [else (values 255 0.0)]))
+  (define txtalpha (if (not (= bgfade 255)) bgfade txtalpha0))
   (raylib:draw-texture-pro tex src screen-bounds
-						   v2zero 0.0 (packcolor bgfadein bgfadein bgfadein 255))
+						   v2zero 0.0 (packcolor bgfade bgfade bgfade 255))
   (let loop ([y (fl+ cy dy (fl/ total-height -2.0))]
 			 [lst strs-to-render]
 			 [ms strs-measurements])
 	(raylib:draw-text-ex
-	 (fontbundle-bubblegum20 fonts) (car lst)
+	 font (car lst)
 	 (fl- cx (fl/ (caar ms) 2.0)) y
-	 20.0 0.0 (fxior #xffffff00 txtalpha))
-	(unless (eq? '() (cdr lst))
+	 fontsz 0.0 (override-alpha txtcolor txtalpha))
+	(unless (null? (cdr lst))
 	  (loop (fl+ y 15.0 (cdar ms))
-			(cdr lst) (cdr ms))))
-  )
-(define (mk-credits-gui)
+			(cdr lst) (cdr ms)))))
+(define (mk-credits-gui allow-skip)
   (make-credits-gui (lazify credits-handle-input)
 					(lazify credits-tick) (lazify credits-render)
-					#f #f 0 0.0))
+					allow-skip #f #f #f 0 0.0))
 
 (define +name-max+ 8)
 (define +nameinput-per-row+ 13)
@@ -1235,9 +1281,17 @@
    [(enum-set-member? (vkey bomb) (inputset-edge-pressed inputs))
 	(raylib:play-sound (sebundle-menuback sounds))
 	(if (replist-gui-records-to-save self)
-		(begin
-		  (replace-gui (mk-title-gui))
-		  (play-music (musbundle-ojamajo-wa-koko-ni-iru music)))
+		(let ([cleared (score-entry-cleared
+						(car (replist-gui-records-to-save self)))])
+		  (if cleared
+			  (begin
+				;; disallow skipping if it's the player's first clear
+				(replace-gui (mk-credits-gui
+							  (fx<= 1 (assqdr 'games-cleared play-data))))
+				(play-music (musbundle-takaramono music)))
+			  (begin
+				(replace-gui (mk-title-gui))
+				(play-music (musbundle-ojamajo-wa-koko-ni-iru music)))))
 		(set! gui-stack (remq self gui-stack)))]
    [(enum-set-member? (vkey left) (inputset-edge-pressed inputs))
 	(when (> (replist-gui-selected-page self) 0)

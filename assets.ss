@@ -96,7 +96,8 @@
 			  '("ojamajo_wa_kokoni_iru.mp3" "ojamajo_carnival.wav"
 				"naisho_yo_ojamajo.mp3" "lupinasu_no_komoriuta_piano.mp3"
 				"takaramono_tv.mp3"))))
-  (update-music-volumes))
+  (update-music-volumes)
+  (raylib:set-music-looping (musbundle-takaramono music) #f))
 (define (unload-music)
   (each-music raylib:unload-music-stream)
   (set! music #f))
