@@ -4713,7 +4713,7 @@
 		(values 0.0 0.0)
 		(let ([x (roll visual-rng)] ;; deterministic eval order
 			  [y (roll visual-rng)])
-		  (values (fl* 60.0 x) (fl* 60.0 y)))))
+		  (values (fl* 40.0 x) (fl* 40.0 y)))))
   (raylib:clear-background #x000000ff) ;;#x42024aff) ;; todo: some variability :D
   (unless (paused?)
 	(let-values ([(bg1-vel bg2-vel bg3-vel) (background-acceleration frames)])
