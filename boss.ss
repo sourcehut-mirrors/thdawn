@@ -2805,7 +2805,8 @@
   (wait 90)
   (stage-ctx-dialogue-set!
    current-stage-ctx
-   (with-input-from-file "assets/dialogue/finalspell.dat" read))
+   (cons 'finalspell
+		 (with-input-from-file "assets/dialogue/finalspell.dat" read)))
   (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (bossinfo-healthbars-set!
@@ -2946,7 +2947,8 @@
   (wait 120)
   (stage-ctx-dialogue-set!
    current-stage-ctx
-   (with-input-from-file "assets/dialogue/postbattle.dat" read))
+   (cons 'postbattle
+		 (with-input-from-file "assets/dialogue/postbattle.dat" read)))
   (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (let ([clear-bonus (+ (* 10000000 (floor life-stock))

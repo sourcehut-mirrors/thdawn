@@ -1466,7 +1466,8 @@
   (wait 180)
   (stage-ctx-dialogue-set!
    current-stage-ctx
-   (with-input-from-file "assets/dialogue/prebattle.dat" read))
+   (cons 'prebattle
+		 (with-input-from-file "assets/dialogue/prebattle.dat" read)))
   (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (let-values ([(doremi hazuki aiko) (find-bosses)])

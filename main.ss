@@ -3889,17 +3889,21 @@
   (blank-bossinfo "Senoo Aiko" aiko-color))
 
 (define (handle-dialogue-skip)
-  ;; TODO(LAUNCH BLOCKER): Ban this during the pre-final spell dialogue
-  (when (and (stage-ctx-dialogue current-stage-ctx)
+  (define dialogue (stage-ctx-dialogue current-stage-ctx))
+  (when (and dialogue
 			 (fx= -1 (stage-ctx-dialogue-pinned-until current-stage-ctx))
-			 (let-values ([(doremi hazuki aiko) (find-bosses)])
-			   (and doremi hazuki aiko)))
+			 (case (car dialogue)
+			   [(prebattle)
+				(let-values ([(doremi hazuki aiko) (find-bosses)])
+				  (and doremi hazuki aiko))]
+			   [(finalspell) #f]
+			   [(postbattle) #t]))
 	(stage-ctx-dialogue-set! current-stage-ctx #f)))
 
 (define (handle-dialogue-advance)
   (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
 	(cond
-	 [(= (vlen (stage-ctx-dialogue current-stage-ctx))
+	 [(= (vlen (cdr (stage-ctx-dialogue current-stage-ctx)))
 		 next-idx)
 	  (stage-ctx-dialogue-set! current-stage-ctx #f)]
 	 [(< frames (stage-ctx-dialogue-pinned-until current-stage-ctx))
@@ -3907,7 +3911,7 @@
 	 [else
 	  (stage-ctx-dialogue-idx-set! current-stage-ctx next-idx)
 	  (raylib:play-sound (sebundle-playershoot sounds))
-	  (let* ([next (vnth (stage-ctx-dialogue current-stage-ctx)
+	  (let* ([next (vnth (cdr (stage-ctx-dialogue current-stage-ctx))
 						 next-idx)]
 			 [evt (assq 'event next)]
 			 [dur (assq 'duration next)])
@@ -4596,7 +4600,8 @@
 
   (when-let ([d (stage-ctx-dialogue current-stage-ctx)])
 	(draw-dialogue textures fonts
-				   (vnth d (stage-ctx-dialogue-idx current-stage-ctx)))))
+				   (vnth (cdr d)
+						 (stage-ctx-dialogue-idx current-stage-ctx)))))
 
 (define bg1-scroll 0.0)
 (define bg2-scroll 0.0)
