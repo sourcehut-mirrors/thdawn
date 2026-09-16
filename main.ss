@@ -3604,7 +3604,7 @@
 	(define ox (ex enm))
 	(define mag (fx2fl (+ min-dx (roll game-rng (- max-dx min-dx)))))
 	(cond
-	 [(fl< ox -140.0)
+	 [(fl< ox -110.0)
 	  (fl+ ox mag)]
 	 [(fl< ox -65.0)
 	  (if (fl< (roll game-rng) 0.3333)
@@ -3614,7 +3614,7 @@
 	  (if (fl< (roll game-rng) 0.5)
 		  (fl- ox mag)
 		  (fl+ ox mag))]
-	 [(fl< ox 140.0)
+	 [(fl< ox 110.0)
 	  (if (fl< (roll game-rng) 0.3333)
 		  (fl+ ox mag)
 		  (fl- ox mag))]
