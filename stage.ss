@@ -264,10 +264,8 @@
   (define x (ex enm))
   (define pat
 	(-> (cb)
-		(cbcount 35 1)
-		(cbspeed 5.0)
-		;; TODO i don't really understand this value? why does it have to be so big?
-		(cbang 140.0 0.0)))
+		(cbcount 35)
+		(cbspeed 5.0)))
   (ease-to values (if (negative? x) (+ x 80.0) (- x 80.0)) (ey enm) 60 enm)
   (wait 80)
   (cbshootenm pat enm 'rest-red 5 (sebundle-shoot0 sounds))

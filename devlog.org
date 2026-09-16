@@ -1,3 +1,30 @@
+* [2026-09-15 Tue]
+
+loop point stuff
+26.6
+1:39.156
+
+1 @ 26.6: 2+transition
+2 @ 1:39.156: 2+transition
+
+final ending @ 3:14 has 2+2+thank you
+would loop before first "naishoyo" for smoothness
+same for opposite (jump from first naishoyo to the ending's version)
+
+how long do we need the song?
+
+need almost exactly 8 minutes (480s) based on a no bomb playthrough. Might be longer with bombs.
+song is 3:31
+to first point 26.6
+first point to ending ~167s
+second point to ending ~95s
+second loop is 2 min minus a bit
+
+26.6+167*2+95 ? (intro + full length twice + last loop once)
+would still be missing ~30s
+
+might just do full loops and then once game is over try to jump to ending if nearby....
+
 * [2026-09-13 Sun]
 
 Properly hid everything behind cheat mode a week ago, wrote up the profiles, and these
