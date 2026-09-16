@@ -631,6 +631,11 @@
   (wait 60)
   (spawn-subtask "atk"
 	(λ (task)
+	  (define types
+		'#(yinyang-green
+		   yinyang-green yinyang-green
+		   yinyang-blue yinyang-blue yinyang-blue yinyang-blue
+		   yinyang-magenta yinyang-magenta yinyang-magenta yinyang-red))
 	  (define init-left-ang (fx2fl (roll-range game-rng 90 150)))
 	  (interval-loop 30
 		(let loop ([left-ang init-left-ang]
@@ -641,13 +646,13 @@
 			  (fbabsolute-aim)
 			  (fbang left-ang)
 			  (fbspeed 3.0 5.0)
-			  (fbshootenm aiko 'yinyang-blue 5 #f linear-step-with-bounce))
+			  (fbshootenm aiko (vnth types i) 5 #f linear-step-with-bounce))
 		  (-> (fb)
 			  (fbcount 1 3)
 			  (fbabsolute-aim)
 			  (fbang right-ang)
 			  (fbspeed 3.0 5.0)
-			  (fbshootenm aiko 'yinyang-blue 5 (sebundle-shoot0 sounds)
+			  (fbshootenm aiko (vnth types i) 5 (sebundle-shoot0 sounds)
 						  linear-step-with-bounce))
 		  (if (< i 10)
 			  (begin
