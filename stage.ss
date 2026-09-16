@@ -1369,10 +1369,11 @@
   (spawn-subtask "shoot"
 	(λ (task)
 	  (interval-loop 15
-		(-> (cb)
-			(cbcount 12)
-			(cbspeed 4.5)
-			(cbshootenm enm 'rice-cyan 2 (sebundle-shootsoft sounds)))))
+		(-> (fb)
+			(fbcount 7)
+			(fbang 0.0 8.0)
+			(fbspeed 7.5)
+			(fbshootenm enm 'rice-cyan 2 (sebundle-shootsoft sounds)))))
 	task)
   (move-on-spline
    (if right-side
