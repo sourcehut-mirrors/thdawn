@@ -1104,6 +1104,7 @@
   (delete-enemy enm))
 
 (define (ch10-w2 type right-side task enm)
+  (enm-superarmor-set! enm 80)
   (ease-to values
 		   (+ (ex enm) (if right-side -50.0 50.0))
 		   (ey enm) 20 enm)
