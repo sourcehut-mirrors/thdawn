@@ -255,7 +255,7 @@
   (ease-to values (ex enm) 80.0 30 enm)
   (-> (cb)
 	  (cbcount 36 4)
-	  (cbspeed 5.0 6.0)
+	  (cbspeed 4.5 6.0)
 	  (cbshootenm enm 'big-star-magenta 5 (sebundle-shoot0 sounds)))
   (wait 180)
   (ease-to values (ex enm) -20.0 60 enm)
