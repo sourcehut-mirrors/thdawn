@@ -25,15 +25,12 @@ As in, when you work pick something off the list and get at it.
 
 ## Medium-term TODOs
 * borderless fullscreen support
-* improve midsp1 wandering
 * menu system prettification
   * rearrange settings visually
   * add little effects like idle wiggling, pulsing when selection changes, etc.
 * make ch1 treble clef spread out prettier/more structured
-* improve ch1 even wave fairies
 * improve ch5 rain fairy
 * improve ch10 knife fairies
-* adjust ch6 rewards
 * consider nonlinear preimg based on the initial delay
 * boss theme loop points (dynamic jump to "thank you!" if possible?)
 

@@ -1789,7 +1789,7 @@
 			(loop 
 			 (cons
 			  (cons (-> (spawn-enemy
-						 (enmtype red-wisp) (ex hazuki) (ey hazuki) 350
+						 (enmtype red-wisp) (ex hazuki) (ey hazuki) 320
 						 (λ (task enm)
 						   (enm-superarmor-set! enm 40)
 						   (ease-to ease-in-out-quad x y 45 enm)
