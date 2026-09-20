@@ -1,3 +1,27 @@
+* [2026-09-19 Sat]
+
+Tried to do more hacking with the music looping. Raylib's facilities are really terrible
+for this (and it seems like SDL-mixer isn't much better, surprisingly). I might just
+hard-loop the music file manually and ship that off with the game.
+
+Was trying to use Loop Auditioneer but has absolutely terrible UI. Found pymusiclooper
+which is looking promising (it gave me the following for the basic end to beginning loop
+which sounds pretty much flawless).
+
+Still doesn't solve the problem of missing around 30-40s of music/how many loops to use
+and where...
+
+$ pymusiclooper -i export-points --path naisho_yo.wav --fmt time  --approx-loop-position 24 197
+
+┃ Index ┃ Loop Start ┃ Loop End  ┃ Length    ┃ Note Distance ┃ Loudness Difference ┃  Score ┃
+│     0 │ 00:24.439  │ 03:17.849 │ 02:53.410 │ 0.1157        │ 0.0993              │ 91.64% │
+
+
+One more thing I could do even if I don't have portraits yet is work out how the *display*
+of those portraits will work during spell declarations and in the dialogue (since there's
+"turns" in the dialogue where the speaking character is highlighted and the others
+aren't). I'll probably get to that pretty soon.
+
 * [2026-09-15 Tue]
 
 loop point stuff
