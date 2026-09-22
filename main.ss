@@ -3493,7 +3493,9 @@
 						(calculate-spell-bonus bossinfo)))
 	 (define failed (or (not bonus) (nonpositive? bonus)))
 	 (define spid (bossinfo-active-spell-id bossinfo))
-	 (spawn-drops
+	 ((if (enm-hasflag? enm (enmflag autocollect))
+		  spawn-drops-with-autocollect
+		  spawn-drops)
 	  ((if failed spell-descriptor-failed-drops spell-descriptor-drops)
 	   (vnth spells (bossinfo-active-spell-id bossinfo)))
 	  (if (= spid 10) +middle-boss-x+ (ex enm))

@@ -639,6 +639,7 @@
 						  '((bomb . 1) (point . 30))
 						  (constantly #f))]
 		[bossinfo (blank-doremi-bossinfo)])
+	(enm-addflags enm (enmflags autocollect))
 	(bossinfo-healthbars-set!
 	 bossinfo
 	 (immutable-vector (make-healthbar -1 0.0 #xf5f5f5ff #x808080ff)))
@@ -1358,6 +1359,7 @@
 						  '((life . 1) (point . 50))
 						  (constantly #f))]
 		[bossinfo (blank-doremi-bossinfo)])
+	(enm-addflags enm (enmflags autocollect))
 	(bossinfo-healthbars-set!
 	 bossinfo
 	 (immutable-vector (make-healthbar -1 0.0 #xf5f5f5ff #x808080ff)))
