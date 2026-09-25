@@ -85,7 +85,8 @@
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
 		  circle-hint-opaque
 		  circle-hint clear-bonus
-		  text-hint doremi-title hazuki-title aiko-title)
+		  text-hint doremi-title hazuki-title aiko-title
+		  stage-title stage-blurb)
   make-particletype-set)
 
 (define-enumeration miscentflag
@@ -3122,29 +3123,39 @@
 			  (fl- render-x (fl/ nwidth 2.0))
 			  (fl+ render-y 10.0 theight 5.0 (lerp -20.0 0.0 animation-multiplier))
 			  20.0 0.0
-			  (override-alpha name-color (eround alpha)))))))))
+			  (override-alpha name-color (eround alpha)))))
+		  ([stage-title]
+		   (let* ([outtime (- max-age 60)]
+				  [t (cond
+					  [(< age 60) (/ age 60)]
+					  [(>= age outtime) (- 1 (/ (- age outtime) 60))]
+					  [else 1.0])]
+				  [dy (lerp -20.0 0.0 t)]
+				  [alpha (eround (* 255 t))])
+			 (raylib:draw-texture-pro
+			  (txbundle-titlecard textures)
+			  (make-rectangle 0.0 0.0 1353.0 102.0)
+			  (make-rectangle 53.875 (fl+ 80.0 dy) 338.25 25.5)
+			  v2zero 0.0 (fxior #xffffff00 alpha))))
+		  ([stage-blurb]
+		   (void))))))
   (vector-for-each draw-one-particle live-particles)
-  (raylib:draw-texture-pro
-   (txbundle-titlecard textures)
-   (make-rectangle 0.0 0.0 1353.0 102.0)
-   (make-rectangle 53.875 80.0 338.25 25.5)
-   v2zero 0.0 -1)
   ;; TODO: less shitty poem
-  (raylib:draw-text-ex
-   (fontbundle-bubblegum20 fonts)
-   "Flying through the night sky"
-   180.0 196.0
-   20.0 0.0 -1)
-  (raylib:draw-text-ex
-   (fontbundle-bubblegum20 fonts)
-   "Bullets flying here and there"
-   200.0 223.0
-   20.0 0.0 -1)
-  (raylib:draw-text-ex
-   (fontbundle-bubblegum20 fonts)
-   "A Joyous Carnival"
-   220.0 250.0
-   20.0 0.0 -1)
+  ;; (raylib:draw-text-ex
+  ;;  (fontbundle-bubblegum20 fonts)
+  ;;  "Flying through the night sky"
+  ;;  180.0 196.0
+  ;;  20.0 0.0 -1)
+  ;; (raylib:draw-text-ex
+  ;;  (fontbundle-bubblegum20 fonts)
+  ;;  "Bullets flying here and there"
+  ;;  200.0 223.0
+  ;;  20.0 0.0 -1)
+  ;; (raylib:draw-text-ex
+  ;;  (fontbundle-bubblegum20 fonts)
+  ;;  "A Joyous Carnival"
+  ;;  220.0 250.0
+  ;;  20.0 0.0 -1)
   )
 
 (define-record-type miscent

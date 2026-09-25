@@ -126,8 +126,10 @@
   (wait 200)
   (spawn-enemy (enmtype big-fairy) 0.0 -10.0 3000 ch0-big-fairy
 			   `((point . 20)))
-
   (wait 190)
+  (spawn-particle
+   (particletype stage-title)
+   0.0 0.0 270 #f)
   (spawn-enemy (enmtype red-fairy) -220.0 115.0 50
 			   (curry ch0-w3-fairy 'fixed-laser-red))
   (wait 25)
