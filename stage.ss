@@ -154,7 +154,7 @@
   (define (shoot task)
 	(wait 10)
 	(do [(i 0 (fx1+ i))]
-		[(fx= i 35)]
+		[(fx= i 45)]
 	  (let ([facing (torad (fx2fl (* (/ 360 20) i)))]
 			[cfun (λ (task blt)
 					(linear-step-forever (facing-player (bx blt) (by blt))
