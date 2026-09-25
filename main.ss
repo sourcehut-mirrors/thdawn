@@ -3138,25 +3138,29 @@
 			  (make-rectangle 53.875 (fl+ 80.0 dy) 338.25 25.5)
 			  v2zero 0.0 (fxior #xffffff00 alpha))))
 		  ([stage-blurb]
-		   (void))))))
-  (vector-for-each draw-one-particle live-particles)
-  ;; TODO: less shitty poem
-  ;; (raylib:draw-text-ex
-  ;;  (fontbundle-bubblegum20 fonts)
-  ;;  "Flying through the night sky"
-  ;;  180.0 196.0
-  ;;  20.0 0.0 -1)
-  ;; (raylib:draw-text-ex
-  ;;  (fontbundle-bubblegum20 fonts)
-  ;;  "Bullets flying here and there"
-  ;;  200.0 223.0
-  ;;  20.0 0.0 -1)
-  ;; (raylib:draw-text-ex
-  ;;  (fontbundle-bubblegum20 fonts)
-  ;;  "A Joyous Carnival"
-  ;;  220.0 250.0
-  ;;  20.0 0.0 -1)
-  )
+		   (let* ([outtime (- max-age 60)]
+				  [t (cond
+					  [(< age 60) (/ age 60)]
+					  [(>= age outtime) (- 1 (/ (- age outtime) 60))]
+					  [else 1.0])]
+				  [dx (lerp -20.0 0.0 t)]
+				  [color (fxior #xffffff00 (eround (* 255 t)))])
+			 (raylib:draw-text-ex
+			  (fontbundle-bubblegum20 fonts)
+			  "Flying through the night sky"
+			  (fl+ 180.0 dx) 196.0
+			  20.0 0.0 color)
+			 (raylib:draw-text-ex
+			  (fontbundle-bubblegum20 fonts)
+			  "Bullets flying here and there"
+			  (fl+ 200.0 dx) 223.0
+			  20.0 0.0 color)
+			 (raylib:draw-text-ex
+			  (fontbundle-bubblegum20 fonts)
+			  "A Joyous Carnival"
+			  (fl+ 220.0 dx) 250.0
+			  20.0 0.0 color)))))))
+  (vector-for-each draw-one-particle live-particles))
 
 (define-record-type miscent
   (fields
