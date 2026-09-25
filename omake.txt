@@ -120,6 +120,7 @@ stars, felt warm, welcoming, and exciting.
 Doremi's voice drifted back towards Aiko and Hazuki. Looking at each other, they shared a
 giggle, then turned and headed in the direction of their best friend's voice.
 
+
 +----------------------------------------+
 | 3. Stage Pattern Commentary and Hints  |
 +----------------------------------------+
@@ -707,13 +708,28 @@ ranked from the mundane to the weird NETA challenges:
 | 6. Cheats  |
 +------------+
 
-If you figure out how to enable cheats (ooooh......it's not too hard, just poke around the
-files a bit), here's the controls:
+There is a cheat system in the game that allows access to my development/debugging
+tools. Oooooh......
 
-* Comma and Period keys: select a chapter or attack to jump to
-* R key (when not paused): jump to the selected scene
+It's not too hard to find the cheat setting; just dig around the game files a bit. It
+should be very obvious once you find it. As a hint, "#f" means "false" in Scheme, and "#t"
+means "true".
+
+If you figure out how to enable cheats, here's the controls:
+
 * F1 key: toggle invincibility
-* F3 key: show hitboxes, POC, and detailed debug information
+* F3 key: show hitboxes, POC, and detailed debug information (including information about
+  the below debug features)
+* A, S, D, and F keys: Use the spline editor, which is just a visual guide I used for
+  developing enemy motion. A and D move forwards and backwards among the control points
+  indices. S sets the current control point to the player's current position. If the
+  selected index is at the end of the list of control points, S inserts a new control
+  point. F removes the last control point from the list.
+* Comma and Period keys: select a chapter or attack to jump to
+* R key (when not paused): jump to the selected chapter
 
 If the cheat option is on, replay saving is disabled (even if you didn't actually use any
 of the above controls), and an indicator shows up on the HUD to remind you it's on.
+
+Note that editing the file to toggle cheats requires a restart of the game to pick up the
+change.

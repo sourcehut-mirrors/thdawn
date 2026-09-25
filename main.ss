@@ -3123,7 +3123,29 @@
 			  (fl+ render-y 10.0 theight 5.0 (lerp -20.0 0.0 animation-multiplier))
 			  20.0 0.0
 			  (override-alpha name-color (eround alpha)))))))))
-  (vector-for-each draw-one-particle live-particles))
+  (vector-for-each draw-one-particle live-particles)
+  (raylib:draw-texture-pro
+   (txbundle-titlecard textures)
+   (make-rectangle 0.0 0.0 1353.0 102.0)
+   (make-rectangle 53.875 80.0 338.25 25.5)
+   v2zero 0.0 -1)
+  ;; TODO: less shitty poem
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum20 fonts)
+   "Flying through the night sky"
+   180.0 196.0
+   20.0 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum20 fonts)
+   "Bullets flying here and there"
+   200.0 223.0
+   20.0 0.0 -1)
+  (raylib:draw-text-ex
+   (fontbundle-bubblegum20 fonts)
+   "A Joyous Carnival"
+   220.0 250.0
+   20.0 0.0 -1)
+  )
 
 (define-record-type miscent
   (fields
@@ -4997,7 +5019,7 @@
 (define +frame-time-factor+ 0.8)
 (define frame-time-ema 0.0)
 (define (main)
-  (raylib:set-trace-log-level 4) ;; WARNING or above
+  (raylib:set-trace-log-level 0) ;; WARNING or above
   (raylib:init-window 1280 960 "thdawn")
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)

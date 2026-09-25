@@ -46,10 +46,8 @@
 		  (λ (row col speed facing)
 			(spawn-bullet (vnth types i) (ex enm) (ey enm) 5
 						  (curry linear-step-gravity-forever
-								 (fl+ facing
-									  (centered-roll game-rng (torad 10.0)))
-								 speed 0.1))))
-	  (wait 20)
+								 facing speed 0.1))))
+	  (wait 30)
 	  (when (< (- frames start-time) 200)
 		(loop (mod (add1 i) (vlen types))))))
   (define (ring task)
