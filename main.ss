@@ -3144,7 +3144,7 @@
 					  [(>= age outtime) (- 1 (/ (- age outtime) 60))]
 					  [else 1.0])]
 				  [dx (lerp -20.0 0.0 t)]
-				  [color (fxior #xffffff00 (eround (* 255 t)))])
+				  [color (fxior #xf0f0f000 (eround (* 255 t)))])
 			 (raylib:draw-text-ex
 			  (fontbundle-bubblegum20 fonts)
 			  "Flying through the night sky"

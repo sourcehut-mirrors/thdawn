@@ -58,31 +58,43 @@
 		  (cbspeed 3.0 3.0)
 		  (cbshootenm enm 'music-blue 5 (sebundle-bell sounds)))))
   (define (note task)
+	(define rdelay 350)
 	(wait 200)
 	(for-each
 	 (λ (xoff yoff)
 	   (dotimes 10
 		 (spawn-bullet 'pellet-blue (- (ex enm) 40.0) (+ yoff (ey enm)) 5
 					   (λ (task blt)
-						 (wait-until (thunk (>= (- frames start-time) 350)))
-						 (linear-step-forever (* tau (roll game-rng)) 2.0 task blt))))
+						 (wait-until
+						  (thunk (>= (- frames start-time) rdelay)))
+						 (cancel-bullet blt))))
 	   (unless (flzero? xoff)
 		 (dotimes 10
 		   (spawn-bullet 'pellet-blue (+ xoff (ex enm) -40.0)
 						 (+ yoff (ey enm)) 5
 						 (λ (task blt)
-						   (wait-until (thunk (>= (- frames start-time) 350)))
-						   (linear-step-forever (* tau (roll game-rng)) 2.0
-												task blt)))))
+						   (wait-until
+							(thunk (>= (- frames start-time) rdelay)))
+						   (cancel-bullet blt)))))
 	   (wait 3))
 	 '(5.0 10.0 12.0 15.0 15.0 17.0 17.0 12.0 11.0 0.0 0.0 0.0 0.0 0.0)
 	 '(-40.0 -35.0 -30.0 -25.0 -20.0 -15.0 -10.0 -5.0 0.0 5.0 10.0 15.0 20.0
 			 25.0))
 	(spawn-bullet 'big-star-blue (- (ex enm) 50.0) (+ 28.0 (ey enm))
 				  5 (λ (task blt)
-					  (wait-until (thunk (>= (- frames start-time) 350)))
+					  (wait-until (thunk (>= (- frames start-time) rdelay)))
 					  (raylib:play-sound (sebundle-bell sounds))
-					  (linear-step-forever (* tau (roll game-rng)) 2.0 task blt))))
+					  (cancel-bullet blt)
+					  (-> (fb)
+						  (fbcount 5 8)
+						  (fbspeed 2.0 5.0)
+						  (fbang 0.0 15.0)
+						  (fbshootez 'big-star-blue (bx blt) (by blt) 10 #f))
+					  (-> (cb)
+						  (cbcount 70 2)
+						  (cbang 0.0 2.571)
+						  (cbspeed 2.0 3.0)
+						  (cbshootez 'pellet-white (bx blt) (by blt) 10 #f)))))
   (spawn-subtask "movement" movement task)
   (spawn-subtask "rain" rain task)
   (spawn-subtask "ring" ring task (thunk (fx< (fx- frames start-time) 250)))
@@ -124,18 +136,18 @@
 	(spawn-enemy (enmtype yellow-fairy) 150.0 -10.0 80 w2))
 
   (wait 200)
-  (spawn-enemy (enmtype big-fairy) 0.0 -10.0 3000 ch0-big-fairy
+  (spawn-enemy (enmtype big-fairy) 0.0 -10.0 3500 ch0-big-fairy
 			   `((point . 20)))
   (wait 190)
   (spawn-particle
    (particletype stage-title)
    0.0 0.0 290 #f)
-  (spawn-particle
-   (particletype stage-blurb)
-   0.0 0.0 290 #f)
   (spawn-enemy (enmtype red-fairy) -220.0 115.0 50
 			   (curry ch0-w3-fairy 'fixed-laser-red))
   (wait 25)
+  (spawn-particle
+   (particletype stage-blurb)
+   0.0 0.0 290 #f)
   (spawn-enemy (enmtype green-fairy) -220.0 130.0 50
 			   (curry ch0-w3-fairy 'fixed-laser-orange))
   (wait 25)
