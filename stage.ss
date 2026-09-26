@@ -426,16 +426,31 @@
 	(set-box! stop-spinning #t)
 	(spawn-subtask "exit shoot"
 	  (λ (task)
-		(loop-forever
-		 (-> (fb)
-			 (fbcount 2)
-			 (fbspeed 6.0)
-			 (fbang 0.0 12.0)
-			 (fbshootenm enm 'small-star-red 2 (sebundle-shootsoft sounds)))))
+		(do [(i 0 (add1 i))]
+			[#f]
+		  (-> (fb)
+			  (fbcount 2)
+			  (fbspeed 6.0)
+			  (fbang 0.0 20.0)
+			  (fbshootenm
+			   enm
+			   (vnth-mod '#(small-star-red small-star-orange
+										   small-star-yellow
+										   small-star-green
+										   small-star-blue small-star-magenta)
+						 (fxquotient i 5))
+;			   'small-star-red
+			   0 (sebundle-shootsoft sounds)))
+		  (yield)))
 	  task)
-	(ease-to values
-			 (+ cx (* 300.0 (cos final-ang))) (+ cy (* 300.0 (sin final-ang)))
-			 40 enm)
+	(do [(i 0 (add1 i))]
+		[(= i 100)]
+	  (let ([dist (lerp 80.0 200.0 (/ i 40))]
+			[ang (fl+ final-ang (fl* (fx2fl i) (torad 1.7)))])
+		(let-values ([(x y) (dist-away cx cy ang dist)])
+		  (enm-x-set! enm x)
+		  (enm-y-set! enm y)))
+	  (yield))
 	(delete-enemy enm)))
 
 (define (chapter3 task)
@@ -480,10 +495,11 @@
 		 (delay (* 4 delay-per) (- delay delay-per))]
 		[(= i 5)]
 	  (let ([ang (torad (fx2fl (- (* 72 i) 18)))])
-		(spawn-enemy (enmtype red-fairy)
+		(-> (spawn-enemy (enmtype red-fairy)
 					 (+ cx (* initial-dist (cos ang)))
 					 (+ cy (* initial-dist (sin ang)))
-					 50000 (curry ch3-w2-fairy delay ang initial-dist cx cy)))
+					 50000 (curry ch3-w2-fairy delay ang initial-dist cx cy))
+			(enm-addflags (enmflags autocollect))))
 	  (wait delay-per)))
   (wait-until (thunk (>= frames 3500)))
   (chapter4 task))
@@ -582,6 +598,11 @@
 
   (declare-spell enm 0)
   (enm-addflags enm (enmflags invincible))
+  (vector-for-each
+   (λ (e)
+	 (when (and e (not (eq? e enm)))
+	   (kill-enemy e)))
+   live-enm)
   (cancel-all #f)
   (ease-to values 0.0 100.0 20 enm)
   (raylib:play-sound (sebundle-shortcharge sounds))

@@ -5034,7 +5034,7 @@
 (define +frame-time-factor+ 0.8)
 (define frame-time-ema 0.0)
 (define (main)
-  (raylib:set-trace-log-level 0) ;; WARNING or above
+  (raylib:set-trace-log-level 4) ;; WARNING or above
   (raylib:init-window 1280 960 "thdawn")
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)
