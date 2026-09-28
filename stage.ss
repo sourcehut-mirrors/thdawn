@@ -1223,7 +1223,7 @@
 		  (fbspeed 5.0)
 		  (fbcount 2 1)
 		  (fbang 0.0 45.0)
-		  (fbshootenm enm 'music-red 2 #f))
+		  (fbshootenm enm 'music-red 2 (sebundle-shootsoft sounds)))
 	  (-> (fb)
 		  (fbspeed 5.0)
 		  (fbcount 1 3)
@@ -1301,19 +1301,23 @@
   (-> (spawn-enemy 'green-fairy
 				   -200.0 50.0
 				   150 (curry ch10-w5 #f))
+	  (enm-addflags (enmflags autocollect))
 	  (enm-superarmor-set! 90))
   (-> (spawn-enemy 'green-fairy
 				   200.0 50.0
 				   150 (curry ch10-w5 #t))
+	  (enm-addflags (enmflags autocollect))
   	  (enm-superarmor-set! 90))
   (wait 100)
   (-> (spawn-enemy 'green-fairy
 				   -200.0 130.0
 				   150 (curry ch10-w5 #f))
+	  (enm-addflags (enmflags autocollect))
 	  (enm-superarmor-set! 50))
   (-> (spawn-enemy 'green-fairy
 				   200.0 130.0
 				   150 (curry ch10-w5 #t))
+	  (enm-addflags (enmflags autocollect))
 	  (enm-superarmor-set! 50))
   (wait-until (thunk (>= frames 10960)))
   (chapter11 task))
@@ -1330,7 +1334,6 @@
 	 (when (and e (not (eq? e enm)))
 	   (kill-enemy e)))
    live-enm)
-  (autocollect-all-items)
   (declare-spell enm 1)
   (enm-addflags enm (enmflags invincible))
   (cancel-all #f)
