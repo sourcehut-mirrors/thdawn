@@ -3147,18 +3147,18 @@
 				  [color (fxior #xf0f0f000 (eround (* 255 t)))])
 			 (raylib:draw-text-ex
 			  (fontbundle-bubblegum20 fonts)
-			  "Flying through the night sky"
-			  (fl+ 180.0 dx) 196.0
+			  "All together, let's sing out"
+			  (fl+ 100.0 dx) 196.0
 			  20.0 0.0 color)
 			 (raylib:draw-text-ex
 			  (fontbundle-bubblegum20 fonts)
-			  "Bullets flying here and there"
-			  (fl+ 200.0 dx) 223.0
+			  "Pirika Pirilala--"
+			  (fl+ 120.0 dx) 223.0
 			  20.0 0.0 color)
 			 (raylib:draw-text-ex
 			  (fontbundle-bubblegum20 fonts)
-			  "A Joyous Carnival"
-			  (fl+ 220.0 dx) 250.0
+			  "Let us sing, let us dance, and let us dodge a lot!"
+			  (fl+ 140.0 dx) 250.0
 			  20.0 0.0 color)))))))
   (vector-for-each draw-one-particle live-particles))
 

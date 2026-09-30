@@ -1133,6 +1133,7 @@
 			(cbabsolute-aim)
 			(cbshoot (ex enm) (ey enm)
 			  (λ (layer in-layer speed facing)
+				(raylib:play-sound (sebundle-shootsoft sounds))
 				(spawn-bullet color (ex enm) (ey enm) 5
 							  (curry linear-step-with-bounce facing speed))
 				(wait 2)))))))
