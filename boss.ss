@@ -1574,25 +1574,16 @@
 
 (define (hazuki-non2-spawn-one hazuki x)
   (define y 0.0)
-  (define wisp-dead-box (box #f))
-  (define (blt-ctrl task blt)
-	(wait-until (thunk (unbox wisp-dead-box)))
-	(let ([ex (car (unbox wisp-dead-box))]
-		  [ey (cdr (unbox wisp-dead-box))])
-	  (if (fl< (distsq (bx blt) (by blt) ex ey)
-			   (fl* 30.0 30.0))
-		  (cancel-bullet-with-drop blt (miscenttype big-piv) #t)
-		  (cancel-bullet blt #t))))
   (define ring1
 	(map
 	 (λ (_)
-	   (-> (spawn-bullet 'glow-ball-blue x y 5 blt-ctrl)
+	   (-> (spawn-bullet 'glow-ball-blue x y 5 values)
 		   (bullet-addflags (bltflags uncancelable))))
 	 (iota 8)))
   (define ring2
 	(map
 	 (λ (_)
-	   (-> (spawn-bullet 'glow-ball-red x y 5 blt-ctrl)
+	   (-> (spawn-bullet 'glow-ball-red x y 5 values)
 		   (bullet-addflags (bltflags uncancelable))))
 	 (iota 8)))
   (-> (spawn-enemy
@@ -1600,7 +1591,23 @@
 	   (curry hazuki-non2-wisp-control ring1 ring2)
 	   '()
 	   (λ (enm)
-		 (set-box! wisp-dead-box (cons (ex enm) (ey enm)))
+		 (define canceled
+		   (fold-left
+			(λ (acc blt)
+			  (if (fl< (distsq (bx blt) (by blt) (ex enm) (ey enm))
+					   (fl* 30.0 30.0))
+				  (begin
+					(cancel-bullet-with-drop blt (miscenttype big-piv) #t)
+					(fx1+ acc))
+				  (begin
+					(cancel-bullet blt #t)
+					acc)))
+			0 (append ring1 ring2)))
+		 (cond
+		  [(fx= canceled 16)
+		   (raylib:play-sound (sebundle-droplife sounds))]
+		  [(fxpositive? canceled)
+		   (raylib:play-sound (sebundle-dropbomb sounds))])
 		 (damage-enemy hazuki 400 #t #t)
 		 #t))
 	  (enm-addflags (enmflags aura-red nocollide))))
