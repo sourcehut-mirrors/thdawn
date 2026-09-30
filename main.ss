@@ -4,7 +4,7 @@
 ;; file as a r6rs Program
 (import (chezscheme))
 (import (add-prefix (raylib) raylib:)
-		(coro) (geom) (funcutils) (config))
+		(coro) (geom) (funcutils) (config) (sort))
 (alias λ lambda)
 
 ;; for dev only, makes a function lazily looked up at runtime so
@@ -742,10 +742,10 @@
    (if (vector? replay) 0 -1)
    1
    (make-vector 2048 #f)
-   (let ([ret (make-vector 2048)])
+   (let ([ret (make-fxvector 2048)])
 	 (do [(i 0 (add1 i))]
-		 [(= i (vlen ret))]
-	   (vector-set-fixnum! ret i i))
+		 [(= i (fxvector-length ret))]
+	   (fxvector-set! ret i i))
 	 ret)
    (make-vector 256 #f)
    (make-vector 2048 #f)
@@ -4796,19 +4796,19 @@
 					  -1))
 
   (let ([sorted-bullets (stage-ctx-sorted-bullets current-stage-ctx)])
-    (vector-sort!
+    (fxvector-sort-for-bullet-render!
 	 (namedλ bullet-comparator (ai bi)
-	   (define a (vnth live-bullets ai))
-	   (define b (vnth live-bullets bi))
-	   (cond
-		[(not a) #t]
-		[(not b) #f]
-		[else
-		 (let ([rpa (bullet-render-priority a)]
-			   [rpb (bullet-render-priority b)])
-		   (if (fx= rpa rpb)
-			   (fx< (bullet-id a) (bullet-id b))
-			   (fx< rpa rpb)))]))
+			 (define a (vnth live-bullets ai))
+			 (define b (vnth live-bullets bi))
+			 (cond
+			  [(not a) b] ;; #f < truthy
+			  [(not b) #f] ;; truthy not< #f
+			  [else
+			   (let ([rpa (bullet-render-priority a)]
+					 [rpb (bullet-render-priority b)])
+				 (if (fx= rpa rpb)
+					 (fx< (bullet-id a) (bullet-id b))
+					 (fx< rpa rpb)))]))
 	 sorted-bullets)
 	;; lasers go under enemies, all other bullets on top
 	(draw-lasers textures sorted-bullets)

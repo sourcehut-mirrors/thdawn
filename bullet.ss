@@ -314,7 +314,9 @@
 								length radius (bullet-facing bullet)
 								(and (not (bullet-hasflag? bullet (bltflag noshine)))
 									 (blttype-preimg-sprite bt)))))))))
-  (vector-for-each draw-one-laser sorted-bullets))
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i (fxvector-length sorted-bullets))]
+	(draw-one-laser (fxvector-ref sorted-bullets i))))
 
 
 (define (draw-bullets textures sorted-bullets)
@@ -376,4 +378,6 @@
 			  (when show-hitboxes
 				(raylib:draw-circle-v render-x render-y (bullet-hit-radius type)
 									  red)))))))
-  (vector-for-each draw-one-bullet sorted-bullets))
+  (do [(i 0 (fx1+ i))]
+	  [(fx= i (fxvector-length sorted-bullets))]
+	(draw-one-bullet (fxvector-ref sorted-bullets i))))
