@@ -394,15 +394,16 @@
 	(do [(angvel (torad 0.05) (if (fl< angvel (torad 4.0))
 								  (fl+ angvel (torad 0.1))
 								  angvel))
-		 (ang init-ang (+ ang angvel))
+		 (ang init-ang (fl+ ang angvel))
 		 (i 0 (add1 i))]
 		[(= i 150) ang]
-	  (let ([dist (lerp init-dist 80.0 (ease-out-quad (/ i 200)))])
-		(enm-x-set! enm (+ cx (* dist (cos ang))))
-		(enm-y-set! enm (+ cy (* dist (sin ang))))
-		(bullet-x-set! laser (ex enm))
-		(bullet-y-set! laser (ey enm))
-		(bullet-facing-set! laser (+ (- ang pi) (torad 18.0)))
+	  (let*-values ([(dist) (lerp init-dist 80.0 (ease-out-quad (/ i 200)))]
+					[(x y) (dist-away cx cy ang dist)])
+		(enm-x-set! enm x)
+		(enm-y-set! enm y)
+		(bullet-x-set! laser x)
+		(bullet-y-set! laser y)
+		(bullet-facing-set! laser (fl+ (fl- ang pi) (torad 18.0)))
 		;; The angle formed by the two points and the center is 144 degrees
 		;; bisecting and using trig gives us this result
 		(laser-length-set! laser (fl* 2.0 dist sin72)))
@@ -413,11 +414,11 @@
   (spawn-subtask "spin shoot"
 	(λ (task)
 	  (interval-loop 2
-		(let ([ang (todeg (atan (- (ey enm) cy) (- (ex enm) cx)))])
+		(let ([ang (todeg (facing-point cx cy (ex enm) (ey enm)))])
 		  (-> (fb)
 			  (fbcount 1)
 			  (fbspeed 9.0)
-			  (fbang (- ang 90.0) 5.0)
+			  (fbang (fl- ang 90.0) 5.0)
 			  (fbabsolute-aim)
 			  (fbshootenm enm 'music-blue 5 (sebundle-shootsoft sounds))))))
 	task
@@ -439,27 +440,26 @@
 										   small-star-green
 										   small-star-blue small-star-magenta)
 						 (fxquotient i 5))
-;			   'small-star-red
 			   0 (sebundle-shootsoft sounds)))
 		  (yield)))
 	  task)
-	(do [(i 0 (add1 i))]
-		[(= i 100)]
-	  (let ([dist (lerp 80.0 200.0 (/ i 40))]
-			[ang (fl+ final-ang (fl* (fx2fl i) (torad 1.7)))])
-		(let-values ([(x y) (dist-away cx cy ang dist)])
-		  (enm-x-set! enm x)
-		  (enm-y-set! enm y)))
-	  (yield))
-	(delete-enemy enm)))
+
+	(do [(ang final-ang (fl+ ang (torad 1.7)))
+		 (i 0 (add1 i))]
+		[(= i 60)]
+	  (let*-values ([(dist) (lerp 80.0 200.0 (/ i 60))]
+					[(x y) (dist-away cx cy ang dist)])
+		(enm-x-set! enm x)
+		(enm-y-set! enm y))
+	  (yield))))
 
 (define (chapter3 task)
   (set! current-chapter 3)
   (wait 20)
 
-  ;; ;; technically map can and does evaluate the lambda out of order, but here it
-  ;; ;; doesn't really matter as long as it remains the same impl in chez scheme,
-  ;; ;; which is likely the case.
+  ;; technically map can and does evaluate the lambda out of order, but here it
+  ;; doesn't really matter as long as it remains the same impl in chez scheme,
+  ;; which is likely the case.
   (let ([followers (map (λ (i)
 						  (spawn-enemy
 						   (enmtype red-fairy) -210.0 150.0 100
@@ -480,12 +480,12 @@
 				 (curry ch3-w1-leader-fairy #t) five-point-items
 				 (curry ch3-w1-leader-on-death followers)))
   (wait 240)
-  (dotimes 4
+  (dotimes 2
 	(spawn-particle
 	 (particletype circle-hint)
 	 0.0 224.0
-	 30 '((color . -1) (r1 . 300.0) (r2 . 80.0)))
-	(wait 30))
+	 60 '((color . -1) (r1 . 300.0) (r2 . 80.0)))
+	(wait 60))
   (wait 40)
   (let ([cx 0.0]
 		[cy 224.0]
