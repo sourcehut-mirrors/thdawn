@@ -13,8 +13,8 @@
 	(wait 30)
 	(dotimes 4
 	  (-> (fb)
-		  (fbcount 1 3)
-		  (fbspeed 4.0 6.0)
+		  (fbcount 1 5)
+		  (fbspeed 4.0 8.0)
 		  (fbshootenm enm bullet 5 (sebundle-shoot0 sounds)))
 	  (wait 50)))
   (spawn-subtask "movement" movement task)
