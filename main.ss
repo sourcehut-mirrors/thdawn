@@ -3620,7 +3620,7 @@
 			 (fl+ (ey enm) (centered-roll game-rng 30.0))
 			 90 enm))
   (raylib:play-sound (sebundle-bossdie sounds))
-  (set! screenshake (if short 20 40))
+  (set! screenshake (if short 20 60))
   (cancel-all #t)
   (dotimes 90
 	(spawn-particle
