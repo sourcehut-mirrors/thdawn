@@ -2603,6 +2603,7 @@
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars (enm-extras aiko))))
+  (bossinfo-healthbars-set! (enm-extras aiko) '#())
   ;; widen to full width
   (healthbar-width-set! (vnth (bossinfo-healthbars bossinfo)
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
