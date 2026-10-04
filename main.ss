@@ -4688,7 +4688,7 @@
 	   (lerp 1.4 2.5 progress)))]
    [(fx< 11850 frames 12800)
 	(values 1.8 2.0 2.5)]
-   [(fx< 12800 frames 13000)
+   [(fx< 12800 frames 13200)
 	(let ([progress (/ (fx- frames 12800)
 					   (fx- 13200 12800))])
 	  (values
