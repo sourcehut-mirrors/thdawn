@@ -1,3 +1,32 @@
+* [2026-10-02 Fri]
+Finally got around to hard-looping the boss theme 5 times, which is how many times we need
+to account for someone timing out every single attack until the end of the survival.
+
+Did it using this command, which I disclose was partially given by Google's AI summary
+(though the StackOverflow answer it copied from was also at the top):
+
+ffmpeg -i naisho_yo.wav -filter_complex "[0:a]atrim=end=24.439,asetpts=PTS-STARTPTS[intro]; \
+ [0:a]atrim=start=24.439:end=197.849,asetpts=PTS-STARTPTS,aloop=loop=5:size=7647381:start=0[chorus_loop]; \
+ [intro][chorus_loop]concat=n=2:v=0:a=1[out]" -map "[out]" naisho_yo_loop.wav
+
+Made a cut of the song for the ending/final spell, but haven't fit it into the dialogue
+and/or adjusted the dialogue around it yet. I think it's a good idea though.
+
+I'll need to implement forced-advance for the dialogue, probably as an alternative option
+to the pinning duration key. Though probably should have forced advance for all of the
+dialogue lines.
+
+As for slower captures of the final spell, I might just reduce the time limit to a more
+reasonable one with smaller wiggle time. It's okay for the song to end after the player
+has beaten the final spell (as we keep running the boss music into the end-of-game pause
+menu), but it would be bad if the song ended too early before the pattern.
+
+Ugh but I just remembered the post-fight dialogue, and I don't know what to put there if I
+want "Thank you!" to line up with the end of the final spell...
+
+Low effort is to just go back to the looped version of the song (faking a looped track)
+after the "ending" bit finishes playback.
+
 * [2026-09-23 Wed]
 
 Don't have time to implement this right now but just had an idea!
@@ -104,6 +133,8 @@ omake, and other QoL or extras that comes up (like achievements).
 And of course, there's still room for balance tweaks. But either way, I'm very happy as a
 whole with how the pattern design turned out. I don't foresee any major changes to any
 pattern.
+
+Also, while procrastinating on other stuff, implemented rudimentary controller support.
 
 * [2026-07-10 Fri]
 Did the flower icons for the nameplates, which was surprisingly little effort. Kind of
