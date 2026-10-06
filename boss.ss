@@ -2806,16 +2806,21 @@
 	(and (fxpositive? (bossinfo-remaining-timer bossinfo))
 		 (fxpositive? (enm-health doremi))))
   (define (p2)
-	(or (fx< (bossinfo-remaining-timer bossinfo) (* 85 60))
-		(fx< (enm-health doremi) 25000)))
+	(or (fx< (bossinfo-remaining-timer bossinfo) (* 35 60))
+		(fx< (enm-health doremi) 24000)))
   (define (p3)
-	(or (fx< (bossinfo-remaining-timer bossinfo) (* 70 60))
+	(or (fx< (bossinfo-remaining-timer bossinfo) (* 26 60))
 		(fx< (enm-health doremi) 18000)))
   (define (p4)
-	(or (fx< (bossinfo-remaining-timer bossinfo) (* 20 60))
+	(or (fx< (bossinfo-remaining-timer bossinfo) (* 13 60))
 		(fx< (enm-health doremi) 7500)))
   (set! current-chapter 31)
-  (wait 90)
+  ;; Reset in start-game or start-replay. This sucks, but I'm too lazy to do it better.
+  (let ([base-volume (fl/ (fx2fl (assqdr 'music-vol config)) 100.0)])
+	(do [(i 90 (fx1- i))]
+		[(fxnegative? i)]
+	  (raylib:set-music-volume current-music (fl* base-volume (fl/ (fx2fl i) 90.0)))
+	  (yield)))
   (spawn-task "doremi reenter"
 	(λ (task)
 	  (define-values (x y)
@@ -2834,12 +2839,11 @@
 		(dist-away 0.0 120.0 (torad 150.0) 50.0))
 	  (ease-to ease-out-cubic x y 90 aiko))
 	(constantly #t))
-  (stage-ctx-dialogue-set!
-   current-stage-ctx
-   (cons 'finalspell
-		 (with-input-from-file "assets/dialogue/finalspell.dat" read)))
-  (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
+  (wait 90)
+  (play-music (musbundle-naisho-yo-ojamajo-ending music))
+  (show-dialogue 'finalspell "assets/dialogue/finalspell.dat")
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
+
   (bossinfo-healthbars-set!
    bossinfo
    (vector-pop (bossinfo-healthbars bossinfo)))
@@ -2976,11 +2980,7 @@
 	task)
   (common-boss-postlude bossinfo doremi #f)
   (wait 120)
-  (stage-ctx-dialogue-set!
-   current-stage-ctx
-   (cons 'postbattle
-		 (with-input-from-file "assets/dialogue/postbattle.dat" read)))
-  (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
+  (show-dialogue 'postbattle "assets/dialogue/postbattle.dat")
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (let ([clear-bonus (+ (* 10000000 (floor life-stock))
 						(* 1000000 (floor bomb-stock))

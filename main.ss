@@ -717,9 +717,10 @@
    (mutable dialogue)
    ;; index into dialogue
    (mutable dialogue-idx)
-   ;; for timed messages, forbid advancing dialogue-idx until
-   ;; `frames' exceeds this timestamp
-   (mutable dialogue-pinned-until)
+   ;; (timestamp . bool) for timed messages. forbid advancing dialogue-idx until `frames'
+   ;; exceeds the timestamp. Additionally, if the bool is true, then automatically advance
+   ;; the dialogue when the timestamp is reached. set to (-1 . #f) when no dialogue active.
+   (mutable dialogue-pin)
    ;; unit vector of the direction the player moved in the last frame, zero vector
    ;; if no movement
    (mutable last-player-movement-dir)
@@ -755,7 +756,7 @@
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
    0 0 #f
-   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 -1 v2zero #f #f 0))
+   (make-vector 4 0.0) (make-vector 4 0.0) #f -1 (cons -1 #f) v2zero #f #f 0))
 
 (define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
@@ -2416,7 +2417,7 @@
 	 (make-spell-descriptor "\"One Flower, One World\""
 							3600 -1 5000000 #f life-frag life-frag-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
-							5940 30000 5000000 'group
+							2400 27000 5000000 'group
 							'((point . 100)) '((point . 15))))))
 (define-record-type score-entry
   (fields name score unixtime cleared version)
@@ -3930,7 +3931,7 @@
 (define (handle-dialogue-skip)
   (define dialogue (stage-ctx-dialogue current-stage-ctx))
   (when (and dialogue
-			 (fx= -1 (stage-ctx-dialogue-pinned-until current-stage-ctx))
+			 (fx= -1 (car (stage-ctx-dialogue-pin current-stage-ctx)))
 			 (case (car dialogue)
 			   [(prebattle)
 				(let-values ([(doremi hazuki aiko) (find-bosses)])
@@ -3939,58 +3940,84 @@
 			   [(postbattle) #t]))
 	(stage-ctx-dialogue-set! current-stage-ctx #f)))
 
+(define (handle-dialogue-autoadvance)
+  (define pin (stage-ctx-dialogue-pin current-stage-ctx))
+  (when (and (stage-ctx-dialogue current-stage-ctx)
+			 (cdr pin)
+			 (not (fx= -1 (car pin)))
+			 (fx>= frames (car pin)))
+	(handle-dialogue-advance)))
+
+(define (handle-dialogue-specials row)
+  (let* ([evt (assq 'event row)]
+		 [dur (assq 'duration row)]
+		 [auto (assq 'auto row)])
+	(set-car! (stage-ctx-dialogue-pin current-stage-ctx)
+			  (if dur (+ frames (cdr dur)) -1))
+	(set-cdr! (stage-ctx-dialogue-pin current-stage-ctx)
+			  (and auto (cdr auto)))
+	(when evt
+	  (case (cdr evt)
+		[(doremi-enter)
+		 (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
+								 (λ (task enm)
+								   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+											(cdr dur) enm)
+								   (spawn-particle (particletype doremi-title)
+												   0.0 240.0 240 #f))
+								 '()
+								 (constantly #f))])
+		   (enm-extras-set! enm (blank-doremi-bossinfo)))]
+		[(hazuki-enter)
+		 (let ([enm (spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
+								 (λ (task enm)
+								   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
+											(cdr dur) enm)
+								   (spawn-particle (particletype hazuki-title)
+												   0.0 240.0 240 #f))
+								 '()
+								 (constantly #f))])
+		   (enm-extras-set! enm (blank-hazuki-bossinfo)))]
+		[(aiko-enter)
+		 (let ([enm (spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
+								 (λ (task enm)
+								   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
+											(cdr dur) enm)
+								   (spawn-particle (particletype aiko-title)
+												   0.0 240.0 240 #f))
+								 '()
+								 (constantly #f))])
+		   (enm-extras-set! enm (blank-aiko-bossinfo)))]
+		[(chargesound-delayed)
+		 (spawn-task "delayed sound"
+		   (λ (task)
+			 (wait 100) ;; todo
+			 (raylib:play-sound (sebundle-longcharge sounds)))
+		   (constantly #t))]
+		[(chargesound)
+		 (raylib:play-sound (sebundle-longcharge sounds))]))))
+
+(define (show-dialogue id path)
+  (stage-ctx-dialogue-set!
+   current-stage-ctx
+   (cons id (with-input-from-file path read)))
+  (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
+  (stage-ctx-dialogue-pin-set! current-stage-ctx (cons -1 #f))
+  (handle-dialogue-specials (vnth (cdr (stage-ctx-dialogue current-stage-ctx)) 0)))
+
 (define (handle-dialogue-advance)
   (let ([next-idx (add1 (stage-ctx-dialogue-idx current-stage-ctx))])
 	(cond
 	 [(= (vlen (cdr (stage-ctx-dialogue current-stage-ctx)))
 		 next-idx)
 	  (stage-ctx-dialogue-set! current-stage-ctx #f)]
-	 [(< frames (stage-ctx-dialogue-pinned-until current-stage-ctx))
+	 [(< frames (car (stage-ctx-dialogue-pin current-stage-ctx)))
 	  (void)]
 	 [else
 	  (stage-ctx-dialogue-idx-set! current-stage-ctx next-idx)
 	  (raylib:play-sound (sebundle-playershoot sounds))
-	  (let* ([next (vnth (cdr (stage-ctx-dialogue current-stage-ctx))
-						 next-idx)]
-			 [evt (assq 'event next)]
-			 [dur (assq 'duration next)])
-		(stage-ctx-dialogue-pinned-until-set!
-		 current-stage-ctx
-		 (if dur (+ frames (cdr dur)) -1))
-		(when evt
-		  (case (cdr evt)
-			[(doremi-enter)
-			 (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
-									 (λ (task enm)
-									   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-												(cdr dur) enm)
-									   (spawn-particle (particletype doremi-title)
-													   0.0 240.0 240 #f))
-									 '()
-									 (constantly #f))])
-			   (enm-extras-set! enm (blank-doremi-bossinfo)))]
-			[(hazuki-enter)
-			 (let ([enm (spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
-									 (λ (task enm)
-									   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
-												(cdr dur) enm)
-									   (spawn-particle (particletype hazuki-title)
-													   0.0 240.0 240 #f))
-									 '()
-									 (constantly #f))])
-			   (enm-extras-set! enm (blank-hazuki-bossinfo)))]
-			[(aiko-enter)
-			 (let ([enm (spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
-									 (λ (task enm)
-									   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
-												(cdr dur) enm)
-									   (spawn-particle (particletype aiko-title)
-													   0.0 240.0 240 #f))
-									 '()
-									 (constantly #f))])
-			   (enm-extras-set! enm (blank-aiko-bossinfo)))]
-			[(chargesound)
-			 (raylib:play-sound (sebundle-longcharge sounds))])))])))
+	  (handle-dialogue-specials (vnth (cdr (stage-ctx-dialogue current-stage-ctx))
+									  next-idx))])))
 
 (define (handle-game-input inputs)
   (define level-pressed (inputset-level-pressed inputs))
@@ -4445,11 +4472,11 @@
    (fx2fl (+ +playfield-min-render-x+ 10))
    (fx2fl (- +playfield-max-render-y+ 50))
    18.0 0.0 text-color)
-  (unless (< frames (stage-ctx-dialogue-pinned-until current-stage-ctx))
+  (unless (fx< frames (car (stage-ctx-dialogue-pin current-stage-ctx)))
 	(raylib:draw-poly
 	 (- +playfield-max-render-x+ 20.0)
 	 (fl+ (- +playfield-max-render-y+ 20.0)
-		  (if (< (fxmod frames 60) 30)
+		  (if (fx< (fxmod frames 60) 30)
 			  3.0 0.0))
 	 3 5.0 90.0 -1)))
 
@@ -4912,9 +4939,12 @@
   (vector-fill! live-misc-ents #f)
   (vector-fill! live-particles #f)
   (stage-ctx-dialogue-set! current-stage-ctx #f)
-  (stage-ctx-dialogue-pinned-until-set! current-stage-ctx -1)
+  (stage-ctx-dialogue-pin-set! current-stage-ctx (cons -1 #f))
   (kill-all-tasks)
   (set! frames timestamp)
+  ;; dirty hack...resets the music volume from when the boss music was fading out
+  ;; this is the prod path too since starting a game/replay calls (reset-to 0).
+  (update-music-volumes)
   (if (< chapter 14)
 	  (begin
 		(spawn-task "stage driver" func (constantly #t))
@@ -4991,6 +5021,7 @@
 
 (define (tick-game)
   (unless (paused?)
+	(handle-dialogue-autoadvance)
 	(tick-player)
 	(vector-for-each
 	 despawn-out-of-bound-bullet
@@ -5105,6 +5136,8 @@
   (vector->pseudo-random-generator! game-rng (vnth first 4))
   (vector-fill! live-particles #f)
   (kill-all-tasks)
+  ;; dirty hack...resets the music volume from when the boss music was fading out
+  (update-music-volumes)
   (play-music #f)
   (play-music (musbundle-ojamajo-carnival music))
   (reset-to 0))

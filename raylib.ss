@@ -15,6 +15,7 @@
 		  load-music-stream play-music-stream stop-music-stream pause-music-stream
 		  resume-music-stream seek-music-stream update-music-stream unload-music-stream
 		  set-music-volume set-music-looping
+		  get-music-time-length get-music-time-played
 		  load-sound play-sound unload-sound set-sound-pitch set-sound-volume
 		  load-texture unload-texture texture-width texture-height
 		  draw-texture-rec draw-texture draw-texture-pro
@@ -254,6 +255,10 @@
   (define (unload-music-stream music)
 	(unload-music-stream0 music)
 	(foreign-free (ftype-pointer-address music)))
+  (define get-music-time-length
+	(foreign-procedure __atomic "GetMusicTimeLength" ((& Music)) float))
+  (define get-music-time-played
+	(foreign-procedure __atomic "GetMusicTimePlayed" ((& Music)) float))
 
   (define-ftype Sound
 	(struct

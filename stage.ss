@@ -1525,10 +1525,7 @@
 (define (chapter13 task)
   (set! current-chapter 13)
   (wait 180)
-  (stage-ctx-dialogue-set!
-   current-stage-ctx
-   (cons 'prebattle
-		 (with-input-from-file "assets/dialogue/prebattle.dat" read)))
+  (show-dialogue 'prebattle "assets/dialogue/prebattle.dat")
   (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (let-values ([(doremi hazuki aiko) (find-bosses)])
