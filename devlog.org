@@ -1,3 +1,18 @@
+* [2026-10-05 Mon]
+Just finished reworking the new ending orchestration and it's so goddamn chuuni lmao.
+
+But I love it for that. Being boldly and audaciously cringe is what this project is all
+about.
+
+The timings are pretty much exactly how I like them. Only thing is I'm still not sure what
+to do with the post battle dialogue. I'll probably do what I said I'd do previously, which
+is go back to the main boss theme. I'll also set auto advance for the postbattle dialogue
+(or probably everything) to prevent the player from being able to actually listen to the
+end of the main boss theme file.
+
+Ugh still can't get over the chuuni. It's as chuuni as the two midboss syncs, which still
+tickle me to this day, over a year after I made them.
+
 * [2026-10-02 Fri]
 Finally got around to hard-looping the boss theme 5 times, which is how many times we need
 to account for someone timing out every single attack until the end of the survival.

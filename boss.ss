@@ -2821,6 +2821,8 @@
 		[(fxnegative? i)]
 	  (raylib:set-music-volume current-music (fl* base-volume (fl/ (fx2fl i) 90.0)))
 	  (yield)))
+  (autocollect-all-items)
+  (wait 120)
   (spawn-task "doremi reenter"
 	(λ (task)
 	  (define-values (x y)
@@ -2839,7 +2841,7 @@
 		(dist-away 0.0 120.0 (torad 150.0) 50.0))
 	  (ease-to ease-out-cubic x y 90 aiko))
 	(constantly #t))
-  (wait 90)
+  (wait 120)
   (play-music (musbundle-naisho-yo-ojamajo-ending music))
   (show-dialogue 'finalspell "assets/dialogue/finalspell.dat")
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
