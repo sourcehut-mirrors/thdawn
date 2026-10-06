@@ -3989,33 +3989,6 @@
 									 '()
 									 (constantly #f))])
 			   (enm-extras-set! enm (blank-aiko-bossinfo)))]
-			[(doremi-reenter)
-			 (call-with-values find-bosses
-			   (λ (doremi _h _a)
-				 (spawn-task "doremi reenter"
-				   (λ (task)
-					 (define-values (x y)
-					   (dist-away 0.0 120.0 -hpi 50.0))
-					 (ease-to ease-out-cubic x y (cdr dur) doremi))
-				   (constantly #t))))]
-			[(hazuki-reenter)
-			 (call-with-values find-bosses
-			   (λ (_d hazuki _a)
-				 (spawn-task "hazuki reenter"
-				   (λ (task)
-					 (define-values (x y)
-					   (dist-away 0.0 120.0 (torad 30.0) 50.0))
-					 (ease-to ease-out-cubic x y (cdr dur) hazuki))
-				   (constantly #t))))]
-			[(aiko-reenter)
-			 (call-with-values find-bosses
-			   (λ (_d _h aiko)
-				 (spawn-task "aiko reenter"
-				   (λ (task)
-					 (define-values (x y)
-					   (dist-away 0.0 120.0 (torad 150.0) 50.0))
-					 (ease-to ease-out-cubic x y (cdr dur) aiko))
-				   (constantly #t))))]
 			[(chargesound)
 			 (raylib:play-sound (sebundle-longcharge sounds))])))])))
 

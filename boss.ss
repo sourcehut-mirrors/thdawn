@@ -2816,6 +2816,24 @@
 		(fx< (enm-health doremi) 7500)))
   (set! current-chapter 31)
   (wait 90)
+  (spawn-task "doremi reenter"
+	(λ (task)
+	  (define-values (x y)
+		(dist-away 0.0 120.0 -hpi 50.0))
+	  (ease-to ease-out-cubic x y 90 doremi))
+	(constantly #t))
+  (spawn-task "hazuki reenter"
+	(λ (task)
+	  (define-values (x y)
+		(dist-away 0.0 120.0 (torad 30.0) 50.0))
+	  (ease-to ease-out-cubic x y 90 hazuki))
+	(constantly #t))
+  (spawn-task "aiko reenter"
+	(λ (task)
+	  (define-values (x y)
+		(dist-away 0.0 120.0 (torad 150.0) 50.0))
+	  (ease-to ease-out-cubic x y 90 aiko))
+	(constantly #t))
   (stage-ctx-dialogue-set!
    current-stage-ctx
    (cons 'finalspell
