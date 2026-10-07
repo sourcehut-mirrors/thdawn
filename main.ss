@@ -4319,6 +4319,41 @@
 	   aiko-sp2-vertical-rects))
 	))
 
+(define (draw-boss-portrait spellcaster textures)
+  (define bossinfo (enm-extras spellcaster))
+  (define spid (bossinfo-active-spell-id bossinfo))
+  (define elapsed-frames (bossinfo-elapsed-frames bossinfo))
+  (when (and spid (fx< elapsed-frames 120))
+	(let* ([tex (txbundle-portrait-tmp textures)]
+		   [width (fx2fl (raylib:texture-width tex))]
+		   [height (fx2fl (raylib:texture-height tex))]
+		   [scale (if (fx< elapsed-frames 90)
+					  1.0
+					  (lerp 1.0 2.5 (/ (fx- elapsed-frames 90) 30)))]
+		   [y (if (fx< elapsed-frames 30)
+				  (lerp (+ +playfield-min-render-y+ 100.0)
+						(+ +playfield-min-render-y+ 200.0)
+						(/ elapsed-frames 30))
+				  (fx2fl (+ 200 +playfield-min-render-y+)))])
+	  (raylib:with-matrix
+	   ;; x of 100.0 for left boss
+	   ;; 200.0 for middle boss
+	   ;; 300.0 for right boss/default
+	   (raylib:translatef 300.0 y 0.0)
+	   (raylib:scalef scale scale 1.0)
+	   (raylib:draw-texture-pro
+		tex (make-rectangle 0.0 0.0 width height)
+		(make-rectangle (fl/ width 4.0 -2.0) (fl/ height 4.0 -2.0)
+						(fl/ width 4.0) (fl/ height 4.0))
+		v2zero 0.0
+		(fxior #xffffff00
+			   (cond
+				[(fx< elapsed-frames 30)
+				 (eround (lerp 0 220 (/ elapsed-frames 30)))]
+				[(fx< elapsed-frames 90) 220]
+				[else
+				 (eround (lerp 220 0 (/ (fx- elapsed-frames 90) 30)))])))))))
+
 (define (draw-boss-hud position enm textures fonts)
   (define bossinfo (enm-extras enm))
   (define remaining-timer (bossinfo-remaining-timer bossinfo))
@@ -4564,6 +4599,8 @@
 	   584.0 280.0 24.0 24.0
 	   (get-color (vkey bomb)))))
 
+  (when-let ([spellcaster (find-spellcaster)])
+	(draw-boss-portrait spellcaster textures))
   ;; this is kinda dumb but whatever
   (let-values ([(doremi hazuki aiko) (find-bosses)]
 			   [(nth-boss) 0])
