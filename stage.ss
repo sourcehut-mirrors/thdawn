@@ -62,20 +62,18 @@
 	(wait 200)
 	(for-each
 	 (λ (xoff yoff)
-	   (dotimes 10
-		 (spawn-bullet 'pellet-blue (- (ex enm) 40.0) (+ yoff (ey enm)) 5
+	   (spawn-bullet 'pellet-blue (- (ex enm) 40.0) (+ yoff (ey enm)) 5
+					 (λ (task blt)
+					   (wait-until
+						(thunk (>= (- frames start-time) rdelay)))
+					   (cancel-bullet blt)))
+	   (unless (flzero? xoff)
+		 (spawn-bullet 'pellet-blue (+ xoff (ex enm) -40.0)
+					   (+ yoff (ey enm)) 5
 					   (λ (task blt)
 						 (wait-until
 						  (thunk (>= (- frames start-time) rdelay)))
 						 (cancel-bullet blt))))
-	   (unless (flzero? xoff)
-		 (dotimes 10
-		   (spawn-bullet 'pellet-blue (+ xoff (ex enm) -40.0)
-						 (+ yoff (ey enm)) 5
-						 (λ (task blt)
-						   (wait-until
-							(thunk (>= (- frames start-time) rdelay)))
-						   (cancel-bullet blt)))))
 	   (wait 3))
 	 '(5.0 10.0 12.0 15.0 15.0 17.0 17.0 12.0 11.0 0.0 0.0 0.0 0.0 0.0)
 	 '(-40.0 -35.0 -30.0 -25.0 -20.0 -15.0 -10.0 -5.0 0.0 5.0 10.0 15.0 20.0
