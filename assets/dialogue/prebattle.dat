@@ -2,10 +2,13 @@
 ((type . reimu) (text . "...Where is this?
 Maybe I took a wrong turn..."))
 ((type . reimu) (text . "What a beautiful starry night, though..."))
-((type . doremi) (noportrait . #t) (text . "There you are!") (event . doremi-enter) (duration . 90))
+((type . doremi) (noportrait . #t) (text . "There you are!") (event . doremi-enter)
+ (timing . (90 . pin)))
 ((type . doremi) (text . "You're the onee-san we just passed by!"))
-((type . aiko) (text . "Doremi-chan, wait up!") (event . aiko-enter) (duration . 90))
-((type . hazuki) (event . hazuki-enter) (duration . 90) (text . "You can't fly so far ahead of us, Doremi-chan.
+((type . aiko) (text . "Doremi-chan, wait up!") (event . aiko-enter)
+ (timing . (90 . pin)))
+((type . hazuki) (event . hazuki-enter) (timing . (90 . pin))
+ (text . "You can't fly so far ahead of us, Doremi-chan.
 You'll get lost!"))
 ((type . doremi) (text . "Don't worry about that, Hazuki-chan, look who I met!"))
 ((type . reimu) (text . "...? Who are these...little girls?"))

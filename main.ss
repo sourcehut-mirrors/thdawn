@@ -717,9 +717,12 @@
    (mutable dialogue)
    ;; index into dialogue
    (mutable dialogue-idx)
-   ;; (timestamp . bool) for timed messages. forbid advancing dialogue-idx until `frames'
-   ;; exceeds the timestamp. Additionally, if the bool is true, then automatically advance
-   ;; the dialogue when the timestamp is reached. set to (-1 . #f) when no dialogue active.
+   ;; (timestamp . sym) for timed messages.
+   ;; sym can be:
+   ;; - `pin` to forbid advancing until `frames` exceeds the timestamp
+   ;; - `fullauto` forbid advancing and auto advance when the timestamp is reached
+   ;; - `auto` allow advancing but auto advance when the timestamp is reached
+   ;; set to (-1 . #f) when no dialogue active.
    (mutable dialogue-pin)
    ;; unit vector of the direction the player moved in the last frame, zero vector
    ;; if no movement
@@ -3931,7 +3934,8 @@
 (define (handle-dialogue-skip)
   (define dialogue (stage-ctx-dialogue current-stage-ctx))
   (when (and dialogue
-			 (fx= -1 (car (stage-ctx-dialogue-pin current-stage-ctx)))
+			 (not (memq (car (stage-ctx-dialogue-pin current-stage-ctx))
+						'(pin fullauto)))
 			 (case (car dialogue)
 			   [(prebattle)
 				(let-values ([(doremi hazuki aiko) (find-bosses)])
@@ -3940,29 +3944,35 @@
 			   [(postbattle) #t]))
 	(stage-ctx-dialogue-set! current-stage-ctx #f)))
 
+(define (cannot-advance-dialogue?)
+  (let ([timing (stage-ctx-dialogue-pin current-stage-ctx)])
+	(and (memq (cdr timing) '(pin fullauto))
+		 (fx< frames (car timing)))))
+
 (define (handle-dialogue-autoadvance)
-  (define pin (stage-ctx-dialogue-pin current-stage-ctx))
+  (define timing (stage-ctx-dialogue-pin current-stage-ctx))
   (when (and (stage-ctx-dialogue current-stage-ctx)
-			 (cdr pin)
-			 (not (fx= -1 (car pin)))
-			 (fx>= frames (car pin)))
+			 (memq (cdr timing) '(auto fullauto))
+			 (fx>= frames (car timing)))
 	(handle-dialogue-advance)))
 
 (define (handle-dialogue-specials row)
   (let* ([evt (assq 'event row)]
-		 [dur (assq 'duration row)]
-		 [auto (assq 'auto row)])
-	(set-car! (stage-ctx-dialogue-pin current-stage-ctx)
-			  (if dur (+ frames (cdr dur)) -1))
-	(set-cdr! (stage-ctx-dialogue-pin current-stage-ctx)
-			  (and auto (cdr auto)))
+		 [timing (assq 'timing row)]
+		 [dur (and timing (cadr timing))])
+	(if timing
+		(stage-ctx-dialogue-pin-set!
+		 current-stage-ctx
+		 ;; adjust timestamp to be absolute instead of relative
+		 (cons (+ frames dur) (cddr timing)))
+		(stage-ctx-dialogue-pin-set! current-stage-ctx '(-1 . #f)))
 	(when evt
 	  (case (cdr evt)
 		[(doremi-enter)
 		 (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
 								 (λ (task enm)
 								   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-											(cdr dur) enm)
+											dur enm)
 								   (spawn-particle (particletype doremi-title)
 												   0.0 240.0 240 #f))
 								 '()
@@ -3972,7 +3982,7 @@
 		 (let ([enm (spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
 								 (λ (task enm)
 								   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
-											(cdr dur) enm)
+											dur enm)
 								   (spawn-particle (particletype hazuki-title)
 												   0.0 240.0 240 #f))
 								 '()
@@ -3982,7 +3992,7 @@
 		 (let ([enm (spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
 								 (λ (task enm)
 								   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
-											(cdr dur) enm)
+											dur enm)
 								   (spawn-particle (particletype aiko-title)
 												   0.0 240.0 240 #f))
 								 '()
@@ -4002,7 +4012,7 @@
    current-stage-ctx
    (cons id (with-input-from-file path read)))
   (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
-  (stage-ctx-dialogue-pin-set! current-stage-ctx (cons -1 #f))
+  (stage-ctx-dialogue-pin-set! current-stage-ctx '(-1 . #f))
   (handle-dialogue-specials (vnth (cdr (stage-ctx-dialogue current-stage-ctx)) 0)))
 
 (define (handle-dialogue-advance)
@@ -4011,8 +4021,7 @@
 	 [(= (vlen (cdr (stage-ctx-dialogue current-stage-ctx)))
 		 next-idx)
 	  (stage-ctx-dialogue-set! current-stage-ctx #f)]
-	 [(< frames (car (stage-ctx-dialogue-pin current-stage-ctx)))
-	  (void)]
+	 [(cannot-advance-dialogue?) (void)]
 	 [else
 	  (stage-ctx-dialogue-idx-set! current-stage-ctx next-idx)
 	  (raylib:play-sound (sebundle-playershoot sounds))
@@ -4507,7 +4516,7 @@
    (fx2fl (+ +playfield-min-render-x+ 10))
    (fx2fl (- +playfield-max-render-y+ 50))
    18.0 0.0 text-color)
-  (unless (fx< frames (car (stage-ctx-dialogue-pin current-stage-ctx)))
+  (unless (cannot-advance-dialogue?)
 	(raylib:draw-poly
 	 (- +playfield-max-render-x+ 20.0)
 	 (fl+ (- +playfield-max-render-y+ 20.0)
@@ -4976,7 +4985,7 @@
   (vector-fill! live-misc-ents #f)
   (vector-fill! live-particles #f)
   (stage-ctx-dialogue-set! current-stage-ctx #f)
-  (stage-ctx-dialogue-pin-set! current-stage-ctx (cons -1 #f))
+  (stage-ctx-dialogue-pin-set! current-stage-ctx '(-1 . #f))
   (kill-all-tasks)
   (set! frames timestamp)
   ;; dirty hack...resets the music volume from when the boss music was fading out
