@@ -1325,7 +1325,7 @@
   (define bossinfo (enm-extras enm))
   (define (keep-running)
 	(positive? (bossinfo-remaining-timer bossinfo)))
-  (ease-to values 0.0 100.0 20 enm)
+  (ease-to values 0.0 80.0 20 enm)
   (wait 50)
 
   (vector-for-each
@@ -1336,7 +1336,8 @@
   (declare-spell enm 1)
   (enm-addflags enm (enmflags invincible))
   (cancel-all #f)
-  (wait 60)
+  (ease-to values 0.0 100.0 20 enm)
+  (wait 40)
   (spawn-subtask "fan"
 	(λ (task)
 	  (wait 30)
