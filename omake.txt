@@ -12,7 +12,10 @@
 
 2026/XX/XX
 
-
+This game was completely built from scratch with no LLM-generated code. The technical
+details are interesting to me, and potentially to other nerds, but may not be interesting
+to the average player. Thus, it has been relegated to tech.txt. Please give it a read if
+you're interested!
 
 +-----------------+
 | 2. Profiles     |
