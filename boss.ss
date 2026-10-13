@@ -2817,12 +2817,12 @@
   (set! current-chapter 31)
   ;; Reset in start-game or start-replay. This sucks, but I'm too lazy to do it better.
   (let ([base-volume (fl/ (fx2fl (assqdr 'music-vol config)) 100.0)])
-	(do [(i 90 (fx1- i))]
+	(do [(i 120 (fx1- i))]
 		[(fxnegative? i)]
-	  (raylib:set-music-volume current-music (fl* base-volume (fl/ (fx2fl i) 90.0)))
+	  (raylib:set-music-volume current-music (fl* base-volume (fl/ (fx2fl i) 120.0)))
 	  (yield)))
   (autocollect-all-items)
-  (wait 120)
+  (wait 90)
   (spawn-task "doremi reenter"
 	(λ (task)
 	  (define-values (x y)
