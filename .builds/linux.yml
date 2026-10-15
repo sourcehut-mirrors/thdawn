@@ -1,11 +1,9 @@
-image: debian/bookworm
-shell: true
+image: debian/trixie
 sources:
   - https://git.sr.ht/~williewillus/thdawn
 packages:
-  - build-essential
-  - curl
   - zip
+  - chezscheme # used as a faster bootstrap for new ChezScheme instead of using pb
 tasks:
   - setup-distdir: |
       mkdir ~/ojamajo_gensou
@@ -15,14 +13,15 @@ tasks:
       git clone --filter=blob:none --branch v10.4.1 https://github.com/cisco/ChezScheme
       cd ChezScheme
       git submodule update --init --recursive
-      ./configure --disable-curses --disable-x11 --installprefix=~/ojamajo_gensou
+      ./configure --disable-curses --disable-x11 --installprefix=~/ojamajo_gensou --force
+      make cross.boot
       make
       make install
       # Delete examples and manpages
       rm -rf ~/distdir/lib/csv10.4.1/examples ~/ojamajo_gensou/share
   - get-raylib: |
       curl -L https://github.com/raysan5/raylib/releases/download/6.2/raylib-6.2_linux_amd64.tar.gz | tar xzf -
-      cp raylib-6.2_linux_amd64/libraylib.so ~/ojamajo_gensou/libraylib.so
+      cp raylib-6.2_linux_amd64/lib/libraylib.so ~/ojamajo_gensou/libraylib.so
   - build-thdawn: |
       cd thdawn && PROD=1 ~/ojamajo_gensou/bin/scheme --program build.ss
       cp -r assets licenses replays omake.txt README.txt start.sh tech.txt thdawn.boot ~/ojamajo_gensou/
