@@ -7,7 +7,6 @@
 ;; Generate wpo (chez term for LTO, mostly) files
 (generate-wpo-files #t)
 (undefined-variable-warnings #t)
-(generate-allocation-counts #t)
 (when (getenv "PROD")
   (optimize-level 3))
 
@@ -33,4 +32,4 @@
 ;; Create the final boot file
 (display "Building final boot file\n")
 (make-boot-file "thdawn.boot" '("petite") "main_wpo.so")
-(display "Done, run `chez -B thdawn.boot` to launch\n")
+

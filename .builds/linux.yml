@@ -1,8 +1,29 @@
-image: archlinux
-packages:
-  - chez-scheme
+image: debian/bookworm
+shell: true
 sources:
   - https://git.sr.ht/~williewillus/thdawn
+  - https://github.com/cisco/ChezScheme#v10.4.1
+packages:
+  - build-essential
+  - curl
+  - zip
 tasks:
-  - build: |
-      cd thdawn && PROD=1 chez --program build.ss
+  - setup-distdir: |
+      mkdir ~/ojamajo_gensou
+  - compile-chez: |
+      cd ChezScheme
+      ./configure --disable-curses --disable-x11 --installprefix ~/ojamajo_gensou
+      make
+      make install
+      # Delete examples and manpages
+      rm -rf ~/distdir/lib/csv10.4.1/examples ~/ojamajo_gensou/share
+  - get-raylib: |
+      curl -L https://github.com/raysan5/raylib/releases/download/6.2/raylib-6.2_linux_amd64.tar.gz | tar xzf -
+      cp raylib-6.2_linux_amd64/libraylib.so ~/ojamajo_gensou/libraylib.so
+  - build-thdawn: |
+      cd thdawn && PROD=1 ~/ojamajo_gensou/bin/scheme --program build.ss
+      cp -r assets licenses replays omake.txt README.txt start.sh tech.txt thdawn.boot ~/ojamajo_gensou/
+  - bundle: |
+      zip -r ojamajo_gensou.zip ojamajo_gensou
+artifacts:
+  - ojamajo_gensou.zip
