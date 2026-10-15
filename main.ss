@@ -1290,9 +1290,9 @@
 						(car (replist-gui-records-to-save self)))])
 		  (if cleared
 			  (begin
-				;; disallow skipping if it's the player's first clear
+				;; allow skipping only if it's the second or later clear
 				(replace-gui (mk-credits-gui
-							  (fx<= 1 (assqdr 'games-cleared play-data))))
+							  (fx> (assqdr 'games-cleared play-data) 1)))
 				(play-music (musbundle-takaramono music)))
 			  (begin
 				(replace-gui (mk-title-gui))
