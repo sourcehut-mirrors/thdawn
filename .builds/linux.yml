@@ -16,7 +16,7 @@ tasks:
       make
       make install
       # Delete examples and manpages
-      rm -rf ~/distdir/lib/csv10.4.1/examples ~/ojamajo_gensou/share
+      rm -rf ~/ojamajo_gensou/lib/csv10.4.1/examples ~/ojamajo_gensou/share
   - get-raylib: |
       curl -L https://github.com/raysan5/raylib/releases/download/6.2/raylib-6.2_linux_amd64.tar.gz | tar xzf -
       cp raylib-6.2_linux_amd64/lib/libraylib.so ~/ojamajo_gensou/libraylib.so
