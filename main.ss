@@ -4008,6 +4008,7 @@
 		 (raylib:play-sound (sebundle-longcharge sounds))]))))
 
 (define (show-dialogue id path)
+  (set! start-shot-frames -1)
   (stage-ctx-dialogue-set!
    current-stage-ctx
    (cons id (with-input-from-file path read)))
