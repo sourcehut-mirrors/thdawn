@@ -2982,6 +2982,12 @@
 	task)
   (common-boss-postlude bossinfo doremi #f)
   (wait 120)
+  (spawn-subtask "reset music"
+	(λ (task)
+	  (update-music-volumes) ;; dirty hack
+	  (wait 240)
+	  (play-music (musbundle-naisho-yo-ojamajo music)))
+	task)
   (show-dialogue 'postbattle "assets/dialogue/postbattle.dat")
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (let ([clear-bonus (+ (* 10000000 (floor life-stock))
