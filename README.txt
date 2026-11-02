@@ -168,7 +168,8 @@ love to hear from you!
 
 This game depends on a variety of other works, each with varying licenses.
 
-For assets, see the individual LICENSE files in each subfolder of assets/.
+For assets, see the individual LICENSE files in each subfolder of assets/. Generally, all
+of the assets are freely reusable except for the music tracks, and the portraits.
 
 Raylib is Copyright Raysan. Its API's are referenced and its library binaries are
 distributed under the Zlib license as listed in licenses/Zlib.txt. There are also snippets
