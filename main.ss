@@ -4334,7 +4334,7 @@
   (define spid (bossinfo-active-spell-id bossinfo))
   (define elapsed-frames (bossinfo-elapsed-frames bossinfo))
   (when (and spid (fx< elapsed-frames 120))
-	(let* ([tex (txbundle-portrait-tmp textures)]
+	(let* ([tex (txbundle-portrait-aiko textures)]
 		   [width (fx2fl (raylib:texture-width tex))]
 		   [height (fx2fl (raylib:texture-height tex))]
 		   [scale (if (fx< elapsed-frames 90)
@@ -4359,10 +4359,10 @@
 		(fxior #xffffff00
 			   (cond
 				[(fx< elapsed-frames 30)
-				 (eround (lerp 0 220 (/ elapsed-frames 30)))]
-				[(fx< elapsed-frames 90) 220]
+				 (eround (lerp 0 240 (/ elapsed-frames 30)))]
+				[(fx< elapsed-frames 90) 240]
 				[else
-				 (eround (lerp 220 0 (/ (fx- elapsed-frames 90) 30)))])))))))
+				 (eround (lerp 240 0 (/ (fx- elapsed-frames 90) 30)))])))))))
 
 (define (draw-boss-hud position enm textures fonts)
   (define bossinfo (enm-extras enm))
