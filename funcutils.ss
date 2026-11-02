@@ -62,7 +62,9 @@
 		 (and res
 			  (some-> res rst ...)))]
 	  [(_ x f rst ...)
-	   (some-> (f x) rst ...)]))
+	   (let ([res (f x)])
+		 (and res
+			  (some-> res rst ...)))]))
 
   (define-syntax some->>
 	(syntax-rules ()
@@ -95,14 +97,9 @@
 
   (define-syntax if-let
 	(syntax-rules ()
-	  [(_ ([var expr]) b1 b2 ...)
+	  [(_ ([var expr]) then els)
 	   (let ([var expr])
-		 (and var b1 b2 ...))]
-	  [(_ ([v1 e1] [v2 e2] ...) b1 b2 ...)
-	   (let ([v1 e1])
-		 (and v1
-			  (if-let ([v2 e2] ...)
-					  b1 b2 ...)))]))
+		 (if var then els))]))
   
   (define constantly
 	;; some common stuff to avoid gc spamming

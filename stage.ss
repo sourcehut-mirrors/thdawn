@@ -1525,7 +1525,6 @@
   (set! current-chapter 13)
   (wait 180)
   (show-dialogue 'prebattle "assets/dialogue/prebattle.dat")
-  (stage-ctx-dialogue-idx-set! current-stage-ctx 0)
   (wait-until (thunk (not (stage-ctx-dialogue current-stage-ctx))))
   (let-values ([(doremi hazuki aiko) (find-bosses)])
 	(group-non1 task doremi hazuki aiko)))
