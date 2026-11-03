@@ -4509,12 +4509,25 @@
    60.0))
 
 (define (draw-dialogue textures fonts current)
+  (define speaker (assqdr 'type current))
   (define text-color
-	(case (assqdr 'type current)
+	(case speaker
 	  [(reimu) -1]
 	  [(doremi) doremi-color]
 	  [(aiko) aiko-color]
 	  [(hazuki) hazuki-color]))
+  (let* ([tex (txbundle-portrait-reimu textures)]
+		 [width (fx2fl (raylib:texture-width tex))]
+		 [height (fx2fl (raylib:texture-height tex))]
+		 [active (eq? 'reimu speaker)])
+	(raylib:with-matrix
+	 (raylib:translatef (if active 160.0 130.0) (if active 250.0 280.0) 0.0)
+	 (raylib:draw-texture-pro
+	  tex (make-rectangle 0.0 0.0 width height)
+	  (make-rectangle (fl/ width 4.0 -2.0) (fl/ height 4.0 -2.0)
+					  (fl/ width 4.0) (fl/ height 4.0))
+	  v2zero 0.0
+	  (if active -1 #xa0a0a0ff))))
   (raylib:draw-rectangle-rec
    (rectangle-x dialog-dest-bounds)
    (rectangle-y dialog-dest-bounds)
