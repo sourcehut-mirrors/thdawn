@@ -1,5 +1,5 @@
-- portrait_{reimu, doremi, hazuki, aiko}.png are copyright williewillus; All rights
-  reserved, and you may not reuse them in any derivative works.
+- portrait_{reimu, doremi, hazuki, aiko}.png are copyright williewillus, all rights
+  reserved; you may not reuse them in any derivative works.
 - background_{1-4}.png are made by Enjl: https://enjl.itch.io/background-starry-space and
   used under the CC-BY-SA 4.0 International license as listed in
   licenses/CC-BY-NC-SA-4.0.txt.
