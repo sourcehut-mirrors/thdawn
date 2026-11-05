@@ -669,7 +669,11 @@
    ;; - `fullauto` forbid advancing and auto advance when the timestamp is reached
    ;; - `auto` allow advancing but auto advance when the timestamp is reached
    ;; set to (-1 . #f) when not specified.
-   (mutable pin))
+   (mutable pin)
+   ;; whether reimu has had a line in this dialogue at least once
+   (mutable reimu-spoken)
+   ;; last speaker on the enemy side, #f if no enemy has spoken yet
+   (mutable last-enemy-speaker))
   (sealed #t))
 
 (define-record-type stage-ctx
@@ -3973,6 +3977,11 @@
 
 (define (handle-dialogue-specials dctx idx)
   (define row (vnth (dialogue-ctx-data dctx) idx))
+  (define speaker (assqdr 'type row))
+  (unless (assq 'noportrait row)
+	(if (eq? speaker 'reimu)
+		(dialogue-ctx-reimu-spoken-set! dctx #t)
+		(dialogue-ctx-last-enemy-speaker-set! dctx speaker)))
   (let* ([evt (assq 'event row)]
 		 [timing (assq 'timing row)]
 		 [dur (and timing (cadr timing))])
@@ -4027,7 +4036,7 @@
   (define dctx
 	(make-dialogue-ctx
 	 id (with-input-from-file path read)
-	 0 '(-1 . #f)))
+	 0 '(-1 . #f) #f #f))
   (set! start-shot-frames -1)
   (stage-ctx-dialogue-set! current-stage-ctx dctx)
   (handle-dialogue-specials dctx 0))
@@ -4508,7 +4517,8 @@
    (fx2fl +playfield-width+)
    60.0))
 
-(define (draw-dialogue textures fonts current)
+(define (draw-dialogue textures fonts dctx)
+  (define current (vnth (dialogue-ctx-data dctx) (dialogue-ctx-idx dctx)))
   (define speaker (assqdr 'type current))
   (define text-color
 	(case speaker
@@ -4516,18 +4526,45 @@
 	  [(doremi) doremi-color]
 	  [(aiko) aiko-color]
 	  [(hazuki) hazuki-color]))
-  (let* ([tex (txbundle-portrait-reimu textures)]
-		 [width (fx2fl (raylib:texture-width tex))]
-		 [height (fx2fl (raylib:texture-height tex))]
-		 [active (eq? 'reimu speaker)])
-	(raylib:with-matrix
-	 (raylib:translatef (if active 160.0 130.0) (if active 250.0 280.0) 0.0)
-	 (raylib:draw-texture-pro
-	  tex (make-rectangle 0.0 0.0 width height)
-	  (make-rectangle (fl/ width 4.0 -2.0) (fl/ height 4.0 -2.0)
-					  (fl/ width 4.0) (fl/ height 4.0))
-	  v2zero 0.0
-	  (if active -1 #xa0a0a0ff))))
+  (define speaker-reimu (eq? 'reimu speaker))
+  (define (draw-reimu-dialogue)
+	(when (dialogue-ctx-reimu-spoken dctx)
+	  (let* ([tex (txbundle-portrait-reimu textures)]
+			 [width (fx2fl (raylib:texture-width tex))]
+			 [height (fx2fl (raylib:texture-height tex))])
+		(raylib:with-matrix
+		 (raylib:translatef
+		  (if speaker-reimu 160.0 130.0) (if speaker-reimu 250.0 280.0) 0.0)
+		 (raylib:draw-texture-pro
+		  tex (make-rectangle 0.0 0.0 width height)
+		  (make-rectangle (fl/ width 4.0 -2.0) (fl/ height 4.0 -2.0)
+						  (fl/ width 4.0) (fl/ height 4.0))
+		  v2zero 0.0
+		  (if speaker-reimu -1 #xa0a0a0ff))))))
+  (define (draw-enemy-dialogue)
+	;; this will match the current speaker if they are an enemy, but it also doubles as
+	;; "sticky" storage so the enemy can also be shown when reimu is speaking
+	(when-let ([last-enm-speaker (dialogue-ctx-last-enemy-speaker dctx)])
+	  (let* ([tex
+			  (case last-enm-speaker
+				[(doremi) (txbundle-portrait-aiko textures)] ;; todos
+				[(hazuki) (txbundle-portrait-aiko textures)]
+				[(aiko) (txbundle-portrait-aiko textures)])]
+			 [width (fx2fl (raylib:texture-width tex))]
+			 [height (fx2fl (raylib:texture-height tex))])
+		(raylib:with-matrix
+		 (raylib:translatef
+		  (if speaker-reimu 350.0 320.0) (if speaker-reimu 280.0 250.0) 0.0)
+		 (raylib:draw-texture-pro
+		  tex (make-rectangle 0.0 0.0 width height)
+		  (make-rectangle (fl/ width 4.0 -2.0) (fl/ height 4.0 -2.0)
+						  (fl/ width 4.0) (fl/ height 4.0))
+		  v2zero 0.0
+		  (if speaker-reimu #xa0a0a0ff -1))))))
+  ;; draw whoever is not talking first so they're on the bottom
+  (if speaker-reimu
+	  (begin (draw-enemy-dialogue) (draw-reimu-dialogue))
+	  (begin (draw-reimu-dialogue) (draw-enemy-dialogue)))
   (raylib:draw-rectangle-rec
    (rectangle-x dialog-dest-bounds)
    (rectangle-y dialog-dest-bounds)
@@ -4713,9 +4750,7 @@
 					440 450 18 -1)
 
   (when-let ([d (stage-ctx-dialogue current-stage-ctx)])
-	(draw-dialogue textures fonts
-				   (vnth (dialogue-ctx-data d)
-						 (dialogue-ctx-idx d)))))
+	(draw-dialogue textures fonts d)))
 
 (define bg1-scroll 0.0)
 (define bg2-scroll 0.0)
