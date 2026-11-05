@@ -4787,15 +4787,15 @@
    [(fx< 9500 frames 11070)
 	(values 1.8 2.0 2.5)]
    [(fx< 11070 frames 11550)
-	(values 0.4 0.9 1.4)]
-   [(fx< 11550 frames 11850)
-	(let ([progress (/ (fx- frames 11550)
-					   (fx- 11850 11550))])
+	(values 0.3 0.8 1.2)]
+   [(fx< 11550 frames 11760)
+	(let ([progress (ease-in-quad (/ (fx- frames 11550)
+									 (fx- 11760 11550)))])
 	  (values
-	   (lerp 0.4 1.8 progress)
-	   (lerp 0.9 2.0 progress)
-	   (lerp 1.4 2.5 progress)))]
-   [(fx< 11850 frames 12800)
+	   (lerp 0.3 1.8 progress)
+	   (lerp 0.8 2.0 progress)
+	   (lerp 1.2 2.5 progress)))]
+   [(fx< 11760 frames 12800)
 	(values 1.8 2.0 2.5)]
    [(fx< 12800 frames 13200)
 	(let ([progress (/ (fx- frames 12800)
