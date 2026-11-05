@@ -1142,8 +1142,7 @@
 	  (loop (fl+ y 15.0 (cdar ms))
 			(cdr lst) (cdr ms)))))
 (define (mk-credits-gui allow-skip)
-  (make-credits-gui (lazify credits-handle-input)
-					(lazify credits-tick) (lazify credits-render)
+  (make-credits-gui credits-handle-input credits-tick credits-render
 					allow-skip #f #f #f 0 0.0))
 
 (define +name-max+ 8)
