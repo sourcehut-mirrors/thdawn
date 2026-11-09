@@ -732,7 +732,10 @@ If you figure out how to enable cheats, here's the controls:
 * R key (when not paused): jump to the selected chapter
 
 If the cheat option is on, replay saving is disabled (even if you didn't actually use any
-of the above controls), and an indicator shows up on the HUD to remind you it's on.
+of the above controls), and an indicator shows up on the HUD to remind you it's
+on. Additionally, all play data records (high scores, times played and cleared, and play
+time) are not updated when cheats are enabled. Spell card capture histories are still
+updated.
 
 Note that editing the file to toggle cheats requires a restart of the game to pick up the
 change.
