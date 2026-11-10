@@ -3995,30 +3995,30 @@
 		[(doremi-enter)
 		 (let ([enm (spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
 								 (λ (task enm)
-								   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
-											dur enm)
 								   (spawn-particle (particletype doremi-title)
-												   0.0 240.0 240 #f))
+												   0.0 240.0 240 #f)
+								   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+											dur enm))
 								 '()
 								 (constantly #f))])
 		   (enm-extras-set! enm (blank-doremi-bossinfo)))]
 		[(hazuki-enter)
 		 (let ([enm (spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
 								 (λ (task enm)
-								   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
-											dur enm)
 								   (spawn-particle (particletype hazuki-title)
-												   0.0 240.0 240 #f))
+												   0.0 240.0 240 #f)
+								   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
+											dur enm))
 								 '()
 								 (constantly #f))])
 		   (enm-extras-set! enm (blank-hazuki-bossinfo)))]
 		[(aiko-enter)
 		 (let ([enm (spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
 								 (λ (task enm)
-								   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
-											dur enm)
 								   (spawn-particle (particletype aiko-title)
-												   0.0 240.0 240 #f))
+												   0.0 240.0 240 #f)
+								   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
+											dur enm))
 								 '()
 								 (constantly #f))])
 		   (enm-extras-set! enm (blank-aiko-bossinfo)))]
