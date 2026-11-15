@@ -52,9 +52,10 @@ Extract the game ZIP archive to any place of your choosing.
 
 Starting the game depends on your platform:
 
-- On Linux, double-click start_linux.sh.
-- On macOS, double-click start_mac.sh. You will likely need to bypass Gatekeeper.
-- On Windows, double-click start.bat. Note that on ARM systems, this will run via x86_64
+- On Linux, launch start.sh.
+- On macOS, launch start.sh. You will likely need to bypass Gatekeeper or other security
+  protections.
+- On Windows, launch start.bat. Note that on ARM systems, this will run via x86_64
   emulation.
 
 For other platforms, the game may still build and run if Chez Scheme and Raylib are ported
@@ -90,6 +91,18 @@ the in-game settings, as are the controller button mappings.
 Note that F12 also takes a screenshot, but that's functionality built into the library I'm
 using, Raylib, and cannot be disabled. It names files weirdly, so try to avoid pressing it
 if you can, and avoid binding other keys to it.
+
+Here are the default controller mappings (Xbox layout):
+
+- DPad and Joysticks: Move (only the DPad buttons can be rebound, the joysticks always
+  move the player)
+- X: Shoot
+- A: Bomb
+- Right Shoulder: Focus
+- Menu: Pause
+
+This setup lets you hold X to shoot, but also allows easy access to A to bomb without
+having to shift your finger around.
 
 Some other gameplay details:
 
