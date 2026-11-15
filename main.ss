@@ -4357,7 +4357,11 @@
   (define spid (bossinfo-active-spell-id bossinfo))
   (define elapsed-frames (bossinfo-elapsed-frames bossinfo))
   (when (and spid (fx< elapsed-frames 120))
-	(let* ([tex (txbundle-portrait-aiko textures)]
+	(let* ([tex
+			(case (enm-type spellcaster)
+			  [(boss-doremi) (txbundle-portrait-doremi textures)]
+			  [(boss-hazuki) (txbundle-portrait-hazuki textures)]
+			  [(boss-aiko) (txbundle-portrait-aiko textures)])]
 		   [width (fx2fl (raylib:texture-width tex))]
 		   [height (fx2fl (raylib:texture-height tex))]
 		   [scale (if (fx< elapsed-frames 90)
@@ -4546,8 +4550,8 @@
 	(when-let ([last-enm-speaker (dialogue-ctx-last-enemy-speaker dctx)])
 	  (let* ([tex
 			  (case last-enm-speaker
-				[(doremi) (txbundle-portrait-aiko textures)] ;; todos
-				[(hazuki) (txbundle-portrait-aiko textures)]
+				[(doremi) (txbundle-portrait-doremi textures)]
+				[(hazuki) (txbundle-portrait-hazuki textures)]
 				[(aiko) (txbundle-portrait-aiko textures)])]
 			 [width (fx2fl (raylib:texture-width tex))]
 			 [height (fx2fl (raylib:texture-height tex))])
