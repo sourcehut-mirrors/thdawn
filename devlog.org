@@ -1,3 +1,43 @@
+* [2026-11-14 Sat]
+
+It's been a bit over a month, but I've been incredibly busy and have finished pumping out
+all the portraits needed for the game. Originally, I was thinking I'd do some editing to
+have different facial expressions, but....I think I'm spent lol. We'll just have one
+expression for all the dialogue and spell cutins.
+
+I really regret hardcoding the game resolution to 640x480, all the portraits look so
+crusty (nearest filtering) or washed out smooth (bilinear/trilinear filtering) and there's
+not really enough pixels for that to not be the case. But it's going to be a lot of work
+to untangle all of the rendering from that assumption, so I'm deferring that to after
+release, if it'll even happen.
+
+Next big things to do are the boss sprites and a logo. The logo I'm probably just going to
+slap together in Inkscape. What I'll probably do is find a cute bubbly Japanese and
+English font on Google Fonts, slap them into Inkscape, give it a glow effect, and call it
+a day lol.
+
+For the boss sprites, I originally wanted to commission them. However, today I tried just
+shrinking the portraits down to x96 with ImageMagick and the effect was surprisingly not
+too terrible? I asked for tips on BHE and KevinMonitor recommended trying to make my own
+by drawing on a 192x canvas and then downscaling to 96x, instead of trying to
+downscale. In either case, maybe making the sprites is in my grasp after all?
+
+That requires a drawing tablet (because I'm not going to be hunting and pecking with a
+mouse), which...I asked for as a Christmas gift lol. So it'll be a month before I can get
+started on that. In the meantime, I guess I could start learning my way around
+Aseprite. I've used it before for minor edits, but I'm sure I could read the manual and
+come out a lot more productive.
+
+Another thing I could do is finishing up the windows and mac build system. Originally I
+wanted the sprites and portraits all done before I did playtesting (since a usual "demo
+version" would have that stuff done). But my main reason for playtesting is to have
+several people double check the gameplay balance and check for crashes, neither of which
+require the final sprites in place. So I'll probably get working on that in the meantime
+before Christmas.
+
+Got a little emotional again just seeing the portraits and placeholder sprites in the
+game. We're really reaching the end, huh?
+
 * [2026-10-05 Mon]
 Just finished reworking the new ending orchestration and it's so goddamn chuuni lmao.
 
