@@ -3007,6 +3007,8 @@
    size 0.0
    (override-alpha color alpha)))
 
+;; doesn't draw boss titlecards, which happen in a later pass so they render on top of
+;; dialogue portraits. jank but whatever.
 (define (draw-particles textures fonts)
   (define (draw-one-particle p)
 	(when p
@@ -3091,61 +3093,6 @@
 				 [color (assqdr 'color extra-data)])
 			 (draw-centered-field-text
 			  fonts age max-age text render-y size color #t)))
-		  ([doremi-title hazuki-title aiko-title]
-		   (let*-values
-			   ([(title-text boss-name name-color flower-sprite)
-				 (case type
-				   ([doremi-title]
-					(values "World's Most Unfortunate Pretty Girl"
-							"Harukaze Doremi"
-							doremi-color 'flower-red))
-				   ([hazuki-title]
-					(values "Elegant and Perfect Lady" "Fujiwara Hazuki"
-							hazuki-color 'flower-orange))
-				   ([aiko-title]
-					(values "Straightforward Osakan Girl" "Senoo Aiko"
-							aiko-color 'flower-blue)))]
-				[(twidth theight)
-				 (raylib:measure-text-ex (fontbundle-bubblegum16 fonts)
-										 title-text 16.0 0.0)]
-				[(nwidth nheight)
-				 (raylib:measure-text-ex (fontbundle-bubblegum20 fonts)
-										 boss-name 20.0 0.0)]
-				[(animation-multiplier)
-				 (cond
-				  [(<= age 45)
-				   (inexact (/ age 45))]
-				  [(>= age (- max-age 45))
-				   (fl- 1.0 (inexact (/ (- age (- max-age 45)) 45)))]
-				  [else 1.0])]
-				[(alpha) (fl* animation-multiplier 255.0)])
-			 (raylib:draw-rectangle-rounded
-			  ;; name assumed to be narrower than title
-			  (fl+ (fl- render-x (fl/ twidth 2.0) 10.0)
-				   (lerp -20.0 0.0 animation-multiplier))
-			  render-y
-			  (fl+ 10.0 twidth 10.0) (fl+ 10.0 theight 5.0 nheight 10.0)
-			  0.25 0
-			  (fxlogior #x93939300 (eround (fl* alpha 0.628))))
-			 (draw-sprite-with-scale-rotation
-			  textures flower-sprite
-			  (fl* (ease-in-out-quad animation-multiplier) 180.0) 0.75
-			  (fl+ (fl- render-x (fl/ twidth 2.0) 10.0)
-				   (lerp -35.0 0.0 animation-multiplier))
-			  render-y
-			  (override-alpha -1 (eround alpha)))
-			 (raylib:draw-text-ex
-			  (fontbundle-bubblegum16 fonts) title-text
-			  (fl- render-x (fl/ twidth 2.0))
-			  (fl+ render-y 10.0 (lerp -20.0 0.0 animation-multiplier))
-			  16.0 0.0
-			  (override-alpha -1 (eround alpha)))
-			 (raylib:draw-text-ex
-			  (fontbundle-bubblegum20 fonts) boss-name
-			  (fl- render-x (fl/ nwidth 2.0))
-			  (fl+ render-y 10.0 theight 5.0 (lerp -20.0 0.0 animation-multiplier))
-			  20.0 0.0
-			  (override-alpha name-color (eround alpha)))))
 		  ([stage-title]
 		   (let* ([outtime (- max-age 60)]
 				  [t (cond
@@ -3183,6 +3130,71 @@
 			  (fl+ 140.0 dx) 250.0
 			  20.0 0.0 color)))))))
   (vector-for-each draw-one-particle live-particles))
+
+(define (draw-boss-titlecards textures fonts)
+  (vector-for-each
+   (λ (p)
+	 (when (and p (memq (particle-type p) '(doremi-title hazuki-title aiko-title)))
+	   (let*-values
+		   ([(age) (particle-age p)]
+			[(max-age) (particle-max-age p)]
+			[(render-x) (+ (particle-x p) +playfield-render-offset-x+)]
+			[(render-y) (+ (particle-y p) +playfield-render-offset-y+)]
+			[(type) (particle-type p)]
+			[(title-text boss-name name-color flower-sprite)
+			 (case type
+			   ([doremi-title]
+				(values "World's Most Unfortunate Pretty Girl"
+						"Harukaze Doremi"
+						doremi-color 'flower-red))
+			   ([hazuki-title]
+				(values "Elegant and Perfect Lady" "Fujiwara Hazuki"
+						hazuki-color 'flower-orange))
+			   ([aiko-title]
+				(values "Straightforward Osakan Girl" "Senoo Aiko"
+						aiko-color 'flower-blue)))]
+			[(twidth theight)
+			 (raylib:measure-text-ex (fontbundle-bubblegum16 fonts)
+									 title-text 16.0 0.0)]
+			[(nwidth nheight)
+			 (raylib:measure-text-ex (fontbundle-bubblegum20 fonts)
+									 boss-name 20.0 0.0)]
+			[(animation-multiplier)
+			 (cond
+			  [(<= age 45)
+			   (inexact (/ age 45))]
+			  [(>= age (- max-age 45))
+			   (fl- 1.0 (inexact (/ (- age (- max-age 45)) 45)))]
+			  [else 1.0])]
+			[(alpha) (fl* animation-multiplier 255.0)])
+		 (raylib:draw-rectangle-rounded
+		  ;; name assumed to be narrower than title
+		  (fl+ (fl- render-x (fl/ twidth 2.0) 10.0)
+			   (lerp -20.0 0.0 animation-multiplier))
+		  render-y
+		  (fl+ 10.0 twidth 10.0) (fl+ 10.0 theight 5.0 nheight 10.0)
+		  0.25 0
+		  (fxlogior #x93939300 (eround (fl* alpha 0.628))))
+		 (draw-sprite-with-scale-rotation
+		  textures flower-sprite
+		  (fl* (ease-in-out-quad animation-multiplier) 180.0) 0.75
+		  (fl+ (fl- render-x (fl/ twidth 2.0) 10.0)
+			   (lerp -35.0 0.0 animation-multiplier))
+		  render-y
+		  (override-alpha -1 (eround alpha)))
+		 (raylib:draw-text-ex
+		  (fontbundle-bubblegum16 fonts) title-text
+		  (fl- render-x (fl/ twidth 2.0))
+		  (fl+ render-y 10.0 (lerp -20.0 0.0 animation-multiplier))
+		  16.0 0.0
+		  (override-alpha -1 (eround alpha)))
+		 (raylib:draw-text-ex
+		  (fontbundle-bubblegum20 fonts) boss-name
+		  (fl- render-x (fl/ nwidth 2.0))
+		  (fl+ render-y 10.0 theight 5.0 (lerp -20.0 0.0 animation-multiplier))
+		  20.0 0.0
+		  (override-alpha name-color (eround alpha))))))
+   live-particles))
 
 (define-record-type miscent
   (fields
@@ -4753,7 +4765,8 @@
 					440 450 18 -1)
 
   (when-let ([d (stage-ctx-dialogue current-stage-ctx)])
-	(draw-dialogue textures fonts d)))
+	(draw-dialogue textures fonts d)
+	(draw-boss-titlecards textures fonts)))
 
 (define bg1-scroll 0.0)
 (define bg2-scroll 0.0)
