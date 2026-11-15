@@ -142,7 +142,8 @@
    magicircle boss boss-flip boss-ui dialog-box wisp
    spellbg-aiko spellbg-group spellbg-doremi spellbg-hazuki
    bosstitle-flowers creditsbg titlecard
-   portrait-reimu portrait-doremi portrait-hazuki portrait-aiko)
+   portrait-reimu portrait-doremi portrait-hazuki portrait-aiko
+   sprite-doremi sprite-hazuki sprite-aiko)
   (sealed #t))
 (define (load-textures)
   (define (ltex file)
@@ -168,7 +169,8 @@
 					 "flowers.png" "creditsbg.png"
 					 "specialstage2.png"
 					 "portrait_reimu.png" "portrait_doremi.png"
-					 "portrait_hazuki.png" "portrait_aiko.png"))))
+					 "portrait_hazuki.png" "portrait_aiko.png"
+					 "sprite_doremi.png" "sprite_hazuki.png" "sprite_aiko.png"))))
   (for-each
    (λ (txname) (raylib:gen-texture-mipmaps (txname ret)))
    (list txbundle-portrait-reimu txbundle-portrait-doremi

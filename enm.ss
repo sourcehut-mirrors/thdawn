@@ -255,7 +255,7 @@
 
 	  (raylib:set-shapes-texture save-tex save-rect)))
   ;; TODO actual sprites lol
-  (draw-sprite textures 'yellow-fairy2 render-x render-y (enm-tint enm)))
+  (draw-sprite textures (enm-type enm) render-x render-y (enm-tint enm)))
 
 (define (draw-enemies textures)
   (define (draw-one-enm enm)

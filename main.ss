@@ -426,6 +426,9 @@
   (make 'flower-red txbundle-bosstitle-flowers 0 0 32 32 shift16)
   (make 'flower-orange txbundle-bosstitle-flowers 0 32 32 32 shift16)
   (make 'flower-blue txbundle-bosstitle-flowers 0 64 32 32 shift16)
+  (make 'boss-doremi txbundle-sprite-doremi 0 0 64 96 (vec2 -32.0 -48.0))
+  (make 'boss-hazuki txbundle-sprite-hazuki 0 0 64 96 (vec2 -32.0 -48.0))
+  (make 'boss-aiko txbundle-sprite-aiko 0 0 64 96 (vec2 -32.0 -48.0))
   ret))
 
 (define current-stage-ctx #f)
@@ -4037,7 +4040,7 @@
 		[(chargesound-delayed)
 		 (spawn-task "delayed sound"
 		   (λ (task)
-			 (wait 100) ;; todo
+			 (wait 100)
 			 (raylib:play-sound (sebundle-longcharge sounds)))
 		   (constantly #t))]
 		[(chargesound)
