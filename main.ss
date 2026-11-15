@@ -4392,8 +4392,8 @@
 	   (raylib:scalef scale scale 1.0)
 	   (raylib:draw-texture-pro
 		tex (make-rectangle 0.0 0.0 width height)
-		(make-rectangle (fl/ width 4.0 -2.0) (fl/ height 4.0 -2.0)
-						(fl/ width 4.0) (fl/ height 4.0))
+		(make-rectangle (fl/ width 3.5 -2.0) (fl/ height 3.5 -2.0)
+						(fl/ width 3.5) (fl/ height 3.5))
 		v2zero 0.0
 		(fxior #xffffff00
 			   (cond

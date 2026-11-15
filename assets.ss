@@ -147,7 +147,8 @@
 (define (load-textures)
   (define (ltex file)
 	(raylib:load-texture (string-append "assets/img/" file)))  
-  (apply make-txbundle
+  (define ret
+	(apply make-txbundle
 		 (map ltex '("reimu.png"
 					 "enemy1.png"
 					 "ui_bg.png"
@@ -168,6 +169,11 @@
 					 "specialstage2.png"
 					 "portrait_reimu.png" "portrait_doremi.png"
 					 "portrait_hazuki.png" "portrait_aiko.png"))))
+  (for-each
+   (λ (txname) (raylib:gen-texture-mipmaps (txname ret)))
+   (list txbundle-portrait-reimu txbundle-portrait-doremi
+		 txbundle-portrait-hazuki txbundle-portrait-aiko))
+  ret)
 
 (define (unload-textures textures)
   (define rtd (record-type-descriptor txbundle))

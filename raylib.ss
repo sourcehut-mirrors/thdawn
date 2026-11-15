@@ -28,7 +28,7 @@
 		  set-trace-log-level
 		  push-matrix pop-matrix with-matrix translatef rotatef scalef
 		  rlbegin rlend vertex2 texcoord color4f color4ub normal3f set-texture
-		  set-texture-filter
+		  set-texture-filter gen-texture-mipmaps
 		  set-shapes-texture get-shapes-texture get-shapes-texture-rectangle
 		  draw-spline-bezier-quadratic draw-spline-bezier-cubic take-screenshot)
   (import (chezscheme) (geom))
@@ -533,6 +533,9 @@
 						   (rectangle-x rect) (rectangle-y rect)
 						   (rectangle-width rect) (rectangle-height rect))
 	(set-shapes-texture0 tex global-rectangle))
+
+  (define gen-texture-mipmaps
+	(foreign-procedure __atomic "GenTextureMipmaps" ((* Texture)) void))
 
   (define global-texture
 	(make-ftype-pointer Texture (foreign-alloc (ftype-sizeof Texture))))
