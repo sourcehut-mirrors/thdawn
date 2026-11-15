@@ -1469,9 +1469,9 @@
   (let loop ([cur score-entries]
 			 [i 0]
 			 [y 90.0])
-	(unless (or (>= i 10) (null? cur))
+	(unless (>= i 10)
 	  (let*-values ([(color) (if (eq? selected i) (selected-color) -1)]
-					[(entry) (car cur)]
+					[(entry) (if (null? cur) #f (car cur))]
 					[(name)
 					 (if entry
 						 (score-entry-name entry)
@@ -1501,7 +1501,7 @@
 							 ;; screenwidth - to box - within box - text width
 							 (fl- 640.0 20.0 20.0 swidth)
 							 y 24.0 0.0 color)
-		(loop (cdr cur) (add1 i) (+ y nheight))))))
+		(loop (if (null? cur) cur (cdr cur)) (add1 i) (+ y nheight))))))
 (define (playdata-render self textures fonts)
   (define bubblegum (fontbundle-bubblegum40 fonts))
   (define cabin (fontbundle-cabin24 fonts))
