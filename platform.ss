@@ -11,5 +11,5 @@
   (define (move-file old new)
 	;; atomic rename on proper OS'es, dumb delete-rename on Windows (for now?)
 	(when is-windows
-	  (delete-file #f))
+	  (delete-file new #f))
 	(rename-file old new)))
