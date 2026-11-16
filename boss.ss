@@ -375,6 +375,7 @@
 			  (cbang (fl+ 0.0 (fx2fl (* i (if (even? wave) 2 -2)))))
 			  (cbspeed 0.4)
 			  (cboffset (fx2fl (* i 12)))
+			  (cbrenderprio 2)
 			  (cbshootenm doremi 'rice-red 2 #f
 						  (λ (facing speed task blt)
 							(dotimes (+ 120 (* i 2))
