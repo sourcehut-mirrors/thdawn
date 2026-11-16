@@ -55,8 +55,10 @@ Starting the game depends on your platform:
 - On Linux, launch start.sh.
 - On macOS, launch start.sh. You will likely need to bypass Gatekeeper or other security
   protections.
-- On Windows, launch start.bat. Note that on ARM systems, this will run via x86_64
-  emulation.
+- On Windows, launch start_x64.bat if you have an x86_64 system (i.e. your CPU is Intel or
+  AMD). If you have an ARM64 system (i.e. your CPU is Qualcomm Snapdragon), launch
+  start_arm64.bat.
+
 
 For other platforms, the game may still build and run if Chez Scheme and Raylib are ported
 to your platform. Refer to the README.md in the source code distribution to compile the
