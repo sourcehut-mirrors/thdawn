@@ -41,7 +41,10 @@
   (define _dummy
 	(case (machine-type)
 	  [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt)
-	   (load-shared-object "raylib.dll")]
+	   ;; LoadLibrary likes absolute paths
+	   (load-shared-object (string-append (current-directory)
+										  (string (directory-separator))
+										  "raylib.dll"))]
 	  [(i3osx ti3osx a6osx ta6osx arm64osx tarm64osx ppc32osx tppc32osx)
 	   (load-shared-object "libraylib.dylib")]
 	  [else (load-shared-object "./libraylib.so")]))

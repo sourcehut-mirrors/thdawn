@@ -3,7 +3,7 @@
 ;; data when new fields are added.
 (library (config)
   (export reset-config read-config save-config)
-  (import (chezscheme))
+  (import (chezscheme) (platform))
 
   (include "keyconsts.ss")
   
@@ -47,4 +47,4 @@
 	(with-output-to-file "config.dat.tmp"
 	  (lambda () (pretty-print data))
 	  'truncate)
-	(rename-file "config.dat.tmp" config-path)))
+	(move-file "config.dat.tmp" config-path)))

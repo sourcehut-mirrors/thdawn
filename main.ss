@@ -4,7 +4,7 @@
 ;; file as a r6rs Program
 (import (chezscheme))
 (import (add-prefix (raylib) raylib:)
-		(coro) (geom) (funcutils) (config) (sort))
+		(coro) (geom) (funcutils) (config) (sort) (platform))
 (alias λ lambda)
 
 ;; for dev only, makes a function lazily looked up at runtime so
@@ -1370,7 +1370,7 @@
 					  (for-each (λ (r) (write r) (newline))
 								records))
 					 'truncate)
-				   (rename-file tmppath path)
+				   (move-file tmppath path)
 				   (raylib:play-sound (sebundle-extend sounds))
 				   (replist-refresh self)
 				   (set! gui-stack (cdr gui-stack))))])
@@ -2466,8 +2466,7 @@
   (with-output-to-file "playdata.dat.tmp"
 	(thunk (pretty-print data))
 	'truncate)
-  ;; TODO: make sure this works on Windows
-  (rename-file "playdata.dat.tmp" +playdata-path+))
+  (move-file "playdata.dat.tmp" +playdata-path+))
 
 (define +spellcircle-context+ 60)
 (define-record-type bossinfo
