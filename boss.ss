@@ -798,18 +798,18 @@
 (define non2-familiar-health 400)
 
 (define (non2-dodo-control dead-signalbox task enm)
-  (define (subtask)
+  (define (subtask deaths)
 	(spawn-subtask "sub"
 	  (λ (task)
 		(interval-loop 60
 		  (-> (fb)
-			  (fbcount 4 3)
-			  (fbspeed 4.0 5.0)
+			  (fbcount 4 (+ 3 deaths))
+			  (fbspeed 4.0 (fl+ 5.0 (fl* 0.1 (fx2fl deaths))))
 			  (fbang 0.0 25.0)
 			  (fbshootenm enm 'butterfly-red 5 (sebundle-shoot0 sounds)))
 		  (-> (fb)
-			  (fbcount 3 2)
-			  (fbspeed 3.5 4.0)
+			  (fbcount 3 (+ 2 deaths))
+			  (fbspeed 3.5 (fl+ 4.0 (fl* 0.1 (fx2fl deaths))))
 			  (fbang 0.0 20.0)
 			  (fbshootenm enm 'butterfly-magenta 5 #f))))
 	  task
@@ -819,30 +819,32 @@
   (raylib:play-sound (sebundle-opshow sounds))
   (ease-to ease-in-out-quad (ex enm) (fl+ 80.0 (ey enm)) 60 enm)
   (wait 20)
-  (let loop ([st (subtask)])
+  (let loop ([deaths 0]
+			 [st (subtask 0)])
 	(wait-until (thunk (task-dead st)))
 	(wait 180)
 	(raylib:play-sound (sebundle-opshow sounds))
 	(enm-health-set! enm non2-familiar-health)
 	(enm-clrflags enm (enmflags invincible nocollide))
 	(set-box! dead-signalbox #f)
-	(loop (subtask))))
+	(loop (add1 deaths) (subtask (add1 deaths)))))
 
 (define (non2-rere-control dead-signalbox task enm)
-  (define (subtask)
+  (define (subtask deaths)
 	(spawn-subtask "sub"
 	  (λ (task)
-		(interval-loop 60
+		(interval-loop (fxmax 20 (fx- 60 (fx* 7 deaths)))
 		  (-> (cb)
 			  (cbcount 8)
 			  (cbspeed 2.0)
 			  (cbshootenm enm 'heart-orange 5 #f
 						  (λ (facing speed task blt)
 							(linear-step-decelerate facing speed -0.05 blt)
-							(wait 30)
+							(wait (- 30 (* 2 deaths)))
 							(raylib:play-sound (sebundle-bell sounds))
 							(linear-step-accelerate-forever
-							 facing 0.0 0.08 3.0 task blt))))
+							 facing 0.0 0.08 (fl+ 3.0 (fl* 0.5 (fx2fl deaths)))
+							 task blt))))
 		  (-> (cb)
 			  (cbcount 16)
 			  (cbspeed 2.0)
@@ -850,27 +852,28 @@
 			   enm 'small-ball-yellow 5 #f
 			   (λ (facing speed task blt)
 				 (linear-step-decelerate facing speed -0.05 blt)
-				 (wait 30)
+				 (wait (- 30 (* 2 deaths)))
 				 (linear-step-accelerate-forever
 				  (facing-player (bx blt) (by blt))
-				  0.0 0.08 3.0 task blt))))))
+				  0.0 0.08 (fl+ 3.0 (fl* 0.5 (fx2fl deaths))) task blt))))))
 	  task
 	  (thunk (not (unbox dead-signalbox)))))
   (enm-superarmor-set! enm 80)
   (raylib:play-sound (sebundle-opshow sounds))
   (ease-to ease-in-out-quad (ex enm) (fl+ 80.0 (ey enm)) 60 enm)
   (wait 20)
-  (let loop ([st (subtask)])
+  (let loop ([deaths 0]
+			 [st (subtask 0)])
 	(wait-until (thunk (task-dead st)))
 	(wait 180)
 	(raylib:play-sound (sebundle-opshow sounds))
 	(enm-health-set! enm non2-familiar-health)
 	(enm-clrflags enm (enmflags invincible nocollide))
 	(set-box! dead-signalbox #f)
-	(loop (subtask))))
+	(loop (add1 deaths) (subtask (add1 deaths)))))
 
 (define (non2-mimi-control dead-signalbox task enm)
-  (define (subtask first)
+  (define (subtask deaths)
 	(define delay 45)
 	(define start-time frames)
 	(define (stop-pred)
@@ -892,7 +895,22 @@
 						 (bullet-facing-set!
 						  blt
 						  (fl+ (bullet-facing blt) (fl* turn-dir (torad 4.0)))))))))
-	(spawn-subtask "sub"
+	(when (fxpositive? deaths)
+	  (spawn-subtask "wings"
+		(λ (task)
+		  (wait delay)
+		  (interval-loop 30
+			(for-each
+			 (λ (dang)
+			   (-> (fb)
+				   (fbcount (fx1+ deaths))
+				   (fbspeed 3.2)
+				   (fbabsolute-aim)
+				   (fbang (fl+ (todeg (facing-player (ex enm) (ey enm))) dang) 10.0)
+				   (fbshootenm enm 'small-star-blue 2 #f)))
+			 '(40.0 -40.0))))
+		task (thunk (not (stop-pred)))))
+	(spawn-subtask "decor"
 	  (λ (task)
 		(wait delay)
 		(interval-loop 30
@@ -909,18 +927,19 @@
   (raylib:play-sound (sebundle-opshow sounds))
   (ease-to ease-in-out-quad (ex enm) (fl+ 80.0 (ey enm)) 60 enm)
   (wait 20)
-  (let loop ([st (subtask #t)])
+  (let loop ([deaths 0]
+			 [st (subtask 0)])
 	(wait-until (thunk (task-dead st)))
 	;; If task exited from timeout and not from fairy kill, loop again
 	(unless (unbox dead-signalbox)
 	  (wait 60)
-	  (loop (subtask #f)))
+	  (loop deaths (subtask deaths)))
 	(wait 180)
 	(raylib:play-sound (sebundle-opshow sounds))
 	(enm-health-set! enm non2-familiar-health)
 	(enm-clrflags enm (enmflags invincible nocollide))
 	(set-box! dead-signalbox #f)
-	(loop (subtask #f))))
+	(loop (add1 deaths) (subtask (add1 deaths)))))
 
 (define (group-non2 task aiko)
   (define bossinfo (blank-doremi-bossinfo))
