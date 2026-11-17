@@ -1,3 +1,23 @@
+* [2026-11-16 Mon]
+
+I got the build system for Windows/macOS hacked together the last couple days and it
+mostly seems to work.
+
+I also got a couple people to start playtesting for me and already from a couple
+gameovered blind runs I see some places where I can tune or where I went overboard
+(chapter 0 even wave fairies lol). Also, I need to finally go fix the problem with
+midspell 2 where it can pin you at the bottom of the screen leaving you with no way to
+survive. I'm not sure how to handle it to be honest. Maybe if the initial targeting
+location of the butterflies is outside of a certain safe zone, we slowly move to the safe
+zone? The playtester suggested giving more startup time, but the spell is time constrained
+already so I don't know if I want to take time away from dodging. Will think about it
+more.
+
+I also set up the game's itch.io page. All the text is there but I'll need to make a cover
+photo and take some screenshots. The former can probably just be a modified version of the
+logo, whenever I come up with that. The screenshots I'll probably leave until final
+release to grab.
+
 * [2026-11-14 Sat]
 
 It's been a bit over a month, but I've been incredibly busy and have finished pumping out

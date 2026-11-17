@@ -995,7 +995,8 @@
 	  "The Cabin Project Authors (Cabin Font)"
 	  "Carrois Type Design (ShareTechMono Font)")
 	 (h2 . ("Test Players"))
-	 ("TODO single list of everyone")
+	 ("manyvonchik"
+	  "yeashie")
 	 (h2 . ("Greatest Treasures \"Takaramono\" (Special Thanks)"))
 	 ("Raylib and Raylib-Extras Developers")
 	 ("Chez Scheme Developers")
