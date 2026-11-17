@@ -4058,10 +4058,10 @@
 (define (handle-dialogue-advance dctx)
   (let ([next-idx (add1 (dialogue-ctx-idx dctx))])
 	(cond
+	 [(cannot-advance-dialogue?) (void)]
 	 [(= (vlen (dialogue-ctx-data dctx))
 		 next-idx)
 	  (stage-ctx-dialogue-set! current-stage-ctx #f)]
-	 [(cannot-advance-dialogue?) (void)]
 	 [else
 	  (dialogue-ctx-idx-set! dctx next-idx)
 	  (raylib:play-sound (sebundle-playershoot sounds))
