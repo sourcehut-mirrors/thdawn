@@ -215,5 +215,4 @@ aforementioned licenses, by cloning it from https://git.sr.ht/~williewillus/thda
 | 8. Changelog    |
 +-----------------+
 
-* 2026/??/??: Private demo v0.xx
-* 2026/??/??: Initial release v1.00
+* 2026/11/16: Private demo v0.90
