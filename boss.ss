@@ -2852,13 +2852,13 @@
   (spawn-task "hazuki reenter"
 	(λ (task)
 	  (define-values (x y)
-		(dist-away 0.0 120.0 (torad 30.0) 50.0))
+		(dist-away 0.0 120.0 (torad 150.0) 50.0))
 	  (ease-to ease-out-cubic x y 90 hazuki))
 	(constantly #t))
   (spawn-task "aiko reenter"
 	(λ (task)
 	  (define-values (x y)
-		(dist-away 0.0 120.0 (torad 150.0) 50.0))
+		(dist-away 0.0 120.0 (torad 30.0) 50.0))
 	  (ease-to ease-out-cubic x y 90 aiko))
 	(constantly #t))
   (wait 120)
