@@ -4878,7 +4878,7 @@
   ;; y isn't but the stretching isn't too noticeable so it's ok
   (make-rectangle 0.0 0.0 512.0 480.0))
 
-(define bgcolor #xc0c0c0ff)
+(define bgcolor #x808080ff)
 (define (do-render-game textures fonts)
   (define-values (offsetx offsety)
 	(if (fxzero? screenshake)
