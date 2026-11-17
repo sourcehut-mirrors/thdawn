@@ -21,6 +21,7 @@ tasks:
       curl -L https://github.com/raysan5/raylib/releases/download/6.2/raylib-6.2_linux_amd64.tar.gz | tar xzf -
       cp raylib-6.2_linux_amd64/lib/libraylib.so ~/ojamajo_gensou/libraylib.so
   - build-thdawn: |
+      export BUILD_VERSION="$(git describe --always)"
       cd thdawn && PROD=1 ~/ojamajo_gensou/bin/scheme --program build.ss
       cp -r assets licenses replays omake.txt README.txt start.sh tech.txt thdawn.boot ~/ojamajo_gensou/
   - bundle: |
