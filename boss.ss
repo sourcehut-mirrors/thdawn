@@ -109,9 +109,9 @@
 
 (define (group-sp1 task doremi hazuki aiko)
   (define y-radius 20.0)
-  (define top-y (fl- +right-boss-y+ y-radius))
-  (define left-x (fl- +left-boss-x+ 30.0))
-  (define right-x (fl+ +right-boss-x+ 30.0))
+  (define top-y (fl- right-boss-y y-radius))
+  (define left-x (fl- left-boss-x 30.0))
+  (define right-x (fl+ right-boss-x 30.0))
   (define x-radius (fl- right-x left-x))
   (define bossinfo (enm-extras doremi))
   (define (keep-running)
@@ -224,7 +224,7 @@
 	  (ease-to ease-out-cubic (flcopysign 100.0 (ex aiko)) -100.0 60 aiko)
 	  (delete-enemy aiko))
 	task)
-  (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 60 doremi)
+  (ease-to ease-out-cubic middle-boss-x middle-boss-y 60 doremi)
   (declare-nonspell doremi 1800 10000)
   (spawn-subtask "main"
 	(λ (task)
@@ -278,8 +278,8 @@
 			(fbshootenm doremi 'rice-red 5
 						(sebundle-shoot0 sounds)
 						(λ (facing speed task blt)
-						  (define left-bound (- +playfield-min-x+ 10))
-						  (define right-bound (+ +playfield-max-x+ 10))
+						  (define left-bound (- playfield-min-x 10))
+						  (define right-bound (+ playfield-max-x 10))
 						  (loop-until
 							  (or (< (bx blt) left-bound)
 								  (> (bx blt) right-bound))
@@ -387,9 +387,9 @@
 		  (wait 5))
 		(wait 60)
 		(let ([x (case state
-				   [(center-left) +left-boss-x+]
-				   [(left right) +middle-boss-x+]
-				   [(center-right) +right-boss-x+])]
+				   [(center-left) left-boss-x]
+				   [(left right) middle-boss-x]
+				   [(center-right) right-boss-x])]
 			  [y (vrand '#(125.0 90.0 55.0) game-rng)])
 		  (ease-to ease-in-out-quad x y 120 doremi))
 		(loop (case state
@@ -430,7 +430,7 @@
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+				   (ease-to ease-out-cubic middle-boss-x middle-boss-y
 							60 enm))
 				 '()
 				 (constantly #f)))
@@ -611,7 +611,7 @@
   (define aiko
 	(spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+				   (ease-to ease-out-cubic middle-boss-x middle-boss-y
 							60 enm))
 				 '()
 				 (constantly #f)))
@@ -739,7 +739,7 @@
 		  (cancel-bullet blt #t)))
 	   (bullet-addflags (bltflags uncancelable)))
 	  (wait 30)))
-  (ease-to values +middle-boss-x+ +middle-boss-y+ 20 aiko)
+  (ease-to values middle-boss-x middle-boss-y 20 aiko)
   (raylib:play-sound (sebundle-longcharge sounds))
   (wait 20)
   (set-box! spread-signal #t)
@@ -773,7 +773,7 @@
 		 (positive? (enm-health aiko))))
   (set! current-chapter 21)
   (declare-spell aiko 5)
-  (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 45 aiko)
+  (ease-to ease-in-out-quad middle-boss-x middle-boss-y 45 aiko)
   (wait 55)
   (loop-while
    (keep-running)
@@ -885,7 +885,7 @@
 	  (spawn-laser 'fixed-laser-blue
 				   (ex enm) (ey enm)
 				   start-ang-to
-				   (fx2fl +playfield-height+)
+				   (fx2fl playfield-height)
 				   5.0 20 delay
 				   (λ (task blt)
 					 (define ang-to (facing-player (bx blt) (by blt)))
@@ -947,14 +947,14 @@
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+				   (ease-to ease-out-cubic middle-boss-x middle-boss-y
 							60 enm))
 				 '()
 				 (constantly #f)))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) -100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
+				   (ease-to ease-out-cubic left-boss-x left-boss-y
 							60 enm))
 				 '()
 				 (constantly #f)))
@@ -970,7 +970,7 @@
   (bossinfo-healthbars-set! (enm-extras aiko) '#())
   (enm-redirect-damage-set! hazuki doremi)
   (enm-redirect-damage-set! aiko doremi)
-  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 60 aiko)
+  (ease-to ease-out-cubic right-boss-x right-boss-y 60 aiko)
   (declare-nonspell doremi 1800 6000)
   (let* ([dodo-dead-signalbox (box #f)]
 		 [dodo (-> (spawn-enemy
@@ -1363,7 +1363,7 @@
 			   (fl- (ey aiko) 50.0) 60 aiko)
 	  (delete-enemy aiko))
 	task)
-  (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 60 doremi)
+  (ease-to ease-in-out-quad middle-boss-x middle-boss-y 60 doremi)
   (enm-clrflags doremi (enmflags nocollide))
   (declare-nonspell doremi 2400 11000)
   (raylib:play-sound (sebundle-shortcharge sounds))
@@ -1432,7 +1432,7 @@
 		 [y (miscent-y steak)])
 	 ;; motion
 	 (if (check-collision-circle-rec
-		  player-x player-y +vacuum-radius-steak+
+		  player-x player-y vacuum-radius-steak
 		  (- x 10) (- y 10) 20 20)
 		 (let ([dir-to-player (v2unit (vec2 (- player-x x) (- player-y y)))])
 		   (miscent-x-set! steak (+ x (* (v2x dir-to-player) 4)))
@@ -1446,7 +1446,7 @@
 	 ;; collision
 	 (cond
 	  [(check-collision-circle-rec
-		player-x player-y +hit-radius+ (- x 10) (- y 10) 20 20)
+		player-x player-y hit-radius (- x 10) (- y 10) 20 20)
 	   (raylib:play-sound (sebundle-dropbomb sounds))
 	   (set-box! doremi-sp2-steaks-collected (1+ (unbox doremi-sp2-steaks-collected)))
 	   (set! current-score (+ current-score item-value))
@@ -1480,7 +1480,7 @@
   (set! current-chapter 25)
   (declare-spell doremi 7)
   (set-box! doremi-sp2-steaks-collected 0)
-  (ease-to ease-in-out-quad +middle-boss-x+ (fl+ 30.0 +middle-boss-y+) 60 doremi)
+  (ease-to ease-in-out-quad middle-boss-x (fl+ 30.0 middle-boss-y) 60 doremi)
   (raylib:play-sound (sebundle-shortcharge sounds))
   (wait 30)
   (enm-addflags doremi (enmflags nocollide))
@@ -1551,7 +1551,7 @@
   (vector-for-each-truthy
    (λ (e) (when (eq? 'steak (miscent-type e)) (delete-misc-ent e)))
    live-misc-ents)
-  (ease-to ease-in-out-quad +middle-boss-x+ +middle-boss-y+ 45 doremi)
+  (ease-to ease-in-out-quad middle-boss-x middle-boss-y 45 doremi)
   (hazuki-non2 task doremi))
 
 (define (hazuki-non2-wisp-control ring1 ring2 task enm)
@@ -1578,7 +1578,7 @@
 	(spawn-subtask "anticheese"
 	  (λ (task)
 		(wait-until (thunk (fl> (ey enm) 350.0)))
-		(interval-loop-until 15 (> (ey enm) +playfield-max-y+)
+		(interval-loop-until 15 (> (ey enm) playfield-max-y)
 		  (when (or (and (flnegative? (ex enm)) (fl< player-x -100.0))
 					(and (flpositive? (ex enm)) (fl> player-x 100.0)))
 			(-> (fb)
@@ -1587,7 +1587,7 @@
 				(fbspeed 2.0 5.0)
 				(fbshootenm enm 'knife-orange 2 (sebundle-bell sounds))))))
 	  task))
-  (ease-to values (ex enm) (fx2fl (+ +playfield-max-y+ 150)) 500 enm)
+  (ease-to values (ex enm) (fx2fl (+ playfield-max-y 150)) 500 enm)
   (for-each delete-bullet ring1)
   (for-each delete-bullet ring2)
   (delete-enemy enm))
@@ -1638,7 +1638,7 @@
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) 100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+				   (ease-to ease-out-cubic middle-boss-x middle-boss-y
 							60 enm))
 				 '()
 				 (constantly #f)))
@@ -1947,11 +1947,11 @@
    bossinfo hazuki
    ;; Extra bonus if all waves were cleared without a wisp being killed by hazuki
    (thunk (and (unbox all-waves-clean) (* 100 item-value))))
-  (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 45 hazuki)
+  (ease-to ease-out-cubic middle-boss-x middle-boss-y 45 hazuki)
   (aiko-non2 task hazuki))
 
 (define (aiko-non2-laser-ctrl is-right aiko task blt)
-  (define start-ang -hpi)
+  (define start-ang nhpi)
   (define dang (torad 160.0))
   (do [(i 0 (fx1+ i))]
 	  [(fx= i 300)]
@@ -1985,10 +1985,10 @@
 			 (raylib:play-sound (sebundle-bell sounds))))
 		 (list (hit-top-x x y facing)
 			   (hit-bot-x x y facing)
-			   (fx2fl +playfield-min-x+)
-			   (fx2fl +playfield-max-x+))
-		 (list (fx2fl +playfield-min-y+)
-			   (fx2fl +playfield-max-y+)
+			   (fx2fl playfield-min-x)
+			   (fx2fl playfield-max-x))
+		 (list (fx2fl playfield-min-y)
+			   (fx2fl playfield-max-y)
 			   (hit-left-y x y facing)
 			   (hit-right-y x y facing)))))
 	(yield))
@@ -2000,7 +2000,7 @@
   (define aiko
 	(spawn-enemy (enmtype boss-aiko) 100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+				   (ease-to ease-out-cubic middle-boss-x middle-boss-y
 							60 enm))
 				 '()
 				 (constantly #f)))
@@ -2025,8 +2025,8 @@
 	 (λ (is-right)
 	   (spawn-laser 'fixed-laser-blue
 					(ex aiko) (ey aiko)
-					-hpi
-					(fx2fl +playfield-height+)
+					nhpi
+					(fx2fl playfield-height)
 					5.0
 					40 60 (curry aiko-non2-laser-ctrl is-right aiko)))
 	 '(#f #t)))
@@ -2067,19 +2067,19 @@
 			(fbang 0.0 8.0)
 			(fbshootenm aiko 'heart-blue 2 (sebundle-shoot0 sounds)))))
 	task keep-running)
-  (ease-to values +middle-boss-x+ 225.0 300 aiko)
+  (ease-to values middle-boss-x 225.0 300 aiko)
   (wait-while keep-running)
   (common-nonspell-postlude bossinfo aiko #t)
   (aiko-sp2 task aiko))
 
 (define aiko-sp2-x-margin 24)
-(define aiko-sp2-x-left (fx2fl (+ +playfield-min-x+ aiko-sp2-x-margin)))
-(define aiko-sp2-x-right (fx2fl (- +playfield-max-x+ aiko-sp2-x-margin)))
+(define aiko-sp2-x-left (fx2fl (+ playfield-min-x aiko-sp2-x-margin)))
+(define aiko-sp2-x-right (fx2fl (- playfield-max-x aiko-sp2-x-margin)))
 (define aiko-sp2-x-len (fl- aiko-sp2-x-right aiko-sp2-x-left))
 (define aiko-sp2-y-margin-top 34)
 (define aiko-sp2-y-margin-bot 23)
 (define aiko-sp2-y-top (fx2fl aiko-sp2-y-margin-top))
-(define aiko-sp2-y-bot (fx2fl (- +playfield-max-y+ aiko-sp2-y-margin-bot)))
+(define aiko-sp2-y-bot (fx2fl (- playfield-max-y aiko-sp2-y-margin-bot)))
 (define aiko-sp2-y-len (fl- aiko-sp2-y-bot aiko-sp2-y-top))
 (define aiko-sp2-goal-left -67.0)
 (define aiko-sp2-goal-right (fl- aiko-sp2-goal-left))
@@ -2171,7 +2171,7 @@
 		 (linear-step facing speed blt)
 		 (yield)
 
-		 (when (> (by blt) (+ +playfield-max-y+ 10))
+		 (when (> (by blt) (+ playfield-max-y 10))
 		   (damage-player)
 		   (cancel-bullet blt #t)
 		   ;; hacky imperative return to stop doing further processing
@@ -2182,7 +2182,7 @@
 		 (let ([dx (fl- (bx blt) player-x)]
 			   [dy (fl- (by blt) player-y)]
 			   [maxdist (fl+ (bullet-hit-radius (bullet-type blt))
-							 +graze-radius+)])
+							 graze-radius)])
 		   ;; NB: standard intersection test, not the orthogonal one we use for
 		   ;; bullets in the rest of the game.
 		   (when (fl<= (fl+ (fl* dx dx) (fl* dy dy))
@@ -2261,7 +2261,7 @@
   (declare-spell aiko 9)
   ;; this is just for debug jumps, the previous nonspell should already leave
   ;; us here
-  (enm-x-set! aiko +middle-boss-x+)
+  (enm-x-set! aiko middle-boss-x)
   (enm-y-set! aiko 225.0)
   ;; also just for debug jumps to show the right size
   (let ([bars (bossinfo-healthbars bossinfo)])
@@ -2377,7 +2377,7 @@
 					 [(fl<= player-x -28.0)
 					  (fx2fl (roll game-rng 20))]
 					 [else (if (roll-bool game-rng) -38.0 38.0)]))]
-			   [target-y (if try-bounce-shot 330.0 (fx2fl +playfield-max-y+))]
+			   [target-y (if try-bounce-shot 330.0 (fx2fl playfield-max-y))]
 			   [ball-facing
 				(facing-point (bx cur-ball) (by cur-ball)
 							  target-x target-y)])
@@ -2575,13 +2575,13 @@
   (define doremi
 	(spawn-enemy (enmtype boss-doremi) 100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+ 80 enm))
+				   (ease-to ease-out-cubic middle-boss-x middle-boss-y 80 enm))
 				 '()
 				 (constantly #f)))
   (define hazuki
 	(spawn-enemy (enmtype boss-hazuki) -100.0 -100.0 500
 				 (λ (task enm)
-				   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+ 80 enm))
+				   (ease-to ease-out-cubic left-boss-x left-boss-y 80 enm))
 				 '()
 				 (constantly #f)))
   (define spin-speed (cons 0.0 0.0))
@@ -2595,7 +2595,7 @@
   (enm-redirect-damage-set! aiko doremi)
   (for-each (λ (e) (enm-addflags e (enmflags nocollide)))
 			(list doremi hazuki aiko))
-  (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+ 80 aiko)
+  (ease-to ease-out-cubic right-boss-x right-boss-y 80 aiko)
   (for-each-indexed
    (λ (i type)
 	 (-> (cb)
@@ -2846,7 +2846,7 @@
   (spawn-task "doremi reenter"
 	(λ (task)
 	  (define-values (x y)
-		(dist-away 0.0 120.0 -hpi 50.0))
+		(dist-away 0.0 120.0 nhpi 50.0))
 	  (ease-to ease-out-cubic x y 90 doremi))
 	(constantly #t))
   (spawn-task "hazuki reenter"
@@ -2882,7 +2882,7 @@
   (raylib:play-sound (sebundle-release sounds))
   (let* ([ring-rad 8.0]
 		 [ring (map (λ (i type)
-					  (define init-ang (fl+ -hpi (torad (fx2fl (* i 120)))))
+					  (define init-ang (fl+ nhpi (torad (fx2fl (* i 120)))))
 					  (define-values (x y)
 						(dist-away 0.0 center-y init-ang ring-rad))
 					  (-> (spawn-bullet type x y 0 values)
@@ -2892,7 +2892,7 @@
 	(spawn-subtask "boss spin"
 	  (λ (task)
 		(define radius 50.0)
-		(let loop ([ang -hpi])
+		(let loop ([ang nhpi])
 		  (enm-set-dist-away doremi 0.0 center-y ang radius)
 		  (enm-set-dist-away aiko 0.0 center-y (fl+ ang (torad 120.0)) radius)
 		  (enm-set-dist-away hazuki 0.0 center-y

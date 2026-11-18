@@ -1,8 +1,6 @@
 ;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 ;; math and geometry library.
 ;; doesn't use the raylib ftypes, which would require manually managing memory
-;; chez reader mode required to give names like -pi and -hpi
-#!chezscheme
 (library (geom)
   (export rectangle-x rectangle-y rectangle-width rectangle-height make-rectangle
 		  v2x v2y vec2 v2+ v2- v2* v2zero v2unit v2sqrlen v2dot
@@ -10,7 +8,7 @@
 		  do-bounce-off
 		  lerp eval-bezier-quad eval-bezier-cubic bezier-cubic-easing
 		  eval-bezier-spline
-		  pi -pi tau hpi -hpi
+		  pi npi tau hpi nhpi
 		  hsv->rgba
 		  torad todeg eround fleround epsilon-equal clamp flcopysign
 		  distsq
@@ -25,9 +23,9 @@
 	(+ a (* progress (- b a))))
 
   (define pi 3.141592653589793)
-  (define -pi (fl- pi))
+  (define npi (fl- pi))
   (define hpi (fl/ pi 2.0))
-  (define -hpi (fl- hpi))
+  (define nhpi (fl- hpi))
   (define tau 6.283185307179586)
   (define (torad x)
 	(fl* (fl/ pi 180.0) x))

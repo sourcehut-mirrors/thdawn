@@ -1,4 +1,3 @@
-#!chezscheme
 ;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 ;; this is needed separately to bring add-prefix into scope when treating this
 ;; file as a r6rs Program
@@ -580,51 +579,51 @@
 ;; idea is to have logical game x in [-192, 192] (192 is (416-31)/2, roughly), and y in [0, 448]
 ;; logical game 0, 0 is at gl (31+(416-31)/2), 15
 ;; offset logical coords by 223, 15 to get to GL coords for render
-(define +playfield-render-offset-x+ 223)
-(define +playfield-render-offset-y+ 15)
-(define +playfield-render-offset+ (vec2 (fx2fl +playfield-render-offset-x+)
-										(fx2fl +playfield-render-offset-y+)))
-(define +playfield-min-x+ -192)
-(define +playfield-min-y+ 0)
-(define +playfield-max-x+ 192)
-(define +playfield-max-y+ 448)
-(define +playfield-min-render-x+ (+ +playfield-min-x+ +playfield-render-offset-x+))
-(define +playfield-max-render-x+ (+ +playfield-max-x+ +playfield-render-offset-x+))
-(define +playfield-min-render-y+ (+ +playfield-min-y+ +playfield-render-offset-y+))
-(define +playfield-max-render-y+ (+ +playfield-max-y+ +playfield-render-offset-y+))
-(define +playfield-width+ (- +playfield-max-x+ +playfield-min-x+))
-(define +playfield-height+ (- +playfield-max-y+ +playfield-min-y+))
-(define +poc-y+ 160)
+(define playfield-render-offset-x 223)
+(define playfield-render-offset-y 15)
+(define playfield-render-offset (vec2 (fx2fl playfield-render-offset-x)
+										(fx2fl playfield-render-offset-y)))
+(define playfield-min-x -192)
+(define playfield-min-y 0)
+(define playfield-max-x 192)
+(define playfield-max-y 448)
+(define playfield-min-render-x (+ playfield-min-x playfield-render-offset-x))
+(define playfield-max-render-x (+ playfield-max-x playfield-render-offset-x))
+(define playfield-min-render-y (+ playfield-min-y playfield-render-offset-y))
+(define playfield-max-render-y (+ playfield-max-y playfield-render-offset-y))
+(define playfield-width (- playfield-max-x playfield-min-x))
+(define playfield-height (- playfield-max-y playfield-min-y))
+(define poc-y 160)
 
 (define (in-bounds x y)
-  (and (fl<= (fx2fl +playfield-min-x+) x (fx2fl +playfield-max-x+))
-	   (fl<= (fx2fl +playfield-min-y+) y (fx2fl +playfield-max-y+))))
+  (and (fl<= (fx2fl playfield-min-x) x (fx2fl playfield-max-x))
+	   (fl<= (fx2fl playfield-min-y) y (fx2fl playfield-max-y))))
 
 (define (hit-x-impl x y ty facing)
   (define res
 	(fl+ x (fl*
 			(fl/ (flcos facing) (flsin facing))
 			(fl- (fx2fl ty) y))))
-  (and (<= +playfield-min-x+ res +playfield-max-x+)
+  (and (<= playfield-min-x res playfield-max-x)
 	   res))
 
 (define (hit-top-x x y facing)
   (define rfacing (flmod facing tau))
   ;; facing bottom half of screen, cannot hit top
   (and (not (fl<= 0.0 rfacing pi))
-	   (hit-x-impl x y +playfield-min-y+ rfacing)))
+	   (hit-x-impl x y playfield-min-y rfacing)))
 
 (define (hit-bot-x x y facing)
   (define rfacing (flmod facing tau))
   ;; facing top of screen, cannot hit top
   (and (not (fl<= pi rfacing tau))
-	   (hit-x-impl x y +playfield-max-y+ rfacing)))
+	   (hit-x-impl x y playfield-max-y rfacing)))
 
 (define (hit-y-impl x y tx facing)
   (define res
 	(fl+ y (fl* (fl/ (flsin facing) (flcos facing))
 				(fl- (fx2fl tx) x))))
-  (and (<= +playfield-min-y+ res +playfield-max-y+)
+  (and (<= playfield-min-y res playfield-max-y)
 	   res))
 
 (define (hit-left-y x y facing)
@@ -632,13 +631,13 @@
   ;; facing right side of screen, cannot hit left
   (and (not (or (fl<= 0.0 rfacing hpi)
 				(fl<= (fl* 3.0 hpi) rfacing tau)))
-	   (hit-y-impl x y +playfield-min-x+ rfacing)))
+	   (hit-y-impl x y playfield-min-x rfacing)))
 
 (define (hit-right-y x y facing)
   (define rfacing (flmod facing tau))
   ;; facing left side of screen, cannot hit right
   (and (not (fl<= hpi rfacing (fl* 3.0 hpi)))
-	   (hit-y-impl x y +playfield-max-x+ rfacing)))
+	   (hit-y-impl x y playfield-max-x rfacing)))
 
 ;; This is the general shape of replay records, except instead of a record
 ;; We'll store it as a plain vector to save space from having to serialize
@@ -775,8 +774,8 @@
 	 ret)
    (make-vector 256 #f)
    (make-vector 2048 #f)
-   0 180 +respawning-max+
-   -1 0 0 0 0.0 +initial-player-y+ 10000 0 2 3
+   0 180 respawning-max
+   -1 0 0 0 0.0 initial-player-y 10000 0 2 3
    (make-pseudo-random-generator)
    0.0 0.0 0.0 0.0
    0.0 0.0 0.0 0.0
@@ -786,20 +785,20 @@
 (define current-chapter 0) ;; informational/debug only
 ;; Always increments by one per frame no matter what. Should not be used often.
 (define true-frames 0)
-(define +respawning-max+ 60)
+(define respawning-max 60)
 (define show-hitboxes #f)
-(define +bombing-max+ 180)
-(define +bomb-initial-phase-length+ 60)
-(define +bomb-noninitial-phase-length+ (- +bombing-max+ +bomb-initial-phase-length+))
-(define +deathbomb-time+ 10)
+(define bombing-max 180)
+(define bomb-initial-phase-length 60)
+(define bomb-noninitial-phase-length (- bombing-max bomb-initial-phase-length))
+(define deathbomb-time 10)
 (define force-invincible #f)
-(define +graze-radius+ 22.0)
-(define +hit-radius+ 3.0)
-(define +vacuum-radius-unfocused+ 25.0)
-(define +vacuum-radius-focused+ 55.0)
-(define +vacuum-radius-steak+ 38.0)
-(define +initial-player-y+ (- +playfield-max-y+ 20.0))
-(define +max-focus-frames+ 10)
+(define graze-radius 22.0)
+(define hit-radius 3.0)
+(define vacuum-radius-unfocused 25.0)
+(define vacuum-radius-focused 55.0)
+(define vacuum-radius-steak 38.0)
+(define initial-player-y (- playfield-max-y 20.0))
+(define max-focus-frames 10)
 (define visual-rng (make-pseudo-random-generator))
 (define (centered-roll rng radius)
   (fl- (fl* (roll rng) 2.0 radius)
@@ -1149,8 +1148,8 @@
   (make-credits-gui credits-handle-input credits-tick credits-render
 					allow-skip #f #f #f 0 0.0))
 
-(define +name-max+ 8)
-(define +nameinput-per-row+ 13)
+(define name-max 8)
+(define nameinput-per-row 13)
 (define-record-type nameinput-gui
   (parent gui)
   (fields
@@ -1181,12 +1180,12 @@
    [(enum-set-member? (vkey up) edge-pressed)
 	(nameinput-gui-selected-option-set!
 	 self
-	 (max 0 (- selected +nameinput-per-row+)))
+	 (max 0 (- selected nameinput-per-row)))
 	(raylib:play-sound (sebundle-menuselect sounds))]
    [(enum-set-member? (vkey down) edge-pressed)
 	(nameinput-gui-selected-option-set!
 	 self
-	 (min (sub1 (vlen opts)) (+ selected +nameinput-per-row+)))
+	 (min (sub1 (vlen opts)) (+ selected nameinput-per-row)))
 	(raylib:play-sound (sebundle-menuselect sounds))]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
@@ -1199,7 +1198,7 @@
 		(nameinput-gui-position-set! self (sub1 pos))))]))
 (define (nameinput-render self textures fonts)
   (define name
-	(if (= (nameinput-gui-position self) +name-max+)
+	(if (= (nameinput-gui-position self) name-max)
 		(nameinput-gui-name self)
 		(string-append
 		 (substring (nameinput-gui-name self)
@@ -1209,7 +1208,7 @@
   (define-values (width _)
 	(raylib:measure-text-ex
 	 (fontbundle-sharetechmono40 fonts)
-	 (make-string +name-max+ #\*)
+	 (make-string name-max #\*)
 	 40.0 0.0))
   (draw-title-bg textures #x808080ff)
   (raylib:draw-text-ex
@@ -1217,7 +1216,7 @@
    (fl- 320.0 (fl/ width 2.0)) 100.0 40.0 0.0 -1)
   (vector-for-each-indexed
    (λ (i opt)
-	 (define-values (row col) (div-and-mod i +nameinput-per-row+))
+	 (define-values (row col) (div-and-mod i nameinput-per-row))
 	 (define label ((menu-item-label opt)))
 	 (raylib:draw-text-ex
 	  (fontbundle-sharetechmono30 fonts)
@@ -1228,17 +1227,17 @@
    (nameinput-gui-menu-options self)))
 ;; on-complete: function of the gui that runs when player submits the name
 (define (mk-nameinput-gui prefill-name on-complete)
-  (define name (make-string +name-max+ #\nul))
+  (define name (make-string name-max #\nul))
   (define (mk-option ch)
 	(define label (string ch))
 	(make-menu-item
 	 (thunk label)
 	 (λ (gui)
 	   (define pos (nameinput-gui-position gui))
-	   (when (< pos +name-max+)
+	   (when (< pos name-max)
 		 (string-set! (nameinput-gui-name gui) pos ch)
 		 (nameinput-gui-position-set! gui (add1 pos))
-		 (when (= (add1 pos) +name-max+)
+		 (when (= (add1 pos) name-max)
 		   (nameinput-gui-selected-option-set!
 			gui (sub1 (vlen (nameinput-gui-menu-options gui)))))))))
   (string-copy! prefill-name 0 name 0 (string-length prefill-name))
@@ -1269,8 +1268,8 @@
 	   (nameinput-gui-name ni-gui)
 	   0 (nameinput-gui-position ni-gui))))
 
-(define +replay-pages+ 10)
-(define +replays-per-page+ 10)
+(define replay-pages 10)
+(define replays-per-page 10)
 (define-record-type replist-gui
   (parent gui)
   (fields
@@ -1288,7 +1287,7 @@
    (mutable cached-data))
   (sealed #t))
 (define (rep-path page row)
-  (define id (+ row (* page +replays-per-page+)))
+  (define id (+ row (* page replays-per-page)))
   (format "replays/slot~2,'0d.rep" id))
 
 (define (replist-refresh self)
@@ -1302,7 +1301,7 @@
 		   ;; read the score entry from the first datum of the replay
 		   (guard (_ [else #f])
 			 (with-input-from-file path read))))
-	(iota +replays-per-page+))))
+	(iota replays-per-page))))
 (define (replist-handle-input self inputs)
   (cond
    [(enum-set-member? (vkey bomb) (inputset-edge-pressed inputs))
@@ -1328,7 +1327,7 @@
 	   (sub1 (replist-gui-selected-page self)))
 	  (replist-refresh self))]
    [(enum-set-member? (vkey right) (inputset-edge-pressed inputs))
-	(when (< (replist-gui-selected-page self) (sub1 +replay-pages+))
+	(when (< (replist-gui-selected-page self) (sub1 replay-pages))
 	  (raylib:play-sound (sebundle-menuselect sounds))
 	  (replist-gui-selected-page-set!
 	   self
@@ -1341,7 +1340,7 @@
 	   self
 	   (sub1 (replist-gui-selected-row self))))]
    [(enum-set-member? (vkey down) (inputset-edge-pressed inputs))
-	(when (< (replist-gui-selected-row self) (sub1 +replays-per-page+))
+	(when (< (replist-gui-selected-row self) (sub1 replays-per-page))
 	  (raylib:play-sound (sebundle-menuselect sounds))
 	  (replist-gui-selected-row-set!
 	   self
@@ -1396,8 +1395,8 @@
 	(format "~a ~2,'0d / ~2,'0d ~a"
 			(if (positive? page) "<--" "   ")
 			(add1 page)
-			+replay-pages+
-			(if (< page (sub1 +replay-pages+)) "-->" "   ")))
+			replay-pages
+			(if (< page (sub1 replay-pages)) "-->" "   ")))
   (define-values (pgwidth _pgheight)
 	(raylib:measure-text-ex
 	 (fontbundle-sharetechmono20 fonts)
@@ -1831,7 +1830,7 @@
 			   gui (make-vector (vlen pad-supported-vkeys) 0)))))
    0 #f))
 
-(define +menu-animate-dur+ 10)
+(define menu-animate-dur 10)
 (define-enumeration pausetype
   (normal ;; unpauseable
    gameclear ;; pretty much same as gameover but with happier title
@@ -1940,15 +1939,15 @@
 	(define progress
 	  (cond
 	   [(> opening 0)
-		(- 1 (/ opening +menu-animate-dur+))]
+		(- 1 (/ opening menu-animate-dur))]
 	   [(> closing 0)
-	    (- 1 (/ closing +menu-animate-dur+))]
+	    (- 1 (/ closing menu-animate-dur))]
 	   [else 1]))
 	(when (> opening 0)
 	  (pause-gui-opening-set! self (sub1 opening)))
 	(when (> closing 0)
 	  (pause-gui-closing-set! self (add1 closing))
-	  (when (= closing +menu-animate-dur+)
+	  (when (= closing menu-animate-dur)
 	    ((pause-gui-close-fn self)))))
   (define (pause-gui-render self textures fonts)
 	(define opts (pause-gui-menu-options self))
@@ -1958,9 +1957,9 @@
 	(define progress
 	  (cond
 	   [(> opening 0)
-		(- 1 (/ opening +menu-animate-dur+))]
+		(- 1 (/ opening menu-animate-dur))]
 	   [(> closing 0)
-	    (- 1 (/ closing +menu-animate-dur+))]
+	    (- 1 (/ closing menu-animate-dur))]
 	   [else 1]))
 	(define alpha (eround (lerp 0 255 progress)))
 	(define title
@@ -1979,7 +1978,7 @@
 	(raylib:draw-text-ex
 	 (fontbundle-bubblegum32 fonts)
 	 title
-	 (+ (fl/ twidth -2.0) +playfield-render-offset-x+)
+	 (+ (fl/ twidth -2.0) playfield-render-offset-x)
 	 (lerp 120.0 150.0 progress)
 	 32.0 0.0 (override-alpha selected-base-color alpha))
 	(render-ingame-menu (fontbundle-bubblegum20 fonts)
@@ -2038,7 +2037,7 @@
 	  (vector resume-opt quit-nosave-opt restart-opt)]
 	 [(replaydone)
 	  (vector quit-nosave-opt restart-opt)])
-   0 +menu-animate-dur+ 0 #f))
+   0 menu-animate-dur 0 #f))
 
 (define (truncate-to-whole-spline v)
   (let*-values ([(quot rem) (div-and-mod (sub1 (vlen v)) 3)])
@@ -2081,30 +2080,30 @@
 
 (define (draw-bomb)
   (raylib:draw-rectangle-gradient-h
-   (fx+ +playfield-render-offset-x+ (fx- (eround bomb-sweep-x-left) 290))
-   (fx+ +playfield-render-offset-y+ +playfield-min-y+)
+   (fx+ playfield-render-offset-x (fx- (eround bomb-sweep-x-left) 290))
+   (fx+ playfield-render-offset-y playfield-min-y)
    290
-   +playfield-height+
+   playfield-height
    #x8a2be200
    #x8a2be2be)
   (raylib:draw-rectangle-gradient-v
-   (fx+ +playfield-render-offset-x+ +playfield-min-x+)
-   (fx+ +playfield-render-offset-y+ (fx- (eround bomb-sweep-y-up) 365))
-   +playfield-width+
+   (fx+ playfield-render-offset-x playfield-min-x)
+   (fx+ playfield-render-offset-y (fx- (eround bomb-sweep-y-up) 365))
+   playfield-width
    365
    #xdc143c00
    #xdc143cbe)
   (raylib:draw-rectangle-gradient-h
-   (fx+ +playfield-render-offset-x+ (eround bomb-sweep-x-right))
-   (fx+ +playfield-render-offset-y+ +playfield-min-y+)
+   (fx+ playfield-render-offset-x (eround bomb-sweep-x-right))
+   (fx+ playfield-render-offset-y playfield-min-y)
    290
-   +playfield-height+
+   playfield-height
    #x8a2be2be
    #x8a2be200)
   (raylib:draw-rectangle-gradient-v
-   (fx+ +playfield-render-offset-x+ +playfield-min-x+)
-   (fx+ +playfield-render-offset-y+ (eround bomb-sweep-y-down))
-   +playfield-width+
+   (fx+ playfield-render-offset-x playfield-min-x)
+   (fx+ playfield-render-offset-y (eround bomb-sweep-y-down))
+   playfield-width
    365
    #xdc143cbe
    #xdc143c00))
@@ -2444,12 +2443,17 @@
 	 (make-spell-descriptor "\"Magical Stage\""
 							2400 27000 5000000 'group
 							'((point . 100)) '((point . 15))))))
+
+;; need nonstandard reader to read the nongenerative symbol
+#!chezscheme
 (define-record-type score-entry
   (fields name score unixtime cleared version)
   (sealed #t)
   (nongenerative #{score-entry byl66r2aw4bzvb0i8cr54d58t-4}))
+#!r6rs
+
 (define play-data #f)
-(define +playdata-path+ "playdata.dat")
+(define playdata-path "playdata.dat")
 (define (load-play-data)
   (guard (e [(i/o-file-does-not-exist-error? e)
 			 (save-play-data
@@ -2461,15 +2465,15 @@
 				(games-started . 0)
 				(games-cleared . 0)))
 			 (load-play-data)])
-	(with-input-from-file +playdata-path+
+	(with-input-from-file playdata-path
 	  read)))
 (define (save-play-data data)
   (with-output-to-file "playdata.dat.tmp"
 	(thunk (pretty-print data))
 	'truncate)
-  (move-file "playdata.dat.tmp" +playdata-path+))
+  (move-file "playdata.dat.tmp" playdata-path))
 
-(define +spellcircle-context+ 60)
+(define spellcircle-context 60)
 (define-record-type bossinfo
   (fields
    name
@@ -2497,8 +2501,8 @@
   (fx- (bossinfo-total-timer bossinfo)
 	   (bossinfo-remaining-timer bossinfo)))
 
-(define +default-healthbar-start-x+ (+ +playfield-min-render-x+ 5))
-(define +default-healthbar-end-x+ (- +playfield-max-render-x+ 20))
+(define default-healthbar-start-x (+ playfield-min-render-x 5))
+(define default-healthbar-end-x (- playfield-max-render-x 20))
 (define-record-type healthbar
   (fields
    ;; how wide the healthbar is at maximum width
@@ -2573,14 +2577,14 @@
 				 (when bossinfo
 				   (when (and (not (bossinfo-moved-last-frame bossinfo))
 							  ;; prevent the circle jumping around if the boss starts
-							  ;; moving again within +spellcircle-context+ time
+							  ;; moving again within spellcircle-context time
 							  ;; doing this makes the circle not be lazy for that motion
 							  ;; (sticking directly to the boss because the t value
 							  ;; computed for the lerp becomes greater than the context)
 							  ;; but that's better than having it jump around.
 							  ;; TODO: maybe improve this
 							  (>= (- frames (bossinfo-start-move-frame bossinfo))
-								  +spellcircle-context+))
+								  spellcircle-context))
 					 (bossinfo-start-move-frame-set! bossinfo frames)
 					 (bossinfo-start-move-x-set! bossinfo x)
 					 (bossinfo-start-move-y-set! bossinfo y))
@@ -2729,7 +2733,7 @@
   (when (and (not (player-invincible?))
 			 (fxzero? death-timer))
 	(raylib:play-sound (sebundle-playerdie sounds))
-	(set! death-timer +deathbomb-time+)))
+	(set! death-timer deathbomb-time)))
 
 (define (kill-player)
   (set! iframes 180)
@@ -2754,9 +2758,9 @@
 		  (when (< bomb-stock 3)
 			(set! bomb-stock 3))
 
-		  (set! respawning +respawning-max+)
+		  (set! respawning respawning-max)
 		  (set! player-x 0.0)
-		  (set! player-y +initial-player-y+)))))
+		  (set! player-y initial-player-y)))))
 
 (define (check-laser-collision lx ly rotation lradius length
 							   px py pradius)
@@ -2798,7 +2802,7 @@
 		(when (and (if is-laser
 					   (fx>= (fx- frames (laser-last-grazed-at bullet)) 4)
 					   (not (bullet-grazed bullet)))
-				   (check-player-collision bullet +graze-radius+))
+				   (check-player-collision bullet graze-radius))
 		  (set! graze (fx1+ graze))
 		  (set! item-value (fx+ 10 item-value))
 		  (set! current-score (fx+ 1000 current-score))
@@ -2823,7 +2827,7 @@
 
 		(when (and
 			   (not (bullet-hasflag? bullet (bltflag noclip)))
-			   (check-player-collision bullet +hit-radius+))
+			   (check-player-collision bullet hit-radius))
 		  (unless is-laser
 			(cancel-bullet bullet))
 		  (damage-player)))))
@@ -2832,7 +2836,7 @@
 	  (unless (enm-hasflag? enm (enmflag nocollide))
 		(let-values ([(x y w h) (enm-collision-box enm)])
 		  (when (check-collision-circle-rec
-				 player-x player-y +hit-radius+
+				 player-x player-y hit-radius
 				 x y w h)
 			(damage-player))))))
   (vector-for-each collide-one-bullet live-bullets)
@@ -2916,14 +2920,14 @@
 	  (let ([nx (bx blt)]
 			[ny (by blt)])
 		(cond
-		 [(> ny +playfield-max-y+)
+		 [(> ny playfield-max-y)
 		  (linear-step-forever facing speed task blt)]
-		 [(< ny +playfield-min-y+)
+		 [(< ny playfield-min-y)
 		  (let ([xv (flcos facing)]
 				[yv (flsin facing)])
 			(linear-step-forever (flatan (fl- yv) xv) speed task blt))]
-		 [(or (< nx +playfield-min-x+)
-			  (> nx +playfield-max-x+))
+		 [(or (< nx playfield-min-x)
+			  (> nx playfield-max-x))
 		  (let ([xv (flcos facing)]
 				[yv (flsin facing)])
 			(linear-step-forever (flatan yv (fl- xv)) speed task blt))]))
@@ -2986,7 +2990,7 @@
 (define (draw-centered-field-text fonts age max-age text render-y size color bg)
   (define-values (width height)
 	(raylib:measure-text-ex (fontbundle-cabin24 fonts) text size 0.0))
-  (define render-x (+ +playfield-render-offset-x+ (/ width -2.0)))
+  (define render-x (+ playfield-render-offset-x (/ width -2.0)))
   (define start-fadeout-age (- max-age 30))
   (define alpha
 	(cond
@@ -3017,8 +3021,8 @@
 	(when p
 	  (let ([age (particle-age p)]
 			[max-age (particle-max-age p)]
-			[render-x (+ (particle-x p) +playfield-render-offset-x+)]
-			[render-y (+ (particle-y p) +playfield-render-offset-y+)]
+			[render-x (+ (particle-x p) playfield-render-offset-x)]
+			[render-y (+ (particle-y p) playfield-render-offset-y)]
 			[extra-data (particle-extra-data p)]
 			[type (particle-type p)])
 		(case type
@@ -3071,7 +3075,7 @@
 				;; display to the left if we wouldn't have room on the right
 				;; this is done here instead of when the particle is spawned so that
 				;; we don't have to pass the fonts to the game logic
-				(if (> (+ render-x width) +playfield-max-render-x+)
+				(if (> (+ render-x width) playfield-max-render-x)
 					(- render-x width 20.0)
 					render-x)
 				render-y
@@ -3141,8 +3145,8 @@
 	   (let*-values
 		   ([(age) (particle-age p)]
 			[(max-age) (particle-max-age p)]
-			[(render-x) (+ (particle-x p) +playfield-render-offset-x+)]
-			[(render-y) (+ (particle-y p) +playfield-render-offset-y+)]
+			[(render-x) (+ (particle-x p) playfield-render-offset-x)]
+			[(render-y) (+ (particle-y p) playfield-render-offset-y)]
 			[(type) (particle-type p)]
 			[(title-text boss-name name-color flower-sprite)
 			 (case type
@@ -3315,7 +3319,7 @@
 					   (damage-enemy enm 25)
 					   (return)))))
 			   live-enm)
-			  (when (< (miscent-y ent) +playfield-min-y+)
+			  (when (< (miscent-y ent) playfield-min-y)
 				(delete-misc-ent ent)))))
 		  ([needle]
 		   (do-standard-movement)
@@ -3337,7 +3341,7 @@
 					   (return)))))
 			   live-enm)
 			  ;; extra fuzz for length
-			  (when (< (miscent-y ent) (- +playfield-min-y+ 50))
+			  (when (< (miscent-y ent) (- playfield-min-y 50))
 				(delete-misc-ent ent)))))
 		  ([point life-frag big-piv life bomb-frag small-piv bomb]
 		   (when (stage-ctx-dialogue current-stage-ctx)
@@ -3353,8 +3357,8 @@
 			[(and
 			  (not (eq? type 'small-piv)) (not (eq? type 'big-piv))
 			  (check-collision-circle-rec
-			   player-x player-y (if focused-immediate +vacuum-radius-focused+
-									 +vacuum-radius-unfocused+)
+			   player-x player-y (if focused-immediate vacuum-radius-focused
+									 vacuum-radius-unfocused)
 			   (- (miscent-x ent) 8) (- (miscent-y ent) 8)
 			   16 16))
 			 (let ([dir-to-player (v2unit (vec2 (- player-x (miscent-x ent))
@@ -3365,7 +3369,7 @@
 			   (miscent-vy-set! ent 1.0))]
 			[else (do-standard-movement)])
 		   (when (check-collision-circle-rec
-				  player-x player-y +hit-radius+
+				  player-x player-y hit-radius
 				  (- (miscent-x ent) 8) (- (miscent-y ent) 8)
 				  16 16)
 			 (case type
@@ -3373,11 +3377,11 @@
 				(raylib:play-sound (sebundle-item sounds))
 				(let* ([value-multiplier
 						(if (or (miscent-hasflag? ent (miscentflag autocollect))
-								(< player-y +poc-y+))
+								(< player-y poc-y))
 							1.0
 							(max 0.25
-								 (- 1.0 (/ (- player-y +poc-y+)
-										   (- +playfield-max-y+ +poc-y+)))))]
+								 (- 1.0 (/ (- player-y poc-y)
+										   (- playfield-max-y poc-y)))))]
 					   [value (round-score (* item-value value-multiplier))])
 				  (set! current-score (+ current-score value))
 				  (spawn-particle
@@ -3400,7 +3404,7 @@
 				(set! item-value (+ 1000 item-value))
 				(set! current-score (+ 1000 current-score))))
 			 (delete-misc-ent ent))
-		   (when (> (miscent-y ent) (+ +playfield-max-y+ 20))
+		   (when (> (miscent-y ent) (+ playfield-max-y 20))
 			 (delete-misc-ent ent))))
 		(miscent-livetime-set! ent (add1 (miscent-livetime ent))))))
   (vector-for-each tick-one-miscent live-misc-ents))
@@ -3412,8 +3416,8 @@
   (define (draw-one-miscent draw-type ent)
 	(define type (and ent (miscent-type ent)))
 	(when (eq? type draw-type)
-	  (let ([render-x (+ +playfield-render-offset-x+ (miscent-x ent))]
-			[render-y (+ +playfield-render-offset-y+ (miscent-y ent))])
+	  (let ([render-x (+ playfield-render-offset-x (miscent-x ent))]
+			[render-y (+ playfield-render-offset-y (miscent-y ent))])
 		(case type
 		  ([mainshot]
 		   (draw-sprite-with-rotation
@@ -3457,8 +3461,8 @@
   (vector-for-each
    (λ (ent)
 	 (and ent (eq? 'steak (miscent-type ent))
-		  (let* ([render-x (+ +playfield-render-offset-x+ (miscent-x ent))]
-				 [render-y (+ +playfield-render-offset-y+ (miscent-y ent))]
+		  (let* ([render-x (+ playfield-render-offset-x (miscent-x ent))]
+				 [render-y (+ playfield-render-offset-y (miscent-y ent))]
 				 [livetime (miscent-livetime ent)]
 				 [rot (fl* 15.0 (flsin (inexact (/ livetime 15))))])
 			(draw-sprite-with-scale-rotation
@@ -3572,8 +3576,8 @@
 		  spawn-drops)
 	  ((if failed spell-descriptor-failed-drops spell-descriptor-drops)
 	   (vnth spells (bossinfo-active-spell-id bossinfo)))
-	  (if (= spid 10) +middle-boss-x+ (ex enm))
-	  (if (= spid 10) +middle-boss-y+ (ey enm)))
+	  (if (= spid 10) middle-boss-x (ex enm))
+	  (if (= spid 10) middle-boss-y (ey enm)))
 	 (raylib:play-sound (sebundle-shoot0 sounds))
 	 (when timeout-fail
 	   (raylib:play-sound (sebundle-laugh sounds)))
@@ -3700,41 +3704,41 @@
 (define (tick-bomb)
   (define (bomb-sweep-x-left-hitbox)
 	(values (- bomb-sweep-x-left 40.0)
-			+playfield-min-y+
+			playfield-min-y
 			40
-			+playfield-height+))
+			playfield-height))
 
   (define (bomb-sweep-x-right-hitbox)
 	(values bomb-sweep-x-right
-			+playfield-min-y+
+			playfield-min-y
 			40
-			+playfield-height+))
+			playfield-height))
 
   (define (bomb-sweep-y-up-hitbox)
-	(values +playfield-min-x+
+	(values playfield-min-x
 			(- bomb-sweep-y-up 40.0)
-			+playfield-width+
+			playfield-width
 			40))
 
   (define (bomb-sweep-y-down-hitbox)
-	(values +playfield-min-x+
+	(values playfield-min-x
 			bomb-sweep-y-down
-			+playfield-width+
+			playfield-width
 			40))
-  (when (= bombing (- +bombing-max+ +bomb-initial-phase-length+))
+  (when (= bombing (- bombing-max bomb-initial-phase-length))
 	(raylib:play-sound (sebundle-oldvwoopfast sounds)))
-  (when (<= bombing (- +bombing-max+ +bomb-initial-phase-length+))
+  (when (<= bombing (- bombing-max bomb-initial-phase-length))
 	(let ([progress (ease-out-expo
-					 (inexact (/ (- +bomb-noninitial-phase-length+ bombing)
-								 +bomb-noninitial-phase-length+)))]
+					 (inexact (/ (- bomb-noninitial-phase-length bombing)
+								 bomb-noninitial-phase-length)))]
 		  [bomb-sweep-x-left-max
-		   (max +playfield-min-x+ (- initial-bomb-sweep-x-left 290))]
+		   (max playfield-min-x (- initial-bomb-sweep-x-left 290))]
 		  [bomb-sweep-x-right-max
-		   (min +playfield-max-x+ (+ initial-bomb-sweep-x-right 290))]
+		   (min playfield-max-x (+ initial-bomb-sweep-x-right 290))]
 		  [bomb-sweep-y-up-max
-		   (max +playfield-min-y+ (- initial-bomb-sweep-y-up 365))]
+		   (max playfield-min-y (- initial-bomb-sweep-y-up 365))]
 		  [bomb-sweep-y-down-max
-		   (min +playfield-max-y+ (+ initial-bomb-sweep-y-down 365))])
+		   (min playfield-max-y (+ initial-bomb-sweep-y-down 365))])
 	  (set! bomb-sweep-x-left
 			(lerp initial-bomb-sweep-x-left bomb-sweep-x-left-max progress))
 	  (set! bomb-sweep-x-right
@@ -3788,7 +3792,7 @@
 	  (kill-player)))
 
   ;; set the option positions
-  (let ([progress (ease-out-cubic (/ focus-frames +max-focus-frames+))])
+  (let ([progress (ease-out-cubic (/ focus-frames max-focus-frames))])
 	(vector-set! option-xs 0
 				 (lerp (- player-x 35) (- player-x 25) progress))
 	(vector-set! option-ys 0
@@ -3946,12 +3950,12 @@
 	   (enum-set-union (inputset-level-pressed pad) (inputset-level-pressed kb)))
 	  kb))
 
-(define +left-boss-x+ -127.0)
-(define +left-boss-y+ 117.0)
-(define +middle-boss-x+ 0.0)
-(define +middle-boss-y+ 90.0)
-(define +right-boss-x+ 127.0)
-(define +right-boss-y+ 117.0)
+(define left-boss-x -127.0)
+(define left-boss-y 117.0)
+(define middle-boss-x 0.0)
+(define middle-boss-y 90.0)
+(define right-boss-x 127.0)
+(define right-boss-y 117.0)
 
 (define (blank-bossinfo name name-color)
   (make-bossinfo name name-color
@@ -4012,7 +4016,7 @@
 								 (λ (task enm)
 								   (spawn-particle (particletype doremi-title)
 												   0.0 240.0 240 #f)
-								   (ease-to ease-out-cubic +middle-boss-x+ +middle-boss-y+
+								   (ease-to ease-out-cubic middle-boss-x middle-boss-y
 											dur enm))
 								 '()
 								 (constantly #f))])
@@ -4022,7 +4026,7 @@
 								 (λ (task enm)
 								   (spawn-particle (particletype hazuki-title)
 												   0.0 240.0 240 #f)
-								   (ease-to ease-out-cubic +left-boss-x+ +left-boss-y+
+								   (ease-to ease-out-cubic left-boss-x left-boss-y
 											dur enm))
 								 '()
 								 (constantly #f))])
@@ -4032,7 +4036,7 @@
 								 (λ (task enm)
 								   (spawn-particle (particletype aiko-title)
 												   0.0 240.0 240 #f)
-								   (ease-to ease-out-cubic +right-boss-x+ +right-boss-y+
+								   (ease-to ease-out-cubic right-boss-x right-boss-y
 											dur enm))
 								 '()
 								 (constantly #f))])
@@ -4074,7 +4078,7 @@
   (when (not (paused?))
 	(set! focused-immediate (enum-set-member? (vkey focus) level-pressed))
 	(if focused-immediate
-		(when (fx< focus-frames +max-focus-frames+)
+		(when (fx< focus-frames max-focus-frames)
 		  (set! focus-frames (fx1+ focus-frames)))
 		(when (fx> focus-frames 0)
 		  (set! focus-frames (fx1- focus-frames)))))
@@ -4118,7 +4122,7 @@
 		 (not (stage-ctx-dialogue current-stage-ctx)))
 	(fail-current-attack)
 	(set! death-timer 0)
-	(set! bombing +bombing-max+)
+	(set! bombing bombing-max)
 	(set! iframes 180)
 	(set! bomb-stock (sub1 bomb-stock))
 	(stage-ctx-bombed-or-died-set! current-stage-ctx #t)
@@ -4252,26 +4256,26 @@
 			 [ndir (v2unit dir)]
 			 [velvec (v2* ndir speed)]
 			 [new-x (clamp (fl+ player-x (v2x velvec))
-						   +playfield-min-x+ +playfield-max-x+)]
+						   playfield-min-x playfield-max-x)]
 			 [new-y (clamp (fl+ player-y (v2y velvec))
-						   +playfield-min-y+ +playfield-max-y+)])
+						   playfield-min-y playfield-max-y)])
 		(set! player-x new-x)
 		(set! player-y new-y)
 		(set! last-player-movement-dir ndir))
 	  (set! last-player-movement-dir v2zero))
-  (when (< player-y +poc-y+)
+  (when (< player-y poc-y)
 	(autocollect-all-items)))
 
 (define (get-player-render-pos)
   (if (fxpositive? respawning)
-	  (let ([progress (/ (fx- +respawning-max+ respawning)
-						 +respawning-max+)]
-			[start-y (+ +playfield-max-y+ 5.0)]
-			[end-y +initial-player-y+])
-		(values (fx2fl +playfield-render-offset-x+)
-				(+ (lerp start-y end-y progress) +playfield-render-offset-y+)))
-	  (values (+ player-x +playfield-render-offset-x+)
-			  (+ player-y +playfield-render-offset-y+))))
+	  (let ([progress (/ (fx- respawning-max respawning)
+						 respawning-max)]
+			[start-y (+ playfield-max-y 5.0)]
+			[end-y initial-player-y])
+		(values (fx2fl playfield-render-offset-x)
+				(+ (lerp start-y end-y progress) playfield-render-offset-y)))
+	  (values (+ player-x playfield-render-offset-x)
+			  (+ player-y playfield-render-offset-y))))
 
 (define (draw-player textures)
   (define spellcaster (find-spellcaster))
@@ -4289,8 +4293,8 @@
 	(let* ([real-elapsed (fx- (bossinfo-elapsed-frames (enm-extras spellcaster)) 120)]
 		   ;; render it just a bit bigger than the real thing, looks better
 		   [radius (if (fx>= real-elapsed 60)
-					   (fl+ +graze-radius+ 5.0)
-					   (lerp 0.0 (fl+ +graze-radius+ 5.0)
+					   (fl+ graze-radius 5.0)
+					   (lerp 0.0 (fl+ graze-radius 5.0)
 							 (/ real-elapsed 60)))])
 	(raylib:draw-circle-v render-player-x render-player-y
 						  radius #x7cfc00e0)))
@@ -4320,48 +4324,48 @@
 	   -1))
 
   (when (positive? death-timer)
-	(let ([radius (lerp 80.0 0.0 (/ (- +deathbomb-time+ death-timer)
-									+deathbomb-time+))])
+	(let ([radius (lerp 80.0 0.0 (/ (- deathbomb-time death-timer)
+									deathbomb-time))])
 	  (raylib:draw-circle-v render-player-x render-player-y radius #xff000088)))
 
   ;; options
   (vector-for-each
    (λ (x y)
-	 (define render-x (+ x +playfield-render-offset-x+))
-	 (define render-y (+ y +playfield-render-offset-y+))
+	 (define render-x (+ x playfield-render-offset-x))
+	 (define render-y (+ y playfield-render-offset-y))
 	 (draw-sprite-with-rotation
 	  textures 'option (fx2fl (fxmod (fx* frames 4) 360))
 	  render-x render-y -1))
    option-xs option-ys)
 
   (unless aiko-sp2-overlay
-	(let ([focus-progress (/ focus-frames +max-focus-frames+)])
+	(let ([focus-progress (/ focus-frames max-focus-frames)])
 	  (raylib:draw-circle-lines-v
 	   render-player-x render-player-y
-	   (if doremi-sp2 +vacuum-radius-steak+
-		   (lerp +vacuum-radius-unfocused+ +vacuum-radius-focused+ focus-progress))
+	   (if doremi-sp2 vacuum-radius-steak
+		   (lerp vacuum-radius-unfocused vacuum-radius-focused focus-progress))
 	   (override-alpha
 		-1 (if doremi-sp2 160 (eround (lerp 16 128 focus-progress)))))))
 
   (when show-hitboxes
-	(raylib:draw-circle-v render-player-x render-player-y +graze-radius+
+	(raylib:draw-circle-v render-player-x render-player-y graze-radius
 						  green)
-	(raylib:draw-circle-v render-player-x render-player-y +hit-radius+
+	(raylib:draw-circle-v render-player-x render-player-y hit-radius
 						  red)
 	(when aiko-sp2
 	  (for-each
 	   (λ (r)
 		 (raylib:draw-rectangle-rec
-		  (+ (rectangle-x r) +playfield-render-offset-x+)
-		  (+ (rectangle-y r) +playfield-render-offset-y+)
+		  (+ (rectangle-x r) playfield-render-offset-x)
+		  (+ (rectangle-y r) playfield-render-offset-y)
 		  (rectangle-width r) (rectangle-height r)
 		  red))
 	   aiko-sp2-horiz-rects)
 	  (for-each
 	   (λ (r)
 		 (raylib:draw-rectangle-rec
-		  (+ (rectangle-x r) +playfield-render-offset-x+)
-		  (+ (rectangle-y r) +playfield-render-offset-y+)
+		  (+ (rectangle-x r) playfield-render-offset-x)
+		  (+ (rectangle-y r) playfield-render-offset-y)
 		  (rectangle-width r) (rectangle-height r)
 		  green))
 	   aiko-sp2-vertical-rects))
@@ -4383,10 +4387,10 @@
 					  1.0
 					  (lerp 1.0 2.5 (/ (fx- elapsed-frames 90) 30)))]
 		   [y (if (fx< elapsed-frames 30)
-				  (lerp (+ +playfield-min-render-y+ 100.0)
-						(+ +playfield-min-render-y+ 200.0)
+				  (lerp (+ playfield-min-render-y 100.0)
+						(+ playfield-min-render-y 200.0)
 						(/ elapsed-frames 30))
-				  (fx2fl (+ 200 +playfield-min-render-y+)))])
+				  (fx2fl (+ 200 playfield-min-render-y)))])
 	  (raylib:with-matrix
 	   ;; x of 100.0 for left boss
 	   ;; 200.0 for middle boss
@@ -4416,15 +4420,15 @@
   (define healthbars (bossinfo-healthbars bossinfo))
   (raylib:draw-text-ex (fontbundle-bubblegum16 fonts)
 					   (bossinfo-name bossinfo)
-					   (fx2fl (+ +playfield-min-render-x+ 5))
-					   (fx2fl (+ +playfield-min-render-y+ 5 (* position 15)))
+					   (fx2fl (+ playfield-min-render-x 5))
+					   (fx2fl (+ playfield-min-render-y 5 (* position 15)))
 					   16.0 0.0
 					   (if (and (fl< player-x -70.0)
 								(fl< player-y 80.0))
 						   (override-alpha
 							(bossinfo-name-color bossinfo) 128)
 						   (bossinfo-name-color bossinfo)))
-  (let loop ([x +default-healthbar-start-x+]
+  (let loop ([x default-healthbar-start-x]
 			 [i 0])
 	(when (< i (vlen healthbars))
 	  (let* ([hb (vnth healthbars i)]
@@ -4437,9 +4441,9 @@
 			   [else
 				(eround (* (if (= -1 width0)
 							   (if (fx<= elapsed-frames 30)
-								   (* (- +default-healthbar-end-x+ x)
+								   (* (- default-healthbar-end-x x)
 									  (/ elapsed-frames 30))
-								   (- +default-healthbar-end-x+ x))
+								   (- default-healthbar-end-x x))
 							   width0)
 						   (if (= -1 cur-atk-max-health)
 							   (/ remaining-timer (bossinfo-total-timer bossinfo))
@@ -4447,7 +4451,7 @@
 			 [alpha (if (fl< player-y 20.0) 128 255)])
 		(raylib:draw-rectangle-gradient-v
 		 x
-		 (+ +playfield-render-offset-y+ +playfield-min-y+ 1)
+		 (+ playfield-render-offset-y playfield-min-y 1)
 		 width 5
 		 (override-alpha (healthbar-top-color hb) alpha)
 		 (override-alpha (healthbar-bottom-color hb) alpha))
@@ -4458,8 +4462,8 @@
 						 (format "~2,'0d"
 								 (exact (ceiling
 										 (/ remaining-timer 60.0))))
-						 (fx2fl (- +playfield-max-render-x+ 18))
-						 (fx2fl (- +playfield-min-render-y+ 0))
+						 (fx2fl (- playfield-max-render-x 18))
+						 (fx2fl (- playfield-min-render-y 0))
 						 20.0 0.0
 						 (fxlogior
 						  (cond
@@ -4478,40 +4482,40 @@
 									  (fontbundle-sharetechmono15 fonts)
 									  bonus-txt 15.0 0.0)]
 					[(bonus-x)
-					 (+ +playfield-render-offset-x+
+					 (+ playfield-render-offset-x
 						-5.0
 						(if (fx<= elapsed-frames 30)
-							(+ +playfield-max-x+
+							(+ playfield-max-x
 							   (lerp 0.0 (fl- bonus-width)
 									 (ease-out-cubic (/ elapsed-frames 30))))
-							(+ +playfield-max-x+ (fl- bonus-width))))]
+							(+ playfield-max-x (fl- bonus-width))))]
 					[(width height) (raylib:measure-text-ex
 									 (fontbundle-cabin18 fonts)
 									 spname 18.0 0.5)]
-					[(spx) (+ +playfield-render-offset-x+
+					[(spx) (+ playfield-render-offset-x
 							  -5.0
 							  (if (fx<= elapsed-frames 30)
-								  (+ +playfield-max-x+
+								  (+ playfield-max-x
 									 (lerp 0.0 (fl- width)
 										   (ease-out-cubic (/ elapsed-frames 30))))
-								  (+ +playfield-max-x+ (fl- width))))]
-					[(spy) (+ +playfield-render-offset-y+
+								  (+ playfield-max-x (fl- width))))]
+					[(spy) (+ playfield-render-offset-y
 							  (cond
 							   [(fx<= elapsed-frames 45)
-								(- +playfield-max-y+ height 80.0)]
+								(- playfield-max-y height 80.0)]
 							   [(fx<= 45 elapsed-frames 90)
 								(lerp
-								 (- +playfield-max-y+ height 80.0)
-								 (+ +playfield-min-y+ 15.0)
+								 (- playfield-max-y height 80.0)
+								 (+ playfield-min-y 15.0)
 								 (ease-out-cubic (/ (fx- elapsed-frames 45) 45.0)))]
-							   [else (+ +playfield-min-y+ 15.0)]))]
+							   [else (+ playfield-min-y 15.0)]))]
 					[(color) (if (fl< player-y 80.0)
 								 #xffffff80 -1)])
 		;; TODO: scissor when outside of playfield
 		(raylib:draw-texture-pro
 		 (txbundle-boss-ui textures)
 		 (make-rectangle 0.0 0.0 256.0 36.0)
-		 (make-rectangle (- +playfield-max-render-x+ 256.0) (- spy 5.0) 256.0 36.0)
+		 (make-rectangle (- playfield-max-render-x 256.0) (- spy 5.0) 256.0 36.0)
 		 v2zero 0.0 color)
 		(raylib:draw-text-ex
 		 (fontbundle-cabin18 fonts) spname
@@ -4521,18 +4525,18 @@
 		 (fontbundle-sharetechmono15 fonts) bonus-txt
 		 bonus-x (+ spy height 5.0)
 		 15.0 0.0 color))))
-  (when (< +playfield-min-x+ (ex enm) +playfield-max-x+)
+  (when (< playfield-min-x (ex enm) playfield-max-x)
 	(draw-sprite textures 'enemy-indicator
-				 (+ +playfield-render-offset-x+ (ex enm))
-				 (fx2fl (+ +playfield-max-y+ +playfield-render-offset-y+ 2))
+				 (+ playfield-render-offset-x (ex enm))
+				 (fx2fl (+ playfield-max-y playfield-render-offset-y 2))
 				 #xffffffc0)))
 
 (define dialog-src-bounds (make-rectangle 0.0 0.0 368.0 60.0))
 (define dialog-dest-bounds
   (make-rectangle
-   (fx2fl +playfield-min-render-x+)
-   (fx2fl (- +playfield-max-render-y+ 60))
-   (fx2fl +playfield-width+)
+   (fx2fl playfield-min-render-x)
+   (fx2fl (- playfield-max-render-y 60))
+   (fx2fl playfield-width)
    60.0))
 
 (define (draw-dialogue textures fonts dctx)
@@ -4597,13 +4601,13 @@
   (raylib:draw-text-ex
    (fontbundle-cabin18 fonts)
    (assqdr 'text current)
-   (fx2fl (+ +playfield-min-render-x+ 10))
-   (fx2fl (- +playfield-max-render-y+ 50))
+   (fx2fl (+ playfield-min-render-x 10))
+   (fx2fl (- playfield-max-render-y 50))
    18.0 0.0 text-color)
   (unless (cannot-advance-dialogue?)
 	(raylib:draw-poly
-	 (- +playfield-max-render-x+ 20.0)
-	 (fl+ (- +playfield-max-render-y+ 20.0)
+	 (- playfield-max-render-x 20.0)
+	 (fl+ (- playfield-max-render-y 20.0)
 		  (if (fx< (fxmod frames 60) 30)
 			  3.0 0.0))
 	 3 5.0 90.0 -1)))
@@ -4711,7 +4715,7 @@
 		 [whole-lives (floor life-stock)]
 		 ;; will always be 0, 1, or 2
 		 [fractional-lives (* 3 (- life-stock whole-lives))])
-	(do [(i 0 (1+ i))]
+	(do [(i 0 (add1 i))]
 		[(>= i whole-lives)]
 	  (draw-sprite textures 'life-full (+ start-x (* 16.0 i)) y -1))
 	(cond
@@ -4727,7 +4731,7 @@
 		 [whole-bombs (floor bomb-stock)]
 		 ;; will always be 0, 1, or 2
 		 [fractional-bombs (* 3 (- bomb-stock whole-bombs))])
-	(do [(i 0 (1+ i))]
+	(do [(i 0 (add1 i))]
 		[(>= i whole-bombs)]
 	  (draw-sprite textures 'bomb-full (+ start-x (* 16.0 i)) y -1))
 	(cond
@@ -4860,10 +4864,10 @@
 		 [dest (make-rectangle
 				(fl/ scaledw -2.0) (fl/ scaledh -2.0)
 				scaledw scaledh)]
-		 [finalx (+ (/ scaledw -2.0) +playfield-render-offset-x+)]
+		 [finalx (+ (/ scaledw -2.0) playfield-render-offset-x)]
 		 [finaly (+ 180.0
 					(/ scaledh -2.0)
-					+playfield-render-offset-y+)])
+					playfield-render-offset-y)])
 	(raylib:with-matrix
 	 (raylib:translatef
 	  (fl- finalx (rectangle-x dest))
@@ -4918,10 +4922,10 @@
 		  (render-spell-background textures bgid elapsed)))))
 
   (when show-hitboxes
-	(raylib:draw-line (+ +playfield-render-offset-x+ +playfield-min-x+)
-					  (+ +playfield-render-offset-y+ +poc-y+)
-					  (+ +playfield-render-offset-x+ +playfield-max-x+)
-					  (+ +playfield-render-offset-y+ +poc-y+)
+	(raylib:draw-line (+ playfield-render-offset-x playfield-min-x)
+					  (+ playfield-render-offset-y poc-y)
+					  (+ playfield-render-offset-x playfield-max-x)
+					  (+ playfield-render-offset-y poc-y)
 					  -1))
 
   (let ([sorted-bullets (stage-ctx-sorted-bullets current-stage-ctx)])
@@ -4955,7 +4959,7 @@
   ;; is kinda weird.
   (let-values ([(render-player-x render-player-y)
 				(get-player-render-pos)]
-			   [(focus-sigil-strength) (/ focus-frames +max-focus-frames+)])
+			   [(focus-sigil-strength) (/ focus-frames max-focus-frames)])
 	(when (> focus-sigil-strength 0)
 	  (raylib:with-matrix
 	   (raylib:translatef render-player-x render-player-y 0.0) ;; move to where we are
@@ -4973,7 +4977,7 @@
   (draw-hud textures fonts)
 
   (let* ([render-positions (vector-map
-						   (λ (p) (v2+ p +playfield-render-offset+))
+						   (λ (p) (v2+ p playfield-render-offset))
 						   spline-editor-positions)]
 		 [one-render-position (fx= 1 (vlen render-positions))])
 	(when (not (zero? (vlen render-positions)))
@@ -5002,12 +5006,12 @@
 	 render-positions)
 	(when one-render-position
 	  (raylib:draw-line
-	   (+ +playfield-render-offset-x+
+	   (+ playfield-render-offset-x
 		  (eround (v2x (vnth spline-editor-positions 0))))
-	   (+ +playfield-render-offset-y+
+	   (+ playfield-render-offset-y
 		  (eround (v2y (vnth spline-editor-positions 0))))
-	   (+ (eround player-x) +playfield-render-offset-x+)
-	   (+ (eround player-y) +playfield-render-offset-y+)
+	   (+ (eround player-x) playfield-render-offset-x)
+	   (+ (eround player-y) playfield-render-offset-y)
 	   -1))))
 
 (define (do-render-all textures fonts)
@@ -5092,13 +5096,13 @@
 		  ;; requires all three
 		  [(14 15 16 23 24 31)
 		   (let* ([doremi (spawn-enemy 'boss-doremi
-									   +middle-boss-x+ +middle-boss-y+
+									   middle-boss-x middle-boss-y
 									   500 values '() (constantly #f))]
 				  [hazuki (spawn-enemy 'boss-hazuki
-									   +left-boss-x+ +left-boss-y+
+									   left-boss-x left-boss-y
 									   500 values '() (constantly #f))]
 				  [aiko (spawn-enemy 'boss-aiko
-									   +right-boss-x+ +right-boss-y+
+									   right-boss-x right-boss-y
 									   500 values '() (constantly #f))]
 				  [bossinfo (blank-doremi-bossinfo)])
 			 (bossinfo-healthbars-set! bossinfo bars)
@@ -5112,7 +5116,7 @@
 		  ;; requires doremi
 		  [(17 18 25 26)
 		   (let* ([doremi (spawn-enemy 'boss-doremi
-									   +middle-boss-x+ +middle-boss-y+
+									   middle-boss-x middle-boss-y
 									   500 values '() (constantly #f))]
 				  [bossinfo (blank-doremi-bossinfo)])
 			 (bossinfo-healthbars-set! bossinfo bars)
@@ -5124,7 +5128,7 @@
 		  ;; requires hazuki
 		  [(19 20 27 28)
 		   (let* ([hazuki (spawn-enemy 'boss-hazuki
-									   +middle-boss-x+ +middle-boss-y+
+									   middle-boss-x middle-boss-y
 									   500 values '() (constantly #f))]
 				  [bossinfo (blank-hazuki-bossinfo)])
 			 (bossinfo-healthbars-set! bossinfo bars)
@@ -5136,7 +5140,7 @@
 		  ;; requires aiko
 		  [(21 22 29 30)
 		   (let* ([aiko (spawn-enemy 'boss-aiko
-									 +middle-boss-x+ +middle-boss-y+
+									 middle-boss-x middle-boss-y
 									 500 values '() (constantly #f))]
 				  [bossinfo (blank-aiko-bossinfo)])
 			 (bossinfo-healthbars-set! bossinfo bars)
@@ -5163,7 +5167,7 @@
 	(when (fxpositive? screenshake)
 	  (set! screenshake (fx1- screenshake)))))
 
-(define +frame-time-factor+ 0.8)
+(define frame-time-factor 0.8)
 (define frame-time-ema 0.0)
 (define (main)
   (raylib:set-trace-log-level 4) ;; WARNING or above
@@ -5204,9 +5208,9 @@
 		 (set! true-frames (fx1+ true-frames))
 		 (let ([ft (raylib:get-frame-time)])
 		   (set! frame-time-ema
-				 (fl+ (fl* +frame-time-factor+
+				 (fl+ (fl* frame-time-factor
 						   ft)
-					  (fl* (fl- 1.0 +frame-time-factor+)
+					  (fl* (fl- 1.0 frame-time-factor)
 						   frame-time-ema)))))
 	   ;; if stage ctx is still alive here, player did alt+f4
 	   ;; make sure to save the play time

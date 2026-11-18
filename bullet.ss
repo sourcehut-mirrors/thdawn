@@ -272,10 +272,10 @@
 		  [y (by bullet)])
 	  (when (and
 			 (not (bullet-hasflag? bullet (bltflag noprune)))
-			 (or (fl> x (fx2fl (+ +playfield-max-x+ +oob-bullet-despawn-fuzz+)))
-				 (fl< x (fx2fl (- +playfield-min-x+ +oob-bullet-despawn-fuzz+)))
-				 (fl< y (fx2fl (- +playfield-min-y+ +oob-bullet-despawn-fuzz+)))
-				 (fl> y (fx2fl (+ +playfield-max-y+ +oob-bullet-despawn-fuzz+)))))
+			 (or (fl> x (fx2fl (+ playfield-max-x +oob-bullet-despawn-fuzz+)))
+				 (fl< x (fx2fl (- playfield-min-x +oob-bullet-despawn-fuzz+)))
+				 (fl< y (fx2fl (- playfield-min-y +oob-bullet-despawn-fuzz+)))
+				 (fl> y (fx2fl (+ playfield-max-y +oob-bullet-despawn-fuzz+)))))
 		(delete-bullet bullet)))))
 
 (define (bullet-family type)
@@ -290,8 +290,8 @@
   (define (draw-one-laser idx)
 	(define bullet (vnth live-bullets idx))
 	(when bullet
-	  (let* ([render-x (+ (bx bullet) +playfield-render-offset-x+)]
-			 [render-y (+ (by bullet) +playfield-render-offset-y+)]
+	  (let* ([render-x (+ (bx bullet) playfield-render-offset-x)]
+			 [render-y (+ (by bullet) playfield-render-offset-y)]
 			 [type (bullet-type bullet)]
 			 [bt (symbol-hashtable-ref bullet-types type #f)]
 			 [livetime (bullet-livetime bullet)])
@@ -323,8 +323,8 @@
   (define (draw-one-bullet idx)
 	(define bullet (vnth live-bullets idx))
 	(when bullet
-	  (let* ([render-x (fl+ (bx bullet) (fx2fl +playfield-render-offset-x+))]
-			 [render-y (fl+ (by bullet) (fx2fl +playfield-render-offset-y+))]
+	  (let* ([render-x (fl+ (bx bullet) (fx2fl playfield-render-offset-x))]
+			 [render-y (fl+ (by bullet) (fx2fl playfield-render-offset-y))]
 			 [type (bullet-type bullet)]
 			 [bt (symbol-hashtable-ref bullet-types type #f)]
 			 [livetime (bullet-livetime bullet)])

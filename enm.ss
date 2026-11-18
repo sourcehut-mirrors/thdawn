@@ -165,17 +165,17 @@
   (define bossinfo (enm-extras enm))
   (define survival (eq? 10 (bossinfo-active-spell-id bossinfo)))
   (define lazy-t (-> (- frames (bossinfo-start-move-frame bossinfo))
-					 (/ +spellcircle-context+)
+					 (/ spellcircle-context)
 					 (clamp 0 1)
 					 (ease-in-out-quad)))
-  (define lazy-render-x (+ +playfield-render-offset-x+
+  (define lazy-render-x (+ playfield-render-offset-x
 						   (if survival 
 							   (car group-sp3-flower-center)
 							   (lerp
 								(bossinfo-start-move-x bossinfo)
 								(ex enm)
 								lazy-t))))
-  (define lazy-render-y (+ +playfield-render-offset-y+
+  (define lazy-render-y (+ playfield-render-offset-y
 						   (if survival
 							   (cdr group-sp3-flower-center)
 							   (lerp
@@ -260,8 +260,8 @@
 (define (draw-enemies textures)
   (define (draw-one-enm enm)
 	(when enm
-	  (let ([render-x (+ (ex enm) +playfield-render-offset-x+)]
-			[render-y (+ (ey enm) +playfield-render-offset-y+)]
+	  (let ([render-x (+ (ex enm) playfield-render-offset-x)]
+			[render-y (+ (ey enm) playfield-render-offset-y)]
 			[dx (enm-dx-render enm)]
 			[type (enm-type enm)]
 			[tint (enm-tint enm)])
@@ -417,11 +417,11 @@
 		(when show-hitboxes
 		  (let-values ([(x y w h) (enm-hurtbox enm)])
 			(raylib:draw-rectangle-rec
-			 (+ x +playfield-render-offset-x+)
-			 (+ y +playfield-render-offset-y+) w h green))
+			 (+ x playfield-render-offset-x)
+			 (+ y playfield-render-offset-y) w h green))
 		  (unless (enm-hasflag? enm (enmflag nocollide))
 			(let-values ([(x y w h) (enm-collision-box enm)])
 			  (raylib:draw-rectangle-rec
-			   (+ x +playfield-render-offset-x+)
-			   (+ y +playfield-render-offset-y+) w h red)))))))
+			   (+ x playfield-render-offset-x)
+			   (+ y playfield-render-offset-y) w h red)))))))
   (vector-for-each draw-one-enm live-enm))

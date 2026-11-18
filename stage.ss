@@ -5,7 +5,7 @@
 		(> (ey enm) 200.0)
 	  (enm-y-set! enm (+ (ey enm) 2.2)))
 	(loop-until
-		(> (ey enm) (+ +playfield-max-y+ 20))
+		(> (ey enm) (+ playfield-max-y 20))
 	  (enm-y-set! enm (+ (ey enm) 1.7))
 	  (enm-x-set! enm (+ (ex enm) xvel)))
 	(delete-enemy enm))
@@ -104,7 +104,7 @@
   (define y0 (ey enm))
   (ease-to values (+ x0 40.0) y0 10 enm)
   (let ([l (spawn-laser type (+ (ex enm) 20.0) (ey enm)
-						0.0 (fx2fl +playfield-width+)
+						0.0 (fx2fl playfield-width)
 						5.0
 						40 20 (λ (_task _blt) (wait-until (thunk (>= frames 900)))))])
 	(bullet-addflags l (bltflags uncancelable)))
@@ -317,8 +317,8 @@
   (define start-y (ey enm))
   (do [(i 0 (add1 i))]
 	  [(if flip
-		   (<= (ex enm) (- +playfield-min-x+ 50))
-		   (>= (ex enm) (+ +playfield-max-x+ 50)))]
+		   (<= (ex enm) (- playfield-min-x 50))
+		   (>= (ex enm) (+ playfield-max-x 50)))]
 	(let ([x ((if flip fl- fl+) start-x (fl* (fx2fl i) 1.7))]
 		  [y (fl+ start-y (fl* 20.0 (flsin (fl/ (fx2fl i) 18.0))))])
 	  (enm-x-set! enm x)
@@ -743,7 +743,7 @@
 	task)
   (loop-forever
    (linear-step-enm (torad 90.0) 2.0 enm)
-   (when (> (ey enm) +playfield-max-y+)
+   (when (> (ey enm) playfield-max-y)
 	 (raylib:play-sound (sebundle-enmdie sounds))
 	 (delete-enemy enm)
 	 (-> (cb)
@@ -767,7 +767,7 @@
 	   (if (stage-ctx-bombed-or-died current-stage-ctx)
 		   '((bomb . 1))
 		   '((life . 1)))
-	   0.0 (fx2fl +poc-y+)))
+	   0.0 (fx2fl poc-y)))
 	#t)
   (set! current-chapter 5)
   (spawn-enemy (enmtype big-fairy) 0.0 -20.0 2500 ch5-bigfairy
@@ -1118,8 +1118,8 @@
 
 (define (ch10-w1 right-side task enm)
   (define dest-x (if right-side
-					 (- +playfield-min-x+ 20.0)
-					 (+ +playfield-max-x+ 20.0)))
+					 (- playfield-min-x 20.0)
+					 (+ playfield-max-x 20.0)))
   (define dest-y (+ (ey enm)
 					(centered-roll game-rng 80.0)))
   (define (shoot task)
