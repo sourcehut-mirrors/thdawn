@@ -195,11 +195,12 @@
 
 (define (ch1-small-fairy type right task enm)
   (define (shoot task)
+	(wait 15)
 	(interval-loop 20
 	  (-> (fb)
-		  (fbcount 7 3)
-		  (fbang 0.0 9.0)
-		  (fbspeed 7.0 9.0)
+		  (fbcount 5 3)
+		  (fbang 0.0 15.0)
+		  (fbspeed 6.0 8.0)
 		  (fbshootez type
 					 (fl+ (ex enm) (centered-roll game-rng 10.0))
 					 (fl+ (ey enm) (centered-roll game-rng 10.0))
