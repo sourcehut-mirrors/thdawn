@@ -478,14 +478,31 @@
 	(spawn-enemy (enmtype big-fairy) 220.0 180.0 500
 				 (curry ch3-w1-leader-fairy #t) five-point-items
 				 (curry ch3-w1-leader-on-death followers)))
-  (wait 240)
-  (dotimes 2
+  (wait 210)
+  (parameterize ([ovr-noprune #t])
 	(spawn-particle
-	 (particletype circle-hint)
-	 0.0 224.0
-	 60 '((color . -1) (r1 . 300.0) (r2 . 80.0)))
-	(wait 60))
-  (wait 40)
+		(particletype circle-hint)
+		0.0 224.0
+		60 '((color . -1) (r1 . 300.0) (r2 . 80.0)))
+	(-> (cb)
+		(cbcount 36)
+		(cboffset 300.0)
+		(cbabsolute-aim)
+		(cbshootez 'big-star-red 0.0 224.0 5 (sebundle-shoot0 sounds)
+				   (λ (facing _speed task blt)
+					 (linear-step-accelerate (fl+ pi facing) 0.0 0.02 3.0 blt)
+					 (loop-until (fl< (distsq (bx blt) (by blt) 0.0 224.0)
+									  (* 50.0 50.0))
+					   (linear-step (fl+ pi facing) 3.0 blt))
+					 (-> (fb)
+						 (fbcount 2 3)
+						 (fbabsolute-aim)
+						 (fbang (todeg facing) 90.0)
+						 (fbspeed 1.5 3.5)
+						 (fbshootez 'small-star-red (bx blt) (by blt) 2
+									(sebundle-bell sounds)))
+					 (cancel-bullet blt)))))
+  (wait 190)
   (let ([cx 0.0]
 		[cy 224.0]
 		[delay-per 27]
