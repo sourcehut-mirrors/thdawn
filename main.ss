@@ -4832,10 +4832,7 @@
 (define miscent-cc (make-cost-center))
 
 (define (render-spell-background textures id elapsed)
-  (define max-alpha
-	(case id
-	  [(group) #xe0]
-	  [(doremi aiko hazuki) #xc0]))
+  (define max-alpha #xc0)
   (define alpha
 	(if (fx> elapsed 60)
 		max-alpha
