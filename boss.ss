@@ -1188,9 +1188,24 @@
 			   (linear-step-forever
 				(fl+ pi (facing-player (bx blt) (by blt)))
 				speed task blt)
-			   (begin
-				 (bullet-facing-set!
-				  blt (facing-player (bx blt) (by blt)))
+			   (let* ([ofacing (flmod facing tau)]
+					  [newfacing (flmod (facing-player (bx blt) (by blt)) tau)]
+					  [lerper
+					   (cond
+						;; can just go directly
+						[(fl< (flabs (fl- newfacing ofacing)) pi)
+						 (curry lerp ofacing newfacing)]
+						;; old to the left of new facing, more than pi away
+						;; go backwards, from old bumped up one turn
+						[(fl< ofacing newfacing)
+						 (curry lerp (fl+ ofacing tau) newfacing)]
+						;; old to the right of new, more than pi away
+						;; go forwards, to new bumped up one turn
+						[else (curry lerp ofacing (fl+ newfacing tau))])])
+				 (do [(i 0 (add1 i))]
+					 [(= i 30)]
+				   (bullet-facing-set! blt (lerper (/ i 29)))
+				   (yield))
 				 (wait 30)
 				 (linear-step-accelerate-forever
 				  (bullet-facing blt)
