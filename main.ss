@@ -4883,7 +4883,6 @@
   ;; y isn't but the stretching isn't too noticeable so it's ok
   (make-rectangle 0.0 0.0 512.0 480.0))
 
-(define bgcolor #xc0c0c0ff)
 (define (do-render-game textures fonts)
   (define-values (offsetx offsety)
 	(if (fxzero? screenshake)
@@ -4900,15 +4899,15 @@
   (raylib:draw-texture-pro (txbundle-bg1 textures)
 						   (make-rectangle 0.0 bg1-scroll 256.0 224.0)
 						   background-draw-bounds
-						   v2zero 0.0 bgcolor)
+						   v2zero 0.0 #xffffffb0)
   (raylib:draw-texture-pro (txbundle-bg2 textures)
 						   (make-rectangle 0.0 bg2-scroll 256.0 224.0)
 						   background-draw-bounds
-						   v2zero 0.0 bgcolor)
+						   v2zero 0.0 #xffffffb0)
   (raylib:draw-texture-pro (txbundle-bg3 textures)
 						   (make-rectangle 0.0 bg3-scroll 256.0 224.0)
 						   background-draw-bounds
-						   v2zero 0.0 bgcolor)
+						   v2zero 0.0 #xffffffb0)
   (when (fxpositive? screenshake)
 	(raylib:push-matrix)
 	(raylib:translatef offsetx offsety 0.0))
