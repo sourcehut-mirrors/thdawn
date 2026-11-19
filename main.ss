@@ -970,7 +970,7 @@
 ;; framecounter. All strings are rendered centered.
 (define credits-data
   '#(("")
-	 (h1 . ("Ojamajo Gensou ~ Magical Stage" "2026/??/??"))
+	 (h1 . ("Ojamajo Gensou ~ Magical Stage" "2027/??/??"))
 	 (h2 . ("Original Works"))
 	 ("Touhou Project --- Team Shanghai Alice"
 	  "Ojamajo Doremi --- Toei Animation")
@@ -995,6 +995,7 @@
 	  "Carrois Type Design (ShareTechMono Font)")
 	 (h2 . ("Test Players"))
 	 ("manyvonchik"
+	  "OmoftheNom"
 	  "yeashie")
 	 (h2 . ("Greatest Treasures \"Takaramono\" (Special Thanks)"))
 	 ("Raylib and Raylib-Extras Developers")
