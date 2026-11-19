@@ -4779,56 +4779,53 @@
 (define bg2-scroll 0.0)
 (define bg3-scroll 0.0)
 (define (background-acceleration frames)
+  (define (vslow)
+	(values 0.3 0.8 1.2))
+  (define (slow)
+	(values 0.5 1.0 1.5))
+  (define (fast)
+	(values 1.8 2.0 2.5))
+  (define (lerpvals from to progress)
+	(define-values (from1 from2 from3) (from))
+	(define-values (to1 to2 to3) (to))
+	(values (lerp from1 to1 progress)
+			(lerp from2 to2 progress)
+			(lerp from3 to3 progress)))
   ;; todo: make this more data driven
   (cond
    [(fx< frames 3250)
-	(values 0.5 1.0 1.5)]
+	(slow)]
    [(fx< 3250 frames 3600)
 	(let ([progress (/ (fx- frames 3250)
 					   (fx- 3600 3250))])
-	  (values
-	   (lerp 0.5 1.8 progress)
-	   (lerp 1.0 2.0 progress)
-	   (lerp 1.5 2.5 progress)))]
+	  (lerpvals slow fast progress))]
    [(fx< 3600 frames 5500)
-	(values 1.8 2.0 2.5)]
+	(fast)]
    [(fx< 5500 frames 6300)
 	(let ([progress (/ (fx- frames 5500)
-						(fx- 6300 5500))])
-	  (values
-	   (lerp 1.8 0.5 progress)
-	   (lerp 2.0 1.0 progress)
-	   (lerp 2.5 1.5 progress)))]
+					   (fx- 6300 5500))])
+	  (lerpvals fast slow progress))]
    [(fx< 6300 frames 9000)
-	(values 0.5 1.0 1.5)]
+	(slow)]
    [(fx< 9000 frames 9500)
 	(let ([progress (/ (fx- frames 9000)
 					   (fx- 9500 9000))])
-	  (values
-	   (lerp 0.5 1.8 progress)
-	   (lerp 1.0 2.0 progress)
-	   (lerp 1.5 2.5 progress)))]
+	  (lerpvals slow fast progress))]
    [(fx< 9500 frames 11070)
-	(values 1.8 2.0 2.5)]
+	(fast)]
    [(fx< 11070 frames 11550)
-	(values 0.3 0.8 1.2)]
+	(vslow)]
    [(fx< 11550 frames 11760)
 	(let ([progress (ease-in-quad (/ (fx- frames 11550)
 									 (fx- 11760 11550)))])
-	  (values
-	   (lerp 0.3 1.8 progress)
-	   (lerp 0.8 2.0 progress)
-	   (lerp 1.2 2.5 progress)))]
+	  (lerpvals vslow fast progress))]
    [(fx< 11760 frames 12800)
-	(values 1.8 2.0 2.5)]
+	(fast)]
    [(fx< 12800 frames 13200)
 	(let ([progress (/ (fx- frames 12800)
 					   (fx- 13200 12800))])
-	  (values
-	   (lerp 1.8 0.5 progress)
-	   (lerp 2.0 1.0 progress)
-	   (lerp 2.5 1.5 progress)))]
-   [else (values 0.5 1.0 1.5)]))
+	  (lerpvals fast slow progress))]
+   [else (slow)]))
 
 (define bullet-cc (make-cost-center))
 (define miscent-cc (make-cost-center))
