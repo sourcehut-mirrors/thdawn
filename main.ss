@@ -1402,6 +1402,17 @@
 	(raylib:measure-text-ex
 	 (fontbundle-sharetechmono20 fonts)
 	 page-str 20.0 0.0))
+  (define version-warning
+	(let ([entry (list-ref (replist-gui-cached-data self)
+						   (replist-gui-selected-row self))])
+	  (and entry
+		   (not (string=? (score-entry-version entry) (game-version)))
+		   (format "** This replay was saved in version ~s **"
+				   (score-entry-version entry)))))
+  (define-values (vwarnwidth _vwarnheight)
+	(if version-warning
+		(raylib:measure-text-ex (fontbundle-cabin20 fonts) version-warning 20.0 0.0)
+		(values 0.0 0.0)))
   (draw-title-bg textures #x808080ff)
   (raylib:draw-rectangle-lines 20 70 (- 640 40) (- 480 200) -1)
   (raylib:draw-text-ex
@@ -1411,7 +1422,10 @@
    (fontbundle-sharetechmono20 fonts) page-str
    (fl- 320.0 (fl/ pgwidth 2.0)) 370.0 20.0 0.0 -1)
   (draw-scores fonts (replist-gui-cached-data self)
-			   (replist-gui-selected-row self)))
+			   (replist-gui-selected-row self))
+  (raylib:draw-text-ex
+   (fontbundle-cabin20 fonts) version-warning
+   (fl- 320.0 (fl/ vwarnwidth 2.0)) 400.0 20.0 0.0 #xff0000ff))
 (define (mk-replist-gui to-save prefill-name)
   (define result
 	(make-replist-gui
