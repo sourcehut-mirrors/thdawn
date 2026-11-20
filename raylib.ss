@@ -2,7 +2,7 @@
 (library (raylib)
   (export init-window close-window window-should-close set-target-fps get-frame-time
 		  toggle-borderless-windowed is-window-focused
-		  set-window-size get-window-size
+		  set-window-size get-window-size set-window-size-to-monitor
 		  begin-texture-mode end-texture-mode
 		  load-render-texture unload-render-texture render-texture-inner
 		  begin-drawing end-drawing clear-background draw-circle-v draw-circle-lines-v
@@ -121,8 +121,18 @@
 
   (define toggle-borderless-windowed
 	(foreign-procedure __atomic "ToggleBorderlessWindowed" () void))
+  (define get-current-monitor
+	(foreign-procedure __atomic "GetCurrentMonitor" () int))
+  (define get-monitor-width
+	(foreign-procedure __atomic "GetMonitorWidth" (int) int))
+  (define get-monitor-height
+	(foreign-procedure __atomic "GetMonitorHeight" (int) int))
   (define set-window-size
 	(foreign-procedure __atomic "SetWindowSize" (int int) void))
+  (define (set-window-size-to-monitor)
+	(define mon (get-current-monitor))
+	(values (get-monitor-width mon) (get-monitor-height mon))
+	(set-window-size (get-monitor-width mon) (get-monitor-height mon)))
   (define get-screen-width
 	(foreign-procedure __atomic "GetScreenWidth" () int))
   (define get-screen-height

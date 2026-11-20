@@ -17,8 +17,6 @@ As in, when you work pick something off the list and get at it.
 * aiko sprite
 * go through all bullet types and appropriately set their preimg sizes
 * shot collide with enemy effect
-* fullscreen/window resolution switch in settings
-* rectangular hints for hazuki non1, survival knives
 
 ## Medium-term TODOs
 * borderless fullscreen support

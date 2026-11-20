@@ -5,6 +5,14 @@
 (import (add-prefix (raylib) raylib:)
 		(coro) (geom) (funcutils) (config) (sort) (platform))
 (alias λ lambda)
+(alias vnth vector-ref)
+(alias vlen vector-length)
+(alias fx2fl fixnum->flonum)
+(alias roll pseudo-random-generator-next!) ;; convenience alias
+(define (vrand v rng)
+  (vnth v (roll rng (vlen v))))
+(define (vnth-mod v n)
+  (vnth v (fxmod n (vlen v))))
 
 ;; for dev only, makes a function lazily looked up at runtime so
 ;; you can hot-reload its body. Mostly useful for the gui methods.
@@ -96,14 +104,6 @@
 	  (raylib:get-key-name k)
 	  (string-append "Unknown Key " (number->string k))))
 
-(alias vnth vector-ref)
-(alias vlen vector-length)
-(alias fx2fl fixnum->flonum)
-(alias roll pseudo-random-generator-next!) ;; convenience alias
-(define (vrand v rng)
-  (vnth v (roll rng (vlen v))))
-(define (vnth-mod v n)
-  (vnth v (fxmod n (vlen v))))
 (define-enumeration miscenttype
   ;; NB: ordered by their draw order, from first to last
   (mainshot needle small-piv point big-piv
@@ -1605,7 +1605,9 @@
 (define (handle-window-resize old new)
   (unless (eq? old new)
 	(if (eq? new (window-mode borderless))
-		(raylib:toggle-borderless-windowed)
+		(begin
+		  (raylib:set-window-size-to-monitor)
+		  (raylib:toggle-borderless-windowed))
 		(begin
 		  (when (eq? old (window-mode borderless))
 			(raylib:toggle-borderless-windowed))
@@ -1672,7 +1674,7 @@
 	  (let* ([cell (assq 'window-mode config)]
 			 [old (cdr cell)]
 			 [new (case old
-					[(w640x480) (window-mode borderless)]
+					[(w640x480) (window-mode w960x720)]
 					[(w960x720) (window-mode w1280x960)]
 					[(w1280x960) (window-mode w1440x1080)]
 					[(w1440x1080) (window-mode borderless)])])
@@ -5284,7 +5286,7 @@
 	  [else (error 'main "Invalid window mode, check config.dat")]))
   (raylib:init-window width height window-name)
   (raylib:set-trace-log-level 4) ;; WARNING or above
-  (when (eq? (window-mode borderless) config)
+  (when (eq? (window-mode borderless) (assqdr 'window-mode config))
 	(raylib:toggle-borderless-windowed))
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)
