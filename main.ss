@@ -84,6 +84,7 @@
   (cancel itemvalue enmdeath graze spellbonus maple-grayscale maple
 		  circle-hint-opaque
 		  circle-hint clear-bonus
+		  warning-line
 		  text-hint doremi-title hazuki-title aiko-title
 		  stage-title stage-blurb)
   make-particletype-set)
@@ -3106,6 +3107,25 @@
 				  raylib:draw-circle-lines-v)
 			  render-x render-y
 			  r color)))
+		  ([warning-line]
+		   (let* ([fade-time (assqdr 'fade-time extra-data)]
+				  [fade-threshold (- max-age fade-time)]
+				  [color (let ([color0 (assqdr 'color extra-data)])
+						   (if (> age fade-threshold)
+							   (override-alpha
+								color0
+								(eround
+								 (* (fxlogand #xff color0)
+									(- 1 (/ (- age fade-threshold) fade-time)))))
+							   color0))]
+				  [len (lerp
+						0.0 (assqdr 'len extra-data)
+						(clamp (/ age (assqdr 'extend-time extra-data)) 0.0 1.0))]
+				  [facing (assqdr 'facing extra-data)]
+				  [ex (fl+ render-x (fl* len (flcos facing)))]
+				  [ey (fl+ render-y (fl* len (flsin facing)))])
+			 (raylib:draw-line-ex
+			  render-x render-y ex ey (assqdr 'thickness extra-data) color)))
 		  ([spellbonus clear-bonus]
 		   (draw-centered-field-text
 			fonts age max-age extra-data render-y 24.0 -1 #f))

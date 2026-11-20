@@ -2756,6 +2756,17 @@
 				   (ease-bullet-to ease-in-out-quad x dest-y 120 blt)
 				   (when (zero? i)
 					 (raylib:play-sound (sebundle-shortcharge sounds)))
+				   (spawn-particle (particletype warning-line)
+								   ;; offset a bit so we're not drawing on top of the
+								   ;; glow orbs. hacky but yeah.
+								   (fl+ (bx blt) (if left 12.0 -12.0))
+								   (by blt)
+								   60 `((facing . ,final-facing)
+										(len . ,playfield-width)
+										(extend-time . 15)
+										(fade-time . 10)
+										(thickness . 3.0)
+										(color . #xff0000d0)))
 				   (wait 60)
 				   (when (zero? i)
 					 (raylib:play-sound (sebundle-release sounds)))

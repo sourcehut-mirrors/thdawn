@@ -5,8 +5,8 @@
 		  set-window-min-size get-screen-height get-screen-width
 		  begin-texture-mode end-texture-mode
 		  load-render-texture unload-render-texture render-texture-inner
-		  begin-drawing end-drawing clear-background draw-circle-v draw-line
-		  draw-circle-lines-v
+		  begin-drawing end-drawing clear-background draw-circle-v draw-circle-lines-v
+		  draw-line draw-line-ex
 		  draw-text draw-text-ex measure-text-ex draw-fps
 		  draw-rectangle-rec draw-rectangle-pro draw-rectangle-lines
 		  draw-rectangle-gradient-h draw-rectangle-gradient-v draw-rectangle-rounded
@@ -83,9 +83,11 @@
 	(struct (x float) (y float)))
   (define global-vector2
 	(make-ftype-pointer RayVector2 (foreign-alloc (ftype-sizeof RayVector2))))
-  (define (load-global-vector2 x y)
-	(ftype-set! RayVector2 (x) global-vector2 x)
-	(ftype-set! RayVector2 (y) global-vector2 y))
+  (define global-vector2-2
+	(make-ftype-pointer RayVector2 (foreign-alloc (ftype-sizeof RayVector2))))
+  (define (load-global-vector2 dest x y)
+	(ftype-set! RayVector2 (x) dest x)
+	(ftype-set! RayVector2 (y) dest y))
   (define (unload-global-vector2)
 	(define x (ftype-ref RayVector2 (x) global-vector2))
 	(define y (ftype-ref RayVector2 (y) global-vector2))
@@ -157,17 +159,26 @@
 	(load-global-color global-color rgba)
 	(draw-line0 sx sy ex ey global-color))
 
+  (define draw-line-ex0
+	(foreign-procedure __atomic "DrawLineEx"
+					   ((& RayVector2) (& RayVector2) float (& Color)) void))
+  (define (draw-line-ex sx sy ex ey thickness rgba)
+	(load-global-vector2 global-vector2 sx sy)
+	(load-global-vector2 global-vector2-2 ex ey)
+	(load-global-color global-color rgba)
+	(draw-line-ex0 global-vector2 global-vector2-2 thickness global-color))
+
   (define draw-circle-v0
 	(foreign-procedure __atomic "DrawCircleV" ((& RayVector2) float (& Color)) void))
   (define (draw-circle-v x y radius rgba)
-	(load-global-vector2 x y)
+	(load-global-vector2 global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-circle-v0 global-vector2 radius global-color))
 
   (define draw-circle-lines-v0
 	(foreign-procedure __atomic "DrawCircleLinesV" ((& RayVector2) float (& Color)) void))
   (define (draw-circle-lines-v x y radius rgba)
-	(load-global-vector2 x y)
+	(load-global-vector2 global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-circle-lines-v0 global-vector2 radius global-color))
 
@@ -190,7 +201,7 @@
 	(foreign-procedure __atomic "DrawRing" ((& RayVector2) float float
 								   float float int (& Color)) void))
   (define (draw-ring x y rinner router start-ang end-ang segments rgba)
-	(load-global-vector2 x y)
+	(load-global-vector2 global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-ring0 global-vector2 rinner router start-ang end-ang segments global-color))
 
@@ -198,7 +209,7 @@
 	(foreign-procedure __atomic "DrawRingLines" ((& RayVector2) float float
 										float float int (& Color)) void))
   (define (draw-ring-lines x y rinner router start-ang end-ang segments rgba)
-	(load-global-vector2 x y)
+	(load-global-vector2 global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-ring-lines0 global-vector2 rinner router
 					  start-ang end-ang segments global-color))
@@ -207,7 +218,7 @@
 	(foreign-procedure __atomic "DrawPoly"
 					   ((& RayVector2) int float float (& Color)) void))
   (define (draw-poly x y sides radius rotation color)
-	(load-global-vector2 x y)
+	(load-global-vector2 global-vector2 x y)
 	(load-global-color global-color color)
 	(draw-poly0 global-vector2 sides radius rotation global-color))
 
@@ -310,7 +321,7 @@
 										   float (& Color)) void))
   (define (draw-rectangle-pro x y width height ox oy rot rgba)
 	(load-global-rectangle global-rectangle x y width height)
-	(load-global-vector2 ox oy)
+	(load-global-vector2 global-vector2 ox oy)
 	(load-global-color global-color rgba)
 	(draw-rectangle-pro0 global-rectangle
 						 global-vector2
@@ -326,7 +337,7 @@
 	(foreign-procedure __atomic "DrawTextEx" ((& Font) string (& RayVector2)
 									 float float (& Color)) void))
   (define (draw-text-ex font text x y size spacing rgba)
-	(load-global-vector2 x y)
+	(load-global-vector2 global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-text-ex0 font text global-vector2 size spacing global-color))
   (define measure-text-ex0
@@ -393,7 +404,7 @@
 	 global-rectangle
 	 (rectangle-x rect) (rectangle-y rect)
 	 (rectangle-width rect) (rectangle-height rect))
-	(load-global-vector2 x y)
+	(load-global-vector2 global-vector2 x y)
 	(load-global-color global-color rgba)
 	(draw-texture-rec0 tex global-rectangle global-vector2 global-color))
 
@@ -417,7 +428,7 @@
 	 global-rectangle2
 	 (rectangle-x dest) (rectangle-y dest)
 	 (rectangle-width dest) (rectangle-height dest))
-	(load-global-vector2 (v2x origin) (v2y origin))
+	(load-global-vector2 global-vector2 (v2x origin) (v2y origin))
 	(load-global-color global-color rgba)
 	(draw-texture-pro0 tex global-rectangle global-rectangle2
 					   global-vector2 rotation global-color))
