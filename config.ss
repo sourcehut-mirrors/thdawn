@@ -8,7 +8,8 @@
   (include "keyconsts.ss")
   
   (define default-config
-	`((music-vol . 100)
+	`((window-mode . w1280x960)
+	  (music-vol . 100)
 	  (sfx-vol . 85)
 	  (keybindings . ((up . ,key-up)
 					  (down . ,key-down)

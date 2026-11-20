@@ -1,8 +1,8 @@
 ;; Copyright (C) 2025 Vincent Lee; GPL-3.0-or-later
 (library (raylib)
   (export init-window close-window window-should-close set-target-fps get-frame-time
-		  toggle-borderless-windowed toggle-fullscreen is-window-focused
-		  set-window-min-size get-screen-height get-screen-width
+		  toggle-borderless-windowed is-window-focused
+		  set-window-size get-window-size
 		  begin-texture-mode end-texture-mode
 		  load-render-texture unload-render-texture render-texture-inner
 		  begin-drawing end-drawing clear-background draw-circle-v draw-circle-lines-v
@@ -37,7 +37,7 @@
   ;; as r6rs requires all definitions to precede any expressions
   ;; r6rs does guarantee the library body executes top to bottom though,
   ;; so this is the right place to do it
-  ;; struct ABI audited as compatible as of Raylib 5.5-6.0
+  ;; struct ABI audited as compatible as of Raylib 6.2
   (define _dummy
 	(case (machine-type)
 	  [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt)
@@ -121,14 +121,14 @@
 
   (define toggle-borderless-windowed
 	(foreign-procedure __atomic "ToggleBorderlessWindowed" () void))
-  (define toggle-fullscreen
-	(foreign-procedure __atomic "ToggleFullscreen" () void))
-  (define set-window-min-size
-	(foreign-procedure __atomic "SetWindowMinSize" (int int) void))
+  (define set-window-size
+	(foreign-procedure __atomic "SetWindowSize" (int int) void))
   (define get-screen-width
 	(foreign-procedure __atomic "GetScreenWidth" () int))
   (define get-screen-height
 	(foreign-procedure __atomic "GetScreenHeight" () int))
+  (define (get-window-size)
+	(values (get-screen-width) (get-screen-height)))
 
   (define window-should-close
 	(foreign-procedure __atomic "WindowShouldClose" () stdbool))

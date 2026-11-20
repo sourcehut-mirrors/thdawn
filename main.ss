@@ -31,6 +31,37 @@
   vkeys)
 (define empty-vkeys (vkeys))
 (define vkeys-proc (enum-set-constructor empty-vkeys))
+(define-enumeration window-mode
+  (w640x480 w960x720 w1280x960 w1440x1080 borderless)
+  wmodes)
+(define (window-mode-name w)
+  (case w
+	[(w640x480) "Windowed 640x480"]
+	[(w960x720) "Windowed 960x720"]
+	[(w1280x960) "Windowed 1280x960"]
+	[(w1440x1080) "Windowed 1440x1080"]
+	[(borderless) "Borderless Fullscreen"]))
+(define draw-bounds
+  (let ([calculate-fullscreen-renderbounds
+		 (thunk
+		  ;; assumes we are already in borderless fullscreen
+		  (define-values (w0 h) (raylib:get-window-size))
+		  (define w (inexact (* 4/3 h)))
+		  ;; there's probably some off by ones here but whatever
+		  ;; no one has monitors with odd pixel dimensions, right?
+		  (define margin (inexact (/ (- w0 w) 2)))
+		  (make-rectangle margin 0.0 w (fx2fl h)))]
+		[w640 (make-rectangle 0.0 0.0 640.0 480.0)]
+		[w960 (make-rectangle 0.0 0.0 960.0 720.0)]
+		[w1280 (make-rectangle 0.0 0.0 1280.0 960.0)]
+		[w1440 (make-rectangle 0.0 0.0 1440.0 1080.0)])
+	(λ (w)
+	  (case w
+		[(w640x480) w640]
+		[(w960x720) w960]
+		[(w1280x960) w1280]
+		[(w1440x1080) w1440]
+		[(borderless) (calculate-fullscreen-renderbounds)]))))
 (define doremi-color #xff69fcff) ;; or #xff7fbcff ?
 (define aiko-color #x00ffffff)
 (define hazuki-color #xffa500ff)
@@ -902,7 +933,6 @@
 (define title-img-bounds (make-rectangle 0.0 0.0 576.0 324.0))
 (define screen-bounds (make-rectangle 0.0 0.0 640.0 480.0))
 (define screen-bounds-flip-y (make-rectangle 0.0 0.0 640.0 -480.0))
-(define double-screen-bounds (make-rectangle 0.0 0.0 1280.0 960.0))
 (define (draw-title-bg textures tint)
   (raylib:clear-background #x000000ff)
   (raylib:draw-texture-pro (txbundle-title1 textures)
@@ -1571,6 +1601,20 @@
    (mutable menu-options)
    (mutable selected-option)
    (mutable waiting-for-rebind)))
+
+(define (handle-window-resize old new)
+  (unless (eq? old new)
+	(if (eq? new (window-mode borderless))
+		(raylib:toggle-borderless-windowed)
+		(begin
+		  (when (eq? old (window-mode borderless))
+			(raylib:toggle-borderless-windowed))
+		  (case new
+			[(w640x480) (raylib:set-window-size 640 480)]
+			[(w960x720) (raylib:set-window-size 960 720)]
+			[(w1280x960) (raylib:set-window-size 1280 960)]
+			[(w1440x1080) (raylib:set-window-size 1440 1080)])))))
+
 (define (setting-handle-input self inputs)
   (define edge-pressed (inputset-edge-pressed inputs))
   (define edge-pressed-raw (inputset-edge-pressed-raw inputs))
@@ -1607,12 +1651,36 @@
 	  (raylib:play-sound (sebundle-menuselect sounds)))]
    [(enum-set-member? (vkey left) edge-pressed)
 	(cond
-	 [(= selected 2) (decrease-sound-volume)]
-	 [(= selected 3) (decrease-music-volume)])]
+	 [(and (= selected 2) (not (eq? (window-mode w640x480)
+									(assqdr 'window-mode config))))
+	  (let* ([cell (assq 'window-mode config)]
+			 [old (cdr cell)]
+			 [new (case old
+					[(w960x720) (window-mode w640x480)]
+					[(w1280x960) (window-mode w960x720)]
+					[(w1440x1080) (window-mode w1280x960)]
+					[(borderless) (window-mode w1440x1080)])])
+		(set-cdr! cell new)
+		(save-config config)
+		(handle-window-resize old new))]
+	 [(= selected 3) (decrease-sound-volume)]
+	 [(= selected 4) (decrease-music-volume)])]
    [(enum-set-member? (vkey right) edge-pressed)
 	(cond
-	 [(= selected 2) (increase-sound-volume)]
-	 [(= selected 3) (increase-music-volume)])]
+	 [(and (= selected 2) (not (eq? (window-mode borderless)
+									(assqdr 'window-mode config))))
+	  (let* ([cell (assq 'window-mode config)]
+			 [old (cdr cell)]
+			 [new (case old
+					[(w640x480) (window-mode borderless)]
+					[(w960x720) (window-mode w1280x960)]
+					[(w1280x960) (window-mode w1440x1080)]
+					[(w1440x1080) (window-mode borderless)])])
+		(set-cdr! cell new)
+		(save-config config)
+		(handle-window-resize old new))]
+	 [(= selected 3) (increase-sound-volume)]
+	 [(= selected 4) (increase-music-volume)])]
    [(enum-set-member? (vkey shoot) edge-pressed)
 	(raylib:play-sound (sebundle-menuselect sounds))
 	((menu-item-on-select (vnth opts selected)) self)]
@@ -1623,7 +1691,7 @@
 		(setting-gui-selected-option-set! self 0))]))
 (define (setting-gui-tick self)
   (define selected (setting-gui-selected-option self))
-  (when (and (fx= selected 2) (fxzero? (fxmod true-frames 90)))
+  (when (and (fx= selected 3) (fxzero? (fxmod true-frames 90)))
 	(raylib:play-sound (sebundle-playerdie sounds))))
 (define (setting-render self textures fonts)
   (define items (setting-gui-menu-options self))
@@ -1668,11 +1736,17 @@
 	 (make-menu-item
 	  (thunk "Reset to default")
 	  (λ (_gui)
+		(define old-window (assqdr 'window-mode config))
 		(set! config (reset-config))
+		(handle-window-resize old-window (assqdr 'window-mode config))
 		(refresh-keybindings)
 		(refresh-padmappings)
 		(update-music-volumes)
 		(update-sound-volumes)))
+	 (make-menu-item
+	  (thunk (string-append "Window Resolution: < "
+							(window-mode-name (assqdr 'window-mode config)) " >"))
+	  (λ (_gui) (void)))
 	 (make-menu-item
 	  (thunk
 	   (string-append "SFX Volume: < "
@@ -5069,8 +5143,7 @@
    ;; here flips it again to correct for that. It's unfortunate that in
    ;; trying to paper over an OpenGL design choice, Raylib actually introduces
    ;; another mismatch.
-   screen-bounds-flip-y
-   double-screen-bounds v2zero 0.0 -1)
+   screen-bounds-flip-y (draw-bounds (assqdr 'window-mode config)) v2zero 0.0 -1)
   (raylib:end-drawing))
 
 (include "stage.ss")
@@ -5200,12 +5273,21 @@
 (define frame-time-factor 0.8)
 (define frame-time-ema 0.0)
 (define (main)
+  (define window-name (format "Ojamajo Gensou ~~ Magical Stage ~a" (game-version)))
+  (define _ (set! config (read-config)))
+  (define-values (width height)
+	(case (assqdr 'window-mode config)
+	  [(borderless w640x480) (values 640 480)]
+	  [(w960x720) (values 960 720)]
+	  [(w1280x960) (values 1280 960)]
+	  [(w1440x1080) (values 1440 1080)]
+	  [else (error 'main "Invalid window mode, check config.dat")]))
+  (raylib:init-window width height window-name)
   (raylib:set-trace-log-level 4) ;; WARNING or above
-  (raylib:init-window
-   1280 960 (format "Ojamajo Gensou ~~ Magical Stage ~a" (game-version)))
+  (when (eq? (window-mode borderless) config)
+	(raylib:toggle-borderless-windowed))
   (raylib:set-target-fps 60)
   (raylib:set-exit-key 0)
-  (set! config (read-config))
   (refresh-keybindings)
   (refresh-padmappings)
   (raylib:init-audio-device)
