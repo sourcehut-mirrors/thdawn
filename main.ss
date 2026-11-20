@@ -1380,10 +1380,12 @@
 		(let* ([path (rep-path (replist-gui-selected-page self)
 							   (replist-gui-selected-row self))]
 			   [rep (read-replay path)])
-		  (when rep
-			(raylib:play-sound (sebundle-menuselect sounds))
-			(start-replay rep)
-			(replace-gui #f))))]))
+		  (if rep
+			  (begin
+				(raylib:play-sound (sebundle-menuselect sounds))
+				(start-replay rep)
+				(replace-gui #f))
+			  (raylib:play-sound (sebundle-invalid sounds)))))]))
 (define (replist-render self textures fonts)
   (define title (if (replist-gui-records-to-save self)
 					"Select Slot" "Watch Elegant Replays"))
