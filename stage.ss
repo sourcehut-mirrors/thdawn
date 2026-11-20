@@ -1429,9 +1429,9 @@
 	(λ (task)
 	  (interval-loop 15
 		(-> (fb)
-			(fbcount 7)
-			(fbang 0.0 8.0)
-			(fbspeed 7.5)
+			(fbcount 5)
+			(fbang 0.0 12.0)
+			(fbspeed 7.0)
 			(fbshootenm enm 'rice-cyan 2 (sebundle-shootsoft sounds)))))
 	task)
   (move-on-spline
