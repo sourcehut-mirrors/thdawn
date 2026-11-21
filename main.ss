@@ -2535,7 +2535,7 @@
 							'((bomb . 1) (point . 50))
 							'((bomb . 1) (point . 10)))
 	 (make-spell-descriptor "\"One Flower, One World\""
-							3600 -1 5000000 #f life-frag life-frag-fail)
+							3645 -1 5000000 #f life-frag life-frag-fail)
 	 (make-spell-descriptor "\"Magical Stage\""
 							2400 27000 5000000 'group
 							'((point . 100)) '((point . 15))))))
@@ -4546,12 +4546,54 @@
 	  v2zero 0.0
 	  (fxior #xffffff00 alpha)))))
 
+(define (draw-boss-portrait-group spellcaster textures)
+  (define bossinfo (enm-extras spellcaster))
+  (define elapsed-frames (bossinfo-elapsed-frames bossinfo))
+  (let ([alpha (cond
+				[(fx< elapsed-frames 20)
+				 (eround (lerp 0 250 (/ elapsed-frames 20)))]
+				[(fx< elapsed-frames 80) 250]
+				[else
+				 (eround (lerp 250 0 (/ (fx- elapsed-frames 80) 40)))])])
+	(for-each
+	 (λ (id)
+	   (define tex (case id
+					 [(hazuki) (txbundle-portrait-hazuki textures)]
+					 [(doremi) (txbundle-portrait-doremi textures)]
+					 [(aiko) (txbundle-portrait-aiko textures)]))
+	   (define width (fx2fl (raylib:texture-width tex)))
+	   (define height (fx2fl (raylib:texture-height tex)))
+	   (define x (case id [(hazuki) 75.0] [(doremi) 225.0] [(aiko) 375.0]))
+	   (define y (case id
+				   [(hazuki aiko)
+					(inexact (lerp (+ 200 playfield-min-render-y)
+								   (+ 300 playfield-min-render-y)
+								   (/ elapsed-frames 120)))]
+				   [(doremi)
+					(inexact (lerp (+ 250 playfield-min-render-y)
+								   (+ 150 playfield-min-render-y)
+								   (/ elapsed-frames 120)))]))
+	   (raylib:draw-texture-pro
+		tex (make-rectangle 0.0 0.0 width height)
+		(make-rectangle (fl+ x (fl/ width 3.75 -2.0))
+						(fl+ y (fl/ height 3.75 -2.0))
+						(fl/ width 3.75) (fl/ height 3.75))
+		v2zero 0.0
+		(fxior #xffffff00 alpha)))
+	 '(hazuki aiko doremi))))
+
 (define (draw-boss-portrait spellcaster textures)
   (define bossinfo (enm-extras spellcaster))
   (define spid (bossinfo-active-spell-id bossinfo))
   (define elapsed-frames (bossinfo-elapsed-frames bossinfo))
   (when (and spid (fx< elapsed-frames 120))
-	(draw-boss-portrait-single spellcaster textures)))
+	(let*-values ([(doremi hazuki aiko) (find-bosses)]
+				  [(spellcaster)
+				   (find (λ (e) (and e (bossinfo-active-spell-id (enm-extras e))))
+						 (list doremi hazuki aiko))])
+	  (if (and doremi hazuki aiko)
+		  (draw-boss-portrait-group spellcaster textures)
+		  (draw-boss-portrait-single spellcaster textures)))))
 
 (define (draw-boss-hud position enm textures fonts)
   (define bossinfo (enm-extras enm))

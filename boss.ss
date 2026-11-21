@@ -2672,7 +2672,7 @@
 							  (sub1 (vlen (bossinfo-healthbars bossinfo))))
 						-1)
   (declare-spell doremi 10)
-  (wait 45)
+  (wait 90)
   (group-sp3-setup-field task)
   (let ([angper (fl* 3.0 pi 0.2)]
 		[flower-ctrl
