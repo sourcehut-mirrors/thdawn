@@ -4483,47 +4483,75 @@
 		  (+ (rectangle-y r) playfield-render-offset-y)
 		  (rectangle-width r) (rectangle-height r)
 		  green))
-	   aiko-sp2-vertical-rects))
-	))
+	   aiko-sp2-vertical-rects))))
+
+(define (draw-boss-portrait-single spellcaster textures)
+  (define bossinfo (enm-extras spellcaster))
+  (define elapsed-frames (bossinfo-elapsed-frames bossinfo))
+  (let* ([tex (case (enm-type spellcaster)
+				[(boss-doremi) (txbundle-portrait-doremi textures)]
+				[(boss-hazuki) (txbundle-portrait-hazuki textures)]
+				[(boss-aiko) (txbundle-portrait-aiko textures)])]
+		 [width (fx2fl (raylib:texture-width tex))]
+		 [height (fx2fl (raylib:texture-height tex))]
+		 [scale (if (eq? (enmtype boss-aiko) (enm-type spellcaster))
+					(if (fx< elapsed-frames 90)
+						1.0
+						(lerp 1.0 2.5 (/ (fx- elapsed-frames 90) 30)))
+					1.0)]
+		 [x (case (enm-type spellcaster)
+			  [(boss-doremi) 300.0]
+			  [(boss-hazuki) (lerp 300.0 225.0 (/ elapsed-frames 120))]
+			  [(boss-aiko)
+			   (if (fx< elapsed-frames 30)
+				   (lerp 350.0 300.0 (/ elapsed-frames 30))
+				   300.0)])]
+		 [y (case (enm-type spellcaster)
+			  [(boss-doremi) (inexact (lerp (+ 250 playfield-min-render-y)
+											(+ 150 playfield-min-render-y)
+											(/ elapsed-frames 120)))]
+			  [(boss-hazuki) (inexact (lerp (+ 200 playfield-min-render-y)
+											(+ 250 playfield-min-render-y)
+											(/ elapsed-frames 120)))]
+			  [(boss-aiko) (fx2fl (+ 200 playfield-min-render-y))])]
+		 [alpha (case (enm-type spellcaster)
+				  [(boss-doremi)
+				   (cond
+					[(fx< elapsed-frames 20)
+					 (eround (lerp 0 250 (/ elapsed-frames 20)))]
+					[(fx< elapsed-frames 80) 250]
+					[else
+					 (eround (lerp 250 0 (/ (fx- elapsed-frames 80) 40)))])]
+				  [(boss-hazuki)
+				   (cond
+					[(fx< elapsed-frames 20)
+					 (eround (lerp 0 250 (/ elapsed-frames 20)))]
+					[(fx< elapsed-frames 90) 250]
+					[else
+					 (eround (lerp 250 0 (/ (fx- elapsed-frames 90) 30)))])]
+				  [(boss-aiko)
+				   (cond
+					[(fx< elapsed-frames 30)
+					 (eround (lerp 0 250 (/ elapsed-frames 30)))]
+					[(fx< elapsed-frames 90) 250]
+					[else
+					 (eround (lerp 250 0 (/ (fx- elapsed-frames 90) 30)))])])])
+	(raylib:with-matrix
+	 (raylib:translatef x y 0.0)
+	 (raylib:scalef scale scale 1.0)
+	 (raylib:draw-texture-pro
+	  tex (make-rectangle 0.0 0.0 width height)
+	  (make-rectangle (fl/ width 3.75 -2.0) (fl/ height 3.75 -2.0)
+					  (fl/ width 3.75) (fl/ height 3.75))
+	  v2zero 0.0
+	  (fxior #xffffff00 alpha)))))
 
 (define (draw-boss-portrait spellcaster textures)
   (define bossinfo (enm-extras spellcaster))
   (define spid (bossinfo-active-spell-id bossinfo))
   (define elapsed-frames (bossinfo-elapsed-frames bossinfo))
   (when (and spid (fx< elapsed-frames 120))
-	(let* ([tex
-			(case (enm-type spellcaster)
-			  [(boss-doremi) (txbundle-portrait-doremi textures)]
-			  [(boss-hazuki) (txbundle-portrait-hazuki textures)]
-			  [(boss-aiko) (txbundle-portrait-aiko textures)])]
-		   [width (fx2fl (raylib:texture-width tex))]
-		   [height (fx2fl (raylib:texture-height tex))]
-		   [scale (if (fx< elapsed-frames 90)
-					  1.0
-					  (lerp 1.0 2.5 (/ (fx- elapsed-frames 90) 30)))]
-		   [y (if (fx< elapsed-frames 30)
-				  (lerp (+ playfield-min-render-y 100.0)
-						(+ playfield-min-render-y 200.0)
-						(/ elapsed-frames 30))
-				  (fx2fl (+ 200 playfield-min-render-y)))])
-	  (raylib:with-matrix
-	   ;; x of 100.0 for left boss
-	   ;; 200.0 for middle boss
-	   ;; 300.0 for right boss/default
-	   (raylib:translatef 300.0 y 0.0)
-	   (raylib:scalef scale scale 1.0)
-	   (raylib:draw-texture-pro
-		tex (make-rectangle 0.0 0.0 width height)
-		(make-rectangle (fl/ width 3.5 -2.0) (fl/ height 3.5 -2.0)
-						(fl/ width 3.5) (fl/ height 3.5))
-		v2zero 0.0
-		(fxior #xffffff00
-			   (cond
-				[(fx< elapsed-frames 30)
-				 (eround (lerp 0 250 (/ elapsed-frames 30)))]
-				[(fx< elapsed-frames 90) 250]
-				[else
-				 (eround (lerp 250 0 (/ (fx- elapsed-frames 90) 30)))])))))))
+	(draw-boss-portrait-single spellcaster textures)))
 
 (define (draw-boss-hud position enm textures fonts)
   (define bossinfo (enm-extras enm))
