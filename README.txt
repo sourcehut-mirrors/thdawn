@@ -237,4 +237,5 @@ aforementioned licenses, by cloning it from https://git.sr.ht/~williewillus/thda
   * Adjust chapter 7 heart rings to encourage macroing more
   * Add revenge bullets to chapter 9 big fairies to fill the gap in time to the next
     chapter
+  * Prevent midboss spell 2 from pinning the player against the edges of the field
 * 2026/11/16: Private demo v0.90

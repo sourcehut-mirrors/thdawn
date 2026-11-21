@@ -1390,8 +1390,8 @@
   (spawn-subtask "circle"
 	(λ (task)
 	  (define dang (torad 10.0))
-	  (define cx player-x)
-	  (define cy player-y)
+	  (define cx (clamp player-x -165.0 165.0))
+	  (define cy (flmin player-y 420.0))
 	  (define dist 120.0)
 	  (let loop ([ang 0.0])
 		(let* ([x (fl+ cx (fl* dist (flcos ang)))]
