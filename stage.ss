@@ -1123,11 +1123,32 @@
 								(vec2 -81.0 122.0) (vec2 0.0 116.0))))
 	(wait 10))
   (let ([drops '((point . 15))]
-		[on-death (let ([killed (box 0)])
-					(λ (_)
-					  (set-box! killed (add1 (unbox killed)))
-					  (when (= (unbox killed) 3)
-						(spawn-drops '((bomb . 1)) 0.0 110.0))))])
+		[on-death
+		 (let ([killed (box 0)])
+		   (λ (enm)
+			 (spawn-task "revenge"
+			   (λ (task)
+				 (define winding (if (roll-bool game-rng) 11.0 -11.0))
+				 (define type (vrand '#(small-star-red small-star-orange
+								  small-star-yellow small-star-green
+								  small-star-blue) game-rng))
+				 (do [(i 0 (fx1+ i))]
+					 [(fx= i 30)]
+				   (-> (cb)
+					   (cbcount 4)
+					   (cbabsolute-aim)
+					   (cbang (fl* winding (fx2fl i)))
+					   (cbshootez
+						type
+						(ex enm) (ey enm) 2 (sebundle-bell sounds)
+						(λ (facing _speed task blt)
+						  (linear-step-accelerate
+						   facing 0.0 0.06 +inf.0 blt))))
+				   (yield)))
+			   (constantly #t))
+			 (set-box! killed (add1 (unbox killed)))
+			 (when (= (unbox killed) 3)
+			   (spawn-drops '((bomb . 1)) 0.0 110.0))))])
 	(spawn-enemy (enmtype big-fairy) -90.0 -20.0 400 ch9-w2 drops on-death)
 	(spawn-enemy (enmtype big-fairy) 0.0 -30.0 400 ch9-w2 drops on-death)
 	(spawn-enemy (enmtype big-fairy) 90.0 -20.0 400 ch9-w2 drops on-death))
