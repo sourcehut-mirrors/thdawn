@@ -625,6 +625,8 @@
 (define playfield-max-render-y (+ playfield-max-y playfield-render-offset-y))
 (define playfield-width (- playfield-max-x playfield-min-x))
 (define playfield-height (- playfield-max-y playfield-min-y))
+(define playfield-hypot (flsqrt (fx2fl (+ (* playfield-width playfield-width)
+										  (* playfield-height playfield-height)))))
 (define poc-y 160)
 
 (define (in-bounds x y)

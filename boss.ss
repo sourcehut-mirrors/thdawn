@@ -1407,7 +1407,35 @@
 		(define space (fx2fl (* i spacing)))
 		(if upwards (fl- bottom-y space) (fl+ top-y space)))
 	  (define (ctrl type task blt)
-		(wait 90)
+		(define facing-cell (cons 'facing 0.0))
+		(define len-cell (cons 'len 0.0))
+		(define (reposition-particle p)
+		  (define f (facing-player (bx blt) (by blt)))
+		  (define dist (flsqrt (distsq (bx blt) (by blt) player-x player-y)))
+		  ;; offset a bit so we're not drawing on top of
+		  ;; the glow orbs. hacky but yeah.
+		  (define nx (fl+ (bx blt) (fl* 12.0 (flcos f))))
+		  (define ny (fl+ (by blt) (fl* 12.0 (flsin f))))
+		  (particle-x-set! p nx)
+		  (particle-y-set! p ny)
+		  (set-cdr! len-cell (fl- dist 12.0))
+		  (set-cdr! facing-cell f))
+		(define color (case (bullet-type blt)
+						[(glow-orb-red) #xff0000d0]
+						[(glow-orb-orange) #xff8c00d0]
+						[(glow-orb-cyan) #x00ced1d0]))
+		(define part (spawn-particle (particletype warning-line)
+									 (bx blt) (by blt)
+									 90
+									 `(,facing-cell
+									   ,len-cell
+									   (color . ,color)
+									   (extend-time . 8)
+									   (fade-time . 10)
+									   (thickness . 2.0))))
+		(dotimes 90
+		  (reposition-particle part)
+		  (yield))
 		(cancel-bullet blt)
 		(-> (fb)
 			(fbcount 3 6)
