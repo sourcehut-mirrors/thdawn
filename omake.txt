@@ -31,7 +31,7 @@ and fly around a bit. As she flew further and further, she noticed a strange lig
 through the border. Worried it was a gap in the border, she approached and peered
 through. Within was a beautiful starry sky, much like Gensokyo's night sky.
 
-Reimu felt an irresistable urge dive in and explore the otherworld. Far from being cold
+Reimu felt an irresistible urge dive in and explore the otherworld. Far from being cold
 and imposing, it emanated warmth, kindness, and excitement.
 
 "What if I get lost?"
@@ -143,7 +143,7 @@ rewards that will be very useful.
 2. The Border-of-Wave-and-Particle kunai-firing fairies in the second half of the stage
 have no hitbox, so you can get inside there and graze if you want.
 3. Kill all three of the big fairies firing star rings in the second half of the stage for
-extra resources. If necessary, try circling around the top.
+extra resources.
 
 
 +---------------------------------------+
@@ -399,7 +399,7 @@ attack be cast primarily by the fairy familiars, so the bosses themselves were s
 wander in a ring around the outside, firing decoration bullets.
 
 I mulled over the movement pattern of the inner fairies for a while. For a while, they
-simply circled continuosly in the opposite direction of the bosses, with lasers creating
+simply circled continuously in the opposite direction of the bosses, with lasers creating
 an enclosing triangle. That felt a bit boring and lacking in dynamism.
 
 Eventually, I settled on the little rotation movement in the final version (which involved

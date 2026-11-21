@@ -120,7 +120,7 @@ Some other gameplay details:
   enemies) are worth 1000 PIV and 1000 score.
 - After dying, bombing, and when starting the game, the player has 3 seconds of
   invulnerability.
-- Reimu's bomb is an EoSD Reimu B clone. The barrier field starts in a square around reimu
+- Reimu's bomb is an EoSD Reimu B clone. The barrier field starts in a square around Reimu
   and moves outwards as the bomb progresses. The damage and bullet cancellation zone is
   the area 40 units outside of the barrier square. This is a pretty small zone, so this
   bomb is intended mainly for scoring. However, because the barrier is stationary for 1
@@ -215,4 +215,26 @@ aforementioned licenses, by cloning it from https://git.sr.ht/~williewillus/thda
 | 8. Changelog    |
 +-----------------+
 
+* 2026/11/20: Private demo v0.91
+  * Replays incompatible!
+  * Fix linux build not having version info
+  * Add playtesters to credits
+  * Fix timed dialogue being skippable if it's the last line of dialogue
+  * Nerf opening small fairy fans
+  * Before the laser star lead into the first midboss spell, add a pattern to nudge the
+    player towards the center of the screen
+  * Darken the stage background a bit
+  * Slow down stage background scrolling, especially where it was fast before
+  * In "Fairy Kaleidoscope" phase 1, animate the arrowheads turning towards the player
+  * Darken the trio spell background a bit
+  * Add a warning message when a replay is selected that was not saved in the current
+    version
+  * Add warning lines to Doremi's second nonspell and first phase of the survival
+  * Add circle hints to the survival before the heart pattern changes
+  * Add support for resizing the window in the settings
+  * Nerf ending small fairy fans
+  * Slightly nerf health of "Harukaze Cherry Blossoms"
+  * Adjust chapter 7 heart rings to encourage macroing more
+  * Add revenge bullets to chapter 9 big fairies to fill the gap in time to the next
+    chapter
 * 2026/11/16: Private demo v0.90
