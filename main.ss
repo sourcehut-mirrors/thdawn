@@ -2517,7 +2517,7 @@
 	 (make-spell-descriptor "Barrage Sign \"Ojamajo Doremi SHOOT!\""
 							2700 12000 1000000 'group life-frag life-frag-fail)
 	 (make-spell-descriptor "Spring Sign \"Harukaze Cherry Blossoms\""
-							3600 15000 1000000 'doremi std std-fail)
+							3600 13000 1000000 'doremi std std-fail)
 	 (make-spell-descriptor "Floral Sign \"Flower Dance\""
 							2400 6000 1000000 'hazuki std std-fail)
 	 (make-spell-descriptor "Love Sign \"Star Spiral\""
