@@ -891,7 +891,7 @@
 		  (-> (cb)
 			  (cbspeed 3.0)
 			  (cbcount 12)
-			  (cbang (fx2fl (+ (* 20 wave) (* 5 i))))
+			  (cbang (fl+ (fl* 20.5 (fx2fl wave)) (fl* 4.5 (fx2fl i))))
 			  (cbshootenm enm 'heart-red 2 #f
 						  (λ (facing speed task blt)
 							(bullet-facing-set! blt facing)
